@@ -138,7 +138,7 @@
       <!-- <div class="plugin2" :class="{ hidden: null !== activeIndex }"> -->
       <div class="plugin2">
         <img src="../assets/img/c1.png" alt="" />
-        <div class="basedata">
+        <div class="data">
           <table>
             <tbody>
               <tr>
@@ -544,20 +544,22 @@ export default {
 }
 .content {
   position: absolute;
-  right: 200px;
+  right: 20px;
   top: 115px;
   height: 89%;
   width: 320px;
   overflow: hidden;
 }
 .plugin2 img {
+  position: absolute;
   height: 950px;
   z-index: 400;
 }
-.plugin2 .basedata {
-  z-index: 300;
+.plugin2 .data {
+  z-index: 500;
   position: absolute;
-  right: 100px;
+  top: 40px;
+  left: 10px;
 }
 .plugin3 {
   position: absolute;
@@ -568,6 +570,4 @@ export default {
 .plugin3 .hidden1 {
   display: none;
 }
-/* .basedata {
-} */
 </style>
