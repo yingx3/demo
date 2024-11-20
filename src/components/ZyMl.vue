@@ -1,445 +1,245 @@
 <template>
   <div id="res">
-    <div class="catlog1">
-      <div class="plugin1">
-        <div class="p1">
-          <!-- <a href="/database" class="link" @click="showImage(0)"> -->
-          <RouterLink to="/BaseData" @click="showImage(0)">
-            <img src="../assets/img/right1.png" alt="" class="img img1" />
-            <img src="../assets/img/right2.png" alt="" class="img img2" />
-            <img src="../assets/img/hover1.png" alt="" class="img img3" />
-            :class="{ hidden: 0 !== activeIndex }"
-          </RouterLink>
-        </div>
-        <!-- <div class="p2">
-          <RouterLink to="/BaseLayer" @click="showImage(1)">
-            <img src="../assets/img/right1.png" alt="" class="img img1" />
-            <img src="../assets/img/right3.png" alt="" class="img img2" />
-            <img
-              src="../assets/img/hover1.png"
-              alt=""
-              class="img img3"
-              :class="{ hidden: 1 !== activeIndex }"
-            />
-          </RouterLink>
-        </div>
-        <div class="p3">
-          <RouterLink to="/BiaoJi" @click="showImage(2)">
-            <img src="../assets/img/right1.png" alt="" class="img img1" />
-            <img src="../assets/img/right4.png" alt="" class="img img2" />
-            <img
-              src="../assets/img/hover1.png"
-              alt=""
-              class="img img3 image"
-              :class="{ hidden: 2 !== activeIndex }"
-            />
-          </RouterLink>
-        </div>
-        <div class="p4">
-          <RouterLink to="/CeLiang" @click="showImage(3)">
-            <img src="../assets/img/right1.png" alt="" class="img img1" />
-            <img src="../assets/img/right5.png" alt="" class="img img2" />
-            <img
-              src="../assets/img/hover1.png"
-              alt=""
-              class="img img3 image"
-              :class="{ hidden: 3 !== activeIndex }"
-            />
-          </RouterLink>
-        </div>
-        <div class="p5">
-          <RouterLink to="/SpAn" @click="showImage(4)">
-            <img src="../assets/img/right1.png" alt="" class="img img1" />
-            <img src="../assets/img/right6.png" alt="" class="img img2" />
-            <img
-              src="../assets/img/hover1.png"
-              alt=""
-              class="img img3 image"
-              :class="{ hidden: 4 !== activeIndex }"
-            />
-          </RouterLink>
-        </div>
-        <div class="p6">
-          <RouterLink to="/MyClean" @click="showImage(5)">
-            <img src="../assets/img/right1.png" alt="" class="img img1" />
-            <img src="../assets/img/right7.png" alt="" class="img img2" />
-            <img
-              src="../assets/img/hover1.png"
-              alt=""
-              class="img img3 image"
-              :class="{ hidden: 5 !== activeIndex }"
-            />
-          </RouterLink>
-        </div>
-        <div class="p7">
-          <RouterLink to="/MyEarth" @click="showImage(6)">
-            <img src="../assets/img/right1.png" alt="" class="img img1" />
-            <img src="../assets/img/right8.png" alt="" class="img img2" />
-            <img
-              src="../assets/img/hover1.png"
-              alt=""
-              class="img img3 image"
-              :class="{ hidden: 6 !== activeIndex }"
-            />
-          </RouterLink>
-        </div>
-        <div class="p8">
-          <RouterLink to="/ZoomIn" @click="showImage(7)">
-            <img src="../assets/img/right1.png" alt="" class="img img1" />
-            <img src="../assets/img/right9.png" alt="" class="img img2" />
-            <img
-              src="../assets/img/hover1.png"
-              alt=""
-              class="img img3 image"
-              :class="{ hidden: 7 !== activeIndex }"
-            />
-          </RouterLink>
-        </div>
-        <div class="p9">
-          <RouterLink to="/ZoomOut" @click="showImage(8)">
-            <img src="../assets/img/right1.png" alt="" class="img img1" />
-            <img src="../assets/img/right10.png" alt="" class="img img2" />
-            <img
-              src="../assets/img/hover1.png"
-              alt=""
-              class="img img3 image"
-              :class="{ hidden: 8 !== activeIndex }"
-            />
-          </RouterLink>
-        </div>
-        <div class="p10">
-          <RouterLink to="/TwoDimension" @click="showImage(9)">
-            <img src="../assets/img/right1.png" alt="" class="img img1" />
-            <img src="../assets/img/right11.png" alt="" class="img img2" />
-            <img
-              src="../assets/img/hover1.png"
-              alt=""
-              class="img img3 image"
-              :class="{ hidden: 9 !== activeIndex }"
-            />
-          </RouterLink>
-        </div>
-        <div class="p11">
-          <RouterLink to="/NorthArrow" @click="showImage(10)">
-            <img src="../assets/img/right1.png" alt="" class="img img1" />
-            <img src="../assets/img/right12.png" alt="" class="img img2" />
-            <img
-              src="../assets/img/hover1.png"
-              alt=""
-              class="img img3 image"
-              :class="{ hidden: 10 !== activeIndex }"
-            />
-          </RouterLink>
-        </div> -->
-      </div>
-    </div>
-
     <div class="content">
       <!-- <div class="plugin2" :class="{ hidden: null !== activeIndex }"> -->
       <div class="plugin2">
         <img src="../assets/img/c1.png" alt="" />
         <div class="data">
-          <table>
-            <tbody>
-              <tr>
-                <td>
-                  <details>
-                    <summary>基础地理空间数据</summary>
-                    <ol class="no-list-style c1">
-                      <li>
-                        <input
-                          type="checkbox"
-                          id="imageData"
-                          @change="handleCheckboxChange1"
-                        />影像数据
-                      </li>
-                      <li>
-                        <input
-                          type="checkbox"
-                          id="terrainData"
-                          @change="handleCheckboxChange2"
-                        />路网数据
-                      </li>
-                      <li>
-                        <input
-                          type="checkbox"
-                          id="electronicMap"
-                          @change="handleCheckboxChange3"
-                        />灾害风险区划
-                      </li>
-                      <li>
-                        <input
-                          type="checkbox"
-                          id="electronicMap"
-                          @change="handleCheckboxChange4"
-                        />历史灾害点
-                      </li>
-                      <li>
-                        <input
-                          type="checkbox"
-                          id="electronicMap"
-                          @change="handleCheckboxChange5"
-                        />古滑坡灾害链
-                      </li>
-                    </ol>
-                  </details>
-                  <details>
-                    <summary>冰川泥石流专题数据</summary>
-                    <ul class="no-list-style c1">
-                      <li>
-                        <details>
-                          <summary>地形数据</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />坡度</li>
-                            <li><input type="checkbox" />坡向</li>
-                            <li><input type="checkbox" />地形起伏度</li>
-                          </ul>
-                        </details>
-                        <details>
-                          <summary>气象数据</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />降水量</li>
-                            <li><input type="checkbox" />温度</li>
-                            <li><input type="checkbox" />风速</li>
-                          </ul>
-                        </details>
-                        <details>
-                          <summary>冰川监测数据</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />冰川消融量</li>
-                            <li><input type="checkbox" />冰川运动速率</li>
-                            <li><input type="checkbox" />冰川厚度</li>
-                          </ul>
-                        </details>
-                        <details>
-                          <summary>水文数据</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />河流流量</li>
-                            <li><input type="checkbox" />融水量</li>
-                          </ul>
-                        </details>
-                        <details>
-                          <summary>历史灾害数据</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />历史泥石流时间</li>
-                            <li><input type="checkbox" />历史泥石流规模</li>
-                            <li><input type="checkbox" />历史泥石流地点</li>
-                          </ul>
-                        </details>
-                      </li>
-                    </ul>
-                  </details>
-                  <details>
-                    <summary>冰岩崩专题数据</summary>
-                    <ul class="no-list-style c1">
-                      <li>
-                        <details>
-                          <summary>地质构造特征数据</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />地质构造</li>
-                            <li><input type="checkbox" />岩层特征</li>
-                            <li><input type="checkbox" />地质构造类型</li>
-                          </ul>
-                        </details>
-                        <details>
-                          <summary>地形地貌数据</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />地形图</li>
-                            <li><input type="checkbox" />地貌图</li>
-                            <li><input type="checkbox" />地形高程</li>
-                          </ul>
-                        </details>
-                        <details>
-                          <summary>气候环境数据</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />气温</li>
-                            <li><input type="checkbox" />降水</li>
-                            <li><input type="checkbox" />风速</li>
-                          </ul>
-                        </details>
-                        <details>
-                          <summary>植被覆盖数据</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />植被类型</li>
-                            <li><input type="checkbox" />植被覆盖率</li>
-                            <li><input type="checkbox" />植被分布</li>
-                          </ul>
-                        </details>
-                        <details>
-                          <summary>历史灾害数据</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />历史冰岩崩事件记录</li>
-                            <li><input type="checkbox" />灾害影响范围</li>
-                            <li><input type="checkbox" />灾害发生频率</li>
-                          </ul>
-                        </details>
-                      </li>
-                    </ul>
-                  </details>
-                  <details>
-                    <summary>溃决洪水专题数据</summary>
-                    <ul class="no-list-style c1">
-                      <li>
-                        <details>
-                          <summary>水文数据</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />水文测报数据</li>
-                            <li><input type="checkbox" />水流速度</li>
-                            <li><input type="checkbox" />水位高度</li>
-                            <li><input type="checkbox" />流量</li>
-                          </ul>
-                        </details>
-                        <details>
-                          <summary>地形地貌数据</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />地形图</li>
-                            <li><input type="checkbox" />地貌图</li>
-                            <li><input type="checkbox" />地形高程</li>
-                          </ul>
-                        </details>
-                        <details>
-                          <summary>降雨数据</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />降雨量</li>
-                            <li><input type="checkbox" />降雨强度</li>
-                            <li><input type="checkbox" />降雨时空分布</li>
-                          </ul>
-                        </details>
-                        <details>
-                          <summary>水利工程数据</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />水库水文数据</li>
-                            <li><input type="checkbox" />河流水文数据</li>
-                            <li><input type="checkbox" />堤坝结构</li>
-                          </ul>
-                        </details>
-                        <details>
-                          <summary>历史洪水事件</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />历史洪水事件记录</li>
-                            <li><input type="checkbox" />洪水泛滥范围</li>
-                            <li><input type="checkbox" />灾害影响情况</li>
-                          </ul>
-                        </details>
-                      </li>
-                    </ul>
-                  </details>
-                  <details>
-                    <summary>调控防控专题数据</summary>
-                    <ul class="no-list-style c1">
-                      <li>
-                        <details>
-                          <summary>地形数据</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />坡度</li>
-                            <li><input type="checkbox" />坡向</li>
-                            <li><input type="checkbox" />地形起伏度</li>
-                          </ul>
-                        </details>
-                        <details>
-                          <summary>气象数据</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />降水量</li>
-                            <li><input type="checkbox" />温度</li>
-                            <li><input type="checkbox" />风速</li>
-                          </ul>
-                        </details>
-                        <details>
-                          <summary>冰川监测数据</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />冰川消融量</li>
-                            <li><input type="checkbox" />冰川运动速率</li>
-                            <li><input type="checkbox" />冰川厚度</li>
-                          </ul>
-                        </details>
-                        <details>
-                          <summary>水文数据</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />河流流量</li>
-                            <li><input type="checkbox" />融水量</li>
-                          </ul>
-                        </details>
-                        <details>
-                          <summary>历史灾害数据</summary>
-                          <ul class="no-list-style c1">
-                            <li><input type="checkbox" />历史泥石流时间</li>
-                            <li><input type="checkbox" />历史泥石流规模</li>
-                            <li><input type="checkbox" />历史泥石流地点</li>
-                          </ul>
-                        </details>
-                      </li>
-                    </ul>
-                  </details>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <el-row class="tac">
+            <el-col :span="12">
+              <el-menu
+                active-text-color="#ffd04b"
+                background-color="#545c64"
+                class="el-menu-vertical-demo"
+                default-active="2"
+                text-color="#fff"
+              >
+                <el-sub-menu index="1">
+                  <template #title>
+                    <el-icon><location /></el-icon>
+                    <span>基础地理空间数据</span>
+                  </template>
+                  <el-menu-item index="1-1">影像数据</el-menu-item>
+                  <el-menu-item index="1-2">路网数据</el-menu-item>
+                  <el-menu-item index="1-3">灾害风险区划</el-menu-item>
+                  <el-menu-item index="1-4">历史灾害点</el-menu-item>
+                  <el-menu-item index="1-5">古滑坡灾害链</el-menu-item>
+                </el-sub-menu>
+                <el-sub-menu index="2">
+                  <template #title>
+                    <el-icon><icon-menu /></el-icon>
+                    <span>冰川泥石流专题数据</span>
+                  </template>
+                  <el-menu-item index="2-1">地形数据</el-menu-item>
+                  <el-menu-item index="2-2">坡度</el-menu-item>
+                  <el-menu-item index="2-3">坡向</el-menu-item>
+                  <el-menu-item index="2-4">地形起伏度</el-menu-item>
+                </el-sub-menu>
+                <el-sub-menu index="3">
+                  <template #title>
+                    <el-icon><document /></el-icon>
+                    <span>气象数据</span>
+                  </template>
+                  <el-menu-item index="3-1">降水量</el-menu-item>
+                  <el-menu-item index="3-2">温度</el-menu-item>
+                  <el-menu-item index="3-3">风速</el-menu-item>
+                </el-sub-menu>
+                <el-sub-menu index="4">
+                  <template #title>
+                    <el-icon><document /></el-icon>
+                    <span>冰川监测数据</span>
+                  </template>
+                  <el-menu-item index="4-1">冰川消融量</el-menu-item>
+                  <el-menu-item index="4-2">冰川运动速率</el-menu-item>
+                  <el-menu-item index="4-3">冰川厚度</el-menu-item>
+                </el-sub-menu>
+                <el-sub-menu index="5">
+                  <template #title>
+                    <el-icon><document /></el-icon>
+                    <span>水文数据</span>
+                  </template>
+                  <el-menu-item index="5-1">河流流量</el-menu-item>
+                  <el-menu-item index="5-2">融水量</el-menu-item>
+                </el-sub-menu>
+                <el-sub-menu index="6">
+                  <template #title>
+                    <el-icon><document /></el-icon>
+                    <span>历史灾害数据</span>
+                  </template>
+                  <el-menu-item index="6-1">历史泥石流时间</el-menu-item>
+                  <el-menu-item index="6-2">历史泥石流规模</el-menu-item>
+                  <el-menu-item index="6-3">历史泥石流地点</el-menu-item>
+                </el-sub-menu>
+                <el-sub-menu index="7">
+                  <template #title>
+                    <el-icon><document /></el-icon>
+                    <span>冰岩崩专题数据</span>
+                  </template>
+                  <el-sub-menu index="7-1">
+                    <template #title>
+                      <el-icon><document /></el-icon
+                      ><span>地质构造特征数据</span></template
+                    >
+                    <el-menu-item index="7-1-1">地质构造</el-menu-item>
+                    <el-menu-item index="7-1-2">岩层特征</el-menu-item>
+                    <el-menu-item index="7-1-3">地质构造类型</el-menu-item>
+                  </el-sub-menu>
+                  <el-sub-menu index="7-2">
+                    <template #title>
+                      <el-icon><document /></el-icon
+                      ><span>地形地貌数据</span></template
+                    >
+                    <el-menu-item index="7-2-1">地形图</el-menu-item>
+                    <el-menu-item index="7-2-2">地貌图</el-menu-item>
+                    <el-menu-item index="7-2-3">地形高程</el-menu-item>
+                  </el-sub-menu>
+                  <el-sub-menu index="7-3">
+                    <template #title>
+                      <el-icon><document /></el-icon
+                      ><span>气候环境数据</span></template
+                    >
+                    <el-menu-item index="7-3-1">气温</el-menu-item>
+                    <el-menu-item index="7-3-2">气温</el-menu-item>
+                    <el-menu-item index="7-3-3">风速</el-menu-item>
+                  </el-sub-menu>
+                  <el-sub-menu index="7-4">
+                    <template #title>
+                      <el-icon><document /></el-icon
+                      ><span>植被覆盖数据</span></template
+                    >
+                    <el-menu-item index="7-4-1">植被类型</el-menu-item>
+                    <el-menu-item index="7-4-2">植被覆盖率</el-menu-item>
+                    <el-menu-item index="7-4-3">植被分布</el-menu-item>
+                  </el-sub-menu>
+                  <el-sub-menu index="7-5">
+                    <template #title>
+                      <el-icon><document /></el-icon
+                      ><span>历史灾害数据</span></template
+                    >
+                    <el-menu-item index="7-5-1"
+                      >历史冰岩崩事件记录</el-menu-item
+                    >
+                    <el-menu-item index="7-5-2">灾害影响范围</el-menu-item>
+                    <el-menu-item index="7-5-3">灾害发生频率</el-menu-item>
+                  </el-sub-menu>
+                </el-sub-menu>
+                <el-sub-menu index="8">
+                  <template #title>
+                    <el-icon><document /></el-icon>
+                    <span>溃决洪水专题数据</span>
+                  </template>
+                  <el-sub-menu index="8-1">
+                    <template #title>
+                      <el-icon><document /></el-icon
+                      ><span>水文数据</span></template
+                    >
+                    <el-menu-item index="8-1-1">水文测报数据</el-menu-item>
+                    <el-menu-item index="8-1-2">水流速度</el-menu-item>
+                    <el-menu-item index="8-1-3">水位高度</el-menu-item>
+                    <el-menu-item index="8-1-4">流量</el-menu-item>
+                  </el-sub-menu>
+                  <el-sub-menu index="8-2">
+                    <template #title>
+                      <el-icon><document /></el-icon
+                      ><span>地形地貌数据</span></template
+                    >
+                    <el-menu-item index="8-2-1">地形图</el-menu-item>
+                    <el-menu-item index="8-2-2">地貌图</el-menu-item>
+                    <el-menu-item index="8-2-3">地形高程</el-menu-item>
+                  </el-sub-menu>
+                  <el-sub-menu index="8-3">
+                    <template #title>
+                      <el-icon><document /></el-icon
+                      ><span>降雨数据</span></template
+                    >
+                    <el-menu-item index="8-3-1">降雨量</el-menu-item>
+                    <el-menu-item index="8-3-2">降雨强度</el-menu-item>
+                    <el-menu-item index="8-3-3">降雨时空分布</el-menu-item>
+                  </el-sub-menu>
+                  <el-sub-menu index="8-4">
+                    <template #title>
+                      <el-icon><document /></el-icon
+                      ><span>水利工程数据</span></template
+                    >
+                    <el-menu-item index="8-4-1">水库水文数据</el-menu-item>
+                    <el-menu-item index="8-4-2">河流水文数据</el-menu-item>
+                    <el-menu-item index="8-4-3">堤坝结构</el-menu-item>
+                  </el-sub-menu>
+                  <el-sub-menu index="8-5">
+                    <template #title>
+                      <el-icon><document /></el-icon
+                      ><span>历史洪水事件</span></template
+                    >
+                    <el-menu-item index="8-5-1">历史洪水事件记录</el-menu-item>
+                    <el-menu-item index="8-5-2">洪水泛滥范围</el-menu-item>
+                    <el-menu-item index="8-5-3">灾害影响情况</el-menu-item>
+                  </el-sub-menu>
+                </el-sub-menu>
+                <el-sub-menu index="9">
+                  <template #title>
+                    <el-icon><document /></el-icon>
+                    <span>调控防控专题数据</span>
+                  </template>
+                  <el-sub-menu index="9-1">
+                    <template #title>
+                      <el-icon><document /></el-icon
+                      ><span>地形数据</span></template
+                    >
+                    <el-menu-item index="-1-1">坡度</el-menu-item>
+                    <el-menu-item index="9-1-2">坡向</el-menu-item>
+                    <el-menu-item index="9-1-3">地形起伏度</el-menu-item>
+                  </el-sub-menu>
+                  <el-sub-menu index="9-2">
+                    <template #title>
+                      <el-icon><document /></el-icon
+                      ><span>气象数据</span></template
+                    >
+                    <el-menu-item index="9-2-1">降水量</el-menu-item>
+                    <el-menu-item index="9-2-2">温度</el-menu-item>
+                    <el-menu-item index="9-2-3">风速</el-menu-item>
+                  </el-sub-menu>
+                  <el-sub-menu index="9-3">
+                    <template #title>
+                      <el-icon><document /></el-icon
+                      ><span>冰川监测数据</span></template
+                    >
+                    <el-menu-item index="9-3-1">冰川消融量</el-menu-item>
+                    <el-menu-item index="9-3-2">冰川运动速率</el-menu-item>
+                    <el-menu-item index="9-3-3">冰川厚度</el-menu-item>
+                  </el-sub-menu>
+                  <el-sub-menu index="9-4">
+                    <template #title>
+                      <el-icon><document /></el-icon
+                      ><span>水文数据</span></template
+                    >
+                    <el-menu-item index="9-4-1">河流流量</el-menu-item>
+                    <el-menu-item index="9-4-2">融水量</el-menu-item>
+                  </el-sub-menu>
+                  <el-sub-menu index="9-5">
+                    <template #title>
+                      <el-icon><document /></el-icon
+                      ><span>历史灾害数据</span></template
+                    >
+                    <el-menu-item index="9-5-1">历史泥石流时间</el-menu-item>
+                    <el-menu-item index="9-5-2">历史泥石流规模</el-menu-item>
+                    <el-menu-item index="9-5-3">历史泥石流地点</el-menu-item>
+                  </el-sub-menu>
+                </el-sub-menu>
+              </el-menu>
+            </el-col>
+          </el-row>
         </div>
       </div>
     </div>
-    <div class="plugin3">
-      <RouterView
-        :class="{ hidden1: null === activeIndex }"
-        @checkboxclicked1="handelseclick1"
-        @checkboxclicked2="handelseclick2"
-        @checkboxclicked3="handelseclick3"
-        @checkboxclicked4="handelseclick4"
-        @checkboxclicked5="handelseclick5"
-        @checkboxclicked="handelseclick"
-      />
-    </div>
   </div>
 </template>
-<script>
-import { RouterLink, RouterView } from 'vue-router'
-export default {
-  name: 'ZyMl',
-  data() {
-    let activeIndex = 0
-    return {
-      activeIndex,
-    }
-  },
-  methods: {
-    showImage(number) {
-      if (this.activeIndex === number) {
-        this.activeIndex = null
-      } else {
-        this.activeIndex = number
-      }
-      //   console.log(number)
-    },
-    handelseclick1(event) {
-      const checked = event.checked
-      this.$emit('checkboxclicked1', { checked })
-    },
-    handelseclick2(event) {
-      const checked = event.checked
-      this.$emit('checkboxclicked2', { checked })
-    },
-    handelseclick3(event) {
-      const checked = event.checked
-      this.$emit('checkboxclicked3', { checked })
-    },
-    handelseclick4(event) {
-      const checked = event.checked
-      this.$emit('checkboxclicked4', { checked })
-    },
-    handelseclick5(event) {
-      const checked = event.checked
-      this.$emit('checkboxclicked5', { checked })
-    },
-    handelseclick(event) {
-      // if (event.checked) {
-      //   console.log('111')
-      // } else {
-      //   console.log('222')
-      // }
-      const checked = event.checked
-      this.$emit('checkboxclicked', { checked })
-    },
-  },
-}
+<script setup>
+import {
+  Document,
+  Menu as IconMenu,
+  Location,
+  Setting,
+} from '@element-plus/icons-vue'
 </script>
 <style>
 .catlog {
@@ -451,97 +251,6 @@ export default {
   width: 40px;
   background-image: url(../assets/img/c2.png);
 }
-/* 点击按钮后移动 */
-.catlog1 {
-  /* right: 340px; */
-  position: absolute;
-  top: 135px;
-  right: 340px;
-  height: 930px;
-
-  width: 40px;
-  background-image: url(../assets/img/c2.png);
-  display: none; /*不显示选框 */
-}
-.catlog .plugin1 {
-  position: relative;
-  left: 0;
-  top: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 50px;
-}
-
-.plugin1 .p1 .img {
-  position: absolute;
-  top: 0;
-}
-.plugin1 .p2 .img {
-  position: absolute;
-  top: 50px;
-}
-.plugin1 .p3 .img {
-  position: absolute;
-  top: 100px;
-}
-.plugin1 .p4 .img {
-  position: absolute;
-  top: 150px;
-}
-.plugin1 .p5 .img {
-  position: absolute;
-  top: 200px;
-}
-.plugin1 .p6 .img {
-  position: absolute;
-  top: 250px;
-}
-.plugin1 .p7 .img {
-  position: absolute;
-  top: 300px;
-}
-.plugin1 .p8 .img {
-  position: absolute;
-  top: 350px;
-}
-.plugin1 .p9 .img {
-  position: absolute;
-  top: 400px;
-}
-.plugin1 .p10 .img {
-  position: absolute;
-  top: 450px;
-}
-.plugin1 .p11 .img {
-  position: absolute;
-  top: 500px;
-}
-
-.plugin1 .img1 {
-  z-index: 2;
-  transform: translate(-21px, 17px); /* 分别向左和向下移动 */
-  top: 50%;
-  left: 50%; /* 通过设置50%将其定位在容器的中心位置 */
-}
-.plugin1 .img2 {
-  z-index: 1;
-  transform: translate(-3.5px, 21px); /* 分别向左和向下移动 */
-  top: 50%;
-  left: 50%; /* 通过设置50%将其定位在容器的中心位置 */
-}
-.plugin1 .img3 {
-  height: 65px;
-  z-index: 3;
-  transform: translate(-19px, 1.5px); /* 分别向左和向下移动 */
-  top: 50%;
-  left: 50%; /* 通过设置50%将其定位在容器的中心位置 */
-}
-.plugin1 a {
-  text-decoration: none;
-}
-.plugin1 .hidden {
-  display: none;
-}
 .content {
   position: absolute;
   right: 20px;
@@ -550,6 +259,7 @@ export default {
   width: 320px;
   overflow: hidden;
 }
+
 .plugin2 img {
   position: absolute;
   height: 950px;
@@ -560,14 +270,12 @@ export default {
   position: absolute;
   top: 40px;
   left: 10px;
-}
-.plugin3 {
-  position: absolute;
-  top: 10px;
-  right: 140px;
-  width: 500px;
-}
-.plugin3 .hidden1 {
-  display: none;
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: 0.9px;
+  line-height: 26.06px;
+  color: rgba(255, 255, 255, 1);
+  font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande',
+    'Lucida Sans', Arial, sans-serif;
 }
 </style>

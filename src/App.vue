@@ -1,16 +1,9 @@
 <template>
-  <div>11111</div>
   <div class="top-container">
     <div id="cesiumContainer"></div>
     <zh-jc></zh-jc>
     <le-th @openLayers="openLayers"></le-th>
-    <zy-ml
-      @checkboxclicked1="handleCheckboxClicked1"
-      @checkboxclicked2="handleCheckboxClicked2"
-      @checkboxclicked3="handleCheckboxClicked3"
-      @checkboxclicked4="handleCheckboxClicked4"
-      @checkboxclicked5="handleCheckboxClicked5"
-    ></zy-ml>
+    <zy-ml></zy-ml>
   </div>
 </template>
 <script setup>
@@ -21,7 +14,7 @@ import Dialog from './js/dialog.js'
 import ZhJc from './components/ZhJc.vue'
 import LeTh from './components/LeTh.vue'
 import ZyMl from './components/ZyMl.vue'
-import Heatmap3d from './js/heatmap3d.js'
+// import Heatmap3d from './js/heatmap3d.js'
 
 const viewer = ref(null)
 const heatmapLayer = ref(null)
@@ -144,16 +137,16 @@ const addLayer1 = () => {
   })
   const layers = viewer.value.scene.imageryLayers
   layers.addImageryProvider(wmsImageryProvider)
-  // viewer.value.camera.flyTo({
-  //   destination: Cesium.Cartesian3.fromDegrees(95.0, 29.735, 4500),
-  //   //相机的姿态
-  //   orientation: {
-  //     heading: Cesium.Math.toRadians(0.0), //朝向
-  //     pitch: Cesium.Math.toRadians(-40), //俯仰
-  //     // pitch: Cesium.Math.toRadians(-90), //俯仰
-  //     roll: 0.0, //滚转
-  //   },
-  // })
+  viewer.value.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(95.0, 29.735, 4500),
+    //相机的姿态
+    orientation: {
+      heading: Cesium.Math.toRadians(0.0), //朝向
+      pitch: Cesium.Math.toRadians(-40), //俯仰
+      // pitch: Cesium.Math.toRadians(-90), //俯仰
+      roll: 0.0, //滚转
+    },
+  })
 }
 
 const removeLayer1 = () => {
@@ -190,16 +183,16 @@ const addLayer2 = () => {
   const layers = viewer.value.scene.imageryLayers
 
   layers.addImageryProvider(wmsImageryProvider1)
-  // viewer.value.camera.flyTo({
-  //   destination: Cesium.Cartesian3.fromDegrees(95.0, 29.735, 4500),
-  //   //相机的姿态
-  //   orientation: {
-  //     heading: Cesium.Math.toRadians(0.0), //朝向
-  //     pitch: Cesium.Math.toRadians(-40), //俯仰
-  //     // pitch: Cesium.Math.toRadians(-90), //俯仰
-  //     roll: 0.0, //滚转
-  //   },
-  // })
+  viewer.value.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(95.0, 29.735, 4500),
+    //相机的姿态
+    orientation: {
+      heading: Cesium.Math.toRadians(0.0), //朝向
+      pitch: Cesium.Math.toRadians(-40), //俯仰
+      // pitch: Cesium.Math.toRadians(-90), //俯仰
+      roll: 0.0, //滚转
+    },
+  })
 }
 //移除路网
 const removeLayer2 = () => {
