@@ -1,296 +1,494 @@
 <template>
-  <div id="res">
-    <div class="content">
-      <img src="../assets/img/c1.png" alt="" />
-      <div class="data scroll-container">
-        <el-menu default-active="1">
-          <el-sub-menu index="1">
-            <template #title>
-              <el-icon><location /></el-icon>
-              <span>基础地理空间数据</span>
-            </template>
-            <el-menu-item index="1-1">影像数据</el-menu-item>
-            <el-menu-item index="1-2">路网数据</el-menu-item>
-            <el-menu-item index="1-3">灾害风险区划</el-menu-item>
-            <el-menu-item index="1-4">历史灾害点</el-menu-item>
-            <el-menu-item index="1-5">古滑坡灾害链</el-menu-item>
-          </el-sub-menu>
-          <el-sub-menu index="2">
-            <template #title>
-              <el-icon><icon-menu /></el-icon>
-              <span>冰川泥石流专题数据</span>
-            </template>
-            <el-menu-item index="2-1">地形数据</el-menu-item>
-            <el-menu-item index="2-2">坡度</el-menu-item>
-            <el-menu-item index="2-3">坡向</el-menu-item>
-            <el-menu-item index="2-4">地形起伏度</el-menu-item>
-          </el-sub-menu>
-          <el-sub-menu index="3">
-            <template #title>
-              <el-icon><document /></el-icon>
-              <span>气象数据</span>
-            </template>
-            <el-menu-item index="3-1">降水量</el-menu-item>
-            <el-menu-item index="3-2">温度</el-menu-item>
-            <el-menu-item index="3-3">风速</el-menu-item>
-          </el-sub-menu>
-          <el-sub-menu index="4">
-            <template #title>
-              <el-icon><document /></el-icon>
-              <span>冰川监测数据</span>
-            </template>
-            <el-menu-item index="4-1">冰川消融量</el-menu-item>
-            <el-menu-item index="4-2">冰川运动速率</el-menu-item>
-            <el-menu-item index="4-3">冰川厚度</el-menu-item>
-          </el-sub-menu>
-          <el-sub-menu index="5">
-            <template #title>
-              <el-icon><document /></el-icon>
-              <span>水文数据</span>
-            </template>
-            <el-menu-item index="5-1">河流流量</el-menu-item>
-            <el-menu-item index="5-2">融水量</el-menu-item>
-          </el-sub-menu>
-          <el-sub-menu index="6">
-            <template #title>
-              <el-icon><document /></el-icon>
-              <span>历史灾害数据</span>
-            </template>
-            <el-menu-item index="6-1">历史泥石流时间</el-menu-item>
-            <el-menu-item index="6-2">历史泥石流规模</el-menu-item>
-            <el-menu-item index="6-3">历史泥石流地点</el-menu-item>
-          </el-sub-menu>
-          <el-sub-menu index="7">
-            <template #title>
-              <el-icon><document /></el-icon>
-              <span>冰岩崩专题数据</span>
-            </template>
-            <el-sub-menu index="7-1">
-              <template #title>
-                <el-icon><document /></el-icon
-                ><span>地质构造特征数据</span></template
-              >
-              <el-menu-item index="7-1-1">地质构造</el-menu-item>
-              <el-menu-item index="7-1-2">岩层特征</el-menu-item>
-              <el-menu-item index="7-1-3">地质构造类型</el-menu-item>
-            </el-sub-menu>
-            <el-sub-menu index="7-2">
-              <template #title>
-                <el-icon><document /></el-icon
-                ><span>地形地貌数据</span></template
-              >
-              <el-menu-item index="7-2-1">地形图</el-menu-item>
-              <el-menu-item index="7-2-2">地貌图</el-menu-item>
-              <el-menu-item index="7-2-3">地形高程</el-menu-item>
-            </el-sub-menu>
-            <el-sub-menu index="7-3">
-              <template #title>
-                <el-icon><document /></el-icon
-                ><span>气候环境数据</span></template
-              >
-              <el-menu-item index="7-3-1">气温</el-menu-item>
-              <el-menu-item index="7-3-2">气温</el-menu-item>
-              <el-menu-item index="7-3-3">风速</el-menu-item>
-            </el-sub-menu>
-            <el-sub-menu index="7-4">
-              <template #title>
-                <el-icon><document /></el-icon
-                ><span>植被覆盖数据</span></template
-              >
-              <el-menu-item index="7-4-1">植被类型</el-menu-item>
-              <el-menu-item index="7-4-2">植被覆盖率</el-menu-item>
-              <el-menu-item index="7-4-3">植被分布</el-menu-item>
-            </el-sub-menu>
-            <el-sub-menu index="7-5">
-              <template #title>
-                <el-icon><document /></el-icon
-                ><span>历史灾害数据</span></template
-              >
-              <el-menu-item index="7-5-1">历史冰岩崩事件记录</el-menu-item>
-              <el-menu-item index="7-5-2">灾害影响范围</el-menu-item>
-              <el-menu-item index="7-5-3">灾害发生频率</el-menu-item>
-            </el-sub-menu>
-          </el-sub-menu>
-          <el-sub-menu index="8">
-            <template #title>
-              <el-icon><document /></el-icon>
-              <span>溃决洪水专题数据</span>
-            </template>
-            <el-sub-menu index="8-1">
-              <template #title>
-                <el-icon><document /></el-icon><span>水文数据</span></template
-              >
-              <el-menu-item index="8-1-1">水文测报数据</el-menu-item>
-              <el-menu-item index="8-1-2">水流速度</el-menu-item>
-              <el-menu-item index="8-1-3">水位高度</el-menu-item>
-              <el-menu-item index="8-1-4">流量</el-menu-item>
-            </el-sub-menu>
-            <el-sub-menu index="8-2">
-              <template #title>
-                <el-icon><document /></el-icon
-                ><span>地形地貌数据</span></template
-              >
-              <el-menu-item index="8-2-1">地形图</el-menu-item>
-              <el-menu-item index="8-2-2">地貌图</el-menu-item>
-              <el-menu-item index="8-2-3">地形高程</el-menu-item>
-            </el-sub-menu>
-            <el-sub-menu index="8-3">
-              <template #title>
-                <el-icon><document /></el-icon><span>降雨数据</span></template
-              >
-              <el-menu-item index="8-3-1">降雨量</el-menu-item>
-              <el-menu-item index="8-3-2">降雨强度</el-menu-item>
-              <el-menu-item index="8-3-3">降雨时空分布</el-menu-item>
-            </el-sub-menu>
-            <el-sub-menu index="8-4">
-              <template #title>
-                <el-icon><document /></el-icon
-                ><span>水利工程数据</span></template
-              >
-              <el-menu-item index="8-4-1">水库水文数据</el-menu-item>
-              <el-menu-item index="8-4-2">河流水文数据</el-menu-item>
-              <el-menu-item index="8-4-3">堤坝结构</el-menu-item>
-            </el-sub-menu>
-            <el-sub-menu index="8-5">
-              <template #title>
-                <el-icon><document /></el-icon
-                ><span>历史洪水事件</span></template
-              >
-              <el-menu-item index="8-5-1">历史洪水事件记录</el-menu-item>
-              <el-menu-item index="8-5-2">洪水泛滥范围</el-menu-item>
-              <el-menu-item index="8-5-3">灾害影响情况</el-menu-item>
-            </el-sub-menu>
-          </el-sub-menu>
-          <el-sub-menu index="9">
-            <template #title>
-              <el-icon><document /></el-icon>
-              <span>调控防控专题数据</span>
-            </template>
-            <el-sub-menu index="9-1">
-              <template #title>
-                <el-icon><document /></el-icon><span>地形数据</span></template
-              >
-              <el-menu-item index="-1-1">坡度</el-menu-item>
-              <el-menu-item index="9-1-2">坡向</el-menu-item>
-              <el-menu-item index="9-1-3">地形起伏度</el-menu-item>
-            </el-sub-menu>
-            <el-sub-menu index="9-2">
-              <template #title>
-                <el-icon><document /></el-icon><span>气象数据</span></template
-              >
-              <el-menu-item index="9-2-1">降水量</el-menu-item>
-              <el-menu-item index="9-2-2">温度</el-menu-item>
-              <el-menu-item index="9-2-3">风速</el-menu-item>
-            </el-sub-menu>
-            <el-sub-menu index="9-3">
-              <template #title>
-                <el-icon><document /></el-icon
-                ><span>冰川监测数据</span></template
-              >
-              <el-menu-item index="9-3-1">冰川消融量</el-menu-item>
-              <el-menu-item index="9-3-2">冰川运动速率</el-menu-item>
-              <el-menu-item index="9-3-3">冰川厚度</el-menu-item>
-            </el-sub-menu>
-            <el-sub-menu index="9-4">
-              <template #title>
-                <el-icon><document /></el-icon><span>水文数据</span></template
-              >
-              <el-menu-item index="9-4-1">河流流量</el-menu-item>
-              <el-menu-item index="9-4-2">融水量</el-menu-item>
-            </el-sub-menu>
-            <el-sub-menu index="9-5">
-              <template #title>
-                <el-icon><document /></el-icon
-                ><span>历史灾害数据</span></template
-              >
-              <el-menu-item index="9-5-1">历史泥石流时间</el-menu-item>
-              <el-menu-item index="9-5-2">历史泥石流规模</el-menu-item>
-              <el-menu-item index="9-5-3">历史泥石流地点</el-menu-item>
-            </el-sub-menu>
-          </el-sub-menu>
-        </el-menu>
-      </div>
+  <div class="right-container">
+    <div class="tree-content">
+      <el-tree
+        style="max-width: 600px"
+        :data="treeData"
+        :props="defaultProps"
+        show-checkbox
+        @check="handleClick"
+        ref="treeRef"
+      />
     </div>
   </div>
 </template>
+
 <script setup>
-import {
-  Document,
-  Menu as IconMenu,
-  Location,
-  Setting,
-} from '@element-plus/icons-vue'
+import { onMounted, onUnmounted, ref, getCurrentInstance } from 'vue'
+// 树组件实例
+const treeRef = ref(null)
+
+//自定义事件（子传父）
+let $emit = defineEmits(['checkedLayers'])
+// 树形数据
+const treeData = ref([
+  {
+    id: 1,
+    name: '基础地理空间数据',
+    children: [
+      {
+        id: 11,
+        name: '影像数据',
+      },
+      {
+        id: 12,
+        name: '路网数据',
+      },
+      {
+        id: 13,
+        name: '灾害风险区划',
+      },
+      {
+        id: 14,
+        name: '历史灾害点',
+      },
+      {
+        id: 15,
+        name: '古滑坡灾害链',
+      },
+    ],
+  },
+  {
+    id: 2,
+    name: '冰川泥石流专题数据',
+    children: [
+      {
+        id: 21,
+        name: '地形数据',
+      },
+      {
+        id: 22,
+        name: '坡度',
+      },
+      {
+        id: 23,
+        name: '坡向',
+      },
+      {
+        id: 24,
+        name: '地形起伏度',
+      },
+    ],
+  },
+  {
+    id: 3,
+    name: '气象数据',
+    children: [
+      {
+        id: 31,
+        name: '降水量',
+      },
+      {
+        id: 32,
+        name: '温度',
+      },
+      {
+        id: 33,
+        name: '风速',
+      },
+    ],
+  },
+  {
+    id: 4,
+    name: '冰川监测数据',
+    children: [
+      {
+        id: 41,
+        name: '冰川消融量',
+      },
+      {
+        id: 42,
+        name: '冰川运动速率',
+      },
+      {
+        id: 43,
+        name: '冰川厚度',
+      },
+    ],
+  },
+  {
+    id: 5,
+    name: '水文数据',
+    children: [
+      {
+        id: 51,
+        name: '河流流量',
+      },
+      {
+        id: 52,
+        name: '融水量',
+      },
+    ],
+  },
+  {
+    id: 6,
+    name: '历史灾害数据',
+    children: [
+      {
+        id: 61,
+        name: '历史泥石流时间',
+      },
+      {
+        id: 62,
+        name: '历史泥石流规模',
+      },
+      {
+        id: 63,
+        name: '历史泥石流地点',
+      },
+    ],
+  },
+  {
+    id: 7,
+    name: '冰岩崩专题数据',
+    children: [
+      {
+        id: 71,
+        name: '地质构造特征数据',
+        children: [
+          {
+            id: 711,
+            name: '地质构造',
+          },
+          {
+            id: 712,
+            name: '岩层特征',
+          },
+          {
+            id: 713,
+            name: '地质构造类型',
+          },
+        ],
+      },
+      {
+        id: 72,
+        name: '地形地貌数据',
+        children: [
+          {
+            id: 721,
+            name: '地形图',
+          },
+          {
+            id: 722,
+            name: '地貌图',
+          },
+          {
+            id: 723,
+            name: '地形高程',
+          },
+        ],
+      },
+      {
+        id: 73,
+        name: '气候环境数据',
+        children: [
+          {
+            id: 731,
+            name: '气温',
+          },
+          {
+            id: 732,
+            name: '湿度',
+          },
+          {
+            id: 733,
+            name: '风速',
+          },
+        ],
+      },
+      {
+        id: 74,
+        name: '植被覆盖数据',
+        children: [
+          {
+            id: 741,
+            name: '植被类型',
+          },
+          {
+            id: 742,
+            name: '植被覆盖率',
+          },
+          {
+            id: 743,
+            name: '植被分布',
+          },
+        ],
+      },
+      {
+        id: 75,
+        name: '历史灾害数据',
+        children: [
+          {
+            id: 751,
+            name: '历史冰岩崩事件记录',
+          },
+          {
+            id: 752,
+            name: '灾害影响范围',
+          },
+          {
+            id: 753,
+            name: '灾害发生频率',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 8,
+    name: '溃决洪水专题数据',
+    children: [
+      {
+        id: 81,
+        name: '水文数据',
+        children: [
+          {
+            id: 811,
+            name: '水文测报数据',
+          },
+          {
+            id: 812,
+            name: '水流速度',
+          },
+          {
+            id: 813,
+            name: '水位高度',
+          },
+          {
+            id: 813,
+            name: '流量',
+          },
+        ],
+      },
+      {
+        id: 82,
+        name: '地形地貌数据',
+        children: [
+          {
+            id: 821,
+            name: '地形图',
+          },
+          {
+            id: 822,
+            name: '地貌图',
+          },
+          {
+            id: 823,
+            name: '地形高程',
+          },
+        ],
+      },
+      {
+        id: 83,
+        name: '降雨数据',
+        children: [
+          {
+            id: 821,
+            name: '降雨量',
+          },
+          {
+            id: 822,
+            name: '降雨强度',
+          },
+          {
+            id: 823,
+            name: '降雨时空分布',
+          },
+        ],
+      },
+      {
+        id: 84,
+        name: '水利工程数据',
+        children: [
+          {
+            id: 841,
+            name: '水库水文数据',
+          },
+          {
+            id: 842,
+            name: '河流水文数据',
+          },
+          {
+            id: 843,
+            name: '堤坝结构',
+          },
+        ],
+      },
+      {
+        id: 85,
+        name: '历史洪水事件',
+        children: [
+          {
+            id: 851,
+            name: '历史洪水事件记录',
+          },
+          {
+            id: 852,
+            name: '洪水泛滥范围',
+          },
+          {
+            id: 853,
+            name: '灾害影响情况',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 9,
+    name: '调控防控专题数据',
+    children: [
+      {
+        id: 91,
+        name: '地形数据',
+        children: [
+          {
+            id: 911,
+            name: '历史洪水事件记录',
+          },
+          {
+            id: 912,
+            name: '洪水泛滥范围',
+          },
+          {
+            id: 913,
+            name: '灾害影响情况',
+          },
+        ],
+      },
+      {
+        id: 92,
+        name: '气象数据',
+        children: [
+          {
+            id: 921,
+            name: '降水量',
+          },
+          {
+            id: 922,
+            name: '温度',
+          },
+          {
+            id: 923,
+            name: '风速',
+          },
+        ],
+      },
+      {
+        id: 93,
+        name: '冰川监测数据',
+
+        children: [
+          {
+            id: 931,
+            name: '冰川消融量',
+          },
+          {
+            id: 932,
+            name: '冰川运动速率',
+          },
+          {
+            id: 933,
+            name: '冰川厚度',
+          },
+        ],
+      },
+      {
+        id: 94,
+        name: '水文数据',
+        children: [
+          {
+            id: 941,
+            name: '河流流量',
+          },
+          {
+            id: 942,
+            name: '融水量',
+          },
+        ],
+      },
+      {
+        id: 95,
+        name: '历史灾害数据',
+        children: [
+          {
+            id: 951,
+            name: '历史泥石流时间',
+          },
+          {
+            id: 952,
+            name: '历史泥石流规模',
+          },
+          {
+            id: 953,
+            name: '历史泥石流地点',
+          },
+        ],
+      },
+    ],
+  },
+])
+// 树节点属性映射关系
+const defaultProps = {
+  children: 'children',
+  label: 'name',
+}
+
+/**
+ * 点击节点事件句柄方法
+ */
+// const handleNodeClick = (node, data) => {
+//   console.log(node, data)
+//   console.log('111')
+// }
+const handleClick = (node, data) => {
+  // console.log('Clicked Node Instance:', node) // 节点的实例信息
+  // console.log('Clicked Node Data:', data) // 节点的原始数据
+
+  // 打印当前勾选的节点数据
+  if (treeRef.value) {
+    const checkedNodes = []
+
+    for (const node of treeRef.value.getCheckedNodes()) {
+      checkedNodes.push(node.id) // 假设节点数据中有 id 字段
+    }
+    // console.log('Selected Node IDs:', checkedNodes) // 打印选中节点的 id 数组
+    $emit('checkedLayers', checkedNodes)
+    // const checkedNodes = treeRef.value.getCheckedNodes() // 获取选中的节点数据
+    // console.log(treeRef.value.getCheckedNodes().length)
+    // console.log(checkedNodes)
+  }
+}
 </script>
 
 <style lang="scss" scoped>
-.catlog {
-  position: absolute;
-  top: 135px;
-  right: 30px;
-  height: 930px;
-
-  width: 40px;
-  background-image: url(../assets/img/c2.png);
+:deep(.el-tree) {
+  --el-fill-color-blank: transparent;
+  --el-tree-node-content-height: 30px;
+  font-size: 16px;
+  color: white;
 }
-
-img {
-  position: absolute;
-  height: 950px;
-  z-index: 400;
+:deep(.el-tree-node:focus > .el-tree-node__content) {
+  background-color: transparent; //激活颜色
 }
-
-.content {
+:deep(.el-tree-node__content:hover) {
+  background-color: #243857; //hover颜色
+}
+.right-container {
+  max-height: 950px;
   position: absolute;
   right: 20px;
   top: 115px;
-  height: 89%;
+  height: 950px;
   width: 320px;
-  overflow: hidden;
-}
-.data {
-  z-index: 500;
-  position: absolute;
-  top: 40px;
-  left: 15px;
-}
+  background-image: url(../assets/img/c1.png);
 
-:deep(.el-menu) {
-  border-right: none !important;
-  background-color: transparent;
-}
-:deep(.el-menu-item) {
-  font-size: 16px; /* 修改文字大小 */
-  color: white; /* 修改文字颜色 */
-  line-height: 5px !important;
-}
-.data span {
-  padding: 0%;
-}
-
-/* 修改 el-sub-menu 标题文字样式 */
-:deep(.el-sub-menu__title) {
-  font-size: 18px; /* 修改标题文字大小 */
-  color: white; /* 修改标题文字颜色 */
-  // line-height: 15px !important;
-}
-// :deep(.el-sub-menu__title > span) {
-//   line-height: 15px !important;
-// }
-
-/* 定义滚动容器的样式 */
-.scroll-container {
-  max-height: 900px; /* 设置最大高度 */
-  overflow-y: auto; /* 垂直滚动条 */
-}
-/* 自定义滚动条样式（可选） */
-.scroll-container::-webkit-scrollbar {
-  width: 5px; /* 滚动条宽度 */
-}
-.scroll-container::-webkit-scrollbar-thumb {
-  background-color: #ccc; /* 滚动条颜色 */
-  border-radius: 4px; /* 滚动条圆角 */
-}
-.scroll-container::-webkit-scrollbar-thumb:hover {
-  background-color: #999; /* 滚动条悬停颜色 */
+  .tree-content {
+    max-height: 100%;
+    width: 100%;
+    margin-top: 40px;
+    // overflow-y: scroll;
+    overflow: hidden;
+  }
 }
 </style>
