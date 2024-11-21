@@ -4,13 +4,7 @@
     <div id="cesiumContainer"></div>
     <zh-jc></zh-jc>
     <le-th @openLayers="openLayers"></le-th>
-    <zy-ml
-      @checkboxclicked1="handleCheckboxClicked1"
-      @checkboxclicked2="handleCheckboxClicked2"
-      @checkboxclicked3="handleCheckboxClicked3"
-      @checkboxclicked4="handleCheckboxClicked4"
-      @checkboxclicked5="handleCheckboxClicked5"
-    ></zy-ml>
+    <zy-ml @checkedLayers="checkedLayers"></zy-ml>
   </div>
 </template>
 <script setup>
@@ -94,6 +88,60 @@ onMounted(async () => {
   }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
 })
 
+const checkedLayers = ps => {
+  // console.log(ps)
+  for (const p of ps) {
+    // console.log(p)
+    if (p === 11) {
+      addLayer1()
+      // console.log('11')
+    }
+    if (p !== 11) {
+      removeLayer1()
+      // console.log('110')
+    }
+    if (p === 12) {
+      addLayer2()
+      // console.log('12')
+    }
+    if (p !== 12) {
+      removeLayer2()
+      // console.log('120')
+    }
+    if (p === 13) {
+    }
+    if (p === 14) {
+      addLayer4()
+    }
+    if (p !== 14) {
+      removeLayer4()
+    }
+    if (p === 15) {
+      addLayer5()
+    }
+    if (p !== 15) {
+      removeLayer5()
+    }
+    if (p !== null) {
+      // console.log('111')
+      viewer.value.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(95.0, 29.735, 4500),
+        //相机的姿态
+        orientation: {
+          heading: Cesium.Math.toRadians(0.0), //朝向
+          pitch: Cesium.Math.toRadians(-40), //俯仰
+          // pitch: Cesium.Math.toRadians(-90), //俯仰
+          roll: 0.0, //滚转
+        },
+      })
+    }
+  }
+}
+
+const openLayers = (p1, p2, p3, p4, p5) => {
+  // console.log(p5)
+  addLayer3(p1, p2, p3, p4, p5)
+}
 // 先获取点位的json信息
 const getJson = async () => {
   const responses = []
@@ -113,21 +161,6 @@ const getJson = async () => {
   // responses 数组包含两个响应对象中的 features
   console.log(responses)
 }
-
-// const addLayer = () => {
-//   const wmsImageryProvider = new Cesium.WebMapServiceImageryProvider({
-//     url: '/api/geoserver/ne/wms',
-//     layers: 'ne:滑坡判识',
-//     parameters: {
-//       transparent: true,
-//       format: 'image/jpeg',
-//       // srs: 'EPSG:4326',默认4326，并且此配置不起作用
-//     },
-//     tilingScheme: new Cesium.WebMercatorTilingScheme(), //添加墨卡托投影
-//   })
-//   const layers = viewer.value.scene.imageryLayers
-//   layers.addImageryProvider(wmsImageryProvider)
-// }
 
 //获取数据
 const addLayer1 = () => {
@@ -155,7 +188,6 @@ const addLayer1 = () => {
   //   },
   // })
 }
-
 const removeLayer1 = () => {
   // 假设 viewer 是您的 Cesium Viewer 对象
   const imageryLayers = viewer.value.scene.imageryLayers
@@ -253,17 +285,12 @@ const removeLayer2 = () => {
 //   // })
 // }
 
-const openLayers = (p1, p2, p3, p4, p5) => {
-  console.log(p5)
-  addLayer3(p1, p2, p3, p4, p5)
-}
-
 //加载风险区划
 const addLayer3 = (p1, p2, p3, p4, p5) => {
   // 定义四个顶点的经纬度
   var rectangle = Cesium.Rectangle.fromDegrees(p2, p1, p4, p3)
   // 指定图像的网络地址
-  var imgUrl = `http://45af7e3f.r11.cpolar.top/${p5}`
+  var imgUrl = `https://28e52549795d707d1da2e91bb09c4eb9.loophole.site/${p5}`
   // 创建一个矩形实体，并将图像应用到该矩形上
   viewer.value.entities.add({
     rectangle: {
@@ -300,7 +327,7 @@ const addLayer4 = () => {
         entity.billboard = undefined // 去掉广告牌
       }
 
-      viewer.value.zoomTo(dataSource)
+      // viewer.value.zoomTo(dataSource)
     }
   )
 }
@@ -337,7 +364,7 @@ const addLayer5 = () => {
         }
         entity.billboard = undefined // 去掉广告牌
       }
-      viewer.value.zoomTo(dataSource)
+      // viewer.value.zoomTo(dataSource)
     }
   )
 }
@@ -367,51 +394,13 @@ const removefximg = () => {
   // Assuming viewer.value.entities is a collection to hold entities
   viewer.value.entities.removeAll()
 }
-//地图
-const handleCheckboxClicked1 = event => {
-  if (event.checked) {
-    addLayer1()
-  } else {
-    removeLayer1()
-  }
-}
-//路网
-const handleCheckboxClicked2 = event => {
-  if (event.checked) {
-    addLayer2()
-  } else {
-    removeLayer2()
-  }
-}
-//热力图
-const handleCheckboxClicked3 = event => {
-  if (event.checked) {
-    addLayer3()
-  } else {
-    removefximg()
-  }
-}
-//滑坡判识
-const handleCheckboxClicked4 = event => {
-  if (event.checked) {
-    addLayer4()
-  } else {
-    removeLayer4()
-  }
-}
-//古滑坡灾害链
-const handleCheckboxClicked5 = event => {
-  if (event.checked) {
-    addLayer5()
-  } else {
-    removeLayer5()
-  }
-}
 </script>
 <style>
-/* .top-container {
+.top-container {
   position: relative;
-} */
+  width: 100vw;
+  height: 100vh;
+}
 #cesiumContainer {
   position: absolute;
   left: 0px;
