@@ -1,5 +1,4 @@
 <template>
-  <div>11111</div>
   <div class="top-container">
     <div id="cesiumContainer"></div>
     <zh-jc></zh-jc>
