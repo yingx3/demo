@@ -358,7 +358,7 @@ const removeLayer4 = () => {
     viewer.value.dataSources.remove(dataSourceToRemove)
     // console.log('Data source removed successfully.')
   } else {
-    console.log('No data source to remove.')
+    // console.log('No data source to remove.')
   }
 }
 // 加载古滑坡灾害链
@@ -394,7 +394,7 @@ const removeLayer5 = () => {
     viewer.value.dataSources.remove(dataSourceToRemove)
     // console.log('Data source removed successfully.')
   } else {
-    console.log('No data source to remove.')
+    // console.log('No data source to remove.')
   }
 }
 //移除热力图
