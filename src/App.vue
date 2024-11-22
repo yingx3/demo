@@ -14,7 +14,7 @@ import Dialog from './js/dialog.js'
 import ZhJc from './components/ZhJc.vue'
 import LeTh from './components/LeTh.vue'
 import ZyMl from './components/ZyMl.vue'
-import Heatmap3d from './js/heatmap3d.js'
+// import Heatmap3d from './js/heatmap3d.js'
 
 const viewer = ref(null)
 const heatmapLayer = ref(null)
@@ -89,50 +89,65 @@ onMounted(async () => {
 
 const checkedLayers = ps => {
   // console.log(ps)
-  for (const p of ps) {
-    // console.log(p)
-    if (p === 11) {
-      addLayer1()
-      // console.log('11')
-    }
-    if (p !== 11) {
-      removeLayer1()
-      // console.log('110')
-    }
-    if (p === 12) {
-      addLayer2()
-      // console.log('12')
-    }
-    if (p !== 12) {
-      removeLayer2()
-      // console.log('120')
-    }
-    if (p === 13) {
-    }
-    if (p === 14) {
-      addLayer4()
-    }
-    if (p !== 14) {
-      removeLayer4()
-    }
-    if (p === 15) {
-      addLayer5()
-    }
-    if (p !== 15) {
-      removeLayer5()
-    }
-    if (p !== null) {
-      // console.log('111')
-      viewer.value.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(95.0, 29.735, 4500),
-        //相机的姿态
-        orientation: {
-          heading: Cesium.Math.toRadians(0.0), //朝向
-          pitch: Cesium.Math.toRadians(-40), //俯仰
-          // pitch: Cesium.Math.toRadians(-90), //俯仰
-          roll: 0.0, //滚转
-        },
-      })
+  if (ps.length === 0) {
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(0, 0, 6378137 * 3),
+      orientation: {
+        heading: 0,
+        pitch: Cesium.Math.toRadians(-90),
+        roll: 0,
+      },
+    })
+    removeLayer1()
+    removeLayer2()
+    removeLayer4()
+    removeLayer5()
+  } else {
+    for (const p of ps) {
+      // console.log(p)
+      if (p === 11) {
+        addLayer1()
+        // console.log('11')
+      }
+      if (p !== 11) {
+        removeLayer1()
+        // console.log('110')
+      }
+      if (p === 12) {
+        addLayer2()
+        // console.log('12')
+      }
+      if (p !== 12) {
+        removeLayer2()
+        // console.log('120')
+      }
+      if (p === 13) {
+      }
+      if (p === 14) {
+        addLayer4()
+      }
+      if (p !== 14) {
+        removeLayer4()
+      }
+      if (p === 15) {
+        addLayer5()
+      }
+      if (p !== 15) {
+        removeLayer5()
+      }
+      if (p !== null) {
+        // console.log('111')
+        viewer.value.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(95.0, 29.735, 4500),
+          //相机的姿态
+          orientation: {
+            heading: Cesium.Math.toRadians(0.0), //朝向
+            pitch: Cesium.Math.toRadians(-40), //俯仰
+            // pitch: Cesium.Math.toRadians(-90), //俯仰
+            roll: 0.0, //滚转
+          },
+        })
+      }
     }
   }
 }
