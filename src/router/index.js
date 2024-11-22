@@ -1,94 +1,83 @@
 // src/router/index.js
 
 import { createRouter, createWebHistory } from 'vue-router'
-import BaseData from '../views/BaseData.vue'
-import BaseLayer from '../views/BaseLayer.vue'
-import BiaoJi from '../views/BiaoJi.vue'
-import CeLiang from '../views/CeLiang.vue'
-import MyClean from '../views/MyClean.vue'
-import MyEarth from '../views/MyEarth.vue'
-import NorthArrow from '../views/NorthArrow.vue'
-import SpAn from '../views/SpAn.vue'
-import TwoDimension from '../views/TwoDimension.vue'
-import ZoomOut from '../views/ZoomOut.vue'
-import ZoomIn from '../views/ZoomIn.vue'
 import App from '../App.vue'
-import HomeView from '../views/HomeView.vue'
+// import HomeView from '../views/HomeView.vue'
 
-const router = createRouter({
-  // history: createWebHashHistory(),  // hash 模式
-  history: createWebHistory(import.meta.env.BASE_URL), // history 模式
-  routes: [
-    {
-      path: '/',
-      name: 'myapp',
-      component: App,
-      children: [
-        {
-          path: 'BaseData', // 子路由路径，不需要前置 '/'
-          name: 'BaseData',
-          component: BaseData,
-        },
-      ],
-    },
+// const router = createRouter({
+//   // history: createWebHashHistory(),  // hash 模式
+//   history: createWebHistory(import.meta.env.BASE_URL), // history 模式
+//   routes: [
+//     {
+//       path: '/',
+//       name: 'myapp',
+//       component: App,
+//       children: [
+//         {
+//           path: 'BaseData', // 子路由路径，不需要前置 '/'
+//           name: 'BaseData',
+//           component: BaseData,
+//         },
+//       ],
+//     },
 
-    // {
-    //   path: '/BaseData',
-    //   name: 'BaseData',
-    //   component: BaseData,
-    // },
-    // {
-    //   path: '/BaseLayer',
-    //   name: 'BaseLayer',
-    //   component: BaseLayer,
-    // },
-    // {
-    //   path: '/BiaoJi',
-    //   name: 'BiaoJi',
-    //   component: BiaoJi,
-    // },
-    // {
-    //   path: '/CeLiang',
-    //   name: 'CeLiang',
-    //   component: CeLiang,
-    // },
-    // {
-    //   path: '/SpAn',
-    //   name: 'SpAn',
-    //   component: SpAn,
-    // },
-    // {
-    //   path: '/MyClean',
-    //   name: 'MyClean',
-    //   component: MyClean,
-    // },
-    // {
-    //   path: '/MyEarth',
-    //   name: 'MyEarth',
-    //   component: MyEarth,
-    // },
-    // {
-    //   path: '/ZoomIn',
-    //   name: 'ZoomIn',
-    //   component: ZoomIn,
-    // },
-    // {
-    //   path: '/ZoomOut',
-    //   name: 'ZoomOut',
-    //   component: ZoomOut,
-    // },
-    // {
-    //   path: '/NorthArrow',
-    //   name: 'NorthArrow',
-    //   component: NorthArrow,
-    // },
-    // {
-    //   path: '/TwoDimension',
-    //   name: 'TwoDimension',
-    //   component: TwoDimension,
-    // },
-  ],
-})
+// {
+//   path: '/BaseData',
+//   name: 'BaseData',
+//   component: BaseData,
+// },
+// {
+//   path: '/BaseLayer',
+//   name: 'BaseLayer',
+//   component: BaseLayer,
+// },
+// {
+//   path: '/BiaoJi',
+//   name: 'BiaoJi',
+//   component: BiaoJi,
+// },
+// {
+//   path: '/CeLiang',
+//   name: 'CeLiang',
+//   component: CeLiang,
+// },
+// {
+//   path: '/SpAn',
+//   name: 'SpAn',
+//   component: SpAn,
+// },
+// {
+//   path: '/MyClean',
+//   name: 'MyClean',
+//   component: MyClean,
+// },
+// {
+//   path: '/MyEarth',
+//   name: 'MyEarth',
+//   component: MyEarth,
+// },
+// {
+//   path: '/ZoomIn',
+//   name: 'ZoomIn',
+//   component: ZoomIn,
+// },
+// {
+//   path: '/ZoomOut',
+//   name: 'ZoomOut',
+//   component: ZoomOut,
+// },
+// {
+//   path: '/NorthArrow',
+//   name: 'NorthArrow',
+//   component: NorthArrow,
+// },
+// {
+//   path: '/TwoDimension',
+//   name: 'TwoDimension',
+//   component: TwoDimension,
+// },
+//   ],
+// })
 
 // // 全局路由守卫
 // router.beforeEach((to, from, next) => {
@@ -104,4 +93,4 @@ const router = createRouter({
 //   console.log('afterEach')
 // })
 
-export default router
+// export default router
