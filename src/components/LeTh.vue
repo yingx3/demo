@@ -17,7 +17,7 @@
             <img src="../assets/img/云反射率.png" alt="" />
             <span>冰碛土滑坡/泥石流运动过程模型</span>
           </div>
-          <div class="box">
+          <div class="box box-used">
             <img src="../assets/img/云反射率.png" alt="" />
             <el-button :plain="true" @click="dialogVisible = true"
               ><span>风险源定量识别与表征模型</span></el-button
@@ -198,6 +198,18 @@ const subitForm = () => {
 }
 </script>
 <style lang="scss" scoped>
+:deep(.el-button.is-plain) {
+  --el-fill-color-blank: transparent;
+  --el-border-color: transparent;
+  --el-button-hover-border-color: transparent;
+  --el-button-text-color: white; //
+  --el-font-family: 'Source Han Sans', 'Trebuchet MS', 'Lucida Sans Unicode',
+    'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+  font-size: 16px;
+  padding: 0;
+  // --el-color-primary: transparent;
+}
+
 .left {
   position: absolute;
   top: 65px;
@@ -214,6 +226,7 @@ const subitForm = () => {
 }
 .left .total_theme .theme .line img {
   width: 325px;
+  color: #606266;
 }
 .left .total_theme .theme .box {
   font-family: 'Source Han Sans', 'Trebuchet MS', 'Lucida Sans Unicode',
@@ -222,17 +235,23 @@ const subitForm = () => {
   /* letter-spacing: 1px; */
   letter-spacing: 1px; /* 添加字间距 */
   line-height: 2; /* 添加行距，可以根据需要调整值 */
-  color: rgba(255, 255, 255, 1);
+  // color: rgba(255, 255, 255, 1);
+  color: #606266;
   text-align: left;
   font-size: 16px;
 }
 .left .total_theme .theme .box img {
   margin-right: 5px;
 }
-.left .total_theme .theme .icon img {
+.left .total_theme .theme .icon .box img {
   height: 12px;
   width: 12px;
+  filter: grayscale(100%) brightness(50%);
 }
+.left .total_theme .theme .icon .box-used img {
+  filter: grayscale(100%) brightness(100%);
+}
+
 .left .total_theme .theme h1 {
   font-family: 'Source Han Sans', 'Trebuchet MS', 'Lucida Sans Unicode',
     'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
