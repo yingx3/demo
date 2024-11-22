@@ -4,17 +4,7 @@
     <div id="cesiumContainer"></div>
     <zh-jc></zh-jc>
     <le-th @openLayers="openLayers"></le-th>
-<<<<<<< HEAD
-    <zy-ml
-      @checkboxclicked1="handleCheckboxClicked1"
-      @checkboxclicked2="handleCheckboxClicked2"
-      @checkboxclicked3="handleCheckboxClicked3"
-      @checkboxclicked4="handleCheckboxClicked4"
-      @checkboxclicked5="handleCheckboxClicked5"
-    ></zy-ml>
-=======
     <zy-ml @checkedLayers="checkedLayers"></zy-ml>
->>>>>>> 9b6896d (修改资源目录（el-tree）)
   </div>
 </template>
 <script setup>
