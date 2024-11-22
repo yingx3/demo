@@ -17,7 +17,7 @@
             <img src="../assets/img/云反射率.png" alt="" />
             <span>冰碛土滑坡/泥石流运动过程模型</span>
           </div>
-          <div class="box">
+          <div class="box box-used">
             <img src="../assets/img/云反射率.png" alt="" />
             <el-button :plain="true" @click="dialogVisible = true"
               ><span>风险源定量识别与表征模型</span></el-button
@@ -55,55 +55,6 @@
                 <el-form-item label="入渗率">
                   <el-input v-model="form.rsl" placeholder="范围：[0-1]" />
                 </el-form-item>
-                <!-- <el-form-item label="Activity time">
-      <el-col :span="11">
-        <el-date-picker
-          v-model="form.date1"
-          type="date"
-          placeholder="Pick a date"
-          style="width: 100%"
-        />
-      </el-col>
-      <el-col :span="2" class="text-center">
-        <span class="text-gray-500">-</span>
-      </el-col>
-      <el-col :span="11">
-        <el-time-picker
-          v-model="form.date2"
-          placeholder="Pick a time"
-          style="width: 100%"
-        />
-      </el-col>
-    </el-form-item> -->
-                <!-- 
-    <el-form-item label="Instant delivery">
-      <el-switch v-model="form.delivery" />
-    </el-form-item> -->
-                <!-- <el-form-item label="Activity type">
-      <el-checkbox-group v-model="form.type">
-        <el-checkbox value="Online activities" name="type">
-          Online activities
-        </el-checkbox>
-        <el-checkbox value="Promotion activities" name="type">
-          Promotion activities
-        </el-checkbox>
-        <el-checkbox value="Offline activities" name="type">
-          Offline activities
-        </el-checkbox>
-        <el-checkbox value="Simple brand exposure" name="type">
-          Simple brand exposure
-        </el-checkbox>
-      </el-checkbox-group>
-    </el-form-item> -->
-                <!-- <el-form-item label="Resources">
-      <el-radio-group v-model="form.resource">
-        <el-radio value="Sponsor">Sponsor</el-radio>
-        <el-radio value="Venue">Venue</el-radio>
-      </el-radio-group>
-    </el-form-item>
-    <el-form-item label="Activity form">
-      <el-input v-model="form.desc" type="textarea" />
-    </el-form-item> -->
                 <el-form-item>
                   <el-button type="primary" @click="onSubmit">运行</el-button>
                   <el-button @click="handleClose">取消</el-button>
@@ -246,7 +197,19 @@ const subitForm = () => {
     })
 }
 </script>
-<style>
+<style lang="scss" scoped>
+:deep(.el-button.is-plain) {
+  --el-fill-color-blank: transparent;
+  --el-border-color: transparent;
+  --el-button-hover-border-color: transparent;
+  --el-button-text-color: white; //
+  --el-font-family: 'Source Han Sans', 'Trebuchet MS', 'Lucida Sans Unicode',
+    'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+  font-size: 16px;
+  padding: 0;
+  // --el-color-primary: transparent;
+}
+
 .left {
   position: absolute;
   top: 65px;
@@ -263,6 +226,7 @@ const subitForm = () => {
 }
 .left .total_theme .theme .line img {
   width: 325px;
+  color: #606266;
 }
 .left .total_theme .theme .box {
   font-family: 'Source Han Sans', 'Trebuchet MS', 'Lucida Sans Unicode',
@@ -271,17 +235,23 @@ const subitForm = () => {
   /* letter-spacing: 1px; */
   letter-spacing: 1px; /* 添加字间距 */
   line-height: 2; /* 添加行距，可以根据需要调整值 */
-  color: rgba(255, 255, 255, 1);
+  // color: rgba(255, 255, 255, 1);
+  color: #606266;
   text-align: left;
   font-size: 16px;
 }
 .left .total_theme .theme .box img {
   margin-right: 5px;
 }
-.left .total_theme .theme .icon img {
+.left .total_theme .theme .icon .box img {
   height: 12px;
   width: 12px;
+  filter: grayscale(100%) brightness(50%);
 }
+.left .total_theme .theme .icon .box-used img {
+  filter: grayscale(100%) brightness(100%);
+}
+
 .left .total_theme .theme h1 {
   font-family: 'Source Han Sans', 'Trebuchet MS', 'Lucida Sans Unicode',
     'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
