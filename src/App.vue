@@ -20,8 +20,20 @@ const viewer = ref(null)
 const heatmapLayer = ref(null)
 const layer4_guid = ref(null)
 const layer5_guid = ref(null)
+
 const data = ref(null)
 const dialogs = ref()
+
+const leftlong = ref(97.51465187373286)
+const leftlat = ref(31.043538628515304)
+const rightlong = ref(97.59842422060389)
+const rightlat = ref(31.17398632290709)
+
+const hd = ref('output_20241124_165756_845.png')
+// const hd = ref(null)
+const rgb = ref(null)
+const jb = ref(null)
+// const id =ref(null)
 onMounted(async () => {
   Cesium.Ion.defaultAccessToken =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIxMTNhYTY5MS05Yzk0LTRhYmYtOTcwOC00YzdlN2JhMzU3ZTMiLCJpZCI6MjQxNzQxLCJpYXQiOjE3MjY1MzU1MjN9.aSxU00u1JUszveBFaf7IM9_KI8bq7A528YSjMXHE4sE'
@@ -90,16 +102,18 @@ onMounted(async () => {
 const checkedLayers = ps => {
   // console.log(ps)
   if (ps.length === 0) {
-    viewer.value.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(0, 0, 6378137 * 3),
-      orientation: {
-        heading: 0,
-        pitch: Cesium.Math.toRadians(-90),
-        roll: 0,
-      },
-    })
+    // viewer.value.camera.flyTo({
+    //   destination: Cesium.Cartesian3.fromDegrees(0, 0, 6378137 * 3),
+    //   orientation: {
+    //     heading: 0,
+    //     pitch: Cesium.Math.toRadians(-90),
+    //     roll: 0,
+    //   },
+    // })
     removeLayer1()
     removeLayer2()
+    // viewer.value.entities.removeById('2')
+    viewer.value.entities.removeAll()
     removeLayer4()
     removeLayer5()
   } else {
@@ -108,6 +122,17 @@ const checkedLayers = ps => {
       if (p === 11) {
         addLayer1()
         // console.log('11')
+        // viewer.value.camera.flyTo({
+        //   destination: Cesium.Cartesian3.fromDegrees(95.0, 29.735, 4500),
+        //   //相机的姿态
+        //   orientation: {
+        //     heading: Cesium.Math.toRadians(0.0), //朝向
+        //     pitch: Cesium.Math.toRadians(-40), //俯仰
+        //     // pitch: Cesium.Math.toRadians(-90), //俯仰
+        //     roll: 0.0, //滚转
+        //   },
+        // })
+        flyToWithRangeCheck(viewer.value, 95.0, 29.735)
       }
       if (p !== 11) {
         removeLayer1()
@@ -116,12 +141,52 @@ const checkedLayers = ps => {
       if (p === 12) {
         addLayer2()
         // console.log('12')
+        // viewer.value.camera.flyTo({
+        //   destination: Cesium.Cartesian3.fromDegrees(95.0, 29.735, 4500),
+        //   //相机的姿态
+        //   orientation: {
+        //     heading: Cesium.Math.toRadians(0.0), //朝向
+        //     pitch: Cesium.Math.toRadians(-40), //俯仰
+        //     // pitch: Cesium.Math.toRadians(-90), //俯仰
+        //     roll: 0.0, //滚转
+        //   },
+        // })
+        flyToWithRangeCheck(viewer.value, 95.0, 29.735)
       }
       if (p !== 12) {
         removeLayer2()
         // console.log('120')
       }
       if (p === 13) {
+        var imgUrl = `http://localhost:8086/${hd.value}`
+        viewer.value.entities.add({
+          id: '2',
+          rectangle: {
+            coordinates: Cesium.Rectangle.fromDegrees(
+              leftlong.value,
+              leftlat.value,
+              rightlong.value,
+              rightlat.value
+            ),
+            material: new Cesium.ImageMaterialProperty({
+              image: imgUrl,
+              repeat: new Cesium.Cartesian2(1.0, 1.0), // 图像重复方式
+            }),
+          },
+        })
+        // viewer.value.camera.flyTo({
+        //   destination: Cesium.Cartesian3.fromDegrees(
+        //     leftlong.value,
+        //     leftlat.value + 0.1,
+        //     50000
+        //   ),
+        // })
+        //范围检测后执行跳转逻辑
+        flyToWithRangeCheck(viewer.value, leftlong.value, leftlat.value - 0.4)
+      }
+      if (p !== 13) {
+        console.log('111')
+        viewer.value.entities.removeById('2')
       }
       if (p === 14) {
         addLayer4()
@@ -135,21 +200,49 @@ const checkedLayers = ps => {
       if (p !== 15) {
         removeLayer5()
       }
-      if (p !== null) {
-        // console.log('111')
-        viewer.value.camera.flyTo({
-          destination: Cesium.Cartesian3.fromDegrees(95.0, 29.735, 4500),
-          //相机的姿态
-          orientation: {
-            heading: Cesium.Math.toRadians(0.0), //朝向
-            pitch: Cesium.Math.toRadians(-40), //俯仰
-            // pitch: Cesium.Math.toRadians(-90), //俯仰
-            roll: 0.0, //滚转
-          },
-        })
-      }
     }
   }
+}
+
+// 范围检测逻辑
+function flyToWithRangeCheck(
+  viewer,
+  targetLongitude,
+  targetLatitude,
+  rangeThreshold = 1
+) {
+  // 获取当前相机中心的经纬度坐标
+  const cameraPosition = viewer.camera.positionCartographic
+  const currentLongitude = Cesium.Math.toDegrees(cameraPosition.longitude)
+  const currentLatitude = Cesium.Math.toDegrees(cameraPosition.latitude)
+
+  // 计算与目标点的距离（经纬度差值）
+  const longitudeDifference = Math.abs(currentLongitude - targetLongitude)
+  const latitudeDifference = Math.abs(currentLatitude - targetLatitude)
+
+  // 如果目标点在范围内，直接返回，不进行跳转
+  if (
+    longitudeDifference <= rangeThreshold &&
+    latitudeDifference <= rangeThreshold
+  ) {
+    // console.log('Target location is within range, no jump performed.')
+    return
+  }
+
+  // 如果超出范围，执行飞行跳转
+  viewer.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(
+      targetLongitude,
+      targetLatitude,
+      50000
+    ),
+    orientation: {
+      heading: Cesium.Math.toRadians(0.0), //朝向
+      pitch: Cesium.Math.toRadians(-40), //俯仰
+      // pitch: Cesium.Math.toRadians(-90), //俯仰
+      roll: 0.0, //滚转
+    },
+  })
 }
 
 const openLayers = (p1, p2, p3, p4, p5) => {
@@ -302,10 +395,17 @@ const removeLayer2 = () => {
 //加载风险区划
 const addLayer3 = (p1, p2, p3, p4, p5) => {
   // 定义四个顶点的经纬度
+  // console.log(p1)
+  leftlat.value = p1
+  leftlong.value = p2
+  rightlat.value = p3
+  rightlong.value = p4
+  hd.value = p5
   var rectangle = Cesium.Rectangle.fromDegrees(p2, p1, p4, p3)
   // 指定图像的网络地址
-  var imgUrl = `https://28e52549795d707d1da2e91bb09c4eb9.loophole.site/${p5}`
+  var imgUrl = `http://localhost:8086/${p5}`
   // 创建一个矩形实体，并将图像应用到该矩形上
+
   viewer.value.entities.add({
     rectangle: {
       coordinates: rectangle,
@@ -341,7 +441,7 @@ const addLayer4 = () => {
         entity.billboard = undefined // 去掉广告牌
       }
 
-      // viewer.value.zoomTo(dataSource)
+      viewer.value.zoomTo(dataSource)
     }
   )
 }
@@ -378,7 +478,7 @@ const addLayer5 = () => {
         }
         entity.billboard = undefined // 去掉广告牌
       }
-      // viewer.value.zoomTo(dataSource)
+      viewer.value.zoomTo(dataSource)
     }
   )
 }
