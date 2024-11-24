@@ -49,6 +49,13 @@
                     <el-option label="49" value="49N" />
                   </el-select>
                 </el-form-item>
+                <el-form-item label="色带">
+                  <el-select v-model="form.color" placeholder="灰度">
+                    <el-option label="灰度" value="gray" />
+                    <el-option label="红绿蓝" value="rgb" />
+                    <el-option label="红色渐变" value="redGradient" />
+                  </el-select>
+                </el-form-item>
                 <el-form-item label="预测时间">
                   <el-input v-model="form.time" placeholder="100800s" />
                 </el-form-item>
@@ -159,6 +166,7 @@ function handleClose(done) {
 const form = reactive({
   name: '',
   region: '',
+  color: '',
   time: '',
   rsl: '',
 })
@@ -170,14 +178,8 @@ function onSubmit() {
 }
 const subitForm = () => {
   axios
-    .post('/testapi/admin/user/fx', form)
+    .post('/testapi/admin/user/fx', form, { timeout: 50000 })
     .then(response => {
-      // 处理响应
-      // const leftlat = response.data[0]
-      // const leftlong = response.data[1]
-      // const rightlat = response.data[4]
-      // const rightlong = response.data[5]
-      // $emit('openLayers', leftlat, leftlong, rightlat, rightlong)
       const text = response.data
       // console.log(text)
       const matches = text.match(
