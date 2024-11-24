@@ -466,10 +466,6 @@ watch(
 //   console.log('111')
 // }
 
-const setCheckedNodes = () => {
-  // 设置节点 ID 为 2 和 6 的复选框为选中状态
-  treeRef.value.setCheckedKeys([2, 6])
-}
 const handleClick = (node, data) => {
   // console.log('Clicked Node Instance:', node) // 节点的实例信息
   // console.log('Clicked Node Data:', data) // 节点的原始数据
