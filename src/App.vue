@@ -3,7 +3,7 @@
     <div id="cesiumContainer"></div>
     <zh-jc></zh-jc>
     <le-th @openLayers="openLayers"></le-th>
-    <zy-ml @checkedLayers="checkedLayers"></zy-ml>
+    <zy-ml @checkedLayers="checkedLayers" :checked-ids="selectedIds"></zy-ml>
   </div>
 </template>
 <script setup>
@@ -29,10 +29,13 @@ const leftlat = ref(31.043538628515304)
 const rightlong = ref(97.59842422060389)
 const rightlat = ref(31.17398632290709)
 
+const selectedIds = ref([])
+
 const hd = ref('output_20241124_165756_845.png')
 // const hd = ref(null)
-const rgb = ref(null)
-const jb = ref(null)
+const gray = ref('')
+const rgb = ref('')
+const redGradient = ref('')
 // const id =ref(null)
 onMounted(async () => {
   Cesium.Ion.defaultAccessToken =
@@ -247,7 +250,9 @@ function flyToWithRangeCheck(
 
 const openLayers = (p1, p2, p3, p4, p5) => {
   // console.log(p5)
+
   addLayer3(p1, p2, p3, p4, p5)
+  selectedIds.value = [13]
 }
 // 先获取点位的json信息
 const getJson = async () => {
@@ -392,6 +397,21 @@ const removeLayer2 = () => {
 //   // })
 // }
 
+//使用正则提取文件名
+const extractString = filename => {
+  // 使用正则表达式提取第一个 "_" 前的字符串
+  const match = filename.match(/^([^_]+)_/) // 捕获从开头到第一个 "_" 的内容
+  if (match && match[1]) {
+    const firstPart = match[1] // 提取匹配的内容
+    if (firstPart === 'redGradient') {
+      redGradient.value = filename
+    } else if (firstPart === 'gray') {
+      gray.value = filename
+    } else {
+      rgb.value = filename
+    }
+  }
+}
 //加载风险区划
 const addLayer3 = (p1, p2, p3, p4, p5) => {
   // 定义四个顶点的经纬度
@@ -400,7 +420,10 @@ const addLayer3 = (p1, p2, p3, p4, p5) => {
   leftlong.value = p2
   rightlat.value = p3
   rightlong.value = p4
+
+  extractString(p5)
   hd.value = p5
+
   var rectangle = Cesium.Rectangle.fromDegrees(p2, p1, p4, p3)
   // 指定图像的网络地址
   var imgUrl = `http://localhost:8086/${p5}`

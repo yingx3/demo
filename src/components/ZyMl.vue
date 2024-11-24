@@ -7,6 +7,7 @@
         :props="defaultProps"
         show-checkbox
         @check="handleClick"
+        node-key="id"
         ref="treeRef"
       />
     </div>
@@ -14,12 +15,21 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref, getCurrentInstance } from 'vue'
+import { onMounted, onUnmounted, ref, watch, getCurrentInstance } from 'vue'
+// import { PropType } from 'vue'
 // 树组件实例
 const treeRef = ref(null)
 
 //自定义事件（子传父）
 let $emit = defineEmits(['checkedLayers'])
+
+//接收父组件传递的选中节点 ID 列表
+const props = defineProps({
+  checkedIds: {
+    type: Array,
+    default: () => [],
+  },
+})
 // 树形数据
 const treeData = ref([
   {
@@ -430,9 +440,23 @@ const treeData = ref([
 ])
 // 树节点属性映射关系
 const defaultProps = {
-  children: 'children',
+  key: 'id',
   label: 'name',
+  children: 'children',
 }
+
+//监听父组件传递的选中节点ID列表,watch(source, callback, options)source:数据源，表示要监听的内容。callback: 回调函数，当数据发生变化时会触发。options: 可选配置项，比如是否立即执行。
+watch(
+  () => props.checkedIds,
+  newCheckedIds => {
+    setTimeout(() => {
+      if (treeRef.value) {
+        treeRef.value.setCheckedKeys(newCheckedIds)
+      }
+    }, 50)
+  },
+  { immediate: true } //立即执行一次，确保初始值被处理
+)
 
 /**
  * 点击节点事件句柄方法
@@ -441,6 +465,7 @@ const defaultProps = {
 //   console.log(node, data)
 //   console.log('111')
 // }
+
 const handleClick = (node, data) => {
   // console.log('Clicked Node Instance:', node) // 节点的实例信息
   // console.log('Clicked Node Data:', data) // 节点的原始数据
