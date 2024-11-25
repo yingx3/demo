@@ -36,6 +36,7 @@ const hd = ref('output_20241124_165756_845.png')
 const gray = ref('')
 const rgb = ref('')
 const redGradient = ref('')
+const dangerLevel = ref('')
 // const id =ref(null)
 onMounted(async () => {
   Cesium.Ion.defaultAccessToken =
@@ -407,8 +408,10 @@ const extractString = filename => {
       redGradient.value = filename
     } else if (firstPart === 'gray') {
       gray.value = filename
-    } else {
+    } else if (firstPart === 'rgb') {
       rgb.value = filename
+    } else {
+      dangerLevel.value = filename
     }
   }
 }
@@ -537,6 +540,9 @@ const removefximg = () => {
   position: relative;
   width: 100vw;
   height: 100vh;
+  /* display: flex;
+  justify-self: center;
+  align-content: center; */
 }
 #cesiumContainer {
   position: absolute;
@@ -544,8 +550,17 @@ const removefximg = () => {
   right: 0px;
   width: 100vw;
   height: 100vh;
+  /* padding: 16px; */
+  /* box-sizing: border-box; */
 }
 .cesium-viewer-bottom {
   display: none;
+}
+
+@media (max-height: 947px) {
+  .container {
+    transform: scale(0.5);
+    transform-origin: top;
+  }
 }
 </style>

@@ -46,7 +46,7 @@ const treeData = ref([
       },
       {
         id: 13,
-        name: '灾害风险区划',
+        name: '灾害危险区划',
       },
       {
         id: 14,
@@ -500,10 +500,10 @@ const handleClick = (node, data) => {
   background-color: #243857; //hover颜色
 }
 .right-container {
-  max-height: 950px;
+  max-height: 800px;
   position: absolute;
   right: 20px;
-  top: 115px;
+  top: 85px;
   height: 950px;
   width: 320px;
   background-image: url(../assets/img/c1.png);

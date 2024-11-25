@@ -50,10 +50,11 @@
                   </el-select>
                 </el-form-item>
                 <el-form-item label="色带">
-                  <el-select v-model="form.color" placeholder="灰度">
+                  <el-select v-model="form.color" placeholder="危险等级">
                     <el-option label="灰度" value="gray" />
                     <el-option label="红绿蓝" value="rgb" />
                     <el-option label="红色渐变" value="redGradient" />
+                    <el-option label="危险等级" value="dangerLevel" />
                   </el-select>
                 </el-form-item>
                 <el-form-item label="预测时间">
@@ -124,7 +125,7 @@
           </div>
         </div>
       </div>
-      <div class="theme theme1">
+      <div class="theme">
         <h1>调控技术与防控体系</h1>
         <div class="line"><img src="../assets/img/left_line.png" alt="" /></div>
         <div class="icon">
@@ -135,10 +136,6 @@
           <div class="box">
             <img src="../assets/img/云反射率.png" alt="" />
             <span>冰川泥石流沿程调控技术</span>
-          </div>
-          <div class="box">
-            <img src="../assets/img/云反射率.png" alt="" />
-            <span>堰塞湖溃坝过程控制技术</span>
           </div>
         </div>
       </div>
@@ -178,7 +175,7 @@ function onSubmit() {
 }
 const subitForm = () => {
   axios
-    .post('/testapi/admin/user/fx', form, { timeout: 50000 })
+    .post('/testapi/admin/user/fx', form, { timeout: 400000 })
     .then(response => {
       const text = response.data
       // console.log(text)
@@ -214,17 +211,18 @@ const subitForm = () => {
 
 .left {
   position: absolute;
-  top: 65px;
-  left: 0;
+  // max-height: 850px;
+  top: 60px;
+  left: 10px;
   background: url('../assets/img/left_theme_2.png');
   background-size: cover;
-  width: 424px;
-  height: 1000px;
+  width: 400px;
+  height: 850px;
 }
 .left .total_theme {
   position: absolute;
-  top: 70px;
-  left: 70px;
+  top: 60px;
+  left: 60px;
 }
 .left .total_theme .theme .line img {
   width: 325px;
@@ -262,6 +260,7 @@ const subitForm = () => {
   color: rgba(255, 255, 255, 1);
   text-align: left;
   font-size: 22px;
+  background: url(../assets/img/left_theme_1.png);
 }
 .left .total_theme .theme h2 {
   /* font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande',
@@ -277,13 +276,13 @@ const subitForm = () => {
   text-align: left;
   font-size: 16px;
 }
-.line {
-  visibility: hidden;
-}
-.theme1 {
-  height: 200px;
-}
-.theme2 {
-  height: 135px;
-}
+// .line {
+//   visibility: hidden;
+// }
+// .theme1 {
+//   height: 190px;
+// }
+// .theme2 {
+//   height: 135px;
+// }
 </style>
