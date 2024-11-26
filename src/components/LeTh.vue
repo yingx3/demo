@@ -26,7 +26,6 @@
             v-model="dialogVisible"
             title="模型参数"
             width="500"
-            :before-close="handleClose"
             :close-on-click-modal="false"
           >
             <el-form :model="form" label-width="auto" style="max-width: 600px">
@@ -61,7 +60,7 @@
               </el-form-item>
               <el-form-item>
                 <el-button type="primary" @click="onSubmit">运行</el-button>
-                <el-button @click="handleClose">取消</el-button>
+                <el-button @click="dialogVisible = false">取消</el-button>
               </el-form-item>
             </el-form>
           </el-dialog>
@@ -137,13 +136,14 @@ const dialogVisible = ref(false)
 
 let $emit = defineEmits(['openLayers'])
 
-function handleClose(done) {
-  ElMessageBox.confirm('确定关闭吗?')
-    .then(() => {
-      done()
-    })
-    .catch(() => {})
-}
+// function handleClose(done) {
+//   ElMessageBox.confirm('确定关闭吗?')
+//     .then(() => {
+//       done()
+//     })
+//     .catch(() => {})
+//   // done()
+// }
 
 const form = reactive({
   name: '',

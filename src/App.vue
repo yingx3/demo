@@ -162,7 +162,7 @@ const checkedLayers = ps => {
         // console.log('120')
       }
       if (p === 13) {
-        var imgUrl = `http://localhost:8086/${hd.value}`
+        var imgUrl = `https://d78758fcfabeaaa799d4d1daf4aa9c92.loophole.site/${hd.value}`
         viewer.value.entities.add({
           id: '2',
           rectangle: {
@@ -429,7 +429,9 @@ const addLayer3 = (p1, p2, p3, p4, p5) => {
 
   var rectangle = Cesium.Rectangle.fromDegrees(p2, p1, p4, p3)
   // 指定图像的网络地址
-  var imgUrl = `http://localhost:8086/${p5}`
+  // var imgUrl = `http://localhost:8086/${p5}`
+
+  var imgUrl = `https://d78758fcfabeaaa799d4d1daf4aa9c92.loophole.site/${p5}`
   // 创建一个矩形实体，并将图像应用到该矩形上
 
   viewer.value.entities.add({
@@ -448,28 +450,28 @@ const addLayer3 = (p1, p2, p3, p4, p5) => {
 
 //加载滑坡判识矢量点
 const addLayer4 = () => {
-  Cesium.GeoJsonDataSource.load('http://localhost:8086/hpps2.geojson').then(
-    function (dataSource) {
-      layer4_guid.value = Cesium.createGuid()
-      dataSource.guid = layer4_guid.value
-      viewer.value.dataSources.add(dataSource)
-      // console.log('dataSource:', dataSource)
+  Cesium.GeoJsonDataSource.load(
+    'https://d78758fcfabeaaa799d4d1daf4aa9c92.loophole.site/hpps2.geojson'
+  ).then(function (dataSource) {
+    layer4_guid.value = Cesium.createGuid()
+    dataSource.guid = layer4_guid.value
+    viewer.value.dataSources.add(dataSource)
+    // console.log('dataSource:', dataSource)
 
-      const entities = dataSource.entities.values
-      const colorHash = {}
-      for (var i = 0; i < entities.length; i++) {
-        const entity = entities[i]
-        const name = entity.name
-        entity.point = {
-          pixelSize: 30,
-          color: Cesium.Color.RED,
-        }
-        entity.billboard = undefined // 去掉广告牌
+    const entities = dataSource.entities.values
+    const colorHash = {}
+    for (var i = 0; i < entities.length; i++) {
+      const entity = entities[i]
+      const name = entity.name
+      entity.point = {
+        pixelSize: 30,
+        color: Cesium.Color.RED,
       }
-
-      viewer.value.zoomTo(dataSource)
+      entity.billboard = undefined // 去掉广告牌
     }
-  )
+
+    viewer.value.zoomTo(dataSource)
+  })
 }
 //移除滑坡判识矢量点
 const removeLayer4 = () => {
@@ -489,24 +491,24 @@ const removeLayer4 = () => {
 }
 // 加载古滑坡灾害链
 const addLayer5 = () => {
-  Cesium.GeoJsonDataSource.load('http://localhost:8086/ghpzhl.geojson').then(
-    function (dataSource) {
-      layer5_guid.value = Cesium.createGuid()
-      dataSource.guid = layer5_guid.value
-      viewer.value.dataSources.add(dataSource)
-      const entities = dataSource.entities.values
-      for (var i = 0; i < entities.length; i++) {
-        const entity = entities[i]
-        const name = entity.name
-        entity.point = {
-          pixelSize: 30,
-          color: Cesium.Color.BLUE,
-        }
-        entity.billboard = undefined // 去掉广告牌
+  Cesium.GeoJsonDataSource.load(
+    'https://d78758fcfabeaaa799d4d1daf4aa9c92.loophole.site/ghpzhl.geojson'
+  ).then(function (dataSource) {
+    layer5_guid.value = Cesium.createGuid()
+    dataSource.guid = layer5_guid.value
+    viewer.value.dataSources.add(dataSource)
+    const entities = dataSource.entities.values
+    for (var i = 0; i < entities.length; i++) {
+      const entity = entities[i]
+      const name = entity.name
+      entity.point = {
+        pixelSize: 30,
+        color: Cesium.Color.BLUE,
       }
-      viewer.value.zoomTo(dataSource)
+      entity.billboard = undefined // 去掉广告牌
     }
-  )
+    viewer.value.zoomTo(dataSource)
+  })
 }
 //移除古滑坡灾害链
 const removeLayer5 = () => {
