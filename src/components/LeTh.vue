@@ -1,10 +1,10 @@
 <template>
   <div class="left">
+    <div class="name">数值计算模型集</div>
     <div class="total_theme">
       <div class="theme">
-        <div class="title">
-          发育规律与风险源判识<img src="../assets/img/left_line.png" alt="" />
-        </div>
+        <div class="title">发育规律与风险源判识</div>
+        <img id="bar" src="../assets/img/left_line.png" alt="" />
         <div class="box">
           <img src="../assets/img/云反射率.png" alt="" />
           <span>冰川泥石流、冰岩崩孕灾条件分析模型</span>
@@ -68,10 +68,8 @@
         </div>
       </div>
       <div class="theme">
-        <div class="title">
-          动力学过程模型模拟<img src="../assets/img/left_line.png" alt="" />
-        </div>
-
+        <div class="title">动力学过程模型模拟</div>
+        <img id="bar" src="../assets/img/left_line.png" alt="" />
         <div class="box">
           <img src="../assets/img/云反射率.png" alt="" />
           <span>冰川泥石流启动动力学模型</span>
@@ -82,10 +80,8 @@
         </div>
       </div>
       <div class="theme">
-        <div class="title">
-          定量风险评估<img src="../assets/img/left_line.png" alt="" />
-        </div>
-
+        <div class="title">定量风险评估</div>
+        <img id="bar" src="../assets/img/left_line.png" alt="" />
         <div class="box">
           <img src="../assets/img/云反射率.png" alt="" />
           <span>全域风险评估参数模型</span>
@@ -104,10 +100,8 @@
         </div>
       </div>
       <div class="theme">
-        <div class="title">
-          突发性灾害监测预警<img src="../assets/img/left_line.png" alt="" />
-        </div>
-
+        <div class="title">突发性灾害监测预警</div>
+        <img id="bar" src="../assets/img/left_line.png" alt="" />
         <div class="box">
           <img src="../assets/img/云反射率.png" alt="" />
           <span>基于深度学习的灾害链预警模型</span>
@@ -119,10 +113,8 @@
       </div>
 
       <div class="theme">
-        <div class="title">
-          调控技术与防控体系<img src="../assets/img/left_line.png" alt="" />
-        </div>
-
+        <div class="title">调控技术与防控体系</div>
+        <img id="bar" src="../assets/img/left_line.png" alt="" />
         <div class="box">
           <img src="../assets/img/云反射率.png" alt="" />
           <span>灾害链断链调控技术</span>
@@ -197,7 +189,7 @@ const subitForm = () => {
   --el-button-text-color: white; //
   --el-font-family: 'Source Han Sans', 'Trebuchet MS', 'Lucida Sans Unicode',
     'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
-  font-size: 16px;
+  font-size: 17px;
   padding: 0;
   // --el-color-primary: transparent;
 }
@@ -205,21 +197,34 @@ const subitForm = () => {
 .left {
   position: absolute;
   // max-height: 850px;
-  top: 60px;
+  top: 62px;
   left: 10px;
   background: url('../assets/img/left_theme_2.png');
   background-size: cover;
   width: 400px;
   height: 850px;
 }
+.name {
+  position: absolute;
+  top: 45px;
+  left: 15px;
+  writing-mode: vertical-rl; /* 将文字竖向排列，从上到下 */
+  // text-orientation: upright; /* 保持文字方向垂直 */
+  // white-space: nowrap; /* 防止文字换行 */
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 1);
+  font-size: 18px;
+  // transform: rotate(0deg); /* 旋转文字，使其从下到上显示 */
+}
 .left .total_theme {
   position: absolute;
-  top: 60px;
+  top: 40px;
   left: 60px;
 }
 .theme .title {
   width: 300px;
   text-align: left;
+  padding-left: 10px;
   line-height: 50px;
   font-weight: 500;
   letter-spacing: 1px;
@@ -227,7 +232,8 @@ const subitForm = () => {
   font-size: 22px;
   background: url(../assets/img/left_theme_1.png);
 }
-.title img {
+#bar {
+  width: 310px;
   display: block; /* 将图片设置为块级元素 */
   // vertical-align: middle; /* 使用垂直居中对齐方式 */
 }

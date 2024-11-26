@@ -537,6 +537,7 @@ const removefximg = () => {
 </script>
 <style>
 .top-container {
+  /* max-height: 947px; */
   position: relative;
   width: 100vw;
   height: 100vh;
@@ -558,11 +559,29 @@ const removefximg = () => {
 .cesium-viewer-bottom {
   display: none;
 }
-
+/* 媒体查询设置显示比例 */
 @media (max-height: 947px) {
-  .container {
-    transform: scale(0.5);
+  .top-container {
+    transform: scale(1);
     transform-origin: top;
   }
 }
+@media (max-height: 956.55px) {
+  .top-container {
+    transform: scale(0.999);
+    transform-origin: top;
+  }
+}
+@media (max-height: 1080px) {
+  .top-container {
+    transform: scale(1);
+    transform-origin: top;
+  }
+}
+/* @media (max-width: 840px) and (max-height: 600px) {
+  .top-container {
+    transform: scale(0.5);
+    transform-origin: top;
+  }
+} */
 </style>
