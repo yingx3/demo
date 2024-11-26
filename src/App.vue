@@ -540,6 +540,8 @@ const removefximg = () => {
   position: relative;
   width: 100vw;
   height: 100vh;
+  font-family: 'Source Han Sans', 'Trebuchet MS', 'Lucida Sans Unicode',
+    'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
   /* display: flex;
   justify-self: center;
   align-content: center; */
