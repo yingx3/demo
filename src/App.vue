@@ -562,6 +562,12 @@ const removefximg = () => {
   display: none;
 }
 /* 媒体查询设置显示比例 */
+@media (max-height: 911px) {
+  .top-container {
+    transform: scale(0.99);
+    transform-origin: top;
+  }
+}
 @media (max-height: 947px) {
   .top-container {
     transform: scale(1);

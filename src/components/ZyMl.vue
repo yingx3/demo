@@ -440,7 +440,6 @@ const treeData = ref([
 ])
 // 树节点属性映射关系
 const defaultProps = {
-  key: 'id',
   label: 'name',
   children: 'children',
 }
@@ -469,7 +468,7 @@ watch(
 const handleClick = (node, data) => {
   // console.log('Clicked Node Instance:', node) // 节点的实例信息
   // console.log('Clicked Node Data:', data) // 节点的原始数据
-
+  debugger
   // 打印当前勾选的节点数据
   if (treeRef.value) {
     const checkedNodes = []

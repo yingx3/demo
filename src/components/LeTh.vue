@@ -46,10 +46,10 @@
               </el-form-item>
               <el-form-item label="色带">
                 <el-select v-model="form.color" placeholder="危险等级">
+                  <el-option label="危险等级" value="dangerLevel" />
                   <el-option label="灰度" value="gray" />
                   <el-option label="红绿蓝" value="rgb" />
                   <el-option label="红色渐变" value="redGradient" />
-                  <el-option label="危险等级" value="dangerLevel" />
                 </el-select>
               </el-form-item>
               <el-form-item label="预测时间">
@@ -57,6 +57,21 @@
               </el-form-item>
               <el-form-item label="入渗率">
                 <el-input v-model="form.rsl" placeholder="范围：[0-1]" />
+              </el-form-item>
+              <el-form-item label="初始地下水位">
+                <el-input v-model="form.depth" placeholder="单位M" />
+              </el-form-item>
+              <el-form-item label="土壤最大深度">
+                <el-input v-model="form.zmax" placeholder="单位M" />
+              </el-form-item>
+              <el-form-item label="内聚力">
+                <el-input v-model="form.cohesion" placeholder="范围:[0-1]" />
+              </el-form-item>
+              <el-form-item label="倾角">
+                <el-input v-model="form.phi" placeholder="范围:[0-90]" />
+              </el-form-item>
+              <el-form-item label="土容重">
+                <el-input v-model="form.uws" placeholder="" />
               </el-form-item>
               <el-form-item>
                 <el-button type="primary" @click="onSubmit">运行</el-button>
@@ -151,6 +166,11 @@ const form = reactive({
   color: '',
   time: '',
   rsl: '',
+  depth: '',
+  zmax: '',
+  cohesion: '',
+  phi: '',
+  uws: '',
 })
 
 function onSubmit() {
