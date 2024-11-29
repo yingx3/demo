@@ -162,7 +162,7 @@ const checkedLayers = ps => {
         // console.log('120')
       }
       if (p === 13) {
-        var imgUrl = `https://d78758fcfabeaaa799d4d1daf4aa9c92.loophole.site/${hd.value}`
+        var imgUrl = `/ng/${hd.value}`
         viewer.value.entities.add({
           id: '2',
           rectangle: {
@@ -431,7 +431,7 @@ const addLayer3 = (p1, p2, p3, p4, p5) => {
   // 指定图像的网络地址
   // var imgUrl = `http://localhost:8086/${p5}`
 
-  var imgUrl = `https://d78758fcfabeaaa799d4d1daf4aa9c92.loophole.site/${p5}`
+  var imgUrl = `/ng/${p5}`
   // 创建一个矩形实体，并将图像应用到该矩形上
 
   viewer.value.entities.add({
@@ -450,9 +450,9 @@ const addLayer3 = (p1, p2, p3, p4, p5) => {
 
 //加载滑坡判识矢量点
 const addLayer4 = () => {
-  Cesium.GeoJsonDataSource.load(
-    'https://d78758fcfabeaaa799d4d1daf4aa9c92.loophole.site/hpps2.geojson'
-  ).then(function (dataSource) {
+  Cesium.GeoJsonDataSource.load('/ng/hpps2.geojson').then(function (
+    dataSource
+  ) {
     layer4_guid.value = Cesium.createGuid()
     dataSource.guid = layer4_guid.value
     viewer.value.dataSources.add(dataSource)
@@ -491,9 +491,9 @@ const removeLayer4 = () => {
 }
 // 加载古滑坡灾害链
 const addLayer5 = () => {
-  Cesium.GeoJsonDataSource.load(
-    'https://d78758fcfabeaaa799d4d1daf4aa9c92.loophole.site/ghpzhl.geojson'
-  ).then(function (dataSource) {
+  Cesium.GeoJsonDataSource.load('/ng/ghpzhl.geojson').then(function (
+    dataSource
+  ) {
     layer5_guid.value = Cesium.createGuid()
     dataSource.guid = layer5_guid.value
     viewer.value.dataSources.add(dataSource)
