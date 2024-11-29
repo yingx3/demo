@@ -139,6 +139,50 @@
         </div>
       </div>
     </div>
+
+    <!-- 动态生成的正方形 -->
+    <transition
+      name="fade"
+      @before-enter="beforeEnter"
+      @enter="enter"
+      @leave="leave"
+    >
+      <div v-if="squareStore.showSquare" class="square">
+        <!-- <span class="close-btn" @click="closeSquare">×</span> -->
+
+        <!-- 风险图例 -->
+        <div class="legend">
+          <div class="legend-item">
+            <div
+              class="color-box"
+              :style="{ backgroundColor: 'rgba(212, 48, 48, 255)' }"
+            ></div>
+            <span class="legend-text">极高风险</span>
+          </div>
+          <div class="legend-item">
+            <div
+              class="color-box"
+              :style="{ backgroundColor: 'rgba(230, 141, 26, 255)' }"
+            ></div>
+            <span class="legend-text">高风险</span>
+          </div>
+          <div class="legend-item">
+            <div
+              class="color-box"
+              :style="{ backgroundColor: 'rgba(230, 195, 0, 220)' }"
+            ></div>
+            <span class="legend-text">中风险</span>
+          </div>
+          <div class="legend-item">
+            <div
+              class="color-box"
+              :style="{ backgroundColor: 'rgba(42, 130, 228, 255)' }"
+            ></div>
+            <span class="legend-text">低风险</span>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 <script setup>
@@ -148,9 +192,11 @@ import { inject, ref } from 'vue'
 import { reactive } from 'vue'
 import axios from 'axios'
 const dialogVisible = ref(false)
+import { useSquareStore } from '../stores/squareStore'
 
 let $emit = defineEmits(['openLayers'])
-
+// 获取 store 实例
+const squareStore = useSquareStore()
 // function handleClose(done) {
 //   ElMessageBox.confirm('确定关闭吗?')
 //     .then(() => {
@@ -175,14 +221,24 @@ const form = reactive({
 
 function onSubmit() {
   dialogVisible.value = false
-  ElMessage({ message: '运行中!', type: 'success' })
+  ElMessage({ message: '运行中!', type: 'success', duration: 40000 })
   subitForm()
+  // if (form.color == 'dangerLevel') {
+  //   // squareStore.openSquare()
+  //   console.log('111')
+  //   // console.log(squareStore.showSquare)
+  // }
 }
 const subitForm = () => {
   axios
     .post('/testapi/admin/user/fx', form, { timeout: 400000 })
     .then(response => {
       const text = response.data
+      // if (form.color == 'dangerLevel') {
+      //   // squareStore.openSquare()
+      //   console.log('111')
+      //   // console.log(squareStore.showSquare)
+      // }
       // console.log(text)
       const matches = text.match(
         /左下经度:([\d.]+), 左下纬度:([\d.]+), 右上经度:([\d.]+), 右上纬度:([\d.]+),图片名称：(.+)$/
@@ -199,6 +255,41 @@ const subitForm = () => {
       console.error(error)
       // 处理错误
     })
+}
+
+// 控制正方形显示与隐藏的状态
+// const showSquare = ref(false)
+
+// 创建正方形的函数
+// const createSquare = () => {
+//   showSquare.value = true
+// }
+
+// 关闭正方形的函数
+const closeSquare = () => {
+  squareStore.closeSquare()
+}
+
+// 动画生命周期钩子
+
+const beforeEnter = el => {
+  el.style.opacity = '0'
+  el.style.transform = 'scale(0)'
+}
+
+const enter = (el, done) => {
+  el.offsetHeight // 强制重排，确保动画从初始状态开始
+  el.style.transition = 'opacity 0.3s ease, transform 0.3s ease'
+  el.style.opacity = '1'
+  el.style.transform = 'scale(1)'
+  done()
+}
+
+const leave = (el, done) => {
+  el.style.transition = 'opacity 0.3s ease, transform 0.3s ease'
+  el.style.opacity = '0'
+  el.style.transform = 'scale(0)'
+  done()
 }
 </script>
 <style lang="scss" scoped>
@@ -284,5 +375,84 @@ const subitForm = () => {
 }
 .p_bottom {
   padding-bottom: 10px;
+}
+
+/* 正方形的样式 */
+.square {
+  position: fixed;
+  right: 365px;
+  bottom: 100px;
+  width: 130px; /* 宽度保持不变 */
+  height: 140px; /* 减小正方形容器的高度 */
+  background-color: transparent; /* 去掉背景色 */
+  display: flex;
+  flex-direction: column; /* 垂直布局 */
+  align-items: center;
+  justify-content: flex-start; /* 顶部对齐 */
+  color: white;
+  font-size: 18px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  opacity: 0;
+  transform: scale(0);
+  transition: opacity 0.3s ease, transform 0.3s ease; /* 默认过渡样式 */
+}
+
+/* 关闭按钮的样式 */
+.close-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  user-select: none;
+}
+
+.close-btn:hover {
+  color: #f56c6c;
+}
+
+/* 风险图例的容器 */
+.legend {
+  display: flex;
+  flex-direction: column; /* 纵向排列 */
+  justify-content: flex-start;
+  width: 80%;
+  margin-top: 10px;
+}
+
+/* 每个图例项的样式 */
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+/* 每个小正方形的样式 */
+.color-box {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  border: 1px solid #fff; /* 添加边框以增强对比 */
+  margin-right: 8px; /* 正方形与文本之间的间距 */
+}
+
+/* 图例文本的样式 */
+.legend-text {
+  font-size: 14px;
+  color: white;
+}
+
+/* 为 transition 设置过渡效果 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.fade-enter, .fade-leave-to /* .fade-leave-active 在离开时生效 */ {
+  opacity: 0;
+  transform: scale(0);
 }
 </style>

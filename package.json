@@ -13,6 +13,7 @@
     "cesium-heatmap": "^0.0.4",
     "cesiumjs-heat": "^1.0.7",
     "i": "^0.3.7",
+    "pinia": "^2.2.8",
     "vite-plugin-cesium": "^1.2.23",
     "vue": "^3.4.37",
     "vue-router": "^4.4.5"
@@ -22,6 +23,7 @@
     "axios": "^1.1.2",
     "element-plus": "^2.8.7",
     "less": "^4.2.0",
+    "sass-embedded": "^1.81.0",
     "unplugin-auto-import": "^0.18.3",
     "unplugin-vue-components": "^0.27.4",
     "vite": "^5.4.1"

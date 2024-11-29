@@ -14,6 +14,7 @@ import Dialog from './js/dialog.js'
 import ZhJc from './components/ZhJc.vue'
 import LeTh from './components/LeTh.vue'
 import ZyMl from './components/ZyMl.vue'
+import { useSquareStore } from './stores/squareStore'
 // import Heatmap3d from './js/heatmap3d.js'
 
 const viewer = ref(null)
@@ -23,7 +24,8 @@ const layer5_guid = ref(null)
 
 const data = ref(null)
 const dialogs = ref()
-
+// 获取 store 实例
+const squareStore = useSquareStore()
 const leftlong = ref(97.51465187373286)
 const leftlat = ref(31.043538628515304)
 const rightlong = ref(97.59842422060389)
@@ -31,7 +33,7 @@ const rightlat = ref(31.17398632290709)
 
 const selectedIds = ref([])
 
-const hd = ref('output_20241124_165756_845.png')
+const hd = ref('dangerLevel_20241129_110851_273.png')
 // const hd = ref(null)
 const gray = ref('')
 const rgb = ref('')
@@ -162,6 +164,12 @@ const checkedLayers = ps => {
         // console.log('120')
       }
       if (p === 13) {
+        const match = hd.value.match(/^([^_]+)_/)
+        if (match[1] == 'dangerLevel') {
+          // console.log('111')
+          squareStore.openSquare()
+          squareStore.openRisk()
+        }
         var imgUrl = `/ng/${hd.value}`
         viewer.value.entities.add({
           id: '2',
@@ -250,7 +258,12 @@ function flyToWithRangeCheck(
 }
 
 const openLayers = (p1, p2, p3, p4, p5) => {
-  // console.log(p5)
+  const match = p5.match(/^([^_]+)_/)
+  if (match[1] == 'dangerLevel') {
+    // console.log('111')
+    squareStore.openSquare()
+    squareStore.openRisk()
+  }
 
   addLayer3(p1, p2, p3, p4, p5)
   selectedIds.value = [13]
@@ -411,6 +424,7 @@ const extractString = filename => {
     } else if (firstPart === 'rgb') {
       rgb.value = filename
     } else {
+      // squareStore.openRisk
       dangerLevel.value = filename
     }
   }

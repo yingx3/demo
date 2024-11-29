@@ -16,10 +16,12 @@
 
 <script setup>
 import { onMounted, onUnmounted, ref, watch, getCurrentInstance } from 'vue'
+import { useSquareStore } from '../stores/squareStore'
 // import { PropType } from 'vue'
 // 树组件实例
 const treeRef = ref(null)
-
+// 获取 store 实例
+const squareStore = useSquareStore()
 //自定义事件（子传父）
 let $emit = defineEmits(['checkedLayers'])
 
@@ -468,7 +470,10 @@ watch(
 const handleClick = (node, data) => {
   // console.log('Clicked Node Instance:', node) // 节点的实例信息
   // console.log('Clicked Node Data:', data) // 节点的原始数据
-  debugger
+  if (node.id == 13 && squareStore.risk) {
+    squareStore.toggleSquare()
+    // console.log('111')
+  }
   // 打印当前勾选的节点数据
   if (treeRef.value) {
     const checkedNodes = []
