@@ -263,6 +263,8 @@ const openLayers = (p1, p2, p3, p4, p5) => {
     // console.log('111')
     squareStore.openSquare()
     squareStore.openRisk()
+  } else {
+    squareStore.closeRisk()
   }
 
   addLayer3(p1, p2, p3, p4, p5)
