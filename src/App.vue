@@ -33,7 +33,8 @@ const rightlat = ref(31.17398632290709)
 
 const selectedIds = ref([])
 
-const hd = ref('dangerLevel_20241129_110851_273.png')
+// const hd = ref('dangerLevel_20241129_110851_273.png')
+const hd = ref('dangerLevel_20241129_110851_27.gif')
 // const hd = ref(null)
 const gray = ref('')
 const rgb = ref('')

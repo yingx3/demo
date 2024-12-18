@@ -32,18 +32,7 @@
               <el-form-item label="地点">
                 <el-input v-model="form.name" placeholder="林芝市" />
               </el-form-item>
-              <el-form-item label="带号">
-                <el-select
-                  v-model="form.region"
-                  placeholder="请选择基于WGS84的墨卡托投影带号"
-                >
-                  <el-option label="45" value="45N" />
-                  <el-option label="46" value="46N" />
-                  <el-option label="47" value="47N" />
-                  <el-option label="48" value="48N" />
-                  <el-option label="49" value="49N" />
-                </el-select>
-              </el-form-item>
+
               <el-form-item label="色带">
                 <el-select v-model="form.color" placeholder="危险等级">
                   <el-option label="危险等级" value="dangerLevel" />
@@ -53,10 +42,24 @@
                 </el-select>
               </el-form-item>
               <el-form-item label="预测时间">
-                <el-input v-model="form.time" placeholder="100800s" />
+                <div>
+                  <!-- el-checkbox-group 用来将复选框组合在一起 -->
+                  <el-checkbox-group v-model="form.time">
+                    <el-checkbox :label="'3h'" :value="10800">3h</el-checkbox>
+                    <el-checkbox :label="'6h'" :value="21600">6h</el-checkbox>
+                    <el-checkbox :label="'12h'" :value="43200">12h</el-checkbox>
+                    <el-checkbox :label="'24h'" :value="86400">24h</el-checkbox>
+                    <el-checkbox :label="'48h'" :value="172800"
+                      >48h</el-checkbox
+                    >
+                    <el-checkbox :label="'60h'" :value="216000"
+                      >60h</el-checkbox
+                    >
+                  </el-checkbox-group>
+                </div>
               </el-form-item>
               <el-form-item label="入渗率">
-                <el-input v-model="form.rsl" placeholder="范围：[0-1]" />
+                <el-input v-model="form.rsl" placeholder="1.0e-6" />
               </el-form-item>
               <el-form-item label="初始地下水位">
                 <el-input v-model="form.depth" placeholder="单位M" />
@@ -64,14 +67,11 @@
               <el-form-item label="土壤最大深度">
                 <el-input v-model="form.zmax" placeholder="单位M" />
               </el-form-item>
-              <el-form-item label="内聚力">
-                <el-input v-model="form.cohesion" placeholder="范围:[0-1]" />
+              <el-form-item label="水力扩散系数">
+                <el-input v-model="form.diffus" placeholder="1.32e-3" />
               </el-form-item>
-              <el-form-item label="倾角">
-                <el-input v-model="form.phi" placeholder="范围:[0-90]" />
-              </el-form-item>
-              <el-form-item label="土容重">
-                <el-input v-model="form.uws" placeholder="" />
+              <el-form-item label="饱和渗透系数">
+                <el-input v-model="form.ksat" placeholder="1.32e-5" />
               </el-form-item>
               <el-form-item>
                 <el-button type="primary" @click="onSubmit">运行</el-button>
@@ -208,15 +208,14 @@ const squareStore = useSquareStore()
 
 const form = reactive({
   name: '',
-  region: '',
-  color: '',
-  time: '',
-  rsl: '',
-  depth: '',
-  zmax: '',
-  cohesion: '',
-  phi: '',
-  uws: '',
+  // region: '',
+  color: 'dangerLevel',
+  time: [],
+  rsl: '1.0e-6',
+  depth: '3.0',
+  zmax: '2.4',
+  diffus: '1.32e-03',
+  ksat: '1.32e-05',
 })
 
 function onSubmit() {
@@ -304,7 +303,12 @@ const leave = (el, done) => {
   padding: 0;
   // --el-color-primary: transparent;
 }
-
+:deep(.el-checkbox) {
+  margin-right: 10px;
+}
+:deep(.el-checkbox__label) {
+  padding-left: 2px;
+}
 .left {
   position: absolute;
   // max-height: 850px;
