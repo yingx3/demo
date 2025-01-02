@@ -84,9 +84,40 @@
       <div class="theme">
         <div class="title">动力学过程模型模拟</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
-        <div class="box">
+        <div class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
-          <span>冰川泥石流启动动力学模型</span>
+          <el-button :plain="true" @click="dialogVisible1 = true"
+            ><span>冰川泥石流启动动力学模型</span></el-button
+          >
+          <el-dialog
+            v-model="dialogVisible1"
+            title="模型参数"
+            width="500"
+            :close-on-click-modal="false"
+          >
+            <el-form :model="form1" label-width="auto" style="max-width: 600px">
+              <el-form-item label="相数">
+                <el-select v-model="form1.phases" placeholder="1">
+                  <el-option label="单相" value="1" />
+                  <el-option label="双相" value="2" />
+                  <el-option label="多相" value="3" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="内部摩擦">
+                <el-input v-model="form1.cf" placeholder="35" />
+              </el-form-item>
+              <el-form-item label="基底摩擦">
+                <el-input v-model="form1.bf" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="水摩擦">
+                <el-input v-model="form.ff" placeholder="0.05" />
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" @click="onSubmit1">运行</el-button>
+                <el-button @click="dialogVisible1 = false">取消</el-button>
+              </el-form-item>
+            </el-form>
+          </el-dialog>
         </div>
         <div class="box p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
@@ -192,9 +223,10 @@ import { inject, ref } from 'vue'
 import { reactive } from 'vue'
 import axios from 'axios'
 const dialogVisible = ref(false)
+const dialogVisible1 = ref(false)
 import { useSquareStore } from '../stores/squareStore'
 
-let $emit = defineEmits(['openLayers', 'timeSelected'])
+let $emit = defineEmits(['openLayers', 'timeSelected', 'yjLayers'])
 // 获取 store 实例
 const squareStore = useSquareStore()
 // function handleClose(done) {
@@ -217,6 +249,12 @@ const form = reactive({
   diffus: '1.32e-03',
   ksat: '1.32e-05',
 })
+const form1 = reactive({
+  phases: '1',
+  cf: '35',
+  bf: '20',
+  ff: '0.05',
+})
 function onSubmit() {
   dialogVisible.value = false
   ElMessage({ message: '运行中!', type: 'success', duration: 40000 })
@@ -235,7 +273,7 @@ function onSubmit() {
 }
 const subitForm = () => {
   axios
-    .post('/testapi/admin/user/fx', form, { timeout: 400000 })
+    .post('/testapi/admin/user/fx', form, { timeout: 40000 })
     .then(response => {
       const text = response.data
       // if (form.color == 'dangerLevel') {
@@ -260,7 +298,45 @@ const subitForm = () => {
       // 处理错误
     })
 }
+//演进模型
+function onSubmit1() {
+  dialogVisible1.value = false
+  ElMessage({ message: '运行中!', type: 'success', duration: 150000 })
+  subitForm1()
+  // console.log(form.time[0])
+  //把选中的时间通过自定义事件传递给父组件
+  // $emit('timeSelected', form.time)
+  // for (let t of form.time) {
+  //   console.log(t) //打印每个选中的时间（秒数）
+  // }
+  // if (form.color == 'dangerLevel') {
+  //   // squareStore.openSquare()
+  //   console.log('111')
+  //   // console.log(squareStore.showSquare)
+  // }
+}
+const subitForm1 = () => {
+  axios
+    .post('/testapi/admin/user/yj', form, { timeout: 40000 })
+    .then(response => {
+      const text = response.data
+      // if (form.color == 'dangerLevel') {
+      //   // squareStore.openSquare()
+      //   console.log('111')
+      //   // console.log(squareStore.showSquare)
+      // }
+      // console.log(text)
 
+      // $emit('openLayers', leftlat, leftlong, rightlat, rightlong, pname)
+    })
+    .catch(error => {
+      console.error(error)
+      // 处理错误
+    })
+  setTimeout(() => {
+    $emit('yjLayers')
+  }, 150000)
+}
 // 控制正方形显示与隐藏的状态
 // const showSquare = ref(false)
 

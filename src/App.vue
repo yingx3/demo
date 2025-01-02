@@ -2,7 +2,11 @@
   <div class="top-container">
     <div id="cesiumContainer"></div>
     <zh-jc></zh-jc>
-    <le-th @openLayers="openLayers" @timeSelected="handleTimeSelected"></le-th>
+    <le-th
+      @openLayers="openLayers"
+      @timeSelected="handleTimeSelected"
+      @yjLayers="yjLayers"
+    ></le-th>
     <zy-ml
       :time="selectedTime"
       @checkedLayers="checkedLayers"
@@ -288,6 +292,29 @@ const openLayers = (p1, p2, p3, p4, p5) => {
 
   addLayer3(p1, p2, p3, p4, p5)
   selectedIds.value = [13]
+}
+
+const yjLayers = () => {
+  var imgUrl = `/ng/ca_exp2_hflow_map.gif`
+  var rectangle = Cesium.Rectangle.fromDegrees(
+    94.975777,
+    29.976196,
+    95.088043,
+    30.035248
+  )
+  viewer.value.entities.add({
+    rectangle: {
+      coordinates: rectangle,
+      material: new Cesium.ImageMaterialProperty({
+        image: imgUrl,
+        repeat: new Cesium.Cartesian2(1.0, 1.0), // 图像重复方式
+      }),
+    },
+  })
+  viewer.value.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(95.0293964, 30.0092938, 50000),
+  })
+  console.log('已跳转！！！')
 }
 // 先获取点位的json信息
 const getJson = async () => {
