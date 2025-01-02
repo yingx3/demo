@@ -194,7 +194,7 @@ import axios from 'axios'
 const dialogVisible = ref(false)
 import { useSquareStore } from '../stores/squareStore'
 
-let $emit = defineEmits(['openLayers'])
+let $emit = defineEmits(['openLayers', 'timeSelected'])
 // 获取 store 实例
 const squareStore = useSquareStore()
 // function handleClose(done) {
@@ -217,11 +217,16 @@ const form = reactive({
   diffus: '1.32e-03',
   ksat: '1.32e-05',
 })
-
 function onSubmit() {
   dialogVisible.value = false
   ElMessage({ message: '运行中!', type: 'success', duration: 40000 })
   subitForm()
+  // console.log(form.time[0])
+  //把选中的时间通过自定义事件传递给父组件
+  $emit('timeSelected', form.time)
+  // for (let t of form.time) {
+  //   console.log(t) //打印每个选中的时间（秒数）
+  // }
   // if (form.color == 'dangerLevel') {
   //   // squareStore.openSquare()
   //   console.log('111')

@@ -2,13 +2,17 @@
   <div class="top-container">
     <div id="cesiumContainer"></div>
     <zh-jc></zh-jc>
-    <le-th @openLayers="openLayers"></le-th>
-    <zy-ml @checkedLayers="checkedLayers" :checked-ids="selectedIds"></zy-ml>
+    <le-th @openLayers="openLayers" @timeSelected="handleTimeSelected"></le-th>
+    <zy-ml
+      :time="selectedTime"
+      @checkedLayers="checkedLayers"
+      :checked-ids="selectedIds"
+    ></zy-ml>
   </div>
 </template>
 <script setup>
 import * as Cesium from 'cesium'
-import { ref, onMounted, onUpdated, onBeforeUnmount } from 'vue'
+import { nextTick, ref, onMounted, onUpdated, onBeforeUnmount } from 'vue'
 import { getGeojson } from './common/api/api.js'
 import Dialog from './js/dialog.js'
 import ZhJc from './components/ZhJc.vue'
@@ -32,6 +36,9 @@ const rightlong = ref(97.59842422060389)
 const rightlat = ref(31.17398632290709)
 
 const selectedIds = ref([])
+
+//存储选中的时间
+const selectedTime = ref([])
 
 // const hd = ref('dangerLevel_20241129_110851_273.png')
 const hd = ref('dangerLevel_20241129_110851_27.gif')
@@ -256,6 +263,17 @@ function flyToWithRangeCheck(
       roll: 0.0, //滚转
     },
   })
+}
+//处理LeTh组件传递的时间
+const handleTimeSelected = time => {
+  // console.log(time)
+  // selectedTime.value = time[0]
+  selectedTime.value = []
+  for (let t of time) {
+    selectedTime.value.push(t) //打印每个选中的时间（秒数）
+    // console.log(t)
+  }
+  // console.log(selectedTime.value)
 }
 
 const openLayers = (p1, p2, p3, p4, p5) => {

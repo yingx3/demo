@@ -31,6 +31,10 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  time: {
+    type: Array,
+    default: () => [],
+  },
 })
 // 树形数据
 const treeData = ref([
@@ -49,6 +53,7 @@ const treeData = ref([
       {
         id: 13,
         name: '灾害危险区划',
+        children: [],
       },
       {
         id: 14,
@@ -445,7 +450,81 @@ const defaultProps = {
   label: 'name',
   children: 'children',
 }
+//结构time
+const { time } = props
+// for (let t of time) {
+//   console.log(t)
+//   // console.log('121')
+//   console.log('121')
+// }
 
+// 递归查找节点的函数
+function findNodeById(nodes, id) {
+  for (let node of nodes) {
+    if (node.id === id) {
+      return node // 找到并返回节点
+    }
+    if (node.children && node.children.length > 0) {
+      const childNode = findNodeById(node.children, id) // 递归查找子节点
+      if (childNode) {
+        return childNode
+      }
+    }
+  }
+  return null // 如果没有找到，返回 null
+}
+
+const addChildNode = time => {
+  // 使用递归查找 ID 为 13 的节点
+  const targetNode = findNodeById(treeData.value, 13)
+  // console.log(targetNode) // 查看 targetNode 是否为 undefined 或目标节点
+  if (targetNode) {
+    targetNode.children = []
+    // 根据选择的时间添加不同的子节点
+    // console.log('当前 children 数组:', targetNode.children) // 检查当前 children 数组
+    // 确保 time 数组不为空
+    if (time && time.length > 0) {
+      time.forEach(selectedTime => {
+        const newNode = {
+          id: performance.now(), // 使用更精确的时间戳作为唯一 ID
+          name: `${selectedTime / 3600}h`,
+          children: [],
+        }
+        targetNode.children.push(newNode)
+        // console.log('添加的子节点:', newNode) // 输出添加的节点
+        // 强制触发响应式更新
+        treeData.value = [...treeData.value] // 通过替换引用的方式触发视图更新
+      })
+      if (time.length > 1) {
+        //添加图层：合并所有时间段
+        const newNode1 = {
+          id: performance.now(), // 使用更精确的时间戳作为唯一 ID
+          name: `合并所有时间段`,
+          children: [],
+        }
+        targetNode.children.push(newNode1)
+      }
+    } else {
+      console.log('时间数组为空，无法添加子节点')
+    }
+  } else {
+    console.log('节点未找到')
+  }
+}
+// 监听传递的 `time` prop，当时间变化时，动态更新树数据
+watch(
+  () => props.time,
+  newTime => {
+    setTimeout(() => {
+      if (newTime.length > 0) {
+        console.log(newTime)
+        // addChildNode(newTime)
+        addChildNode(newTime)
+      }
+    }, 50)
+  },
+  { immediate: true } // 可选：在组件初始化时也执行一次
+)
 //监听父组件传递的选中节点ID列表,watch(source, callback, options)source:数据源，表示要监听的内容。callback: 回调函数，当数据发生变化时会触发。options: 可选配置项，比如是否立即执行。
 watch(
   () => props.checkedIds,
