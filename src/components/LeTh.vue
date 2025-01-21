@@ -273,25 +273,46 @@ function onSubmit() {
 }
 const subitForm = () => {
   axios
-    .post('/testapi/admin/user/fx', form, { timeout: 40000 })
+    .post('/testapi/admin/user/fx', form, { timeout: 120000 })
     .then(response => {
       const text = response.data
-      // if (form.color == 'dangerLevel') {
-      //   // squareStore.openSquare()
-      //   console.log('111')
-      //   // console.log(squareStore.showSquare)
-      // }
       // console.log(text)
-      const matches = text.match(
-        /左下经度:([\d.]+), 左下纬度:([\d.]+), 右上经度:([\d.]+), 右上纬度:([\d.]+),图片名称：(.+)$/
+
+      // 匹配字符串中的经纬度和图片名称
+      // console.log(form.time.length)
+
+      // 构建图片名称部分的正则表达式
+      let imageNameRegex = ''
+      for (let i = 1; i <= form.time.length; i++) {
+        imageNameRegex += `,图片名称${i}:(.+)$`
+      }
+
+      // 动态构建完整的正则表达式
+      const regex = new RegExp(
+        `左下经度:([\\d.]+),左下纬度:([\\d.]+),右上经度:([\\d.]+),右上纬度:([\\d.]+)` +
+          imageNameRegex
       )
 
-      const leftlong = Number(matches[1])
-      const leftlat = Number(matches[2])
-      const rightlong = Number(matches[3])
-      const rightlat = Number(matches[4])
-      const pname = matches[5]
-      $emit('openLayers', leftlat, leftlong, rightlat, rightlong, pname)
+      // 使用构建的正则表达式进行匹配
+      const matches = text.match(regex)
+
+      // console.log(matches)
+
+      if (matches) {
+        const leftlong = Number(matches[1])
+        const leftlat = Number(matches[2])
+        const rightlong = Number(matches[3])
+        const rightlat = Number(matches[4])
+
+        // 提取 pname 参数（从索引 5 开始）
+        const pnames = matches.slice(5)
+
+        // 传递参数给父组件
+        const params = { leftlat, leftlong, rightlat, rightlong, pnames }
+        $emit('openLayers', params)
+      } else {
+        console.error('没有找到匹配的数据！')
+      }
     })
     .catch(error => {
       console.error(error)

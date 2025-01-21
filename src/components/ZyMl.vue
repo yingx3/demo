@@ -517,7 +517,7 @@ watch(
   newTime => {
     setTimeout(() => {
       if (newTime.length > 0) {
-        console.log(newTime)
+        // console.log(newTime)
         // addChildNode(newTime)
         addChildNode(newTime)
       }

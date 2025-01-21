@@ -44,9 +44,8 @@ const selectedIds = ref([])
 //存储选中的时间
 const selectedTime = ref([])
 
-// const hd = ref('dangerLevel_20241129_110851_273.png')
-const hd = ref('dangerLevel_20241129_110851_27.gif')
-// const hd = ref(null)
+const hd = ref('dangerLevel_20250121_161228_914.png')
+
 const gray = ref('')
 const rgb = ref('')
 const redGradient = ref('')
@@ -209,7 +208,7 @@ const checkedLayers = ps => {
         flyToWithRangeCheck(viewer.value, leftlong.value, leftlat.value - 0.4)
       }
       if (p !== 13) {
-        console.log('111')
+        // console.log('111')
         viewer.value.entities.removeById('2')
       }
       if (p === 14) {
@@ -280,8 +279,11 @@ const handleTimeSelected = time => {
   // console.log(selectedTime.value)
 }
 
-const openLayers = (p1, p2, p3, p4, p5) => {
-  const match = p5.match(/^([^_]+)_/)
+const openLayers = params => {
+  const { leftlat, leftlong, rightlat, rightlong, pnames } = params
+  // console.log(leftlat, leftlong, rightlat, rightlong)
+  // console.log(pnames) // pnames 是一个数组，包含所有传递的 pname 参数
+  const match = pnames[0].match(/^([^_]+)_/)
   if (match[1] == 'dangerLevel') {
     // console.log('111')
     squareStore.openSquare()
@@ -290,7 +292,7 @@ const openLayers = (p1, p2, p3, p4, p5) => {
     squareStore.closeRisk()
   }
 
-  addLayer3(p1, p2, p3, p4, p5)
+  addLayer3(leftlat, leftlong, rightlat, rightlong, pnames[0])
   selectedIds.value = [13]
 }
 
