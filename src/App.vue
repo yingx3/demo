@@ -44,12 +44,12 @@ const selectedIds = ref([])
 //存储选中的时间
 const selectedTime = ref([])
 
-const hd = ref('dangerLevel_20250121_161228_914.png')
-
+const hd = ref('')
 const gray = ref('')
 const rgb = ref('')
 const redGradient = ref('')
 const dangerLevel = ref('')
+const pname = ref([])
 // const id =ref(null)
 onMounted(async () => {
   Cesium.Ion.defaultAccessToken =
@@ -67,6 +67,7 @@ onMounted(async () => {
     timeline: false, //隐藏时间控件
     infoBox: false,
   })
+  // console.log(pnames.value)
   //ScreenSpaceEventHandler是用于处理屏幕空间事件（例如鼠标点击、移动等）。该代码是将其绑定到指定的Cesiuim场景的canvas元素上。该实例监听canvas元素相关的鼠标和触摸事件。
   const handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
   //handler.setInputAction(function (movement) { ... }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
@@ -117,16 +118,7 @@ onMounted(async () => {
 })
 
 const checkedLayers = ps => {
-  // console.log(ps)
   if (ps.length === 0) {
-    // viewer.value.camera.flyTo({
-    //   destination: Cesium.Cartesian3.fromDegrees(0, 0, 6378137 * 3),
-    //   orientation: {
-    //     heading: 0,
-    //     pitch: Cesium.Math.toRadians(-90),
-    //     roll: 0,
-    //   },
-    // })
     removeLayer1()
     removeLayer2()
     // viewer.value.entities.removeById('2')
@@ -138,17 +130,6 @@ const checkedLayers = ps => {
       // console.log(p)
       if (p === 11) {
         addLayer1()
-        // console.log('11')
-        // viewer.value.camera.flyTo({
-        //   destination: Cesium.Cartesian3.fromDegrees(95.0, 29.735, 4500),
-        //   //相机的姿态
-        //   orientation: {
-        //     heading: Cesium.Math.toRadians(0.0), //朝向
-        //     pitch: Cesium.Math.toRadians(-40), //俯仰
-        //     // pitch: Cesium.Math.toRadians(-90), //俯仰
-        //     roll: 0.0, //滚转
-        //   },
-        // })
         flyToWithRangeCheck(viewer.value, 95.0, 29.735)
       }
       if (p !== 11) {
@@ -157,31 +138,18 @@ const checkedLayers = ps => {
       }
       if (p === 12) {
         addLayer2()
-        // console.log('12')
-        // viewer.value.camera.flyTo({
-        //   destination: Cesium.Cartesian3.fromDegrees(95.0, 29.735, 4500),
-        //   //相机的姿态
-        //   orientation: {
-        //     heading: Cesium.Math.toRadians(0.0), //朝向
-        //     pitch: Cesium.Math.toRadians(-40), //俯仰
-        //     // pitch: Cesium.Math.toRadians(-90), //俯仰
-        //     roll: 0.0, //滚转
-        //   },
-        // })
         flyToWithRangeCheck(viewer.value, 95.0, 29.735)
       }
       if (p !== 12) {
         removeLayer2()
-        // console.log('120')
       }
-      if (p === 13) {
+      if (p === 131) {
         const match = hd.value.match(/^([^_]+)_/)
         if (match[1] == 'dangerLevel') {
-          // console.log('111')
           squareStore.openSquare()
           squareStore.openRisk()
         }
-        var imgUrl = `/ng/${hd.value}`
+        var imgUrl = `/ng/${pname.value[0]}`
         viewer.value.entities.add({
           id: '2',
           rectangle: {
@@ -197,19 +165,160 @@ const checkedLayers = ps => {
             }),
           },
         })
-        // viewer.value.camera.flyTo({
-        //   destination: Cesium.Cartesian3.fromDegrees(
-        //     leftlong.value,
-        //     leftlat.value + 0.1,
-        //     50000
-        //   ),
-        // })
-        //范围检测后执行跳转逻辑
         flyToWithRangeCheck(viewer.value, leftlong.value, leftlat.value - 0.4)
       }
-      if (p !== 13) {
+      if (p !== 131) {
         // console.log('111')
         viewer.value.entities.removeById('2')
+      }
+      if (p === 132) {
+        const match = hd.value.match(/^([^_]+)_/)
+        if (match[1] == 'dangerLevel') {
+          // console.log('111')
+          squareStore.openSquare()
+          squareStore.openRisk()
+        }
+        var imgUrl = `/ng/${pname.value[1]}`
+        viewer.value.entities.add({
+          id: '3',
+          rectangle: {
+            coordinates: Cesium.Rectangle.fromDegrees(
+              leftlong.value,
+              leftlat.value,
+              rightlong.value,
+              rightlat.value
+            ),
+            material: new Cesium.ImageMaterialProperty({
+              image: imgUrl,
+              repeat: new Cesium.Cartesian2(1.0, 1.0), // 图像重复方式
+            }),
+          },
+        })
+        flyToWithRangeCheck(viewer.value, leftlong.value, leftlat.value - 0.4)
+      }
+      if (p !== 132) {
+        // console.log('111')
+        viewer.value.entities.removeById('3')
+      }
+      if (p === 133) {
+        const match = hd.value.match(/^([^_]+)_/)
+        if (match[1] == 'dangerLevel') {
+          // console.log('111')
+          squareStore.openSquare()
+          squareStore.openRisk()
+        }
+        var imgUrl = `/ng/${pname.value[2]}`
+        viewer.value.entities.add({
+          id: '4',
+          rectangle: {
+            coordinates: Cesium.Rectangle.fromDegrees(
+              leftlong.value,
+              leftlat.value,
+              rightlong.value,
+              rightlat.value
+            ),
+            material: new Cesium.ImageMaterialProperty({
+              image: imgUrl,
+              repeat: new Cesium.Cartesian2(1.0, 1.0), // 图像重复方式
+            }),
+          },
+        })
+        flyToWithRangeCheck(viewer.value, leftlong.value, leftlat.value - 0.4)
+      }
+      if (p !== 133) {
+        // console.log('111')
+        viewer.value.entities.removeById('4')
+      }
+      if (p === 134) {
+        const match = hd.value.match(/^([^_]+)_/)
+        if (match[1] == 'dangerLevel') {
+          // console.log('111')
+          squareStore.openSquare()
+          squareStore.openRisk()
+        }
+        var imgUrl = `/ng/${pname.value[3]}`
+        viewer.value.entities.add({
+          id: '5',
+          rectangle: {
+            coordinates: Cesium.Rectangle.fromDegrees(
+              leftlong.value,
+              leftlat.value,
+              rightlong.value,
+              rightlat.value
+            ),
+            material: new Cesium.ImageMaterialProperty({
+              image: imgUrl,
+              repeat: new Cesium.Cartesian2(1.0, 1.0), // 图像重复方式
+            }),
+          },
+        })
+        flyToWithRangeCheck(viewer.value, leftlong.value, leftlat.value - 0.4)
+      }
+      if (p !== 134) {
+        // console.log('111')
+        viewer.value.entities.removeById('5')
+      }
+      if (p === 135) {
+        const match = hd.value.match(/^([^_]+)_/)
+        if (match[1] == 'dangerLevel') {
+          // console.log('111')
+          squareStore.openSquare()
+          squareStore.openRisk()
+        }
+        var imgUrl = `/ng/${pname.value[4]}`
+        viewer.value.entities.add({
+          id: '6',
+          rectangle: {
+            coordinates: Cesium.Rectangle.fromDegrees(
+              leftlong.value,
+              leftlat.value,
+              rightlong.value,
+              rightlat.value
+            ),
+            material: new Cesium.ImageMaterialProperty({
+              image: imgUrl,
+              repeat: new Cesium.Cartesian2(1.0, 1.0), // 图像重复方式
+            }),
+          },
+        })
+        flyToWithRangeCheck(viewer.value, leftlong.value, leftlat.value - 0.4)
+      }
+      if (p !== 135) {
+        // console.log('111')
+        viewer.value.entities.removeById('6')
+      }
+      if (p === 136) {
+        const match = hd.value.match(/^([^_]+)_/)
+        if (match[1] == 'dangerLevel') {
+          // console.log('111')
+          squareStore.openSquare()
+          squareStore.openRisk()
+        }
+        var imgUrl = `/ng/${pname.value[5]}`
+        viewer.value.entities.add({
+          id: '7',
+          rectangle: {
+            coordinates: Cesium.Rectangle.fromDegrees(
+              leftlong.value,
+              leftlat.value,
+              rightlong.value,
+              rightlat.value
+            ),
+            material: new Cesium.ImageMaterialProperty({
+              image: imgUrl,
+              repeat: new Cesium.Cartesian2(1.0, 1.0), // 图像重复方式
+            }),
+          },
+        })
+        flyToWithRangeCheck(viewer.value, leftlong.value, leftlat.value - 0.4)
+      }
+      if (p !== 136) {
+        // console.log('111')
+        viewer.value.entities.removeById('7')
+      }
+      if (p === 137) {
+      }
+      if (p !== 137) {
       }
       if (p === 14) {
         addLayer4()
@@ -280,9 +389,18 @@ const handleTimeSelected = time => {
 }
 
 const openLayers = params => {
+  // console.log(params)
   const { leftlat, leftlong, rightlat, rightlong, pnames } = params
+  // console.log(pnames)
+  if (pnames && Array.isArray(pnames)) {
+    pname.value.push(...pnames)
+  } else {
+    // 如果 pns 是 undefined 或 null，或者不是数组，将其作为单个元素添加
+    pname.value.push(pnames)
+  }
+  console.log(pname.value)
   // console.log(leftlat, leftlong, rightlat, rightlong)
-  // console.log(pnames) // pnames 是一个数组，包含所有传递的 pname 参数
+  // console.log(pnames.value) // pnames 是一个数组，包含所有传递的 pname 参数
   const match = pnames[0].match(/^([^_]+)_/)
   if (match[1] == 'dangerLevel') {
     // console.log('111')
@@ -293,7 +411,7 @@ const openLayers = params => {
   }
 
   addLayer3(leftlat, leftlong, rightlat, rightlong, pnames[0])
-  selectedIds.value = [13]
+  selectedIds.value = [131]
 }
 
 const yjLayers = () => {

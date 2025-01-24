@@ -273,7 +273,7 @@ function onSubmit() {
 }
 const subitForm = () => {
   axios
-    .post('/testapi/admin/user/fx', form, { timeout: 120000 })
+    .post('/testapi/admin/user/fx', form, { timeout: 400000 })
     .then(response => {
       const text = response.data
       // console.log(text)
@@ -284,9 +284,9 @@ const subitForm = () => {
       // 构建图片名称部分的正则表达式
       let imageNameRegex = ''
       for (let i = 1; i <= form.time.length; i++) {
-        imageNameRegex += `,图片名称${i}:(.+)$`
+        imageNameRegex += `,图片名称${i}:(\\S+\\.png)`
       }
-
+      // console.log(imageNameRegex)
       // 动态构建完整的正则表达式
       const regex = new RegExp(
         `左下经度:([\\d.]+),左下纬度:([\\d.]+),右上经度:([\\d.]+),右上纬度:([\\d.]+)` +
@@ -306,6 +306,7 @@ const subitForm = () => {
 
         // 提取 pname 参数（从索引 5 开始）
         const pnames = matches.slice(5)
+        // console.log(pnames)
 
         // 传递参数给父组件
         const params = { leftlat, leftlong, rightlat, rightlong, pnames }

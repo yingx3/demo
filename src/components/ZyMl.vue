@@ -483,13 +483,16 @@ const addChildNode = time => {
     // 根据选择的时间添加不同的子节点
     // console.log('当前 children 数组:', targetNode.children) // 检查当前 children 数组
     // 确保 time 数组不为空
+    let idCounter = 131 // 初始化 ID 计数器，从 131 开始
     if (time && time.length > 0) {
       time.forEach(selectedTime => {
         const newNode = {
-          id: performance.now(), // 使用更精确的时间戳作为唯一 ID
+          // id: performance.now(), // 使用更精确的时间戳作为唯一 ID
+          id: idCounter++,
           name: `${selectedTime / 3600}h`,
           children: [],
         }
+        // console.log(newNode)
         targetNode.children.push(newNode)
         // console.log('添加的子节点:', newNode) // 输出添加的节点
         // 强制触发响应式更新
@@ -498,7 +501,7 @@ const addChildNode = time => {
       if (time.length > 1) {
         //添加图层：合并所有时间段
         const newNode1 = {
-          id: performance.now(), // 使用更精确的时间戳作为唯一 ID
+          id: 137,
           name: `合并所有时间段`,
           children: [],
         }
@@ -549,7 +552,8 @@ watch(
 const handleClick = (node, data) => {
   // console.log('Clicked Node Instance:', node) // 节点的实例信息
   // console.log('Clicked Node Data:', data) // 节点的原始数据
-  if (node.id == 13 && squareStore.risk) {
+  const validIds = [131, 132, 133, 134, 135, 136, 137]
+  if (validIds.includes(node.id) && squareStore.risk) {
     squareStore.toggleSquare()
     // console.log('111')
   }

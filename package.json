@@ -12,6 +12,7 @@
     "cesium": "^1.121.1",
     "cesium-heatmap": "^0.0.4",
     "cesiumjs-heat": "^1.0.7",
+    "gif.js": "^0.2.0",
     "i": "^0.3.7",
     "pinia": "^2.2.8",
     "vite-plugin-cesium": "^1.2.23",
