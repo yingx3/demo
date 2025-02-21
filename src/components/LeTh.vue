@@ -342,14 +342,6 @@ const subitForm1 = () => {
     .post('/testapi/admin/user/yj', form, { timeout: 40000 })
     .then(response => {
       const text = response.data
-      // if (form.color == 'dangerLevel') {
-      //   // squareStore.openSquare()
-      //   console.log('111')
-      //   // console.log(squareStore.showSquare)
-      // }
-      // console.log(text)
-
-      // $emit('openLayers', leftlat, leftlong, rightlat, rightlong, pname)
     })
     .catch(error => {
       console.error(error)

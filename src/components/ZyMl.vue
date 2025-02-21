@@ -484,6 +484,7 @@ const addChildNode = time => {
     // console.log('当前 children 数组:', targetNode.children) // 检查当前 children 数组
     // 确保 time 数组不为空
     let idCounter = 131 // 初始化 ID 计数器，从 131 开始
+    let layer_id = 2
     if (time && time.length > 0) {
       time.forEach(selectedTime => {
         const newNode = {
@@ -491,6 +492,7 @@ const addChildNode = time => {
           id: idCounter++,
           name: `${selectedTime / 3600}h`,
           children: [],
+          layer_id: `${layer_id++}`,
         }
         // console.log(newNode)
         targetNode.children.push(newNode)
@@ -554,8 +556,15 @@ const handleClick = (node, data) => {
   // console.log('Clicked Node Data:', data) // 节点的原始数据
   const validIds = [131, 132, 133, 134, 135, 136, 137]
   if (validIds.includes(node.id) && squareStore.risk) {
-    squareStore.toggleSquare()
+    // squareStore.toggleSquare()
+    // squareStore.openSquare()
     // console.log('111')
+  }
+  let uncheckedNode = null
+  // 获取所有已选中的节点的 id
+  const checkedNodeIds = treeRef.value.getCheckedNodes().map(node => node.id)
+  if (!checkedNodeIds.includes(node.id)) {
+    uncheckedNode = node.id
   }
   // 打印当前勾选的节点数据
   if (treeRef.value) {
@@ -565,7 +574,7 @@ const handleClick = (node, data) => {
       checkedNodes.push(node.id) // 假设节点数据中有 id 字段
     }
     // console.log('Selected Node IDs:', checkedNodes) // 打印选中节点的 id 数组
-    $emit('checkedLayers', checkedNodes)
+    $emit('checkedLayers', checkedNodes, uncheckedNode)
     // const checkedNodes = treeRef.value.getCheckedNodes() // 获取选中的节点数据
     // console.log(treeRef.value.getCheckedNodes().length)
     // console.log(checkedNodes)
