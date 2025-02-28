@@ -12,6 +12,17 @@
       @checkedLayers="checkedLayers"
       :checked-ids="selectedIds"
     ></zy-ml>
+    <div class="control">
+      <div class="control_specific">
+        <img src="./assets/img/global.png" alt="" />
+        <img src="./assets/img/mountain.png" alt="" />
+        <img src="./assets/img/arrow.png" alt="" />
+        <img src="./assets/img/coverage.png" alt="" />
+        <img src="./assets/img/table.png" alt="" />
+        <img src="./assets/img/flag.png" alt="" />
+        <img src="./assets/img/roll.png" alt="" />
+      </div>
+    </div>
   </div>
 </template>
 <script setup>
@@ -141,6 +152,9 @@ const checkedLayers = (ps, node) => {
       break
     case 136:
       viewer.value.entities.removeById('7')
+      break
+    case 137:
+      viewer.value.entities.removeAll()
       break
     default:
       break
@@ -958,4 +972,19 @@ const removefximg = () => {
     transform-origin: top;
   }
 } */
+
+.top-container .control .control_specific {
+  display: flex;
+  /* height: 450px; */
+
+  flex-direction: column;
+  justify-content: space-between;
+  position: absolute;
+  top: 85px;
+  right: 350px;
+  align-items: center;
+}
+.top-container .control .control_specific img {
+  transform: scale(0.7);
+}
 </style>

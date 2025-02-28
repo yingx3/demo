@@ -24,16 +24,23 @@
           >
           <el-dialog
             v-model="dialogVisible"
-            title="模型参数"
+            title="风险源定量识别与表征模型"
             width="500"
             :close-on-click-modal="false"
+            class="dialog_trigrs"
           >
-            <el-form :model="form" label-width="auto" style="max-width: 600px">
-              <el-form-item label="地点">
+            <p id="name_par">模型参数</p>
+
+            <el-form
+              :model="form"
+              label-width="auto"
+              style="max-width: 600px"
+              class="form_trigrs"
+            >
+              <el-form-item label="地点" class="form1_trigrs">
                 <el-input v-model="form.name" placeholder="林芝市" />
               </el-form-item>
-
-              <el-form-item label="色带">
+              <el-form-item label="色带" class="form2_trigrs">
                 <el-select v-model="form.color" placeholder="危险等级">
                   <el-option label="危险等级" value="dangerLevel" />
                   <el-option label="灰度" value="gray" />
@@ -41,9 +48,8 @@
                   <el-option label="红色渐变" value="redGradient" />
                 </el-select>
               </el-form-item>
-              <el-form-item label="预测时间">
+              <el-form-item label="预测时间" class="from3_trigrs">
                 <div>
-                  <!-- el-checkbox-group 用来将复选框组合在一起 -->
                   <el-checkbox-group v-model="form.time">
                     <el-checkbox :label="'3h'" :value="10800">3h</el-checkbox>
                     <el-checkbox :label="'6h'" :value="21600">6h</el-checkbox>
@@ -58,7 +64,7 @@
                   </el-checkbox-group>
                 </div>
               </el-form-item>
-              <el-form-item label="入渗率">
+              <el-form-item label="入渗率" class="form4_trigrs">
                 <el-input v-model="form.rsl" placeholder="1.0e-6" />
               </el-form-item>
               <el-form-item label="初始地下水位">
@@ -74,7 +80,9 @@
                 <el-input v-model="form.ksat" placeholder="1.32e-5" />
               </el-form-item>
               <el-form-item>
-                <el-button type="primary" @click="onSubmit">运行</el-button>
+                <el-button class="b_ex" type="primary" @click="onSubmit"
+                  >运行</el-button
+                >
                 <el-button @click="dialogVisible = false">取消</el-button>
               </el-form-item>
             </el-form>
@@ -91,29 +99,41 @@
           >
           <el-dialog
             v-model="dialogVisible1"
-            title="模型参数"
+            title="冰川泥石流启动动力学模型"
             width="500"
             :close-on-click-modal="false"
+            class="dialog_avaflow"
           >
-            <el-form :model="form1" label-width="auto" style="max-width: 600px">
-              <el-form-item label="相数">
+            <p id="name_par2">模型参数</p>
+            <el-form
+              :model="form1"
+              label-width="auto"
+              style="max-width: 600px"
+              class="form_avaflow"
+            >
+              <el-form-item label="相数" class="form1_avaflow">
                 <el-select v-model="form1.phases" placeholder="1">
                   <el-option label="单相" value="1" />
                   <el-option label="双相" value="2" />
                   <el-option label="多相" value="3" />
                 </el-select>
               </el-form-item>
-              <el-form-item label="内部摩擦">
+              <el-form-item label="内部摩擦" class="form2_avaflow">
                 <el-input v-model="form1.cf" placeholder="35" />
               </el-form-item>
-              <el-form-item label="基底摩擦">
+              <el-form-item label="基底摩擦" class="form3_avaflow">
                 <el-input v-model="form1.bf" placeholder="20" />
               </el-form-item>
-              <el-form-item label="水摩擦">
+              <el-form-item label="水摩擦" class="form4_avaflow">
                 <el-input v-model="form.ff" placeholder="0.05" />
               </el-form-item>
               <el-form-item>
-                <el-button type="primary" @click="onSubmit1">运行</el-button>
+                <el-button
+                  type="primary"
+                  @click="onSubmit1"
+                  class="b_ex_avaflow"
+                  >运行</el-button
+                >
                 <el-button @click="dialogVisible1 = false">取消</el-button>
               </el-form-item>
             </el-form>
@@ -404,6 +424,7 @@ const leave = (el, done) => {
 :deep(.el-checkbox__label) {
   padding-left: 2px;
 }
+
 .left {
   position: absolute;
   // max-height: 850px;
@@ -553,5 +574,118 @@ const leave = (el, done) => {
 .fade-enter, .fade-leave-to /* .fade-leave-active 在离开时生效 */ {
   opacity: 0;
   transform: scale(0);
+}
+
+:deep(.el-dialog.dialog_trigrs) {
+  --el-dialog-bg-color: transparent;
+  width: 776px;
+  height: 503px;
+  background-image: url('../assets/img/fz173.png');
+  background-size: 100% 100%;
+}
+:deep(.el-dialog.dialog_avaflow) {
+  --el-dialog-bg-color: transparent;
+  width: 450px;
+  height: 300px;
+  background-image: url('../assets/img/fz173.png');
+  background-size: 100% 100%;
+}
+:deep(.el-input) {
+  --el-input-bg-color: transparent;
+  --el-input-border-color: transparent;
+}
+:deep(.el-select__wrapper) {
+  background-color: transparent;
+}
+:deep(.el-select__wrapper) {
+  box-shadow: 0 0 0 1px transparent inset;
+  font-size: 18px;
+}
+:deep(.el-dialog__title) {
+  color: rgba(255, 255, 255, 1);
+  font-size: 24px;
+}
+:deep(.el-form-item__label) {
+  color: rgba(255, 255, 255, 1);
+  font-size: 18px;
+}
+:deep(.el-input__inner) {
+  color: rgba(166, 166, 166, 1);
+  font-size: 18px;
+}
+:deep(.el-select__placeholder) {
+  color: rgba(166, 166, 166, 1);
+}
+:deep(.el-checkbox) {
+  --el-checkbox-text-color: rgba(166, 166, 166, 1);
+}
+:deep(.el-dialog.dialog_trigrs .el-dialog__header) {
+  padding: 30px 0px 0px 48px;
+}
+:deep(.el-dialog.dialog_avaflow .el-dialog__header) {
+  padding: 0px 0px 0px 22px;
+  line-height: 30px;
+}
+.form_trigrs {
+  display: flex;
+  flex-wrap: wrap; /*子元素在必要时换行*/
+  width: 650px;
+  margin-top: 10px;
+  margin-left: 50px;
+}
+.form_avaflow {
+  display: flex;
+  flex-wrap: wrap; /*子元素在必要时换行*/
+  width: 370px;
+  margin-top: 10px;
+  margin-left: 28px;
+}
+.el-form-item {
+  flex: 1 1 50%; /* 每个表单项宽度为45%（两列布局） */
+  margin-bottom: 30px; /* 每个表单项之间的间距 */
+}
+/* 强制特定项的宽度和布局 */
+.el-form-item.form1_avaflow,
+.el-form-item.form2_avaflow {
+  flex: 1 1 45%; /* 地点和色带为一行 */
+}
+.el-form-item.form3_avaflow,
+.el-form-item.form4_avaflow {
+  flex: 1 1 45%; /* 地点和色带为一行 */
+}
+
+.el-form-item.form3_trigrs {
+  flex: 1 1 100%; /* 预测时间为一行 */
+}
+
+.el-form-item.form4_trigrs {
+  flex: 1 1 100%; /* 入渗率为一行 */
+}
+
+.el-form-item:nth-child(5),
+.el-form-item:nth-child(6) {
+  flex: 1 1 45%; /* 初始地下水位和土壤最大深度为一行 */
+}
+
+.el-form-item:nth-child(7),
+.el-form-item:nth-child(8) {
+  flex: 1 1 45%; /* 水力扩散系数和饱和渗透系数为一行 */
+}
+.b_ex {
+  margin-left: 440px;
+}
+.b_ex_avaflow {
+  margin-left: 180px;
+}
+#name_par {
+  font-size: 20px;
+  color: rgba(39, 99, 202, 1);
+  margin-left: 78px;
+}
+#name_par2 {
+  font-size: 16px;
+  color: rgba(39, 99, 202, 1);
+  margin-left: 27px;
+  line-height: 34px;
 }
 </style>
