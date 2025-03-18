@@ -29,7 +29,9 @@ const app = createApp(App)
 //   history: createWebHistory('/CS/'), // 配置 history 模式和 base 路径
 //   routes,
 // })
-
+if (typeof global === 'undefined') {
+  window.global = window // 将浏览器环境的全局对象指向 window
+}
 // 使用插件
 // app.use(router).mount('#app')
 app.use(ElementPlus)

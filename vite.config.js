@@ -4,9 +4,13 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import cesium from 'vite-plugin-cesium'
+import { createProxyMiddleware } from 'http-proxy-middleware'
 // import copy from 'rollup-plugin-copy'
 // https://vitejs.dev/config/
 export default defineConfig({
+  define: {
+    global: 'window', // 直接替换所有代码中的 global 为 window
+  },
   build: {
     outDir: 'cs',
   },
@@ -47,6 +51,15 @@ export default defineConfig({
         secure: false, //开启代理：在本地会创建一个虚拟服务端，然后发送请求的数据，并同时接收请求
         changeOrigin: true,
         rewrite: path => path.replace(/^\/ng/, ''),
+      },
+      '/ws': {
+        target: 'http://localhost:8088',
+        secure: false,
+        changeOrigin: true,
+        ws: true, // 显式启用 WebSocket 代理
+        pathRewrite: {
+          '^/ws': '', // 重写路径为空（后端需监听根路径）
+        },
       },
     },
   },

@@ -34,12 +34,16 @@ import ZhJc from './components/ZhJc.vue'
 import LeTh from './components/LeTh.vue'
 import ZyMl from './components/ZyMl.vue'
 import { useSquareStore } from './stores/squareStore'
+// import { EventBus } from '@/event-bus'
+import { emitter } from '../src/eventBus.js'
+import { en } from 'element-plus/es/locale/index.mjs'
 // import Heatmap3d from './js/heatmap3d.js'
 
 const viewer = ref(null)
 const heatmapLayer = ref(null)
 const layer4_guid = ref(null)
 const layer5_guid = ref(null)
+const entityInterval = ref(null)
 
 const data = ref(null)
 const dialogs = ref()
@@ -63,6 +67,13 @@ const dangerLevel = ref('')
 const pname = ref([])
 // 假设已处理的 p 值集合
 const processedPValues = ref([])
+
+// Cesium 容器引用
+const cesiumContainer = ref(null)
+
+const floodPrimitive = ref(null)
+const frontTexture = ref(null)
+const backTexture = ref(null)
 // const id =ref(null)
 onMounted(async () => {
   Cesium.Ion.defaultAccessToken =
@@ -134,6 +145,8 @@ const checkedLayers = (ps, node) => {
   // console.log('ps:', ps)
   // console.log('node:', node)
   //移除取消勾选的图层
+
+  // let entityInterval = null
   switch (node) {
     case 131:
       viewer.value.entities.removeById('2')
@@ -154,7 +167,9 @@ const checkedLayers = (ps, node) => {
       viewer.value.entities.removeById('7')
       break
     case 137:
-      viewer.value.entities.removeAll()
+      clearInterval(entityInterval.value)
+      entityInterval.value = null
+      // viewer.value.entities.removeAll()
       break
     default:
       break
@@ -163,7 +178,7 @@ const checkedLayers = (ps, node) => {
   // let currentPValues = [11, 12, 131, 132];
   // 计算差集：当前循环中新增的 p 值
   const newPValues = ps.filter(p => !processedPValues.value.includes(p))
-  // console.log('newPValues:', newPValues)
+  // console.log(ps)
   if (ps.length === 0) {
     squareStore.closeSquare()
     processedPValues.value = []
@@ -171,60 +186,21 @@ const checkedLayers = (ps, node) => {
     // console.log('没有选中任何图层')
     removeLayer1()
     removeLayer2()
-    // viewer.value.entities.removeById('2')
-    viewer.value.entities.removeAll()
     removeLayer4()
     removeLayer5()
-  } else {
-    // console.log('entities:', viewer.value.entities)
+    // clearInterval(entityInterval)
+    // entityInterval = null
     // viewer.value.entities.removeById('2')
-    // if (p === 11) {
-    //   addLayer1()
-    //   flyToWithRangeCheck(viewer.value, 95.0, 29.735)
-    // }
-    // if (p !== 11) {
-    //   removeLayer1()
-    //   // console.log('110')
-    // }
-    // if (p === 12) {
-    //   addLayer2()
-    //   flyToWithRangeCheck(viewer.value, 95.0, 29.735)
-    // }
-    // if (p !== 12) {
-    //   removeLayer2()
-    // }
-    // if (p === 131) {
-    //   console.log('3小时图层打开')
-    //   const match = hd.value.match(/^([^_]+)_/)
-    //   if (match[1] == 'dangerLevel') {
-    //     squareStore.openSquare()
-    //     squareStore.openRisk()
-    //   }
-    //   // var imgUrl = `/ng/${pname.value[0]}`
-    //   var imgUrl = `/ng/dangerLevel_20250219_214621_669_10800.png`
-    //   viewer.value.entities.add({
-    //     id: '8',
-    //     rectangle: {
-    //       coordinates: Cesium.Rectangle.fromDegrees(
-    //         leftlong.value,
-    //         leftlat.value,
-    //         rightlong.value,
-    //         rightlat.value
-    //       ),
-    //       material: new Cesium.ImageMaterialProperty({
-    //         image: imgUrl,
-    //         repeat: new Cesium.Cartesian2(1.0, 1.0), // 图像重复方式
-    //       }),
-    //     },
-    //   })
-    //   flyToWithRangeCheck(viewer.value, leftlong.value, leftlat.value - 0.4)
-    // }
-    // if (p !== 131) {
-    //   console.log('3小时图层关闭')
-    //   viewer.value.entities.removeById('2')
-    // }
+    viewer.value.entities.removeAll()
+  } else {
     // 遍历新增的 p 值并执行相应操作
+    // console.log('newPValues:', newPValues)
+    // const temp_p = [
+    //   'dangerLevel_20250318_151758_659_10800.png',
+    //   'dangerLevel_20250318_151820_740_21600.png',
+    // ]
     newPValues.forEach(p => {
+      console.log('p:', p)
       switch (p) {
         case 11:
           addLayer1()
@@ -289,25 +265,20 @@ const checkedLayers = (ps, node) => {
             squareStore.openSquare()
             squareStore.openRisk()
           }
-
           // 获取 pname 的个数
           const pnameCount = pname.value.length
-
-          // 定义一个初始 ID（从 h1 开始）
-          let entityId = 'h1'
-
+          // 当前的 pname 对应的图片地址
+          // 定义一个初始 ID（从 h0 开始）
+          let entityId = 'h0'
           // 定义定时加载函数
           let currentEntityIndex = 0
-          let entityInterval = setInterval(() => {
+          entityInterval.value = setInterval(() => {
             // 删除上一个实体，如果有的话
             const existingEntity = viewer.value.entities.getById(entityId)
             if (existingEntity) {
               viewer.value.entities.removeById(entityId) // 删除当前实体
             }
-
-            // 当前的 pname 对应的图片地址
             const imgUrl137 = `/ng/${pname.value[currentEntityIndex]}`
-
             // 使用 Cesium.Resource 加载图像
             const imageResource = new Cesium.Resource({
               url: imgUrl137,
@@ -342,7 +313,7 @@ const checkedLayers = (ps, node) => {
                   )
 
                   // 更新 entityId 和索引
-                  entityId = `h${currentEntityIndex + 2}` // id 从 h1 开始
+                  entityId = `h${currentEntityIndex + 1}` // id 从 h1 开始
                   currentEntityIndex++
 
                   // 如果加载到最后一个实体，重置索引，重新循环
@@ -360,9 +331,9 @@ const checkedLayers = (ps, node) => {
 
           break
 
-        default:
-          // 处理其他情况
-          break
+        // default:
+
+        //   break
       }
     })
     processedPValues.value = [
@@ -396,11 +367,16 @@ const checkedLayers = (ps, node) => {
     //   })
     //   flyToWithRangeCheck(viewer.value, leftlong.value, leftlat.value - 0.4)
     // }
-    // if (p !== 132) {
-    //   console.log('6小时图层关闭')
-    //   viewer.value.entities.removeById('3')
-    // }
+
     for (const p of ps) {
+      // if (p !== 131) {
+      //   console.log('6小时图层关闭')
+      //   viewer.value.entities.removeById('2')
+      // }
+      // if (p !== 132) {
+      //   console.log('6小时图层关闭')
+      //   viewer.value.entities.removeById('3')
+      // }
       if (p === 133) {
         const match = hd.value.match(/^([^_]+)_/)
         if (match[1] == 'dangerLevel') {
@@ -517,6 +493,11 @@ const checkedLayers = (ps, node) => {
         // console.log('111')
         viewer.value.entities.removeById('7')
       }
+      // if (p !== 137) {
+      //   clearInterval(entityInterval.value)
+      //   viewer.value.entities.removeAll()
+      // }
+
       if (p === 14) {
         addLayer4()
       }
@@ -532,6 +513,62 @@ const checkedLayers = (ps, node) => {
     }
   }
 }
+function addentity(entityId, imgUrl137, currentEntityIndex, pnameCount) {
+  // 删除上一个实体，如果有的话
+  const existingEntity = viewer.value.entities.getById(entityId)
+  if (existingEntity) {
+    viewer.value.entities.removeById(entityId) // 删除当前实体
+  }
+
+  imgUrl137 = `/ng/${pname.value[currentEntityIndex]}`
+  // 使用 Cesium.Resource 加载图像
+  const imageResource = new Cesium.Resource({
+    url: imgUrl137,
+  })
+  imageResource
+    .fetchImage()
+    .then(image => {
+      if (image && image.width > 0 && image.height > 0) {
+        // 如果图像有效，继续添加实体
+        viewer.value.entities.add({
+          id: entityId, // 使用当前的 entityId
+          rectangle: {
+            coordinates: Cesium.Rectangle.fromDegrees(
+              leftlong.value,
+              leftlat.value,
+              rightlong.value,
+              rightlat.value
+            ),
+            material: new Cesium.ImageMaterialProperty({
+              image: imgUrl137,
+              repeat: new Cesium.Cartesian2(1.0, 1.0), // 图像重复方式
+            }),
+          },
+        })
+
+        // 飞行至目标位置
+        flyToWithRangeCheck(viewer.value, leftlong.value, leftlat.value - 0.4)
+
+        // 更新 entityId 和索引
+        entityId = `h${currentEntityIndex + 1}` // id 从 h1 开始
+        currentEntityIndex++
+
+        // 如果加载到最后一个实体，重置索引，重新循环
+        if (currentEntityIndex >= pnameCount) {
+          currentEntityIndex = 0
+        }
+      } else {
+        console.error('图像无效或尺寸为零：', imgUrl137)
+      }
+    })
+    .catch(error => {
+      console.error('图像加载失败：', error)
+    })
+}
+
+// let entityInterval = setInterval(addentity(entityId, imageUrl137), 3000)
+// 每隔 3 秒执行一次}
+// let entityInterval = setInterval(addentity(entityId, imgUrl137), 3000) // 每隔 3 秒执行一次
 
 // 范围检测逻辑
 function flyToWithRangeCheck(
@@ -916,6 +953,179 @@ const removefximg = () => {
   // Assuming viewer.value.entities is a collection to hold entities
   viewer.value.entities.removeAll()
 }
+// 创建 1x1 的白色占位纹理
+const createPlaceholderTexture = viewer => {
+  // console.log(viewer)
+  const canvas = document.createElement('canvas')
+  canvas.width = 1
+  canvas.height = 1
+  const ctx = canvas.getContext('2d')
+  ctx.fillStyle = 'white'
+  ctx.fillRect(0, 0, 1, 1)
+
+  return new Cesium.Texture({
+    context: viewer.scene.context,
+    source: canvas,
+    width: 1,
+    height: 1,
+    pixelFormat: Cesium.PixelFormat.RGBA,
+  })
+}
+// 正确创建 Texture 的示例
+const createTexture = (data, viewer) => {
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  const width = data[0].length
+  const height = data.length
+
+  // 设置 Canvas 尺寸
+  canvas.width = width
+  canvas.height = height
+
+  // 填充数据到 Canvas（假设数据为归一化的二维数组）
+  const imageData = ctx.createImageData(width, height)
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const value = data[y][x] * 255 // 归一化值转 [0, 255]
+      const i = (y * width + x) * 4
+      imageData.data[i] = value // R
+      imageData.data[i + 1] = value // G
+      imageData.data[i + 2] = value // B
+      imageData.data[i + 3] = 255 // A
+    }
+  }
+  ctx.putImageData(imageData, 0, 0)
+
+  // 创建纹理（关键参数必须显式定义）
+  return new Cesium.Texture({
+    context: viewer.scene.context, // 必须传递场景上下文
+    source: canvas, // 数据源（Canvas）
+    width: width, // 显式定义宽度
+    height: height, // 显式定义高度
+    pixelFormat: Cesium.PixelFormat.RGBA, // 匹配数据格式
+    sampler: new Cesium.Sampler({
+      // 定义采样器（可选但推荐）
+      wrapS: Cesium.TextureWrap.CLAMP_TO_EDGE,
+      wrapT: Cesium.TextureWrap.CLAMP_TO_EDGE,
+    }),
+  })
+}
+
+// 创建洪水图层
+const createFloodLayer = async (data, viewer) => {
+  // if (!viewer || viewer.scene.primitives.getById('flood-layer')) return
+
+  // 1. 创建占位纹理并等待加载完成
+  const placeholderTexture = createPlaceholderTexture(viewer)
+  // await placeholderTexture.readyPromise // 关键：等待纹理就绪
+
+  // 2. 等待纹理就绪（关键）
+  await placeholderTexture.readyPromise
+  // 创建自定义着色器
+  const customShader = new Cesium.CustomShader({
+    uniforms: {
+      u_dynamicTexture: {
+        type: Cesium.UniformType.SAMPLER_2D,
+        // value: placeholderTexture, // 使用已加载的纹理
+        value: new Cesium.TextureUniform({
+          url: '/ng/gray_20250219_220429_397.png',
+        }),
+      },
+    },
+    fragmentShaderText: `
+      uniform sampler2D u_dynamicTexture;
+      void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
+        material.diffuse = texture2D(u_dynamicTexture, fsInput.texCoord).rgb;
+      }
+    `,
+  })
+  // 将 CustomShader 应用到 Model（如加载的 GLTF 模型）
+  const model = await Cesium.Model.fromGltfAsync({
+    // url: '../../models/Cesium_Air.glb',
+    url: 'ng/Cesium_Air.glb',
+
+    customShader: customShader, // 将自定义着色器应用到模型
+  })
+  // 1. 创建 Primitive 并直接应用 CustomShader
+  const floodPrimitive = new Cesium.Primitive({
+    geometryInstances: new Cesium.GeometryInstance({
+      geometry: new Cesium.RectangleGeometry({
+        rectangle: Cesium.Rectangle.fromDegrees(94.5, 29.4, 95.6, 29.5),
+        vertexFormat: Cesium.MaterialAppearance.VERTEX_FORMAT,
+      }),
+    }),
+    appearance: new Cesium.MaterialAppearance({
+      // 可选：如果仍需基础材质，可在此配置
+      material: new Cesium.Material({
+        fabric: {
+          type: 'Color', // 示例：使用纯色材质
+          // customShader: customShader, //
+          uniforms: {
+            color: new Cesium.Color(1.0, 0.0, 0.0, 1.0), // 红色
+          },
+        },
+      }),
+    }),
+    customShader: customShader, //
+    id: 'flood-layer',
+  })
+  // console.log(customShader)
+  console.log(viewer.scene)
+  // viewer.scene.primitives.add(floodPrimitive)
+  viewer.scene.primitives.add(model)
+  console.log(floodPrimitive.customShader)
+  // console.log(viewer.value.scene.primitives)
+  model.customShader.uniforms.u_dynamicTexture = newTexture
+
+  // 4. 立即用真实数据更新纹理
+  if (data) updateTexture(data, viewer)
+}
+//纹理更新逻辑
+const updateTexture = async (data, viewer) => {
+  // 1. 获取洪水图层
+  // console.log(viewer.scene.primitives)
+  // const floodPrimitive = viewer.scene.primitives.getById('flood-layer')
+  // if (!floodPrimitive) return
+
+  // 2. 生成新纹理
+  const newTexture = createTexture(data, viewer)
+  await newTexture.readyPromise // 等待新纹理加载完成
+
+  // 3. 更新着色器 Uniform
+  // floodPrimitive.appearance.material.uniforms.u_dynamicTexture = newTexture
+
+  // 4. 清理旧纹理（可选）
+  // const oldTexture =
+  //   floodPrimitive.appearance.material.uniforms.u_dynamicTexture
+  // if (oldTexture && !oldTexture.isDestroyed()) oldTexture.destroy()
+}
+// console.log(viewer.value.scene)
+// 在 Vue 组件中监听数据事件
+emitter.on('cesium-texture-data', async data => {
+  // const viewer = viewer.value // 获取 Cesium Viewer 实例
+  if (!viewer.value) return
+  console.log(viewer.value.scene.primitives)
+
+  try {
+    // 1. 首次数据到达时创建图层
+    if (viewer.value.scene.primitives.length === 0) {
+      await createFloodLayer(data, viewer.value)
+    }
+    // if (!viewer.value.scene.primitives.getById('flood-layer')) {
+    //   await createFloodLayer(data, viewer.value)
+    // }
+    // 2. 后续数据更新纹理
+    else {
+      await updateTexture(data, viewer.value)
+    }
+  } catch (error) {
+    console.error('纹理处理失败:', error)
+    emitter.emit('cesium-error', {
+      type: 'TEXTURE_UPDATE_FAILED',
+      detail: error,
+    })
+  }
+})
 </script>
 <style>
 .top-container {

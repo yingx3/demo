@@ -139,9 +139,62 @@
             </el-form>
           </el-dialog>
         </div>
-        <div class="box p_bottom">
+        <div class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
-          <span>冰岩崩启动动力学模型</span>
+
+          <el-button :plain="true" @click="dialogVisible2 = true"
+            ><span>洪水泥石流启动动力学模型</span></el-button
+          >
+          <el-dialog
+            v-model="dialogVisible2"
+            title="洪水泥石流启动动力学模型"
+            width="500"
+            :close-on-click-modal="false"
+            class="dialog_flood"
+          >
+            <p id="name_par3">模型参数</p>
+            <el-form
+              :model="form2"
+              label-width="auto"
+              style="max-width: 600px"
+              class="form_flood"
+            >
+              <el-form-item label="基底摩擦" class="form1_flood">
+                <el-input v-model="form2.bed" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="曼宁摩擦系数" class="form1_flood">
+                <el-input v-model="form2.nn" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="网格长度" class="form1_flood">
+                <el-input v-model="form2.dx" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="网格宽度" class="form1_flood">
+                <el-input v-model="form2.dy" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="滑坡密度" class="form1_flood">
+                <el-input v-model="form2.rous" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="河水密度" class="form1_flood">
+                <el-input v-model="form2.rouf" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="输出间距" class="form1_flood">
+                <el-input v-model="form2.interval" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="计算时间" class="form1_flood">
+                <el-input v-model="form2.Tmax" placeholder="20" />
+              </el-form-item>
+
+              <el-form-item>
+                <el-button
+                  type="primary"
+                  @click="onSubmit2"
+                  class="b_ex_avaflow"
+                  >运行</el-button
+                >
+                <el-button @click="dialogVisible2 = false">取消</el-button>
+              </el-form-item>
+            </el-form>
+          </el-dialog>
         </div>
       </div>
       <div class="theme">
@@ -244,9 +297,18 @@ import { reactive } from 'vue'
 import axios from 'axios'
 const dialogVisible = ref(false)
 const dialogVisible1 = ref(false)
+const dialogVisible2 = ref(false)
 import { useSquareStore } from '../stores/squareStore'
+import { emitter } from '../eventBus'
+import { Client } from '@stomp/stompjs'
+import SockJS from 'sockjs-client'
 
-let $emit = defineEmits(['openLayers', 'timeSelected', 'yjLayers'])
+let $emit = defineEmits([
+  'openLayers',
+  'timeSelected',
+  'yjLayers',
+  'floodLayers',
+])
 // 获取 store 实例
 const squareStore = useSquareStore()
 // function handleClose(done) {
@@ -275,6 +337,17 @@ const form1 = reactive({
   bf: '20',
   ff: '0.05',
 })
+const form2 = reactive({
+  bed: '24',
+  nn: '0.0125',
+  dx: '20',
+  dy: '20',
+  rous: '2700',
+  rouf: '1000',
+  interval: '10',
+  Tmax: '100',
+})
+const isProcessing = ref(false)
 function onSubmit() {
   dialogVisible.value = false
   ElMessage({ message: '运行中!', type: 'success', duration: 40000 })
@@ -370,6 +443,99 @@ const subitForm1 = () => {
   setTimeout(() => {
     $emit('yjLayers')
   }, 150000)
+}
+
+//洪水泥石流
+function onSubmit2() {
+  dialogVisible2.value = false
+  ElMessage({ message: '运行中!', type: 'success', duration: 150000 })
+  submitForm2()
+}
+const submitForm2 = async () => {
+  try {
+    isProcessing.value = true
+    await axios.post(
+      '/testapi/admin/user/start-process',
+      'mode=realtime&intervalMs=200',
+      {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      }
+    )
+    connectWebSocket()
+  } catch (error) {
+    console.error('启动失败:', error)
+  } finally {
+    isProcessing.value = false
+  }
+}
+const connectWebSocket = () => {
+  // 创建 STOMP 客户端实例
+  const client = new Client({
+    // 使用 SockJS 作为底层传输
+    webSocketFactory: () => new SockJS('http://localhost:8088/ws'),
+    // 自动重连配置
+    reconnectDelay: 5000,
+    heartbeatIncoming: 4000,
+    heartbeatOutgoing: 4000,
+
+    // 连接成功回调
+    onConnect: () => {
+      // 订阅指定主题
+      client.subscribe('/topic/txt-frames', message => {
+        try {
+          const data = JSON.parse(message.body)
+
+          // 触发纹理数据事件
+          emitter.emit('cesium-texture-data', data)
+
+          // 调试日志（可选）
+          console.log('WebSocket 数据接收成功', data)
+        } catch (error) {
+          emitter.emit('cesium-error', {
+            type: 'DATA_PARSE_ERROR',
+            message: '数据解析失败',
+            detail: error,
+          })
+        }
+      })
+    },
+    // 连接断开处理
+    onDisconnect: () => {
+      emitter.emit('cesium-error', {
+        type: 'CONNECTION_CLOSED',
+        message: '连接已断开，正在尝试重连...',
+      })
+    },
+
+    // 异常处理
+    onStompError: error => {
+      emitter.emit('cesium-error', {
+        type: 'STOMP_ERROR',
+        message: '协议通信错误',
+        detail: error.headers.message,
+      })
+    },
+
+    // WebSocket 失败回调
+    onWebSocketError: error => {
+      emitter.emit('cesium-error', {
+        type: 'WS_CONNECTION_ERROR',
+        message: '连接失败',
+        detail: error,
+      })
+    },
+  })
+
+  // 激活客户端连接
+  client.activate()
+
+  // 返回清理函数（用于组件卸载时断开连接）
+  return () => {
+    if (client.active) {
+      client.deactivate()
+      console.log('WebSocket 连接已主动断开')
+    }
+  }
 }
 // 控制正方形显示与隐藏的状态
 // const showSquare = ref(false)
@@ -590,6 +756,16 @@ const leave = (el, done) => {
   background-image: url('../assets/img/fz173.png');
   background-size: 100% 100%;
 }
+:deep(.el-dialog.dialog_flood) {
+  --el-dialog-bg-color: transparent;
+  width: 450px;
+  height: 420px;
+  background-image: url('../assets/img/fz173.png');
+  background-size: 100% 100%;
+}
+:deep(.el-input__wrapper) {
+  padding: 1px 0px;
+}
 :deep(.el-input) {
   --el-input-bg-color: transparent;
   --el-input-border-color: transparent;
@@ -626,6 +802,14 @@ const leave = (el, done) => {
   padding: 0px 0px 0px 22px;
   line-height: 30px;
 }
+:deep(.el-dialog.dialog_flood .el-dialog__header) {
+  padding-bottom: 0px;
+  padding-top: 16px;
+  padding-left: 20px;
+}
+:deep(.header.el-dialog_header.show-close) {
+  padding: 15px 25px 16px 0px;
+}
 .form_trigrs {
   display: flex;
   flex-wrap: wrap; /*子元素在必要时换行*/
@@ -639,6 +823,13 @@ const leave = (el, done) => {
   width: 370px;
   margin-top: 10px;
   margin-left: 28px;
+}
+.form_flood {
+  display: flex;
+  flex-wrap: wrap; /*子元素在必要时换行*/
+  width: 380px;
+  margin-top: 10px;
+  margin-left: 8px;
 }
 .el-form-item {
   flex: 1 1 50%; /* 每个表单项宽度为45%（两列布局） */
@@ -683,6 +874,12 @@ const leave = (el, done) => {
   margin-left: 78px;
 }
 #name_par2 {
+  font-size: 16px;
+  color: rgba(39, 99, 202, 1);
+  margin-left: 27px;
+  line-height: 34px;
+}
+#name_par3 {
   font-size: 16px;
   color: rgba(39, 99, 202, 1);
   margin-left: 27px;
