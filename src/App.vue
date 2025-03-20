@@ -758,6 +758,38 @@ const yjLayers = () => {
   })
   // console.log('已跳转！！！')
 }
+
+const floodLayers = () => {
+  viewer.value.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(94.897921, 29.644425, 14336),
+    //相机的姿态
+    orientation: {
+      heading: Cesium.Math.toRadians(20.66), //朝向
+      pitch: Cesium.Math.toRadians(-28.15), //俯仰
+      // pitch: Cesium.Math.toRadians(-90), //俯仰
+      roll: 0.0, //滚转
+    },
+    complete: () => {
+      // 飞行完成后启动热力图
+      startHeatmapCycle_flood()
+    },
+  })
+  // loadHeatmap().catch(error => {
+  //   console.log('加载热力图失败', error)
+  // })
+  // 初始化加载
+  loadHeatmap_flood(1).catch(error => {
+    console.log('初始化热力图失败', error)
+  })
+  // 页面卸载时清理
+  window.addEventListener('beforeunload', () => {
+    stopHeatmapCycle()
+    if (heatmapPrimitive) {
+      viewer.value.scene.primitives.remove(heatmapPrimitive)
+    }
+  })
+  // console.log('已跳转！！！')
+}
 // 先获取点位的json信息
 const getJson = async () => {
   const responses = []
@@ -1504,7 +1536,7 @@ emitter.on('cesium-texture-data', async data => {
 let currentHeatmapIndex = 1 // 当前加载的文件索引
 let heatmapPrimitive = null // 当前热力图对象
 let intervalId = null // 定时器ID
-
+//加载avaflow
 async function loadHeatmap(index) {
   try {
     // 1. 移除旧的热力图
@@ -1544,15 +1576,60 @@ async function loadHeatmap(index) {
     console.error(`加载output${index}.geojson失败:`, error)
   }
 }
+//加载flood
+async function loadHeatmap_flood(index) {
+  try {
+    // 1. 移除旧的热力图
+    if (heatmapPrimitive) {
+      // viewer.value.scene.primitives.remove(heatmapPrimitive)
+      heatmapPrimitive.destroy()
+      heatmapPrimitive = null
+    }
 
-// 启动定时任务
+    // 2. 加载新数据
+    const geoJson = await Cesium.Resource.fetchJson(
+      `/ng/flood/flood_output${index}.geojson`
+    )
+
+    // 3. 转换数据格式
+    const list = geoJson.features.map(feature => ({
+      lnglat: feature.geometry.coordinates,
+      value: feature.properties.value,
+    }))
+
+    // 4. 创建新热力图
+    heatmapPrimitive = new Heatmap3d(viewer.value, {
+      list: list,
+      radius: 1, //
+      baseHeight: 0,
+      primitiveType: 'TRIANGLE', // 修正拼写 TRAINGLE -> TRIANGLE
+      gradient: {
+        '.3': 'blue',
+        '.99': 'yellow',
+        '.999999999': 'red',
+      },
+    })
+
+    // 5. 添加到场景
+    // viewer.value.scene.primitives.add(heatmapPrimitive)
+  } catch (error) {
+    console.error(`加载flood_output${index}.geojson失败:`, error)
+  }
+}
+// 启动定时任务-avaflow
 function startHeatmapCycle() {
   intervalId = setInterval(() => {
     currentHeatmapIndex = (currentHeatmapIndex % 21) + 1 // 1-41循环
     loadHeatmap(currentHeatmapIndex)
   }, 1000) // 0.5秒间隔
 }
-
+// 启动定时任务-flood
+function startHeatmapCycle_flood() {
+  intervalId = setInterval(() => {
+    currentHeatmapIndex = (currentHeatmapIndex % 21) + 1 // 1-41循环
+    loadHeatmap_flood(currentHeatmapIndex)
+  }, 1000) // 0.5秒间隔
+}
 // 停止定时任务
 function stopHeatmapCycle() {
   if (intervalId) {
