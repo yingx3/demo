@@ -413,10 +413,10 @@ const subitForm = () => {
       // 处理错误
     })
 }
-//演进模型
+//演进模型-avaflow
 function onSubmit1() {
   dialogVisible1.value = false
-  ElMessage({ message: '运行中!', type: 'success', duration: 150000 })
+  ElMessage({ message: '运行中!', type: 'success', duration: 1500 })
   subitForm1()
   // console.log(form.time[0])
   //把选中的时间通过自定义事件传递给父组件
@@ -431,112 +431,129 @@ function onSubmit1() {
   // }
 }
 const subitForm1 = () => {
-  axios
-    .post('/testapi/admin/user/yj', form, { timeout: 40000 })
-    .then(response => {
-      const text = response.data
-    })
-    .catch(error => {
-      console.error(error)
-      // 处理错误
-    })
-  setTimeout(() => {
-    $emit('yjLayers')
-  }, 150000)
+  // axios
+  //   .post('/testapi/admin/user/yj', form, { timeout: 40000 })
+  //   .then(response => {
+  //     const text = response.data
+  //   })
+  //   .catch(error => {
+  //     console.error(error)
+  //     // 处理错误
+  //   })
+  $emit('yjLayers')
+  // setTimeout(() => {
+  //   $emit('yjLayers')
+  // }, 150000)
 }
 
-//洪水泥石流
+//洪水泥石流-flood
 function onSubmit2() {
   dialogVisible2.value = false
-  ElMessage({ message: '运行中!', type: 'success', duration: 150000 })
+  ElMessage({ message: '运行中!', type: 'success', duration: 1500 })
   submitForm2()
 }
-const submitForm2 = async () => {
-  try {
-    isProcessing.value = true
-    await axios.post(
-      '/testapi/admin/user/start-process',
-      'mode=realtime&intervalMs=200',
-      {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      }
-    )
-    connectWebSocket()
-  } catch (error) {
-    console.error('启动失败:', error)
-  } finally {
-    isProcessing.value = false
-  }
+const submitForm2 = () => {
+  // axios
+  //   .post('/testapi/admin/user/flood', form, { timeout: 40000 })
+  //   .then(response => {
+  //     const text = response.data
+  //   })
+  //   .catch(error => {
+  //     console.error(error)
+  //     // 处理错误
+  //   })
+  $emit('floodLayers')
+  // setTimeout(() => {
+  //   $emit('yjLayers')
+  // }, 150000)
 }
-const connectWebSocket = () => {
-  // 创建 STOMP 客户端实例
-  const client = new Client({
-    // 使用 SockJS 作为底层传输
-    webSocketFactory: () => new SockJS('http://localhost:8088/ws'),
-    // 自动重连配置
-    reconnectDelay: 5000,
-    heartbeatIncoming: 4000,
-    heartbeatOutgoing: 4000,
 
-    // 连接成功回调
-    onConnect: () => {
-      // 订阅指定主题
-      client.subscribe('/topic/txt-frames', message => {
-        try {
-          const data = JSON.parse(message.body)
+// const submitForm2 = async () => {
+//   try {
+//     isProcessing.value = true
+//     await axios.post(
+//       '/testapi/admin/user/start-process',
+//       'mode=realtime&intervalMs=200',
+//       {
+//         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+//       }
+//     )
+//     connectWebSocket()
+//   } catch (error) {
+//     console.error('启动失败:', error)
+//   } finally {
+//     isProcessing.value = false
+//   }
+// }
+// const connectWebSocket = () => {
+//   // 创建 STOMP 客户端实例
+//   const client = new Client({
+//     // 使用 SockJS 作为底层传输
+//     webSocketFactory: () => new SockJS('http://localhost:8088/ws'),
+//     // 自动重连配置
+//     reconnectDelay: 5000,
+//     heartbeatIncoming: 4000,
+//     heartbeatOutgoing: 4000,
 
-          // 触发纹理数据事件
-          emitter.emit('cesium-texture-data', data)
+//     // 连接成功回调
+//     onConnect: () => {
+//       // 订阅指定主题
+//       client.subscribe('/topic/txt-frames', message => {
+//         try {
+//           const data = JSON.parse(message.body)
 
-          // 调试日志（可选）
-          console.log('WebSocket 数据接收成功', data)
-        } catch (error) {
-          emitter.emit('cesium-error', {
-            type: 'DATA_PARSE_ERROR',
-            message: '数据解析失败',
-            detail: error,
-          })
-        }
-      })
-    },
-    // 连接断开处理
-    onDisconnect: () => {
-      emitter.emit('cesium-error', {
-        type: 'CONNECTION_CLOSED',
-        message: '连接已断开，正在尝试重连...',
-      })
-    },
+//           // 触发纹理数据事件
+//           emitter.emit('cesium-texture-data', data)
 
-    // 异常处理
-    onStompError: error => {
-      emitter.emit('cesium-error', {
-        type: 'STOMP_ERROR',
-        message: '协议通信错误',
-        detail: error.headers.message,
-      })
-    },
+//           // 调试日志（可选）
+//           console.log('WebSocket 数据接收成功', data)
+//         } catch (error) {
+//           emitter.emit('cesium-error', {
+//             type: 'DATA_PARSE_ERROR',
+//             message: '数据解析失败',
+//             detail: error,
+//           })
+//         }
+//       })
+//     },
+//     // 连接断开处理
+//     onDisconnect: () => {
+//       emitter.emit('cesium-error', {
+//         type: 'CONNECTION_CLOSED',
+//         message: '连接已断开，正在尝试重连...',
+//       })
+//     },
 
-    // WebSocket 失败回调
-    onWebSocketError: error => {
-      emitter.emit('cesium-error', {
-        type: 'WS_CONNECTION_ERROR',
-        message: '连接失败',
-        detail: error,
-      })
-    },
-  })
+//     // 异常处理
+//     onStompError: error => {
+//       emitter.emit('cesium-error', {
+//         type: 'STOMP_ERROR',
+//         message: '协议通信错误',
+//         detail: error.headers.message,
+//       })
+//     },
 
-  // 激活客户端连接
-  client.activate()
+//     // WebSocket 失败回调
+//     onWebSocketError: error => {
+//       emitter.emit('cesium-error', {
+//         type: 'WS_CONNECTION_ERROR',
+//         message: '连接失败',
+//         detail: error,
+//       })
+//     },
+//   })
 
-  // 返回清理函数（用于组件卸载时断开连接）
-  return () => {
-    if (client.active) {
-      client.deactivate()
-      console.log('WebSocket 连接已主动断开')
-    }
-  }
-}
+//   // 激活客户端连接
+//   client.activate()
+
+//   // 返回清理函数（用于组件卸载时断开连接）
+//   return () => {
+//     if (client.active) {
+//       client.deactivate()
+//       console.log('WebSocket 连接已主动断开')
+//     }
+//   }
+// }
 // 控制正方形显示与隐藏的状态
 // const showSquare = ref(false)
 

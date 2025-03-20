@@ -6,6 +6,7 @@
       @openLayers="openLayers"
       @timeSelected="handleTimeSelected"
       @yjLayers="yjLayers"
+      @floodLayers="floodLayers"
     ></le-th>
     <zy-ml
       :time="selectedTime"
@@ -37,7 +38,7 @@ import { useSquareStore } from './stores/squareStore'
 // import { EventBus } from '@/event-bus'
 import { emitter } from '../src/eventBus.js'
 import { en } from 'element-plus/es/locale/index.mjs'
-// import Heatmap3d from './js/heatmap3d.js'
+import Heatmap3d from './js/heatmap3d.js'
 
 const viewer = ref(null)
 const heatmapLayer = ref(null)
@@ -138,6 +139,83 @@ onMounted(async () => {
       dialogs.value.windowClose()
     }
     dialogs.value = new Dialog(opts)
+  }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+
+  // 监听鼠标左键点击事件
+  // handler.setInputAction(event => {
+  //   // 获取点击位置的屏幕坐标（Cartesian2）
+  //   const screenPosition = event.position
+
+  //   // 将屏幕坐标转换为三维场景坐标（Cartesian3）
+  //   const ray = viewer.value.camera.getPickRay(screenPosition)
+  //   const position = viewer.value.scene.globe.pick(ray, viewer.value.scene)
+
+  //   // 如果点击位置在地球上
+  //   if (position) {
+  //     // 将三维坐标转换为地理坐标（Cartographic）
+  //     const cartographic = Cesium.Cartographic.fromCartesian(position)
+
+  //     // 将弧度转换为度数
+  //     const longitude = Cesium.Math.toDegrees(cartographic.longitude)
+  //     const latitude = Cesium.Math.toDegrees(cartographic.latitude)
+  //     const height = cartographic.height
+
+  //     // 输出结果（保留6位小数）
+  //     console.log(
+  //       `经度: ${longitude.toFixed(6)}°, 纬度: ${latitude.toFixed(
+  //         6
+  //       )}°, 高度: ${height.toFixed(2)}米`
+  //     )
+  //   } else {
+  //     console.log('未点击在地球表面')
+  //   }
+  // }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+
+  handler.setInputAction(event => {
+    // 获取点击位置的地理坐标
+    const screenPosition = event.position
+    const ray = viewer.value.camera.getPickRay(screenPosition)
+    const position = viewer.value.scene.globe.pick(ray, viewer.value.scene)
+
+    if (position) {
+      // 转换坐标为经纬度（WGS84）
+      const cartographic = Cesium.Cartographic.fromCartesian(position)
+      const longitude = Cesium.Math.toDegrees(cartographic.longitude).toFixed(6)
+      const latitude = Cesium.Math.toDegrees(cartographic.latitude).toFixed(6)
+      const height = cartographic.height.toFixed(2)
+
+      // 获取相机当前姿态参数
+      const camera = viewer.value.camera
+      const cameraPositionCarto = Cesium.Cartographic.fromCartesian(
+        camera.position
+      )
+      const cameraLon = Cesium.Math.toDegrees(
+        cameraPositionCarto.longitude
+      ).toFixed(6)
+      const cameraLat = Cesium.Math.toDegrees(
+        cameraPositionCarto.latitude
+      ).toFixed(6)
+      const cameraHeight = cameraPositionCarto.height.toFixed(2)
+      const heading = Cesium.Math.toDegrees(camera.heading).toFixed(2)
+      const pitch = Cesium.Math.toDegrees(camera.pitch).toFixed(2)
+      const roll = Cesium.Math.toDegrees(camera.roll).toFixed(2)
+
+      // 打印结果
+      console.log(`
+==== 点击位置 ====
+经度: ${longitude}°
+纬度: ${latitude}°
+高程: ${height}m
+
+==== 相机姿态 ====
+经度: ${cameraLon}°
+纬度: ${cameraLat}°
+高度: ${cameraHeight}m
+朝向: ${heading}°（正北为0°，顺时针增加）
+俯仰: ${pitch}°（0°水平，正值为俯视）
+横滚: ${roll}°（0°水平，正值为向右倾斜）
+    `)
+    }
   }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
 })
 
@@ -650,26 +728,35 @@ const openLayers = params => {
 }
 
 const yjLayers = () => {
-  var imgUrl = `/ng/ca_exp2_hflow_map.gif`
-  var rectangle = Cesium.Rectangle.fromDegrees(
-    94.975777,
-    29.976196,
-    95.088043,
-    30.035248
-  )
-  viewer.value.entities.add({
-    rectangle: {
-      coordinates: rectangle,
-      material: new Cesium.ImageMaterialProperty({
-        image: imgUrl,
-        repeat: new Cesium.Cartesian2(1.0, 1.0), // 图像重复方式
-      }),
+  viewer.value.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(95.137369, 30.038497, 10556),
+    //相机的姿态
+    orientation: {
+      heading: Cesium.Math.toRadians(250.0), //朝向
+      pitch: Cesium.Math.toRadians(-35.4), //俯仰
+      // pitch: Cesium.Math.toRadians(-90), //俯仰
+      roll: 0.0, //滚转
+    },
+    complete: () => {
+      // 飞行完成后启动热力图
+      startHeatmapCycle()
     },
   })
-  viewer.value.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(95.0293964, 30.0092938, 50000),
+  // loadHeatmap().catch(error => {
+  //   console.log('加载热力图失败', error)
+  // })
+  // 初始化加载
+  loadHeatmap(1).catch(error => {
+    console.log('初始化热力图失败', error)
   })
-  console.log('已跳转！！！')
+  // 页面卸载时清理
+  window.addEventListener('beforeunload', () => {
+    stopHeatmapCycle()
+    if (heatmapPrimitive) {
+      viewer.value.scene.primitives.remove(heatmapPrimitive)
+    }
+  })
+  // console.log('已跳转！！！')
 }
 // 先获取点位的json信息
 const getJson = async () => {
@@ -777,7 +864,7 @@ const removeLayer2 = () => {
   }
 }
 // 加载热力图
-// const addLayer3 = () => {
+// const addLayer_3 = () => {
 //   // 先移除之前的热力图
 //   removeHeatmapLayer()
 //   let list = []
@@ -802,16 +889,16 @@ const removeLayer2 = () => {
 //       '.95': 'red',
 //     },
 //   })
-//   // viewer.value.camera.flyTo({
-//   //   destination: Cesium.Cartesian3.fromDegrees(95.0, 29.735, 4500),
-//   //   //相机的姿态
-//   //   orientation: {
-//   //     heading: Cesium.Math.toRadians(0.0), //朝向
-//   //     pitch: Cesium.Math.toRadians(-40), //俯仰
-//   //     // pitch: Cesium.Math.toRadians(-90), //俯仰
-//   //     roll: 0.0, //滚转
-//   //   },
-//   // })
+//   viewer.value.camera.flyTo({
+//     destination: Cesium.Cartesian3.fromDegrees(95.0, 29.735, 4500),
+//     //相机的姿态
+//     orientation: {
+//       heading: Cesium.Math.toRadians(0.0), //朝向
+//       pitch: Cesium.Math.toRadians(-40), //俯仰
+//       // pitch: Cesium.Math.toRadians(-90), //俯仰
+//       roll: 0.0, //滚转
+//     },
+//   })
 // }
 
 //使用正则提取文件名
@@ -964,7 +1051,7 @@ const createPlaceholderTexture = viewer => {
   ctx.fillRect(0, 0, 1, 1)
 
   return new Cesium.Texture({
-    context: viewer.scene.context,
+    context: viewer.value.scene.context,
     source: canvas,
     width: 1,
     height: 1,
@@ -1126,6 +1213,353 @@ emitter.on('cesium-texture-data', async data => {
     })
   }
 })
+
+// async function loadHeatmap() {
+//   // 加载GeoJSON文件
+//   const geoJson = await Cesium.Resource.fetchJson('/ng/output.geojson')
+
+//   // 提取所有点的坐标和值
+//   const points = geoJson.features.map(feature => ({
+//     position: Cesium.Cartesian3.fromDegrees(
+//       feature.geometry.coordinates[0],
+//       feature.geometry.coordinates[1]
+//     ),
+//     value: feature.properties.value,
+//   }))
+
+//   // 计算值范围用于颜色映射
+//   const values = points.map(p => p.value)
+//   const minValue = Math.min(...values)
+//   const maxValue = Math.max(...values)
+
+//   // 3. 创建热力图材质
+//   const heatmapMaterial = new Cesium.Material({
+//     fabric: {
+//       type: 'object',
+//       uniforms: {
+//         points: points,
+//         radius: 100, // 热力点半径（米）
+//         minValue: minValue,
+//         maxValue: maxValue,
+//         colorScheme: [
+//           // 颜色梯度
+//           { ratio: 0, color: new Cesium.Color(0, 0, 1, 0) }, // 蓝
+//           { ratio: 0.5, color: new Cesium.Color(0, 1, 1, 0.5) }, // 青
+//           { ratio: 1, color: new Cesium.Color(1, 0, 0, 1) }, // 红
+//         ],
+//       },
+//       source: `
+//                 uniform vec4[] points;
+//                 uniform float radius;
+//                 uniform float minValue;
+//                 uniform float maxValue;
+//                 uniform vec4[] colorScheme;
+
+//                 float getIntensity(vec2 uv) {
+//                     float intensity = 0.0;
+//                     for(int i = 0; i < points.length(); i++) {
+//                         vec4 point = points[i];
+//                         vec2 position = czm_windowToWebGL(point.xy);
+//                         float distance = length(uv - position);
+//                         intensity += point.z * exp(-distance * distance / (2.0 * radius * radius));
+//                     }
+//                     return clamp((intensity - minValue) / (maxValue - minValue), 0.0, 1.0);
+//                 }
+
+//                 vec4 getColor(float ratio) {
+//                     for(int i = 1; i < colorScheme.length(); i++) {
+//                         if(ratio <= colorScheme[i].x) {
+//                             float t = (ratio - colorScheme[i-1].x) / (colorScheme[i].x - colorScheme[i-1].x);
+//                             return mix(colorScheme[i-1].yzw, colorScheme[i].yzw, t);
+//                         }
+//                     }
+//                     return colorScheme[colorScheme.length()-1].yzw;
+//                 }
+
+//                 void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
+//                     vec2 uv = fsInput.attributes.positionWC.xy;
+//                     float ratio = getIntensity(uv);
+//                     material.diffuse = getColor(ratio);
+//                 }
+//             `,
+//     },
+//   })
+
+//   // 4. 创建覆盖热力图区域的地面图元
+//   const rectangle = Cesium.Rectangle.fromDegrees(
+//     95.0262,
+//     29.5808,
+//     95.3509,
+//     30.0698
+//   )
+
+//   viewer.value.scene.primitives.add(
+//     new Cesium.GroundPrimitive({
+//       geometryInstances: new Cesium.GeometryInstance({
+//         geometry: new Cesium.RectangleGeometry({
+//           rectangle: rectangle,
+//           height: 0,
+//         }),
+//       }),
+//       appearance: new Cesium.MaterialAppearance({
+//         material: heatmapMaterial,
+//         translucent: true,
+//       }),
+//     })
+//   )
+// }
+// 修复后的核心代码（基于Cesium 1.107+）
+// async function loadHeatmap() {
+//   const geoJson = await Cesium.Resource.fetchJson('ng/output.geojson')
+
+//   // 1. 将点数据编码为纹理
+//   const positions = []
+//   const values = []
+//   geoJson.features.forEach(feature => {
+//     const cartesian = Cesium.Cartesian3.fromDegrees(
+//       feature.geometry.coordinates[0],
+//       feature.geometry.coordinates[1]
+//     )
+//     positions.push(cartesian.x, cartesian.y, cartesian.z)
+//     values.push(feature.properties.value)
+//   })
+
+//   const minValue = Math.min(...values)
+//   const maxValue = Math.max(...values)
+//   const valueRange = maxValue - minValue
+
+//   // 创建点数据纹理（RGBA32F格式，每个点占4个像素）
+//   const pointsTexture = new Cesium.Texture({
+//     context: viewer.value.scene.context,
+//     pixelFormat: Cesium.PixelFormat.RGBA,
+//     pixelDatatype: Cesium.PixelDatatype.FLOAT,
+//     width: Math.ceil(positions.length / 4),
+//     height: 1,
+//     sampler: new Cesium.Sampler({
+//       wrapS: Cesium.TextureWrap.CLAMP_TO_EDGE,
+//     }),
+//   })
+
+//   // 将数据写入纹理
+//   const array = new Float32Array(pointsTexture.width * 4)
+//   positions.forEach((val, i) => (array[i] = val))
+//   pointsTexture.copyFrom({
+//     source: {
+//       // 关键点：必须通过 source 传递 ArrayBuffer
+//       arrayBuffer: array.buffer,
+//       width: pointsTexture.width,
+//       height: 1,
+//     },
+//     // 可选：明确指定像素格式和数据类型
+//     pixelFormat: Cesium.PixelFormat.RGBA,
+//     pixelDatatype: Cesium.PixelDatatype.FLOAT,
+//   })
+
+//   // 2. 修正后的热力图材质
+//   const heatmapMaterial = new Cesium.Material({
+//     fabric: {
+//       type: 'Heatmap',
+//       uniforms: {
+//         pointsTexture: pointsTexture,
+//         pointsCount: positions.length / 3,
+//         radius: 100.0,
+//         minValue: minValue,
+//         maxValue: maxValue,
+//         colorScheme: [
+//           new Cesium.Color(0, 0, 1, 0),
+//           new Cesium.Color(0, 1, 1, 0.5),
+//           new Cesium.Color(1, 0, 0, 1),
+//         ],
+//       },
+//       source: `
+//                 uniform sampler2D pointsTexture;
+//                 uniform float pointsCount;
+//                 uniform float radius;
+//                 uniform float minValue;
+//                 uniform float maxValue;
+//                 uniform vec4 colorScheme[3];
+
+//                 vec4 getPoint(int index) {
+//                     float u = float(index) / (pointsCount * 4.0 / 4.0);
+//                     return texture2D(pointsTexture, vec2(u, 0.5));
+//                 }
+
+//                 float computeIntensity(vec2 uv) {
+//                     float intensity = 0.0;
+//                     for(int i = 0; i < 100; i++) { // 根据实际点数调整循环上限
+//                         if(i >= int(pointsCount)) break;
+
+//                         vec4 point = getPoint(i);
+//                         vec4 screenPos = czm_modelToWindowCoordinates(point.xyz);
+//                         vec2 pointUV = screenPos.xy / czm_viewport.zw;
+
+//                         float distance = length(uv - pointUV);
+//                         float value = (point.w - minValue) / (maxValue - minValue);
+//                         intensity += value * exp(-distance * distance / (2.0 * radius * radius));
+//                     }
+//                     return intensity;
+//                 }
+
+//                 vec4 getHeatColor(float ratio) {
+//                     ratio = clamp(ratio, 0.0, 1.0);
+//                     if(ratio < 0.5) {
+//                         return mix(colorScheme[0], colorScheme[1], ratio * 2.0);
+//                     } else {
+//                         return mix(colorScheme[1], colorScheme[2], (ratio - 0.5) * 2.0);
+//                     }
+//                 }
+
+//                 void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
+//                     vec2 uv = fsInput.positionWC.xy / czm_viewport.zw;
+//                     float intensity = computeIntensity(uv);
+//                     material.diffuse = getHeatColor(intensity).rgb;
+//                     material.alpha = getHeatColor(intensity).a;
+//                 }
+//             `,
+//     },
+//   })
+
+//   // 3. 创建地面图元
+//   const rectangle = Cesium.Rectangle.fromDegrees(
+//     95.0262,
+//     29.5808,
+//     95.3509,
+//     30.0698
+//   )
+//   viewer.value.scene.primitives.add(
+//     new Cesium.GroundPrimitive({
+//       geometryInstances: new Cesium.GeometryInstance({
+//         geometry: new Cesium.RectangleGeometry({
+//           rectangle: rectangle,
+//           vertexFormat: Cesium.MaterialAppearance.VERTEX_FORMAT,
+//         }),
+//       }),
+//       appearance: new Cesium.MaterialAppearance({
+//         material: heatmapMaterial,
+//         translucent: true,
+//       }),
+//     })
+//   )
+// }
+
+// async function loadHeatmap(output) {
+//   const geoJson = await Cesium.Resource.fetchJson('/ng/avaflow/output.geojson')
+//   let list = []
+//   geoJson.features.forEach(feature => {
+//     // 提取坐标并转为普通数组 [经度, 纬度]
+//     list.push({
+//       lnglat: [
+//         feature.geometry.coordinates[0], // 经度
+//         feature.geometry.coordinates[1], // 纬度
+//       ],
+//       // 提取数值
+//       value: feature.properties.value,
+//     })
+//   })
+//   heatmapLayer.value = new Heatmap3d(viewer.value, {
+//     list: list,
+//     raduis: 15,
+//     baseHeight: 0,
+//     primitiveType: 'TRAINGLE',
+//     gradient: {
+//       '.1': 'red',
+//       '.3': 'yellow',
+//       '.6': 'cyan',
+//       '.8': 'blue',
+//       '.95': 'navy',
+//     },
+//   })
+
+// }
+
+// async function loadHeatmap(output) {
+//   const geoJson = await Cesium.Resource.fetchJson('/ng/output.geojson')
+//   let list = []
+//   geoJson.features.forEach(feature => {
+//     // 提取坐标并转为普通数组 [经度, 纬度]
+//     list.push({
+//       lnglat: [
+//         feature.geometry.coordinates[0], // 经度
+//         feature.geometry.coordinates[1], // 纬度
+//       ],
+//       // 提取数值
+//       value: feature.properties.value,
+//     })
+//   })
+//   heatmapLayer.value = new Heatmap3d(viewer.value, {
+//     list: list,
+//     raduis: 15,
+//     baseHeight: 0,
+//     primitiveType: 'TRAINGLE',
+//     gradient: {
+//       '.1': 'red',
+//       '.3': 'yellow',
+//       '.6': 'cyan',
+//       '.8': 'blue',
+//       '.95': 'navy',
+//     },
+//   })
+// }
+
+let currentHeatmapIndex = 1 // 当前加载的文件索引
+let heatmapPrimitive = null // 当前热力图对象
+let intervalId = null // 定时器ID
+
+async function loadHeatmap(index) {
+  try {
+    // 1. 移除旧的热力图
+    if (heatmapPrimitive) {
+      // viewer.value.scene.primitives.remove(heatmapPrimitive)
+      heatmapPrimitive.destroy()
+      heatmapPrimitive = null
+    }
+
+    // 2. 加载新数据
+    const geoJson = await Cesium.Resource.fetchJson(
+      `/ng/avaflow/avaflow_output${index}.geojson`
+    )
+
+    // 3. 转换数据格式
+    const list = geoJson.features.map(feature => ({
+      lnglat: feature.geometry.coordinates,
+      value: feature.properties.value,
+    }))
+
+    // 4. 创建新热力图
+    heatmapPrimitive = new Heatmap3d(viewer.value, {
+      list: list,
+      radius: 1, //
+      baseHeight: 0,
+      primitiveType: 'TRIANGLE', // 修正拼写 TRAINGLE -> TRIANGLE
+      gradient: {
+        '.3': 'blue',
+        '.99': 'yellow',
+        '.999999999': 'red',
+      },
+    })
+
+    // 5. 添加到场景
+    // viewer.value.scene.primitives.add(heatmapPrimitive)
+  } catch (error) {
+    console.error(`加载output${index}.geojson失败:`, error)
+  }
+}
+
+// 启动定时任务
+function startHeatmapCycle() {
+  intervalId = setInterval(() => {
+    currentHeatmapIndex = (currentHeatmapIndex % 21) + 1 // 1-41循环
+    loadHeatmap(currentHeatmapIndex)
+  }, 1000) // 0.5秒间隔
+}
+
+// 停止定时任务
+function stopHeatmapCycle() {
+  if (intervalId) {
+    clearInterval(intervalId)
+    intervalId = null
+  }
+}
 </script>
 <style>
 .top-container {

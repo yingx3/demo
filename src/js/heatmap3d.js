@@ -1,6 +1,6 @@
 import util from './util'
 import * as Cesium from 'cesium'
-// import h337 from 'heatmap.js'
+import * as h337 from 'heatmap.js-fixed/build/heatmap.min.js'
 /**
  * @description 三维热力图类，基于h337类扩展
  * @class
@@ -61,16 +61,66 @@ class Heatmap3d {
     this.init()
   }
 
+  // init() {
+  //   this.hierarchy = []
+  //   for (let ind = 0; ind < this.list.length; ind++) {
+  //     let position = Cesium.Cartesian3.fromDegrees(
+  //       this.list[ind].lnglat[0],
+  //       this.list[ind].lnglat[1],
+  //       0
+  //     )
+  //     this.hierarchy.push(position)
+  //   }
+  //   this.computeBound(this.hierarchy)
+  //   let points = []
+  //   for (let i = 0; i < this.hierarchy.length; i++) {
+  //     let p1 = this.hierarchy[i]
+  //     const rete = this.computeRateInBound(p1)
+  //     points.push({
+  //       x: rete.x,
+  //       y: rete.y,
+  //       value: this.list[i].value,
+  //     })
+  //   }
+  //   this.heatmapInstance.addData(points)
+
+  //   let instance = new Cesium.GeometryInstance({
+  //     geometry: this.createGeometry(),
+  //   })
+
+  //   this.primitive = this.viewer.scene.primitives.add(
+  //     new Cesium.Primitive({
+  //       geometryInstances: instance,
+  //       appearance: new Cesium.MaterialAppearance({
+  //         material: new Cesium.Material({
+  //           fabric: {
+  //             type: 'Image',
+  //             uniforms: {
+  //               image: this.heatmapInstance.getDataURL(),
+  //             },
+  //           },
+  //         }),
+  //         translucent: true,
+  //         flat: true,
+  //       }),
+  //       asynchronous: false,
+  //     })
+  //   )
+  //   this.primitive.id = 'heatmap3d'
+  // }
   init() {
     this.hierarchy = []
+    // 1. 转换所有点至贴地坐标
     for (let ind = 0; ind < this.list.length; ind++) {
       let position = Cesium.Cartesian3.fromDegrees(
         this.list[ind].lnglat[0],
         this.list[ind].lnglat[1],
-        0
+        0 // Z坐标强制为0以确保贴地
       )
       this.hierarchy.push(position)
     }
+
+    // 2. 计算热力图数据映射
     this.computeBound(this.hierarchy)
     let points = []
     for (let i = 0; i < this.hierarchy.length; i++) {
@@ -84,31 +134,82 @@ class Heatmap3d {
     }
     this.heatmapInstance.addData(points)
 
-    let instance = new Cesium.GeometryInstance({
-      geometry: this.createGeometry(),
+    // 3. 创建贴地Primitive
+    const material = new Cesium.Material({
+      fabric: {
+        type: 'Image',
+        uniforms: {
+          image: this.heatmapInstance.getDataURL(),
+          repeat: new Cesium.Cartesian2(1.0, 1.0), // 确保纹理平铺
+        },
+      },
     })
 
+    // 修改点：使用GroundPrimitive替代Primitive
     this.primitive = this.viewer.scene.primitives.add(
-      new Cesium.Primitive({
-        geometryInstances: instance,
-        appearance: new Cesium.MaterialAppearance({
-          material: new Cesium.Material({
-            fabric: {
-              type: 'Image',
-              uniforms: {
-                image: this.heatmapInstance.getDataURL(),
-              },
-            },
+      new Cesium.GroundPrimitive({
+        geometryInstances: new Cesium.GeometryInstance({
+          geometry: new Cesium.RectangleGeometry({
+            rectangle: Cesium.Rectangle.fromCartesianArray(this.hierarchy),
+            height: 0, // 贴地高度
+            vertexFormat: Cesium.MaterialAppearance.VERTEX_FORMAT,
           }),
+        }),
+        appearance: new Cesium.MaterialAppearance({
+          material: material,
           translucent: true,
           flat: true,
         }),
+        // 关键参数配置
+        classificationType: Cesium.ClassificationType.TERRAIN, // 仅贴地形
         asynchronous: false,
+        show: false, // 初始不可见
       })
     )
+    // 0.5秒后显示primitive
+    setTimeout(() => {
+      if (this.primitive && !this.primitive.isDestroyed()) {
+        this.primitive.show = true // 设为可见
+        this.viewer.scene.requestRender() // 强制刷新场景
+      }
+    }, 10)
     this.primitive.id = 'heatmap3d'
-  }
+    // }
 
+    // this.primitive = this.viewer.scene.primitives.add(
+    //   new Cesium.GroundPrimitive({
+    //     geometryInstances: new Cesium.GeometryInstance({
+    //       geometry: new Cesium.RectangleGeometry({
+    //         rectangle: Cesium.Rectangle.fromCartesianArray(this.hierarchy),
+    //         height: 0,
+    //         vertexFormat: Cesium.MaterialAppearance.VERTEX_FORMAT,
+    //       }),
+    //     }),
+    //     appearance: new Cesium.MaterialAppearance({
+    //       // 初始透明材质
+    //       material: new Cesium.Material({
+    //         fabric: {
+    //           type: 'Color',
+    //           uniforms: {
+    //             color: new Cesium.Color(0, 0, 0, 0), // RGBA(0,0,0,0) 完全透明
+    //           },
+    //         },
+    //       }),
+    //       translucent: true,
+    //       flat: true,
+    //     }),
+    //     classificationType: Cesium.ClassificationType.TERRAIN,
+    //     asynchronous: false,
+    //   })
+    // )
+
+    // // 动态更新为真实材质（需确保在材质就绪后执行）
+    // setTimeout(() => {
+    //   this.primitive.appearance.material = material // 替换为真实材质
+    // }, 0)
+
+    // this.primitive.id = 'heatmap3d'
+  }
   /**
    * 销毁
    */

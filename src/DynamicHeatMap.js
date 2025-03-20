@@ -259,7 +259,7 @@ class DynamicHeatMap {
     this.updataCallback = null
   }
 }
-
+//
 function getRandomPoints() {
   const arr = []
   const arrPoint = turf.randomPoint(heatCount, {
@@ -272,7 +272,7 @@ function getRandomPoints() {
   }
   return arr
 }
-
+//热力图数据插值（平滑过渡）
 function lerpHeatMapData(startArr, endArr, ratio, result) {
   for (let i = 0; i < result.length; i++) {
     const start = startArr[i]
@@ -285,6 +285,7 @@ function lerpHeatMapData(startArr, endArr, ratio, result) {
   }
 }
 
+//用于在前端动态生成并下载一个 JSON 文件
 const downJson = (fileName, fileMsg) => {
   const elementA = document.createElement('a')
   elementA.download = fileName
