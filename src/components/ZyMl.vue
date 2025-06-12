@@ -76,11 +76,15 @@ const treeData = ref([
 
   {
     id: 3,
-    name: '气象数据',
+    name: '设备',
     children: [
       {
         id: 31,
         name: '气象站',
+      },
+      {
+        id: 32,
+        name: '地震动',
       },
       // {
       //   id: 32,
