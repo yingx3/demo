@@ -22,7 +22,7 @@ const closeClick = () => {
 </script>
 <template>
   <div class="popup-container">
-    <div class="pine"></div>
+    <!-- <div class="pine"></div> -->
     <div class="box-wrap">
       <div class="close" @click="closeClick">X</div>
       <div class="area">
@@ -49,29 +49,28 @@ const closeClick = () => {
 </template>
 <style lang="less" scoped>
 .popup-container {
-  width: 220px;
-  // height: 280px;
-  position: relative;
-  bottom: 700px;
-  left: 1200px;
+  width: 235px;
+  height: 280px;
 }
 
 .close {
   position: absolute;
   color: #fff;
-  top: 1px;
+  // top: 20px;
   right: 10px;
+  // width: 20px;
   text-shadow: 2px 2px 2px #022122;
   cursor: pointer;
   animation: fontColor 1s;
+  z-index: 9999; /* 添加最大层级 */
 }
 
 .box-wrap {
   position: absolute;
   // left: 21%;
-  top: 0;
+  // top: 0;
   width: 100%;
-  height: 280px;
+  // height: 280px;
   border-radius: 50px 0px 50px 0px;
   border: 1px solid #38e1ff;
   background-color: #38e1ff4a;
@@ -91,10 +90,11 @@ const closeClick = () => {
 }
 .content {
   position: relative;
-  top: 50px;
+  padding-top: 50px;
+  // top: 10px;
   left: 10px;
-  width: 210px;
-  height: 230px;
+  width: 232px;
+  // height: 230px;
 }
 
 .content .data-li {
@@ -105,16 +105,16 @@ const closeClick = () => {
   // top: 0px;
 }
 
-.pine {
-  position: absolute;
-  // left: 0;
-  // bottom: -83px;
-  width: 100px;
-  height: 100px;
-  box-sizing: border-box;
-  line-height: 120px;
-  text-indent: 5px;
-}
+// .pine {
+//   position: absolute;
+//   // left: 0;
+//   // bottom: -83px;
+//   width: 100px;
+//   height: 100px;
+//   box-sizing: border-box;
+//   line-height: 120px;
+//   text-indent: 5px;
+// }
 
 // .pine::before {
 //   content: '';

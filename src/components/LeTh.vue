@@ -95,11 +95,11 @@
         <div class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
           <el-button :plain="true" @click="dialogVisible1 = true"
-            ><span>冰川泥石流启动动力学模型</span></el-button
+            ><span>山洪泥石流启动动力学模型</span></el-button
           >
           <el-dialog
             v-model="dialogVisible1"
-            title="冰川泥石流启动动力学模型"
+            title="山洪泥石流启动动力学模型"
             width="500"
             :close-on-click-modal="false"
             class="dialog_avaflow"
@@ -389,7 +389,7 @@ const subitForm = () => {
       // 使用构建的正则表达式进行匹配
       const matches = text.match(regex)
 
-      // console.log(matches)
+      console.log(matches)
 
       if (matches) {
         const leftlong = Number(matches[1])

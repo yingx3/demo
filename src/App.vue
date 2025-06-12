@@ -15,20 +15,287 @@
     ></zy-ml>
     <div class="control">
       <div class="control_specific">
-        <img src="./assets/img/global.png" alt="" />
-        <img src="./assets/img/mountain.png" alt="" />
-        <img src="./assets/img/arrow.png" alt="" />
-        <img src="./assets/img/coverage.png" alt="" />
-        <img src="./assets/img/table.png" alt="" />
-        <img src="./assets/img/flag.png" alt="" />
-        <img src="./assets/img/roll.png" alt="" />
+        <a href="#" @click="magnify"
+          ><img src="./assets/img/magnify.png" alt=""
+        /></a>
+        <a href="#" @click="shrink"
+          ><img src="./assets/img/shrink.png" alt=""
+        /></a>
+        <a href="#" @click="move"><img src="./assets/img/move.png" alt="" /></a>
+        <a href="#" @click="measure"
+          ><img src="./assets/img/measure.png" alt=""
+        /></a>
+        <a href="#" @click="polygon"
+          ><img src="./assets/img/polygon.png" alt=""
+        /></a>
+        <a href="#" @click="position">
+          <img src="./assets/img/position.png" alt=""
+        /></a>
+        <a href="#" @click="addattribute">
+          <img src="./assets/img/flag.png" alt=""
+        /></a>
+        <a href="#" @click="searchdisaster">
+          <img src="./assets/img/table.png" alt=""
+        /></a>
+        <a href="#" @click="cleanentity">
+          <img src="./assets/img/clean.png" alt=""
+        /></a>
+        <a href="#"> <img src="./assets/img/roll.png" alt="" /></a>
+
+        <el-dialog
+          v-model="dialogVisible_disaster"
+          title="添加属性"
+          width="500"
+        >
+          <el-form :model="form">
+            <el-form-item label="名称"
+              ><el-input v-model="form.name"></el-input></el-form-item
+            ><el-form-item label="断层密度"
+              ><el-input v-model="form.dcmd"></el-input></el-form-item
+            ><el-form-item label="隆升速率"
+              ><el-input v-model="form.lssl"></el-input></el-form-item
+            ><el-form-item label="坡度"
+              ><el-input v-model="form.slope"></el-input></el-form-item
+            ><el-form-item label="河流下切速率"
+              ><el-input v-model="form.hlxqsl"></el-input></el-form-item
+            ><el-form-item label="坡体后端汇水面积"
+              ><el-input v-model="form.pthhsmj"></el-input></el-form-item
+            ><el-form-item label="高差"
+              ><el-input v-model="form.elevation"></el-input></el-form-item
+            ><el-form-item label="潜在滑坡体积规模"
+              ><el-select v-model="form.scale"
+                ><el-option label="小型" value="small" /><el-option
+                  label="中型"
+                  value="middle" /><el-option
+                  label="大型"
+                  value="big" /><el-option
+                  label="特大型"
+                  value="heavy" /></el-select
+            ></el-form-item>
+            <el-form-item
+              ><el-button @click="submit_disaster">提交</el-button
+              ><el-button @click="dialogVisible_disaster = false"
+                >取消</el-button
+              ></el-form-item
+            ></el-form
+          ></el-dialog
+        >
+        <el-dialog
+          v-model="dialogVisible_searchdisaster"
+          title="查询属性"
+          width="500"
+        >
+          <el-form :model="form_disastersearch">
+            <el-form-item label="区划查询" style="width: 500px">
+              <div class="flex-container">
+                <el-select v-model="form_disastersearch.location"
+                  ><el-option label="林芝市" value="林芝市"> </el-option
+                  ><el-option label="朗县" value="朗县"> </el-option
+                  ><el-option label="察隅县" value="察隅县"> </el-option
+                  ><el-option label="工布江达县" value="工布江达县"> </el-option
+                  ><el-option label="米林县" value="米林县"> </el-option
+                  ><el-option label="墨脱县" value="墨脱县"> </el-option
+                  ><el-option label="波密县" value="波密县">
+                  </el-option></el-select
+                ><el-button
+                  @click="locationsearch"
+                  v-on:click.middle="locationsearchqxz"
+                  >查询</el-button
+                >
+              </div></el-form-item
+            >
+            <el-form-item label="属性查询" style="width: 500px">
+              <div class="flex-container">
+                <el-select v-model="form_disastersearch.attribute">
+                  <el-option label="地点" value="location"></el-option
+                  ><el-option label="坡度" value="slope"></el-option
+                  ><el-option label="规模" value="scale"></el-option></el-select
+                ><el-input
+                  v-model="form_disastersearch.attributevalue"
+                ></el-input
+                ><el-button @click="attributesearch">查询</el-button>
+              </div></el-form-item
+            >
+            <el-button style="margin-left: 284px">清空查询条件</el-button>
+          </el-form>
+        </el-dialog>
+
+        <el-dialog
+          v-model="dialogVisible_checkattribute"
+          title="属性表"
+          width="860"
+        >
+          <div class="dynamic-table-container">
+            <!-- 搜索和过滤区域 -->
+            <div class="table-controls">
+              <el-input
+                v-model="searchKeyword"
+                placeholder="输入关键字搜索"
+                style="width: 300px; margin-right: 20px"
+              />
+              <el-button type="primary">搜索</el-button>
+            </div>
+
+            <!-- 数据表格 -->
+            <el-table
+              v-loading="loading"
+              :data="tableData"
+              stripe
+              style="width: 100%"
+            >
+              <el-table-column
+                prop="name"
+                label="名称"
+                width="80"
+                sortable="custom"
+                align="center"
+              />
+              <el-table-column
+                prop="dcmd"
+                label="断层密度"
+                width="80"
+                align="center"
+              />
+              <el-table-column
+                prop="lssl"
+                label="隆升速率"
+                width="80"
+                align="center"
+              />
+              <el-table-column
+                prop="slope"
+                label="坡度"
+                width="80"
+                align="center"
+              />
+
+              <el-table-column
+                prop="hlxqsl"
+                label="河流下切速率"
+                width="140"
+                align="center"
+              />
+
+              <el-table-column
+                prop="pthhsmj"
+                label="坡体后汇水面积"
+                width="140"
+                align="center"
+              />
+
+              <el-table-column
+                prop="elevation"
+                label="高差"
+                width="80"
+                align="center"
+              />
+
+              <el-table-column
+                prop="scale"
+                label="潜在滑坡体积规模"
+                width="140"
+                align="center"
+              />
+            </el-table>
+
+            <!-- 分页组件 -->
+            <div class="pagination-container">
+              <el-pagination
+                v-model:current-page="pagination.currentPage"
+                v-model:page-size="pagination.pageSize"
+                :page-sizes="[5, 10, 20, 50]"
+                layout="total, sizes, prev, pager, next, jumper"
+              />
+            </div>
+
+            <!-- 错误提示 -->
+            <el-alert
+              v-if="errorMessage"
+              :title="errorMessage"
+              type="error"
+              show-icon
+              closable
+              class="error-alert"
+            />
+          </div>
+        </el-dialog>
+
+        <el-dialog
+          v-model="dialogVisible_checkqxz"
+          title="站点信息"
+          width="415"
+        >
+          <div class="dynamic-table-container">
+            <!-- 搜索和过滤区域 -->
+            <div class="table-controls">
+              <el-input
+                v-model="searchKeyword"
+                placeholder="输入关键字搜索"
+                style="width: 300px; margin-right: 20px"
+              />
+              <el-button type="primary">搜索</el-button>
+            </div>
+
+            <!-- 数据表格 -->
+            <el-table
+              v-loading="loading"
+              :data="tableData_qxz"
+              stripe
+              style="width: 100%"
+            >
+              <el-table-column
+                prop="z_name"
+                label="站点名称"
+                width="80"
+                sortable="custom"
+                align="center"
+              />
+              <el-table-column
+                prop="jyl"
+                label="降雨量"
+                width="80"
+                align="center"
+              />
+              <el-table-column
+                prop="wind"
+                label="风速"
+                width="80"
+                align="center"
+              />
+            </el-table>
+
+            <!-- 分页组件 -->
+            <div class="pagination-container">
+              <el-pagination
+                v-model:current-page="pagination.currentPage"
+                v-model:page-size="pagination.pageSize"
+                :page-sizes="[5, 10, 20, 50]"
+                layout="total, sizes, prev, pager, next, jumper"
+              />
+            </div>
+
+            <!-- 错误提示 -->
+            <el-alert
+              v-if="errorMessage"
+              :title="errorMessage"
+              type="error"
+              show-icon
+              closable
+              class="error-alert"
+            />
+          </div>
+        </el-dialog>
       </div>
     </div>
   </div>
 </template>
 <script setup>
+// import wkb from 'wkb'
+// import wkx from 'wkx'
 import * as Cesium from 'cesium'
+import { ElMessage } from 'element-plus'
 import { nextTick, ref, onMounted, onUpdated, onBeforeUnmount } from 'vue'
+import { reactive } from 'vue'
 import { getGeojson } from './common/api/api.js'
 import Dialog from './js/dialog.js'
 import ZhJc from './components/ZhJc.vue'
@@ -37,8 +304,16 @@ import ZyMl from './components/ZyMl.vue'
 import { useSquareStore } from './stores/squareStore'
 // import { EventBus } from '@/event-bus'
 import { emitter } from '../src/eventBus.js'
-import { en } from 'element-plus/es/locale/index.mjs'
+import { en, vi } from 'element-plus/es/locale/index.mjs'
 import Heatmap3d from './js/heatmap3d.js'
+import axios from 'axios'
+import MeasureDistance from './js/measuredistance.js'
+import MeasureArea from './js/MeasureArea.js'
+import MeasureManager from './js/MeasureManager.js'
+import RainEffectManager from './js/RainEffectManager.js'
+import { KrigingInstance } from './js/krigingInstance.js'
+// import type { TableColumnCtx } from 'element-plus'
+import * as WKB from 'wkb'
 
 const viewer = ref(null)
 const heatmapLayer = ref(null)
@@ -75,6 +350,77 @@ const cesiumContainer = ref(null)
 const floodPrimitive = ref(null)
 const frontTexture = ref(null)
 const backTexture = ref(null)
+
+const dialogVisible_disaster = ref(false)
+const dialogVisible_searchdisaster = ref(false)
+const dialogVisible_checkattribute = ref(false)
+const dialogVisible_checkqxz = ref(false)
+const form = reactive({
+  name: '111',
+  dcmd: '222',
+  lssl: '333',
+  slope: '444',
+  hlxqsl: '555',
+  pthhsmj: '666',
+  elevation: '777',
+  scale: '888',
+  longitude: '',
+  latitude: '',
+})
+const form_disastersearch = reactive({
+  location: '林芝市',
+  attribute: '地点',
+  attributevalue: '林芝',
+})
+
+// 响应式数据
+const tableData = ref([
+  {
+    name: '',
+    dcmd: '',
+    lssl: '',
+    slope: '',
+    hlxqsl: '',
+    pthhsmj: '',
+    elevation: '',
+    scale: '',
+  },
+])
+const tableData_qxz = ref([
+  {
+    z_name: '',
+    jyl: '',
+    wind: '',
+  },
+])
+const loading = ref(false)
+const errorMessage = ref('')
+const searchKeyword = ref('')
+const sortParams = reactive({
+  prop: 'date',
+  order: 'descending',
+})
+
+// 分页配置
+const pagination = reactive({
+  currentPage: 1,
+  pageSize: 10,
+  total: 0,
+})
+
+const boxStyle = ref({
+  left: '0px',
+  top: '0px',
+  width: '0px',
+  height: '0px',
+  display: 'none',
+  position: 'absolute',
+  border: '2px solid red',
+  backgroundColor: 'rgba(255,0,0,0.2)',
+  pointerEvents: 'none',
+})
+
+const md = ref(null)
 // const id =ref(null)
 onMounted(async () => {
   Cesium.Ion.defaultAccessToken =
@@ -94,137 +440,106 @@ onMounted(async () => {
   })
   // console.log(pnames.value)
   //ScreenSpaceEventHandler是用于处理屏幕空间事件（例如鼠标点击、移动等）。该代码是将其绑定到指定的Cesiuim场景的canvas元素上。该实例监听canvas元素相关的鼠标和触摸事件。
-  const handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
-  //handler.setInputAction(function (movement) { ... }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
-  //LEFT_CLICK、RIGHT_CLICK
-  handler.setInputAction(function (movement) {
-    //获取点击实体
-    const pickedFeature = viewer.value.scene.pick(movement.position)
-    const opts = {
-      viewer,
-      position: {
-        _value: pickedFeature.primitive.position,
-      },
-      title: pickedFeature.id._properties._OBJECTID._value,
-      content: [
-        { name: '名称', value: pickedFeature.id._properties._名称._value },
-        { name: '经度', value: pickedFeature.id._properties._经度._value },
-        { name: '纬度', value: pickedFeature.id._properties._纬度._value },
-        {
-          name: '断层密度',
-          value: pickedFeature.id._properties._断层密度_km_km2_._value,
-        },
-        {
-          name: '隆升速率',
-          value: pickedFeature.id._properties._隆升速率_mm_y_._value,
-        },
-        { name: '坡度', value: pickedFeature.id._properties._坡度___._value },
-        {
-          name: '河流下切速率',
-          value: pickedFeature.id._properties._河流下切速率_mm_y_._value,
-        },
-        {
-          name: '坡体后端汇水面积',
-          value: pickedFeature.id._properties._坡体后端汇水面积_m2_._value,
-        },
-        { name: '高差', value: pickedFeature.id._properties._高差_m_._value },
-        {
-          name: '潜在滑坡体积规模',
-          value: pickedFeature.id._properties._潜在滑坡体积规模._value,
-        },
-      ],
-    }
-    if (dialogs.value) {
-      // 只允许一个弹窗出现
-      dialogs.value.windowClose()
-    }
-    dialogs.value = new Dialog(opts)
-  }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
-
-  // 监听鼠标左键点击事件
-  // handler.setInputAction(event => {
-  //   // 获取点击位置的屏幕坐标（Cartesian2）
-  //   const screenPosition = event.position
-
-  //   // 将屏幕坐标转换为三维场景坐标（Cartesian3）
-  //   const ray = viewer.value.camera.getPickRay(screenPosition)
-  //   const position = viewer.value.scene.globe.pick(ray, viewer.value.scene)
-
-  //   // 如果点击位置在地球上
-  //   if (position) {
-  //     // 将三维坐标转换为地理坐标（Cartographic）
-  //     const cartographic = Cesium.Cartographic.fromCartesian(position)
-
-  //     // 将弧度转换为度数
-  //     const longitude = Cesium.Math.toDegrees(cartographic.longitude)
-  //     const latitude = Cesium.Math.toDegrees(cartographic.latitude)
-  //     const height = cartographic.height
-
-  //     // 输出结果（保留6位小数）
-  //     console.log(
-  //       `经度: ${longitude.toFixed(6)}°, 纬度: ${latitude.toFixed(
-  //         6
-  //       )}°, 高度: ${height.toFixed(2)}米`
-  //     )
-  //   } else {
-  //     console.log('未点击在地球表面')
+  // const handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
+  // handler.setInputAction(function (movement) {
+  //   //获取点击实体
+  //   const pickedFeature = viewer.value.scene.pick(movement.position)
+  //   if (pickedFeature) {
+  //     const opts = {
+  //       viewer,
+  //       position: {
+  //         _value: pickedFeature.primitive.position,
+  //       },
+  //       title: pickedFeature.id._properties._OBJECTID._value,
+  //       content: [
+  //         { name: '名称', value: pickedFeature.id._properties._名称._value },
+  //         { name: '经度', value: pickedFeature.id._properties._经度._value },
+  //         { name: '纬度', value: pickedFeature.id._properties._纬度._value },
+  //         {
+  //           name: '断层密度',
+  //           value: pickedFeature.id._properties._断层密度_km_km2_._value,
+  //         },
+  //         {
+  //           name: '隆升速率',
+  //           value: pickedFeature.id._properties._隆升速率_mm_y_._value,
+  //         },
+  //         { name: '坡度', value: pickedFeature.id._properties._坡度___._value },
+  //         {
+  //           name: '河流下切速率',
+  //           value: pickedFeature.id._properties._河流下切速率_mm_y_._value,
+  //         },
+  //         {
+  //           name: '坡体后端汇水面积',
+  //           value: pickedFeature.id._properties._坡体后端汇水面积_m2_._value,
+  //         },
+  //         { name: '高差', value: pickedFeature.id._properties._高差_m_._value },
+  //         {
+  //           name: '潜在滑坡体积规模',
+  //           value: pickedFeature.id._properties._潜在滑坡体积规模._value,
+  //         },
+  //       ],
+  //     }
+  //     if (dialogs.value) {
+  //       // 只允许一个弹窗出现
+  //       dialogs.value.windowClose()
+  //     }
+  //     dialogs.value = new Dialog(opts)
   //   }
   // }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
 
-  handler.setInputAction(event => {
-    // 获取点击位置的地理坐标
-    const screenPosition = event.position
-    const ray = viewer.value.camera.getPickRay(screenPosition)
-    const position = viewer.value.scene.globe.pick(ray, viewer.value.scene)
+  //   handler.setInputAction(event => {
+  //     // 获取点击位置的地理坐标
+  //     const screenPosition = event.position
+  //     const ray = viewer.value.camera.getPickRay(screenPosition)
+  //     const position = viewer.value.scene.globe.pick(ray, viewer.value.scene)
 
-    if (position) {
-      // 转换坐标为经纬度（WGS84）
-      const cartographic = Cesium.Cartographic.fromCartesian(position)
-      const longitude = Cesium.Math.toDegrees(cartographic.longitude).toFixed(6)
-      const latitude = Cesium.Math.toDegrees(cartographic.latitude).toFixed(6)
-      const height = cartographic.height.toFixed(2)
+  //     if (position) {
+  //       // 转换坐标为经纬度（WGS84）
+  //       const cartographic = Cesium.Cartographic.fromCartesian(position)
+  //       const longitude = Cesium.Math.toDegrees(cartographic.longitude).toFixed(6)
+  //       const latitude = Cesium.Math.toDegrees(cartographic.latitude).toFixed(6)
+  //       const height = cartographic.height.toFixed(2)
 
-      // 获取相机当前姿态参数
-      const camera = viewer.value.camera
-      const cameraPositionCarto = Cesium.Cartographic.fromCartesian(
-        camera.position
-      )
-      const cameraLon = Cesium.Math.toDegrees(
-        cameraPositionCarto.longitude
-      ).toFixed(6)
-      const cameraLat = Cesium.Math.toDegrees(
-        cameraPositionCarto.latitude
-      ).toFixed(6)
-      const cameraHeight = cameraPositionCarto.height.toFixed(2)
-      const heading = Cesium.Math.toDegrees(camera.heading).toFixed(2)
-      const pitch = Cesium.Math.toDegrees(camera.pitch).toFixed(2)
-      const roll = Cesium.Math.toDegrees(camera.roll).toFixed(2)
+  //       // 获取相机当前姿态参数
+  //       const camera = viewer.value.camera
+  //       const cameraPositionCarto = Cesium.Cartographic.fromCartesian(
+  //         camera.position
+  //       )
+  //       const cameraLon = Cesium.Math.toDegrees(
+  //         cameraPositionCarto.longitude
+  //       ).toFixed(6)
+  //       const cameraLat = Cesium.Math.toDegrees(
+  //         cameraPositionCarto.latitude
+  //       ).toFixed(6)
+  //       const cameraHeight = cameraPositionCarto.height.toFixed(2)
+  //       const heading = Cesium.Math.toDegrees(camera.heading).toFixed(2)
+  //       const pitch = Cesium.Math.toDegrees(camera.pitch).toFixed(2)
+  //       const roll = Cesium.Math.toDegrees(camera.roll).toFixed(2)
 
-      // 打印结果
-      console.log(`
-==== 点击位置 ====
-经度: ${longitude}°
-纬度: ${latitude}°
-高程: ${height}m
+  //       // 打印结果
+  //       console.log(`
+  // ==== 点击位置 ====
+  // 经度: ${longitude}°
+  // 纬度: ${latitude}°
+  // 高程: ${height}m
 
-==== 相机姿态 ====
-经度: ${cameraLon}°
-纬度: ${cameraLat}°
-高度: ${cameraHeight}m
-朝向: ${heading}°（正北为0°，顺时针增加）
-俯仰: ${pitch}°（0°水平，正值为俯视）
-横滚: ${roll}°（0°水平，正值为向右倾斜）
-    `)
-    }
-  }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+  // ==== 相机姿态 ====
+  // 经度: ${cameraLon}°
+  // 纬度: ${cameraLat}°
+  // 高度: ${cameraHeight}m
+  // 朝向: ${heading}°（正北为0°，顺时针增加）
+  // 俯仰: ${pitch}°（0°水平，正值为俯视）
+  // 横滚: ${roll}°（0°水平，正值为向右倾斜）
+  //     `)
+  //     }
+  //   }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
 })
 
 const checkedLayers = (ps, node) => {
   // console.log('ps:', ps)
   // console.log('node:', node)
-  //移除取消勾选的图层
 
-  // let entityInterval = null
+  //移除取消勾选的图层
   switch (node) {
     case 131:
       viewer.value.entities.removeById('2')
@@ -249,6 +564,21 @@ const checkedLayers = (ps, node) => {
       entityInterval.value = null
       // viewer.value.entities.removeAll()
       break
+    case 21:
+      removeLayer_dem()
+      break
+    case 22:
+      removeLayer_slope()
+      break
+    case 23:
+      removeLayer_aspect()
+      break
+    case 24:
+      removeLayer_relief()
+      break
+    case 31:
+      removeAllStations()
+      break
     default:
       break
   }
@@ -266,27 +596,26 @@ const checkedLayers = (ps, node) => {
     removeLayer2()
     removeLayer4()
     removeLayer5()
+    removeLayer_dem()
+    removeLayer_slope()
+    removeLayer_aspect()
+    removeLayer_relief()
     // clearInterval(entityInterval)
     // entityInterval = null
     // viewer.value.entities.removeById('2')
     viewer.value.entities.removeAll()
   } else {
     // 遍历新增的 p 值并执行相应操作
-    // console.log('newPValues:', newPValues)
-    // const temp_p = [
-    //   'dangerLevel_20250318_151758_659_10800.png',
-    //   'dangerLevel_20250318_151820_740_21600.png',
-    // ]
     newPValues.forEach(p => {
-      console.log('p:', p)
+      // console.log('p:', p)
       switch (p) {
         case 11:
           addLayer1()
-          flyToWithRangeCheck(viewer.value, 95.0, 29.735)
+          // flyToWithRangeCheck(viewer.value, 95.0, 29.735)
           break
         case 12:
           addLayer2()
-          flyToWithRangeCheck(viewer.value, 95.0, 29.735)
+          // flyToWithRangeCheck(viewer.value, 95.0, 29.735)
           break
         case 131:
           // console.log('3小时图层打开')
@@ -361,7 +690,6 @@ const checkedLayers = (ps, node) => {
             const imageResource = new Cesium.Resource({
               url: imgUrl137,
             })
-
             imageResource
               .fetchImage()
               .then(image => {
@@ -408,10 +736,22 @@ const checkedLayers = (ps, node) => {
           }, 3000) // 每隔 3 秒执行一次
 
           break
-
+        case 21:
+          addLayer_dem()
+          break
         // default:
-
-        //   break
+        case 22:
+          addLayer_slope()
+          break
+        case 23:
+          addLayer_aspect()
+          break
+        case 24:
+          addLayer_relief()
+          break
+        case 31:
+          addLayer_weatherstation()
+          break
       }
     })
     processedPValues.value = [
@@ -644,10 +984,6 @@ function addentity(entityId, imgUrl137, currentEntityIndex, pnameCount) {
     })
 }
 
-// let entityInterval = setInterval(addentity(entityId, imageUrl137), 3000)
-// 每隔 3 秒执行一次}
-// let entityInterval = setInterval(addentity(entityId, imgUrl137), 3000) // 每隔 3 秒执行一次
-
 // 范围检测逻辑
 function flyToWithRangeCheck(
   viewer,
@@ -656,6 +992,7 @@ function flyToWithRangeCheck(
   rangeThreshold = 1
 ) {
   // 获取当前相机中心的经纬度坐标
+  // console.log(viewer)
   const cameraPosition = viewer.camera.positionCartographic
   const currentLongitude = Cesium.Math.toDegrees(cameraPosition.longitude)
   const currentLatitude = Cesium.Math.toDegrees(cameraPosition.latitude)
@@ -723,7 +1060,7 @@ const openLayers = params => {
     squareStore.closeRisk()
   }
 
-  addLayer3(leftlat, leftlong, rightlat, rightlong, pnames[1])
+  addLayer3(leftlat, leftlong, rightlat, rightlong, pnames[0])
   selectedIds.value = [131]
 }
 
@@ -814,27 +1151,35 @@ const getJson = async () => {
 const addLayer1 = () => {
   //影像数据
   const wmsImageryProvider = new Cesium.WebMapServiceImageryProvider({
-    url: '/api/geoserver/ne/wms',
-    layers: 'ne:南迦巴瓦峰',
+    url: '/api/geoserver/syl/wms',
+    layers: 'syl:南迦巴瓦峰',
     parameters: {
       transparent: true,
       format: 'image/jpeg',
+      // format: 'application/openlayers',
       // srs: 'EPSG:4326',默认4326，并且此配置不起作用
     },
     tilingScheme: new Cesium.WebMercatorTilingScheme(), //添加墨卡托投影
+    rectangle: Cesium.Rectangle.fromDegrees(
+      // 限制显示范围
+      94.730835,
+      29.606009, // 西南经度, 西南纬度
+      95.417971,
+      29.959721 // 东北经度, 东北纬度
+    ),
   })
   const layers = viewer.value.scene.imageryLayers
   layers.addImageryProvider(wmsImageryProvider)
-  // viewer.value.camera.flyTo({
-  //   destination: Cesium.Cartesian3.fromDegrees(95.0, 29.735, 4500),
-  //   //相机的姿态
-  //   orientation: {
-  //     heading: Cesium.Math.toRadians(0.0), //朝向
-  //     pitch: Cesium.Math.toRadians(-40), //俯仰
-  //     // pitch: Cesium.Math.toRadians(-90), //俯仰
-  //     roll: 0.0, //滚转
-  //   },
-  // })
+  viewer.value.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+    //相机的姿态
+    orientation: {
+      heading: Cesium.Math.toRadians(56.34), //朝向
+      pitch: Cesium.Math.toRadians(-31), //俯仰
+      // pitch: Cesium.Math.toRadians(-90), //俯仰
+      roll: 0.0, //滚转
+    },
+  })
 }
 const removeLayer1 = () => {
   // 假设 viewer 是您的 Cesium Viewer 对象
@@ -843,9 +1188,11 @@ const removeLayer1 = () => {
   // 遍历所有图层，找到指定的图层并移除
   for (let i = 0; i < imageryLayers.length; i++) {
     const layer = imageryLayers.get(i)
+
+    // console.log(layer.imageryProvider._imagerProvider._layers)
     if (
       layer.imageryProvider &&
-      layer.imageryProvider.layers === 'ne:南迦巴瓦峰'
+      layer.imageryProvider.layers === 'syl:南迦巴瓦峰'
     ) {
       imageryLayers.remove(layer)
       break // 移除后退出循环
@@ -856,8 +1203,8 @@ const removeLayer1 = () => {
 const addLayer2 = () => {
   //路网
   const wmsImageryProvider1 = new Cesium.WebMapServiceImageryProvider({
-    url: '/api/geoserver/ne/wms',
-    layers: 'ne:tif2',
+    url: '/api/geoserver/syl/wms',
+    layers: 'syl:tif2',
     // layers: 'ne:tif13',
     parameters: {
       transparent: true,
@@ -865,21 +1212,28 @@ const addLayer2 = () => {
       // srs: 'EPSG:4326',默认4326，并且此配置不起作用
     },
     tilingScheme: new Cesium.WebMercatorTilingScheme(), //添加墨卡托投影
+    // 限制显示范围
+    rectangle: Cesium.Rectangle.fromDegrees(
+      94.730835,
+      29.606009, // 西南经度, 西南纬度
+      95.417971,
+      29.959721 // 东北经度, 东北纬度
+    ),
   })
   // console.log(viewer.value)
   const layers = viewer.value.scene.imageryLayers
 
   layers.addImageryProvider(wmsImageryProvider1)
-  // viewer.value.camera.flyTo({
-  //   destination: Cesium.Cartesian3.fromDegrees(95.0, 29.735, 4500),
-  //   //相机的姿态
-  //   orientation: {
-  //     heading: Cesium.Math.toRadians(0.0), //朝向
-  //     pitch: Cesium.Math.toRadians(-40), //俯仰
-  //     // pitch: Cesium.Math.toRadians(-90), //俯仰
-  //     roll: 0.0, //滚转
-  //   },
-  // })
+  viewer.value.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+    //相机的姿态
+    orientation: {
+      heading: Cesium.Math.toRadians(56.34), //朝向
+      pitch: Cesium.Math.toRadians(-31), //俯仰
+      // pitch: Cesium.Math.toRadians(-90), //俯仰
+      roll: 0.0, //滚转
+    },
+  })
 }
 //移除路网
 const removeLayer2 = () => {
@@ -889,11 +1243,396 @@ const removeLayer2 = () => {
   // 遍历所有图层，找到指定的图层并移除
   for (let i = 0; i < imageryLayers.length; i++) {
     const layer = imageryLayers.get(i)
-    if (layer.imageryProvider && layer.imageryProvider.layers === 'ne:tif2') {
+    if (layer.imageryProvider && layer.imageryProvider.layers === 'syl:tif2') {
       imageryLayers.remove(layer)
       break // 移除后退出循环
     }
   }
+}
+const addLayer_dem = () => {
+  //影像数据
+  const wmsImageryProvider = new Cesium.WebMapServiceImageryProvider({
+    url: '/native/geoserver/tif_0610/wms',
+    layers: 'tif_0610:dem_Level_16',
+    parameters: {
+      transparent: false,
+      format: 'image/jpeg',
+      // format: 'application/openlayers',
+      // srs: 'EPSG:4326',默认4326，并且此配置不起作用
+    },
+    tilingScheme: new Cesium.WebMercatorTilingScheme(), //添加墨卡托投影
+    // 限制显示范围
+    rectangle: Cesium.Rectangle.fromDegrees(
+      94.730835,
+      29.606009, // 西南经度, 西南纬度
+      95.417971,
+      29.959721 // 东北经度, 东北纬度
+    ),
+  })
+  const layers = viewer.value.scene.imageryLayers
+  layers.addImageryProvider(wmsImageryProvider)
+  viewer.value.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+    //相机的姿态
+    orientation: {
+      heading: Cesium.Math.toRadians(56.34), //朝向
+      pitch: Cesium.Math.toRadians(-31), //俯仰
+      // pitch: Cesium.Math.toRadians(-90), //俯仰
+      roll: 0.0, //滚转
+    },
+  })
+}
+const removeLayer_dem = () => {
+  // 假设 viewer 是您的 Cesium Viewer 对象
+  const imageryLayers = viewer.value.scene.imageryLayers
+
+  // 遍历所有图层，找到指定的图层并移除
+  for (let i = 0; i < imageryLayers.length; i++) {
+    const layer = imageryLayers.get(i)
+
+    if (layer.imageryProvider.layers === 'tif_0610:dem_Level_16') {
+      imageryLayers.remove(layer)
+      break // 移除后退出循环
+    }
+  }
+}
+const addLayer_slope = () => {
+  //影像数据
+  const wmsImageryProvider = new Cesium.WebMapServiceImageryProvider({
+    url: '/native/geoserver/tif_0610/wms',
+    layers: 'tif_0610:slope_njbwf',
+    parameters: {
+      transparent: true,
+      format: 'image/jpeg',
+      // format: 'application/openlayers',
+      // srs: 'EPSG:4326',默认4326，并且此配置不起作用
+    },
+    tilingScheme: new Cesium.WebMercatorTilingScheme(), //添加墨卡托投影
+    // 限制显示范围
+    rectangle: Cesium.Rectangle.fromDegrees(
+      94.730835,
+      29.606009, // 西南经度, 西南纬度
+      95.417971,
+      29.959721 // 东北经度, 东北纬度
+    ),
+  })
+  const layers = viewer.value.scene.imageryLayers
+  layers.addImageryProvider(wmsImageryProvider)
+  viewer.value.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+    //相机的姿态
+    orientation: {
+      heading: Cesium.Math.toRadians(56.34), //朝向
+      pitch: Cesium.Math.toRadians(-31), //俯仰
+      // pitch: Cesium.Math.toRadians(-90), //俯仰
+      roll: 0.0, //滚转
+    },
+  })
+}
+const removeLayer_slope = () => {
+  // 假设 viewer 是您的 Cesium Viewer 对象
+  const imageryLayers = viewer.value.scene.imageryLayers
+
+  // 遍历所有图层，找到指定的图层并移除
+  for (let i = 0; i < imageryLayers.length; i++) {
+    const layer = imageryLayers.get(i)
+    if (
+      layer.imageryProvider &&
+      layer.imageryProvider.layers === 'tif_0610:slope_njbwf'
+    ) {
+      imageryLayers.remove(layer)
+      break // 移除后退出循环
+    }
+  }
+}
+const addLayer_aspect = () => {
+  //影像数据
+  const wmsImageryProvider = new Cesium.WebMapServiceImageryProvider({
+    url: '/native/geoserver/tif_0610/wms',
+    layers: 'tif_0610:aspect_njbwf',
+    parameters: {
+      transparent: true,
+      format: 'image/jpeg',
+      // format: 'application/openlayers',
+      // srs: 'EPSG:4326',默认4326，并且此配置不起作用
+    },
+    tilingScheme: new Cesium.WebMercatorTilingScheme(), //添加墨卡托投影
+    // 限制显示范围
+    rectangle: Cesium.Rectangle.fromDegrees(
+      94.730835,
+      29.606009, // 西南经度, 西南纬度
+      95.417971,
+      29.959721 // 东北经度, 东北纬度
+    ),
+  })
+  const layers = viewer.value.scene.imageryLayers
+  layers.addImageryProvider(wmsImageryProvider)
+  viewer.value.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+    //相机的姿态
+    orientation: {
+      heading: Cesium.Math.toRadians(56.34), //朝向
+      pitch: Cesium.Math.toRadians(-31), //俯仰
+      // pitch: Cesium.Math.toRadians(-90), //俯仰
+      roll: 0.0, //滚转
+    },
+  })
+}
+const removeLayer_aspect = () => {
+  // 假设 viewer 是您的 Cesium Viewer 对象
+  const imageryLayers = viewer.value.scene.imageryLayers
+
+  // 遍历所有图层，找到指定的图层并移除
+  for (let i = 0; i < imageryLayers.length; i++) {
+    const layer = imageryLayers.get(i)
+    if (
+      layer.imageryProvider &&
+      layer.imageryProvider.layers === 'tif_0610:aspect_njbwf'
+    ) {
+      imageryLayers.remove(layer)
+      break // 移除后退出循环
+    }
+  }
+}
+const addLayer_relief = () => {
+  //影像数据
+  const wmsImageryProvider = new Cesium.WebMapServiceImageryProvider({
+    url: '/native/geoserver/tif_0610/wms',
+    layers: 'tif_0610:relief_njbwf',
+    parameters: {
+      transparent: true,
+      format: 'image/jpeg',
+      // format: 'application/openlayers',
+      // srs: 'EPSG:4326',默认4326，并且此配置不起作用
+    },
+    tilingScheme: new Cesium.WebMercatorTilingScheme(), //添加墨卡托投影
+    // 限制显示范围
+    rectangle: Cesium.Rectangle.fromDegrees(
+      94.730835,
+      29.606009, // 西南经度, 西南纬度
+      95.417971,
+      29.959721 // 东北经度, 东北纬度
+    ),
+  })
+  const layers = viewer.value.scene.imageryLayers
+  layers.addImageryProvider(wmsImageryProvider)
+  viewer.value.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+    //相机的姿态
+    orientation: {
+      heading: Cesium.Math.toRadians(56.34), //朝向
+      pitch: Cesium.Math.toRadians(-31), //俯仰
+      // pitch: Cesium.Math.toRadians(-90), //俯仰
+      roll: 0.0, //滚转
+    },
+  })
+}
+const removeLayer_relief = () => {
+  // 假设 viewer 是您的 Cesium Viewer 对象
+  const imageryLayers = viewer.value.scene.imageryLayers
+
+  // 遍历所有图层，找到指定的图层并移除
+  for (let i = 0; i < imageryLayers.length; i++) {
+    const layer = imageryLayers.get(i)
+    if (
+      layer.imageryProvider &&
+      layer.imageryProvider.layers === 'tif_0610:relief_njbwf'
+    ) {
+      imageryLayers.remove(layer)
+      break // 移除后退出循环
+    }
+  }
+}
+//加载全国气象站
+const addLayer_weatherstation = () => {
+  axios.get('/node/weatherstation').then(res => {
+    const stations = res.data
+    // console.log(data)
+    // 1. 创建数据源
+    const stationDataSource = new Cesium.CustomDataSource('weatherStations')
+    viewer.value.dataSources.add(stationDataSource)
+    // 2. 处理每个气象站
+    stations.forEach(station => {
+      // 解析几何坐标（WKT格式转经纬度）
+      const [lon, lat] = parseWKB(station.geom) // 示例函数见下方
+      // 创建实体
+      const entity = stationDataSource.entities.add({
+        name: station.NAME,
+        position: Cesium.Cartesian3.fromDegrees(lon, lat),
+        point: {
+          pixelSize: 5,
+          color: getColorByType(station.TYPES), // 按类型着色
+          outlineColor: Cesium.Color.WHITE,
+          outlineWidth: 1,
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        },
+        label: {
+          text: station.NAME,
+          font: '10px sans-serif',
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          outlineWidth: 2,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          pixelOffset: new Cesium.Cartesian2(0, -10),
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        },
+        // 自定义属性（用于点击弹窗）
+        properties: {
+          id: station.ID,
+          type: station.TYPES,
+          height: `${station.HEIGHT}米`,
+          county: `${station.COUNTYNAME} (${station.COUNTYID})`,
+          period: station.TIMES,
+          comment: station.COMMENT,
+          rain: station.RAIN,
+          temperature: station.TEMPE,
+          sunshine: station.SUN,
+        },
+      })
+    })
+
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(
+        109.543752,
+        32.898714,
+        10000000
+      ),
+      //相机的姿态
+      orientation: {
+        heading: Cesium.Math.toRadians(0), //朝向
+        pitch: Cesium.Math.toRadians(-90), //俯仰
+        // pitch: Cesium.Math.toRadians(-90), //俯仰
+        roll: 0.0, //滚转
+      },
+    })
+  })
+
+  // 3. 添加点击事件
+  // 设置点击事件处理器
+  const layerwsClickHandler = new Cesium.ScreenSpaceEventHandler(
+    viewer.value.scene.canvas
+  )
+  layerwsClickHandler
+    .setInputAction(handleLayerwsClick, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+    .catch(error => {
+      console.error('加载气象站数据失败:', error)
+    })
+}
+const handleLayerwsClick = event => {
+  // 获取点击位置
+  const pickedFeature = viewer.value.scene.pick(event.position)
+  console.log(pickedFeature)
+  const getProperty = prop => {
+    return pickedFeature.id._properties[prop]?._value ?? '无数据'
+  }
+  // console.log(getProperty('_OBJECTID'))
+  console.log(getProperty(''))
+  const opts = {
+    viewer,
+    position: {
+      _value: pickedFeature.id.position || pickedFeature.primitive.position,
+    },
+    title: getProperty('_county'),
+    content: [
+      { name: '名称', value: getProperty('_county') },
+      { name: '高度', value: getProperty('_height') },
+      { name: '服役时间', value: getProperty('_period') },
+      { name: '雨量', value: getProperty('_rain') },
+      { name: '日照', value: getProperty('_sunshine') },
+      { name: '温度', value: getProperty('_temperature') + '°' },
+      {
+        name: '类型',
+        value: getProperty('_type'),
+      },
+      {
+        name: '描述',
+        value: getProperty('comment'),
+      },
+    ],
+  }
+
+  // 关闭现有弹窗并打开新弹窗
+  if (dialogs.value) {
+    dialogs.value.windowClose()
+  }
+  dialogs.value = new Dialog(opts)
+}
+// 解析WKT坐标（示例：'0101000000F775E09C11A15E4088855AD3BC7B4A40' → [122.5167, 52.9667]）
+const parseWKB = hexString => {
+  if (!hexString || hexString.length < 32) return [null, null]
+
+  try {
+    // 1. 移除可能的00前缀（如果有）
+    const hex = hexString.startsWith('00') ? hexString.substring(2) : hexString
+
+    // 2. 将16进制转为字节数组
+    const bytes = new Uint8Array(hex.match(/../g).map(h => parseInt(h, 16)))
+    const view = new DataView(bytes.buffer)
+
+    // 3. 检查字节序 (1表示小端序)
+    const littleEndian = view.getUint8(0) === 1
+
+    // 4. 读取坐标（跳过5字节头：1字节序 + 4字节类型）
+    return [
+      view.getFloat64(5, littleEndian), // 经度
+      view.getFloat64(13, littleEndian), // 纬度
+    ]
+  } catch (e) {
+    console.error('WKB解析失败:', e)
+    return [null, null]
+  }
+}
+// 按气象站类型返回颜色
+const getColorByType = type => {
+  const colors = {
+    基准站: Cesium.Color.RED,
+    基本站: Cesium.Color.BLUE,
+    一般站: Cesium.Color.GREEN,
+    自动站: Cesium.Color.YELLOW,
+  }
+  return colors[type] || Cesium.Color.WHITE
+}
+// 显示点击弹窗
+const showStationPopup = entity => {
+  try {
+    // 安全获取属性值
+    const getProp = prop => {
+      return entity.properties?.[prop]?.getValue() ?? '无数据'
+    }
+
+    const content = `
+      <h3>${entity.name || '未知站点'}</h3>
+      <table class="station-info">
+        <tr><th>类型</th><td>${getProp('type')}</td></tr>
+        <tr><th>海拔</th><td>${getProp('height')} 米</td></tr>
+        <tr><th>行政区</th><td>${getProp('county')}</td></tr>
+        <tr><th>观测时期</th><td>${getProp('period')}</td></tr>
+        <tr><th>降雨量</th><td>${getProp('rain')} mm</td></tr>
+        <tr><th>温度</th><td>${getProp('temperature')} °C</td></tr>
+        <tr><th>日照</th><td>${getProp('sunshine')} h</td></tr>
+        <tr><th>备注</th><td>${getProp('comment')}</td></tr>
+      </table>
+    `
+
+    viewer.value.selectedEntity = entity
+    viewer.value.infoBox.viewModel.content = content
+    viewer.value.infoBox.viewModel.enableCamera = true
+  } catch (e) {
+    console.error('弹窗内容生成失败:', e)
+    viewer.value.infoBox.viewModel.content = '无法加载站点信息'
+  }
+}
+
+//移除气象站
+const removeAllStations = () => {
+  // 1. 获取数据源
+  const dataSource = viewer.value.dataSources.getByName('weatherStations')[0]
+
+  // 2. 移除数据源（会自动移除所有关联实体）
+  if (dataSource) {
+    viewer.value.dataSources.remove(dataSource)
+  }
+  // 3. 清空实体引用
+  // stationEntities.value = {}
 }
 // 加载热力图
 // const addLayer_3 = () => {
@@ -984,30 +1723,88 @@ const addLayer3 = (p1, p2, p3, p4, p5) => {
   })
 }
 
-//加载滑坡判识矢量点
 const addLayer4 = () => {
-  Cesium.GeoJsonDataSource.load('/ng/hpps2.geojson').then(function (
-    dataSource
-  ) {
-    layer4_guid.value = Cesium.createGuid()
-    dataSource.guid = layer4_guid.value
-    viewer.value.dataSources.add(dataSource)
-    // console.log('dataSource:', dataSource)
+  Cesium.GeoJsonDataSource.load('/ng/hpps2.geojson')
+    .then(function (dataSource) {
+      // 存储数据源引用以便后续操作
+      // layer4DataSource = dataSource
+      layer4_guid.value = Cesium.createGuid()
+      dataSource.guid = layer4_guid.value
 
-    const entities = dataSource.entities.values
-    const colorHash = {}
-    for (var i = 0; i < entities.length; i++) {
-      const entity = entities[i]
-      const name = entity.name
-      entity.point = {
-        pixelSize: 30,
-        color: Cesium.Color.RED,
-      }
-      entity.billboard = undefined // 去掉广告牌
-    }
+      // 添加数据源到视图
+      viewer.value.dataSources.add(dataSource)
 
-    viewer.value.zoomTo(dataSource)
-  })
+      // 统一设置实体样式
+      const entities = dataSource.entities.values
+      entities.forEach(entity => {
+        entity.billboard = {
+          image: '/ng/position.png',
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          width: 32,
+          height: 32,
+        }
+      })
+
+      // 缩放到数据范围
+      viewer.value.zoomTo(dataSource)
+
+      // 设置点击事件处理器
+      const layer4ClickHandler = new Cesium.ScreenSpaceEventHandler(
+        viewer.value.scene.canvas
+      )
+      layer4ClickHandler.setInputAction(
+        handleLayer4Click,
+        Cesium.ScreenSpaceEventType.LEFT_CLICK
+      )
+    })
+    .catch(error => {
+      console.error('加载GeoJSON失败:', error)
+    })
+}
+
+// 点击事件处理函数
+const handleLayer4Click = movement => {
+  const pickedFeature = viewer.value.scene.pick(movement.position)
+  if (!pickedFeature || !pickedFeature.id) return
+
+  // 安全获取属性值
+  const getProperty = prop => {
+    return pickedFeature.id._properties[prop]?._value ?? '无数据'
+  }
+
+  // 准备弹窗内容
+  const opts = {
+    viewer,
+    position: {
+      _value: pickedFeature.id.position || pickedFeature.primitive.position,
+    },
+    title: getProperty('_OBJECTID'),
+    content: [
+      { name: '名称', value: getProperty('_名称') },
+      { name: '经度', value: getProperty('_经度') },
+      { name: '纬度', value: getProperty('_纬度') },
+      { name: '断层密度', value: getProperty('_断层密度_km_km2_') + ' km/km²' },
+      { name: '隆升速率', value: getProperty('_隆升速率_mm_y_') + ' mm/y' },
+      { name: '坡度', value: getProperty('_坡度___') + '°' },
+      {
+        name: '河流下切速率',
+        value: getProperty('_河流下切速率_mm_y_') + ' mm/y',
+      },
+      {
+        name: '坡体后端汇水面积',
+        value: getProperty('_坡体后端汇水面积_m2_') + ' m²',
+      },
+      { name: '高差', value: getProperty('_高差_m_') + ' m' },
+      { name: '潜在滑坡体积规模', value: getProperty('_潜在滑坡体积规模') },
+    ],
+  }
+
+  // 关闭现有弹窗并打开新弹窗
+  if (dialogs.value) {
+    dialogs.value.windowClose()
+  }
+  dialogs.value = new Dialog(opts)
 }
 //移除滑坡判识矢量点
 const removeLayer4 = () => {
@@ -1036,15 +1833,64 @@ const addLayer5 = () => {
     const entities = dataSource.entities.values
     for (var i = 0; i < entities.length; i++) {
       const entity = entities[i]
+
       const name = entity.name
-      entity.point = {
-        pixelSize: 30,
-        color: Cesium.Color.BLUE,
-      }
-      entity.billboard = undefined // 去掉广告牌
+      entity.billboard.heightReference = Cesium.HeightReference.CLAMP_TO_GROUND
+      entity.billboard.image = '/ng/position.png'
     }
     viewer.value.zoomTo(dataSource)
+    // 设置点击事件处理器
+    const layer5ClickHandler = new Cesium.ScreenSpaceEventHandler(
+      viewer.value.scene.canvas
+    )
+    layer5ClickHandler.setInputAction(
+      handleLayer5Click,
+      Cesium.ScreenSpaceEventType.LEFT_CLICK
+    )
   })
+}
+const handleLayer5Click = movement => {
+  const pickedFeature = viewer.value.scene.pick(movement.position)
+  if (!pickedFeature || !pickedFeature.id) return
+
+  // 安全获取属性值
+  const getProperty = prop => {
+    return pickedFeature.id._properties[prop]?._value ?? '无数据'
+  }
+
+  console.log(pickedFeature)
+  console.log(getProperty('_OBJECTID'))
+  // 准备弹窗内容
+  const opts = {
+    viewer,
+    position: {
+      _value: pickedFeature.id.position || pickedFeature.primitive.position,
+    },
+    title: getProperty('_OBJECTID'),
+    content: [
+      { name: '名称', value: getProperty('_遥感解译编号') },
+      { name: '经度', value: getProperty('_X') },
+      { name: '纬度', value: getProperty('_Y') },
+      { name: '干_支流', value: getProperty('_干_支流') },
+      { name: '高差', value: getProperty('_高差_m') + ' m' },
+      { name: '主滑方向', value: getProperty('_主滑方向__') + '°' },
+      {
+        name: '滑坡全长',
+        value: getProperty('_滑坡全长_m') + ' m',
+      },
+      {
+        name: '滑坡体面积',
+        value: getProperty('滑坡体面积_m2') + ' m²',
+      },
+      { name: '滑坡体体积', value: getProperty('_滑坡体体积_m3') + ' m³' },
+    ],
+  }
+
+  // 关闭现有弹窗并打开新弹窗
+  if (dialogs.value) {
+    dialogs.value.windowClose()
+  }
+  dialogs.value = new Dialog(opts)
 }
 //移除古滑坡灾害链
 const removeLayer5 = () => {
@@ -1637,8 +2483,689 @@ function stopHeatmapCycle() {
     intervalId = null
   }
 }
+
+// console.log(viewer.value)
+//框选放大
+// const enableBoxZoom = (viewer, options = {}) => {
+//   // console.log('等待加载viewer')
+
+//   const { boxColor = Cesium.Color.YELLOW.withAlpha(0.5), flyDuration = 1.5 } =
+//     options
+
+//   let startPosition = 100
+//   let endPosition = 200
+//   let rectangle = null
+//   let active = false
+//   // console.log(viewer)
+
+//   // 创建选框图形实体
+//   rectangle = viewer.entities.add({
+//     rectangle: {
+//       coordinates: new Cesium.CallbackProperty(() => {
+//         return computeRectangle(startPosition, endPosition)
+//       }, false),
+//       material: boxColor,
+//       outline: true,
+//       outlineColor: Cesium.Color.WHITE,
+//       outlineWidth: 2,
+//     },
+//   })
+//   rectangle.show = false
+
+//   // 事件处理器
+//   const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas)
+
+//   // 鼠标按下事件：记录起始点
+//   handler.setInputAction(e => {
+//     if (!active) return
+//     // console.log(e.position)
+//     startPosition = e.position
+//     console.log(rectangle)
+//     rectangle.show = true
+//   }, Cesium.ScreenSpaceEventType.LEFT_DOWN)
+
+//   // 鼠标移动事件：更新选框
+//   handler.setInputAction(e => {
+//     if (!startPosition) return
+//     endPosition = e.endPosition
+//   }, Cesium.ScreenSpaceEventType.MOUSE_MOVE)
+
+//   // 鼠标释放事件：执行缩放
+//   handler.setInputAction(async e => {
+//     if (!startPosition) return
+//     console.log(startPosition, endPosition)
+
+//     // 计算地理范围
+//     const rectangle = computeRectangle(startPosition, endPosition)
+//     const destination = await computeCameraDestination(viewer, rectangle)
+
+//     // 执行视角切换
+//     viewer.camera.flyTo({
+//       destination: destination,
+//       duration: flyDuration,
+//       complete: () => reset(),
+//     })
+//   }, Cesium.ScreenSpaceEventType.LEFT_UP)
+
+//   // 辅助函数：计算矩形范围
+//   function computeRectangle(start, end) {
+//     const scene = viewer.scene
+//     // console.log(start)
+//     // 安全坐标转换
+//     const ellipsoid = viewer.scene.globe.ellipsoid
+
+//     // 转换起始点
+//     const startCart = viewer.scene.camera.pickEllipsoid(start, ellipsoid)
+//     if (!startCart) {
+//       console.warn('起始点未投影到椭球面')
+//       return null
+//     }
+
+//     // 转换结束点
+//     const endCart = viewer.scene.camera.pickEllipsoid(end, ellipsoid)
+//     if (!endCart) {
+//       console.warn('结束点未投影到椭球面')
+//       return null
+//     }
+
+//     if (!startCart || !endCart) return null
+
+//     const startCarto = Cesium.Cartographic.fromCartesian(startCart)
+//     const endCarto = Cesium.Cartographic.fromCartesian(endCart)
+
+//     return Cesium.Rectangle.fromCartographicArray([
+//       new Cesium.Cartographic(
+//         Math.min(startCarto.longitude, endCarto.longitude),
+//         Math.min(startCarto.latitude, endCarto.latitude)
+//       ),
+//       new Cesium.Cartographic(
+//         Math.max(startCarto.longitude, endCarto.longitude),
+//         Math.max(startCarto.latitude, endCarto.latitude)
+//       ),
+//     ])
+//   }
+
+//   // 辅助函数：计算相机目标位置
+//   async function computeCameraDestination(viewer, rectangle) {
+//     const camera = viewer.scene.camera
+//     const currentHeight = camera.positionCartographic.height
+//     const viewRectangle = Cesium.Rectangle.southwestNortheast(rectangle)
+
+//     // 计算最佳观测高度
+//     const scratch = new Cesium.Cartographic()
+//     const width = Cesium.Rectangle.computeWidth(viewRectangle)
+//     const height = Cesium.Rectangle.computeHeight(viewRectangle)
+//     const zoomHeight =
+//       Math.max(
+//         width * viewer.scene.drawingBufferWidth,
+//         height * viewer.scene.drawingBufferHeight
+//       ) * 0.5
+
+//     return camera.getRectangleCameraCoordinates(viewRectangle, {
+//       height: zoomHeight * 1.5,
+//       heading: camera.heading,
+//       pitch: camera.pitch,
+//       roll: camera.roll,
+//     })
+//   }
+
+//   // 重置状态
+//   function reset() {
+//     startPosition = null
+//     endPosition = null
+//     rectangle.show = false
+//   }
+
+//   // 暴露控制方法
+//   return {
+//     activate: () => {
+//       active = true
+//     },
+//     deactivate: () => {
+//       active = false
+//       reset()
+//       handler.destroy()
+//       viewer.entities.remove(rectangle)
+//     },
+//   }
+// }
+//框选放大
+const magnify = () => {
+  //   setTimeout(() => {
+  //     enableBoxZoom(viewer.value).activate()
+  //   }, 5000)
+
+  // isDrawing.value = true
+  const handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
+
+  // 第一阶段：等待第一次点击
+  handler.setInputAction(firstClick => {
+    const startPosition = firstClick.position
+
+    // 移除第一次点击监听
+    handler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK)
+
+    // 实时更新框选区域
+    const moveHandler = movement => {
+      updateBoxStyle(startPosition, movement.endPosition)
+    }
+
+    // 第二阶段：处理确认点击
+    const confirmHandler = secondClick => {
+      // isDrawing.value = false
+      handler.destroy()
+
+      // 计算目标区域
+      const endPosition = secondClick.position
+      const rectangle = calculateRectangle(startPosition, endPosition)
+
+      // 执行视角切换
+      flyToRectangle(rectangle)
+    }
+
+    handler.setInputAction(moveHandler, Cesium.ScreenSpaceEventType.MOUSE_MOVE)
+    handler.setInputAction(
+      confirmHandler,
+      Cesium.ScreenSpaceEventType.LEFT_CLICK
+    )
+  }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+
+  const calculateRectangle = (start, end) => {
+    const [startCart, endCart] = [start, end].map(pos =>
+      viewer.value.scene.camera.pickEllipsoid(
+        pos,
+        viewer.value.scene.globe.ellipsoid
+      )
+    )
+
+    if (!startCart || !endCart) return null
+
+    const startCarto = Cesium.Cartographic.fromCartesian(startCart)
+    const endCarto = Cesium.Cartographic.fromCartesian(endCart)
+    return Cesium.Rectangle.fromRadians(
+      Math.min(startCarto.longitude, endCarto.longitude),
+      Math.min(startCarto.latitude, endCarto.latitude),
+      Math.max(startCarto.longitude, endCarto.longitude),
+      Math.max(startCarto.latitude, endCarto.latitude)
+    )
+  }
+
+  const flyToRectangle = rectangle => {
+    viewer.value.camera.flyTo({
+      destination: rectangle,
+      orientation: {
+        heading: viewer.value.camera.heading,
+        pitch: viewer.value.camera.pitch,
+        roll: viewer.value.camera.roll,
+      },
+      duration: 1,
+    })
+  }
+
+  const updateBoxStyle = (start, end) => {
+    const canvas = viewer.value.scene.canvas
+    const rect = canvas.getBoundingClientRect()
+
+    const normalize = pos => ({
+      x: pos.x - rect.left,
+      y: pos.y - rect.top,
+    })
+
+    const s = normalize(start)
+    const e = normalize(end)
+
+    boxStyle.value = {
+      left: `${Math.min(s.x, e.x)}px`,
+      top: `${Math.min(s.y, e.y)}px`,
+      width: `${Math.abs(e.x - s.x)}px`,
+      height: `${Math.abs(e.y - s.y)}px`,
+      display: 'block',
+      position: 'absolute',
+      border: '2px solid red',
+      backgroundColor: 'rgba(255,0,0,0.2)',
+      pointerEvents: 'none',
+    }
+  }
+
+  return {
+    //   isDrawing,
+    boxStyle,
+    //   startBoxSelect,
+  }
+}
+//框选缩小
+const shrink = () => {
+  const handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
+  // isDrawing.value = true // 启用绘制状态
+
+  handler.setInputAction(firstClick => {
+    const startPosition = firstClick.position
+    handler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK)
+
+    // 移动监听（实时更新选框）
+    const moveHandler = movement => {
+      updateBoxStyle(startPosition, movement.endPosition)
+    }
+    const updateBoxStyle = (start, end) => {
+      const canvas = viewer.value.scene.canvas
+      const rect = canvas.getBoundingClientRect()
+
+      const normalize = pos => ({
+        x: pos.x - rect.left,
+        y: pos.y - rect.top,
+      })
+
+      const s = normalize(start)
+      const e = normalize(end)
+
+      boxStyle.value = {
+        left: `${Math.min(s.x, e.x)}px`,
+        top: `${Math.min(s.y, e.y)}px`,
+        width: `${Math.abs(e.x - s.x)}px`,
+        height: `${Math.abs(e.y - s.y)}px`,
+        display: 'block',
+        position: 'absolute',
+        border: '2px solid red',
+        backgroundColor: 'rgba(255,0,0,0.2)',
+        pointerEvents: 'none',
+      }
+    }
+    // 确认点击处理
+    const confirmHandler = secondClick => {
+      // isDrawing.value = false
+      handler.destroy()
+
+      const rectangle = calculateShrinkArea(startPosition, secondClick.position)
+
+      if (rectangle) {
+        flyToShrinkView(rectangle)
+      }
+    }
+
+    handler.setInputAction(moveHandler, Cesium.ScreenSpaceEventType.MOUSE_MOVE)
+    handler.setInputAction(
+      confirmHandler,
+      Cesium.ScreenSpaceEventType.LEFT_CLICK
+    )
+  }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+}
+
+// 专用缩小版计算函数
+// 缩小专用区域计算
+const calculateShrinkArea = (startPos, endPos) => {
+  const [startCart, endCart] = [startPos, endPos].map(pos =>
+    viewer.value.scene.camera.pickEllipsoid(
+      pos,
+      viewer.value.scene.globe.ellipsoid
+    )
+  )
+
+  if (!startCart || !endCart) return null
+
+  // 获取地理坐标
+  const toCartographic = cartesian =>
+    Cesium.Cartographic.fromCartesian(cartesian)
+  const [startCarto, endCarto] = [startCart, endCart].map(toCartographic)
+
+  // 计算原始边界
+  const west = Math.min(startCarto.longitude, endCarto.longitude)
+  const east = Math.max(startCarto.longitude, endCarto.longitude)
+  const south = Math.min(startCarto.latitude, endCarto.latitude)
+  const north = Math.max(startCarto.latitude, endCarto.latitude)
+
+  // 扩展区域（实现缩小效果）
+  const EXPAND_FACTOR = 1.5 // 扩展系数，值越大缩小越明显
+  const centerLon = (west + east) / 2
+  const centerLat = (south + north) / 2
+  const newWidth = (east - west) * EXPAND_FACTOR
+  const newHeight = (north - south) * EXPAND_FACTOR
+
+  // 创建安全矩形（防止越界）
+  return Cesium.Rectangle.fromRadians(
+    Math.max(centerLon - newWidth / 2, -Math.PI),
+    Math.max(centerLat - newHeight / 2, -Cesium.Math.PI_OVER_TWO),
+    Math.min(centerLon + newWidth / 2, Math.PI),
+    Math.min(centerLat + newHeight / 2, Cesium.Math.PI_OVER_TWO)
+  )
+}
+
+// 专用缩小飞行逻辑
+const flyToShrinkView = rectangle => {
+  const camera = viewer.value.camera
+  const currentHeight = camera.positionCartographic.height
+
+  viewer.value.camera.flyTo({
+    destination: rectangle,
+    orientation: {
+      heading: camera.heading,
+      pitch: -Math.atan(currentHeight / Cesium.Ellipsoid.WGS84.maximumRadius),
+      roll: camera.roll,
+    },
+    duration: 2,
+    easingFunction: Cesium.EasingFunction.CUBIC_OUT,
+    pitchAdjustHeight: currentHeight * 2, // 提升视角高度
+  })
+}
+
+const measure = () => {
+  // new MeasureDistance(viewer.value).activate()
+  md.value = new MeasureDistance(viewer.value)
+  if (md.value) {
+    md.value.activate()
+  }
+}
+
+const polygon = () => {
+  const measureManager = new MeasureManager(viewer.value)
+  measureManager.measurePolygon()
+}
+
+const position = () => {
+  let handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
+  handler.setInputAction(function (event) {
+    let ray = viewer.value.camera.getPickRay(event.position)
+    let cartesian = viewer.value.scene.globe.pick(ray, viewer.value.scene)
+    let cartographic = Cesium.Cartographic.fromCartesian(cartesian)
+    let lng = Cesium.Math.toDegrees(cartographic.longitude) // 经度
+    let lat = Cesium.Math.toDegrees(cartographic.latitude) // 纬度
+    let alt = cartographic.height // 高度
+    let coordinate = {
+      longitude: Number(lng.toFixed(6)),
+      latitude: Number(lat.toFixed(6)),
+      altitude: Number(alt.toFixed(2)),
+    }
+    console.log(coordinate)
+    viewer.value.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(
+        Number(lng.toFixed(6)),
+        Number(lat.toFixed(6))
+      ),
+      label: {
+        text:
+          '坐标：' +
+          lng.toFixed(6) +
+          ',' +
+          lat.toFixed(6) +
+          ',' +
+          alt.toFixed(6), // 显示坐标
+        font: '20px Helvetica',
+        fillColor: Cesium.Color.WHITE,
+        outlineColor: Cesium.Color.WHITE,
+        outlineWidth: 2,
+        pixelOffset: new Cesium.Cartesian2(0, -0.5),
+      },
+      billboard: {
+        image: '/ng/position.png',
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
+        width: 48,
+        height: 48,
+      },
+    })
+  }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+}
+
+const position_point = ref(null)
+
+//添加灾害点属性
+const addattribute = () => {
+  let position = null
+  const handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
+  handler.setInputAction(e => {
+    //转换坐标到三维场景
+    const ray = viewer.value.camera.getPickRay(e.position)
+
+    position = viewer.value.scene.globe.pick(ray, viewer.value.scene)
+    const cart = Cesium.Cartographic.fromCartesian(position)
+    //经纬度
+    const longitude = Cesium.Math.toDegrees(cart.longitude)
+    const latitude = Cesium.Math.toDegrees(cart.latitude)
+    form.longitude = longitude
+    form.latitude = latitude
+
+    // console.log(cartographic)
+    position_point.value = position
+    ;(dialogVisible_disaster.value = true),
+      // 自动移除事件监听（单次点击模式）
+      handler.destroy()
+  }, Cesium.ScreenSpaceEventType.LEFT_DOWN)
+}
+const submit_disaster = () => {
+  // console.log(form)
+  dialogVisible_disaster.value = false
+  viewer.value.entities.add({
+    position: position_point.value,
+    billboard: {
+      image: '/ng/position.png',
+      heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
+      width: 48,
+      height: 48,
+    },
+  })
+  // 1. 构建GeoJSON格式的空间数据
+  const geoData = {
+    type: 'Point',
+    coordinates: [form.longitude, form.latitude],
+  }
+  axios
+    .post('/node/point', {
+      name: form.name,
+      dcmd: form.dcmd,
+      lssl: form.lssl,
+      slope: form.slope,
+      hlxqsl: form.hlxqsl,
+      pthhsmj: form.pthhsmj,
+      elevation: form.elevation,
+      scale: form.scale,
+      geom: geoData,
+    })
+    .then(res => {
+      // console.log(res)
+      if (res.data.code === 200) {
+        console.log('提交成功')
+      }
+    })
+    .catch(err => {
+      console.log(err)
+    })
+}
+
+//灾害点查询(打开属性框)
+const searchdisaster = () => {
+  dialogVisible_searchdisaster.value = true
+}
+// const searchqxz = () => {
+//   dialogVisible_searchdisaster.value = true
+// }
+//位置查询
+const locationsearch = () => {
+  dialogVisible_searchdisaster.value = false
+  axios
+    .get('/node/point', {
+      params: {
+        name: form_disastersearch.location,
+      },
+    })
+    .then(res => {
+      const data = res.data
+      // console.log(typeof data[0].lng)
+      if (data.length > 0) {
+        data.forEach(item => {
+          viewer.value.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(item.lng, item.lat),
+            billboard: {
+              image: '/ng/position.png',
+              heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
+              width: 48,
+              height: 48,
+            },
+          })
+          // 2. 格式化表格数据
+          tableData.value.push({
+            name: item.name || '--', // 处理空值
+            dcmd: item.dcmd || '--',
+            lssl: item.lssl || '--',
+            slope: item.slope ? `${item.slope}°` : '--', // 添加单位
+            hlxqsl: item.hlxqsl || '--',
+            pthhsmj: item.pthhsmj ? `${item.pthhsmj} m²` : '--',
+            elevation: item.elevation ? `${item.elevation} 米` : '--',
+            scale: item.scale || '--',
+          })
+        })
+      } else {
+        console.log('未查询到数据')
+      }
+      viewer.value.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(
+          data[0].lng,
+          data[0].lat,
+          50000
+        ),
+      })
+    })
+    .catch(err => {
+      console.log(err)
+    })
+  setTimeout(() => {
+    dialogVisible_checkattribute.value = true
+  }, 2000)
+}
+const locationsearchqxz = () => {
+  dialogVisible_searchdisaster.value = false
+  axios
+    .get('/node/point_qxz', {
+      params: {
+        z_name: form_disastersearch.location,
+      },
+    })
+    .then(res => {
+      const data = res.data
+      // console.log(typeof data[0].lng)
+      if (data.length > 0) {
+        data.forEach(item => {
+          viewer.value.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(item.lng, item.lat),
+            billboard: {
+              image: '/ng/position.png',
+              heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
+              width: 48,
+              height: 48,
+            },
+          })
+          // 2. 格式化表格数据
+          tableData_qxz.value.push({
+            z_name: item.z_name || '--', // 处理空值
+            jyl: item.jyl || '--',
+            wind: item.wind || '--',
+          })
+        })
+      } else {
+        console.log('未查询到数据')
+      }
+      viewer.value.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(
+          data[0].lng,
+          data[0].lat,
+          50000
+        ),
+      })
+    })
+    .catch(err => {
+      console.log(err)
+    })
+  setTimeout(() => {
+    dialogVisible_checkqxz.value = true
+  }, 2000)
+}
+//属性查询
+const attributesearch = () => {
+  dialogVisible_searchdisaster.value = false
+}
+
+const cleanentity = () => {
+  viewer.value.entities.removeAll()
+}
+// const cleanentity = () => {
+//   // viewer.value.entities.removeAll()
+//   const points = [
+//     {
+//       lngs: 94.748249999999999,
+//       lats: 29.781140000000001,
+//       siteValue: 700,
+//     },
+//     {
+//       lngs: 94.81559,
+//       lats: 29.95261,
+//       siteValue: 900,
+//     },
+//     {
+//       lngs: 96.641940000000005,
+//       lats: 29.48358,
+//       siteValue: 501,
+//     },
+//     {
+//       lngs: 95.505049999999997,
+//       lats: 29.896260000000002,
+//       siteValue: 602,
+//     },
+//     {
+//       lngs: 96.444249999999997,
+//       lats: 29.55884,
+//       siteValue: 1203,
+//     },
+//     {
+//       lngs: 95.027889999999999,
+//       lats: 30.01221,
+//       siteValue: 1304,
+//     },
+//     {
+//       lngs: 95.141099999999994,
+//       lats: 30.070599999999999,
+//       siteValue: 205,
+//     },
+//     {
+//       lngs: 95.998850000000004,
+//       lats: 29.740220000000001,
+//       siteValue: 406,
+//     },
+//     {
+//       lngs: 95.271960000000007,
+//       lats: 30.03012,
+//       siteValue: 507,
+//     },
+//     {
+//       lngs: 95.347579999999994,
+//       lats: 29.985530000000001,
+//       siteValue: 308,
+//     },
+//   ]
+//   const colors = [
+//     { min: 0, max: 200, color: '#008FFF' },
+//     { min: 200, max: 300, color: '#72D66B' },
+//     { min: 300, max: 400, color: '#3DB83D' },
+//     { min: 400, max: 800, color: '#3DB83D' },
+//     { min: 800, max: 1100, color: '#3DB83D' },
+//     { min: 1100, max: 1400, color: '#3DB83D' },
+//   ]
+
+//   // 创建降雨分布图
+//   let jsonUrl = '/ng/domain.geojson' // 流域边界json
+//   let instance = new KrigingInstance(viewer.value, points, colors, jsonUrl)
+//   instance.addViewer()
+
+//   // 更新降雨分布
+//   // instance.updateViewer(points) // 只需重新传points即可
+// }
 </script>
-<style>
+<style lang="scss" scoped>
+.flex-container {
+  width: 300px;
+  display: flex;
+  gap: 30px;
+}
 .top-container {
   /* max-height: 947px; */
   position: relative;
@@ -1693,6 +3220,13 @@ function stopHeatmapCycle() {
     transform-origin: top;
   }
 } */
+
+:deep(.el-table__header) {
+  width: 350px !important;
+}
+:deep(.el-table__body) {
+  width: 350px !important;
+}
 
 .top-container .control .control_specific {
   display: flex;

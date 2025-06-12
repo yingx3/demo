@@ -1,5 +1,5 @@
 <template>
-  <div class="right-container">
+  <div class="right-container" style="max-height: 820px">
     <div class="tree-content">
       <el-tree
         style="max-width: 600px"
@@ -47,29 +47,6 @@ const treeData = ref([
         name: '影像数据',
       },
       {
-        id: 12,
-        name: '路网数据',
-      },
-      {
-        id: 13,
-        name: '灾害危险区划',
-        children: [],
-      },
-      {
-        id: 14,
-        name: '历史灾害点',
-      },
-      {
-        id: 15,
-        name: '古滑坡灾害链',
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: '冰川泥石流专题数据',
-    children: [
-      {
         id: 21,
         name: '地形数据',
       },
@@ -85,24 +62,34 @@ const treeData = ref([
         id: 24,
         name: '地形起伏度',
       },
+      {
+        id: 12,
+        name: '路网数据',
+      },
+      {
+        id: 13,
+        name: '灾害危险区划',
+        children: [],
+      },
     ],
   },
+
   {
     id: 3,
     name: '气象数据',
     children: [
       {
         id: 31,
-        name: '降水量',
+        name: '气象站',
       },
-      {
-        id: 32,
-        name: '温度',
-      },
-      {
-        id: 33,
-        name: '风速',
-      },
+      // {
+      //   id: 32,
+      //   name: '温度',
+      // },
+      // {
+      //   id: 33,
+      //   name: '风速',
+      // },
     ],
   },
   {
@@ -142,16 +129,12 @@ const treeData = ref([
     name: '历史灾害数据',
     children: [
       {
-        id: 61,
-        name: '历史泥石流时间',
+        id: 14,
+        name: '历史灾害点',
       },
       {
-        id: 62,
-        name: '历史泥石流规模',
-      },
-      {
-        id: 63,
-        name: '历史泥石流地点',
+        id: 15,
+        name: '古灾害链',
       },
     ],
   },
@@ -554,15 +537,11 @@ watch(
 const handleClick = (node, data) => {
   // console.log('Clicked Node Instance:', node) // 节点的实例信息
   // console.log('Clicked Node Data:', data) // 节点的原始数据
-  const validIds = [131, 132, 133, 134, 135, 136, 137]
-  if (validIds.includes(node.id) && squareStore.risk) {
-    // squareStore.toggleSquare()
-    // squareStore.openSquare()
-    // console.log('111')
-  }
+  // const validIds = [131, 132, 133, 134, 135, 136, 137]
   let uncheckedNode = null
   // 获取所有已选中的节点的 id
   const checkedNodeIds = treeRef.value.getCheckedNodes().map(node => node.id)
+  // 检查当前节点的 id 是否在已选中的节点中
   if (!checkedNodeIds.includes(node.id)) {
     uncheckedNode = node.id
   }
@@ -605,11 +584,12 @@ const handleClick = (node, data) => {
   background-image: url(../assets/img/c1.png);
 
   .tree-content {
-    max-height: 100%;
+    max-height: 780px;
     width: 100%;
     margin-top: 40px;
-    // overflow-y: scroll;
-    overflow: hidden;
+    overflow: scroll;
+    // -ms-overflow-style: none;
+    scrollbar-width: none; // 隐藏滚动条
   }
 }
 </style>

@@ -29,13 +29,13 @@ export default class Dialog {
       this.vmInstance = vmInstance
     }
     // 将弹窗元素添加到渲染cesium的容器中
-    viewer.cesiumWidget.container.appendChild(vmInstance.$el)
-    this.addPostRender()
+    // viewer.cesiumWidget.container.appendChild(vmInstance.$el)
+    // this.addPostRender()
   }
   //添加场景事件
-  addPostRender() {
-    this.viewer.scene.postRender.addEventListener(this.postRender, this)
-  }
+  // addPostRender() {
+  //   this.viewer.scene.postRender.addEventListener(this.postRender, this)
+  // }
   postRender() {
     if (!this.vmInstance.$el || !this.vmInstance.$el.style) return
     // 画布高度
@@ -74,7 +74,7 @@ export default class Dialog {
     if (this.vmInstance) {
       this.vmInstance.$el.remove()
     }
-    this.viewer.scene.postRender.removeEventListener(this.postRender, this) //移除事件监听
+    // this.viewer.scene.postRender.removeEventListener(this.postRender, this) //移除事件监听
   }
 }
 
@@ -107,10 +107,10 @@ const createDialog = opts => {
   parentNode = document.createElement('div')
   // 将Popup组件挂载到父级div中，生成弹窗实例
   // 设置父级 div 元素的位置
-  // parentNode.style.position = 'absolute'
-  // parentNode.style.top = '1000px'
-  // parentNode.style.left = '150px'
-  // // parentNode.style.transform = 'translate(-50%, -50%)'
+  parentNode.style.position = 'absolute'
+  parentNode.style.bottom = '75px'
+  parentNode.style.right = '105px'
+  // parentNode.style.transform = 'translate(-50%, -50%)'
   const instance = app.mount(parentNode)
   document.body.appendChild(parentNode)
 
