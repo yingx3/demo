@@ -3,6 +3,7 @@ import { createPinia } from 'pinia' // Import Pinia
 import App from './App.vue'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
+// import { Buffer } from 'buffer'
 
 // import router from './router'
 // import BaseData from './views/BaseData.vue'
@@ -29,6 +30,7 @@ const app = createApp(App)
 //   history: createWebHistory('/CS/'), // 配置 history 模式和 base 路径
 //   routes,
 // })
+// 全局注入Buffer
 if (typeof global === 'undefined') {
   window.global = window // 将浏览器环境的全局对象指向 window
 }

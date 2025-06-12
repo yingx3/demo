@@ -50,6 +50,30 @@ const treeData = ref([
         id: 21,
         name: '地形数据',
       },
+
+      {
+        id: 12,
+        name: '路网数据',
+      },
+      // {
+      //   id: 13,
+      //   name: '灾害危险区划',
+      //   children: [],
+      // },
+      // {
+      //   id: 16,
+      //   name: '水系',
+      // },
+    ],
+  },
+  {
+    id: 2,
+    name: '地形因子',
+    children: [
+      {
+        id: 21,
+        name: '高程',
+      },
       {
         id: 22,
         name: '坡度',
@@ -62,18 +86,8 @@ const treeData = ref([
         id: 24,
         name: '地形起伏度',
       },
-      {
-        id: 12,
-        name: '路网数据',
-      },
-      {
-        id: 13,
-        name: '灾害危险区划',
-        children: [],
-      },
     ],
   },
-
   {
     id: 3,
     name: '设备',
@@ -98,20 +112,24 @@ const treeData = ref([
   },
   {
     id: 4,
-    name: '冰川监测数据',
+    name: '冰川',
     children: [
       {
-        id: 41,
-        name: '冰川消融量',
+        id: 17,
+        name: '冰川分布',
       },
-      {
-        id: 42,
-        name: '冰川运动速率',
-      },
-      {
-        id: 43,
-        name: '冰川厚度',
-      },
+      // {
+      //   id: 41,
+      //   name: '冰川消融量',
+      // },
+      // {
+      //   id: 42,
+      //   name: '冰川运动速率',
+      // },
+      // {
+      //   id: 43,
+      //   name: '冰川厚度',
+      // },
     ],
   },
   {
@@ -119,19 +137,28 @@ const treeData = ref([
     name: '水文数据',
     children: [
       {
-        id: 51,
-        name: '河流流量',
+        id: 16,
+        name: '水系',
       },
-      {
-        id: 52,
-        name: '融水量',
-      },
+      // {
+      //   id: 51,
+      //   name: '河流流量',
+      // },
+      // {
+      //   id: 52,
+      //   name: '融水量',
+      // },
     ],
   },
   {
     id: 6,
-    name: '历史灾害数据',
+    name: '灾害数据',
     children: [
+      {
+        id: 13,
+        name: '灾害危险区划',
+        children: [],
+      },
       {
         id: 14,
         name: '历史灾害点',

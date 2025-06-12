@@ -305,6 +305,7 @@ import ZyMl from './components/ZyMl.vue'
 import { useSquareStore } from './stores/squareStore'
 // import { EventBus } from '@/event-bus'
 import { emitter } from '../src/eventBus.js'
+// import { Buffer } from 'buffer'
 import { en, vi } from 'element-plus/es/locale/index.mjs'
 import Heatmap3d from './js/heatmap3d.js'
 import axios from 'axios'
@@ -314,7 +315,8 @@ import MeasureManager from './js/MeasureManager.js'
 import RainEffectManager from './js/RainEffectManager.js'
 import { KrigingInstance } from './js/krigingInstance.js'
 // import type { TableColumnCtx } from 'element-plus'
-import * as WKB from 'wkb'
+// import * as WKB from 'wkb'
+// import * as wkx from 'wkx'
 
 const viewer = ref(null)
 const heatmapLayer = ref(null)
@@ -497,6 +499,12 @@ onMounted(async () => {
 const checkedLayers = (ps, node) => {
   //移除取消勾选的图层
   switch (node) {
+    case 16:
+      removeLayer_river()
+      break
+    case 17:
+      removeLayer_glacier()
+      break
     case 131:
       viewer.value.entities.removeById('2')
       break
@@ -538,6 +546,7 @@ const checkedLayers = (ps, node) => {
     case 32:
       removeLayer_DZDdevice()
       break
+
     default:
       break
   }
@@ -559,6 +568,8 @@ const checkedLayers = (ps, node) => {
     removeLayer_aspect()
     removeLayer_relief()
     removeLayer_DZDdevice()
+    removeLayer_river()
+    removeLayer_glacier()
     // clearInterval(entityInterval)
     // entityInterval = null
     // viewer.value.entities.removeById('2')
@@ -576,9 +587,16 @@ const checkedLayers = (ps, node) => {
           addLayer2()
           // flyToWithRangeCheck(viewer.value, 95.0, 29.735)
           break
+        case 16:
+          addLayer_river()
+          break
+        case 17:
+          addLayer_glacier()
+          break
         case 131:
           // console.log('3小时图层打开')
           const match = hd.value.match(/^([^_]+)_/)
+          console.log(match)
           if (match[1] === 'dangerLevel') {
             squareStore.openSquare()
             squareStore.openRisk()
@@ -915,7 +933,7 @@ const openLayers = params => {
     pname.value.push(pnames)
   }
   pname.value.reverse() //逆序排列数组
-  console.log(pname.value)
+  // console.log(pname.value)
   // console.log(leftlat, leftlong, rightlat, rightlong)
   // console.log(pnames.value) // pnames 是一个数组，包含所有传递的 pname 参数
   const match = pnames[0].match(/^([^_]+)_/)
@@ -998,8 +1016,8 @@ const floodLayers = () => {
 const addLayer1 = () => {
   //影像数据
   const wmsImageryProvider = new Cesium.WebMapServiceImageryProvider({
-    url: '/api/geoserver/syl/wms',
-    layers: 'syl:南迦巴瓦峰',
+    url: '/native/geoserver/tif_0610/wms',
+    layers: 'tif_0610:image_njbwf',
     parameters: {
       transparent: true,
       format: 'image/jpeg',
@@ -1039,7 +1057,7 @@ const removeLayer1 = () => {
     // console.log(layer.imageryProvider._imagerProvider._layers)
     if (
       layer.imageryProvider &&
-      layer.imageryProvider.layers === 'syl:南迦巴瓦峰'
+      layer.imageryProvider.layers === 'tif_0610:image_njbwf'
     ) {
       imageryLayers.remove(layer)
       break // 移除后退出循环
@@ -1050,8 +1068,8 @@ const removeLayer1 = () => {
 const addLayer2 = () => {
   //路网
   const wmsImageryProvider1 = new Cesium.WebMapServiceImageryProvider({
-    url: '/api/geoserver/syl/wms',
-    layers: 'syl:tif2',
+    url: '/native/geoserver/tif_0610/wms',
+    layers: 'tif_0610:tif2',
     // layers: 'ne:tif13',
     parameters: {
       transparent: true,
@@ -1090,7 +1108,10 @@ const removeLayer2 = () => {
   // 遍历所有图层，找到指定的图层并移除
   for (let i = 0; i < imageryLayers.length; i++) {
     const layer = imageryLayers.get(i)
-    if (layer.imageryProvider && layer.imageryProvider.layers === 'syl:tif2') {
+    if (
+      layer.imageryProvider &&
+      layer.imageryProvider.layers === 'tif_0610:tif2'
+    ) {
       imageryLayers.remove(layer)
       break // 移除后退出循环
     }
@@ -1290,6 +1311,406 @@ const removeLayer_relief = () => {
     }
   }
 }
+
+//添加河流line
+const addLayer_river = () => {
+  axios.get('/node/river').then(res => {
+    const data = res.data
+    // console.log(data)
+    // 1. 创建数据源
+    const river = new Cesium.CustomDataSource('rivers')
+    viewer.value.dataSources.add(river)
+
+    // 加载所有河流
+    function loadAllRivers() {
+      data.forEach(river => {
+        addRiverToCesium(river)
+      })
+    }
+    // 初始化
+    loadAllRivers()
+    // 设置相机位置
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+      //相机的姿态
+      orientation: {
+        heading: Cesium.Math.toRadians(56.34), //朝向
+        pitch: Cesium.Math.toRadians(-31), //俯仰
+        // pitch: Cesium.Math.toRadians(-90), //俯仰
+        roll: 0.0, //滚转
+      },
+    })
+  })
+}
+// function addRiverToCesium(riverData) {
+//   const coordinates = parseWKBToCoordinates(riverData.geom)
+
+//   // 转换为 Cesium 笛卡尔坐标
+//   const positions = []
+//   for (let i = 0; i < coordinates.length; i += 2) {
+//     positions.push(
+//       Cesium.Cartesian3.fromDegrees(coordinates[i], coordinates[i + 1])
+//     )
+//   }
+
+//   // 创建实体
+//   viewer.entities.add({
+//     name: riverData.Name,
+//     polyline: {
+//       positions: positions,
+//       width: parseFloat(riverData.width) || 5, // 使用数据中的宽度或默认值
+//       material: new Cesium.PolylineGlowMaterialProperty({
+//         glowPower: 0.2,
+//         color: Cesium.Color.CORNFLOWERBLUE,
+//       }),
+//       clampToGround: true,
+//     },
+//     properties: {
+//       code: riverData.code,
+//       fclass: riverData.fclass,
+//       id: riverData.id,
+//     },
+//   })
+// }
+// WKB 转经纬度坐标数组（示例函数）
+// function parseWKBToCoordinates(wkbString) {
+//   // 实际解析需要根据你的 WKB 格式实现
+//   // 这里假设是 LineString 的 WKB 格式
+//   const hex = wkbString.startsWith('0x') ? wkbString.substring(2) : wkbString
+//   const bytes = new Uint8Array(hex.match(/../g).map(h => parseInt(h, 16)))
+//   const view = new DataView(bytes.buffer)
+
+//   // 跳过 WKB 头部（1字节字节序 + 4字节类型）
+//   const offset = 5
+//   const pointCount = view.getUint32(offset, true)
+
+//   const coordinates = []
+//   for (let i = 0; i < pointCount; i++) {
+//     const x = view.getFloat64(offset + 4 + i * 16, true)
+//     const y = view.getFloat64(offset + 12 + i * 16, true)
+//     coordinates.push(x, y)
+//   }
+
+//   return coordinates
+// }
+
+function addRiverToCesium(riverData) {
+  try {
+    const geoJSON = parseWKBMultiLineString(riverData.geom)
+
+    geoJSON.coordinates.forEach(line => {
+      const positions = line.map(point =>
+        Cesium.Cartesian3.fromDegrees(point[0], point[1], point[2] || 0)
+      )
+      const style = getRiverStyle(riverData.fclass)
+      const entity = viewer.value.entities.add({
+        name: riverData.Name,
+        polyline: {
+          positions,
+          // width: parseFloat(riverData.width) || 5,
+          width: style.width,
+          material: new Cesium.PolylineGlowMaterialProperty({
+            color: style.color,
+            glowPower: 0.2,
+          }),
+          // width: getRiverStyle(riverData.fclass).width,
+          clampToGround: !line[0][2],
+        },
+        properties: {
+          code: riverData.code,
+          fclass: riverData.fclass,
+          id: riverData.id,
+        },
+      })
+      // 标记为河流图层
+      entity.riverTag = true
+    })
+  } catch (e) {
+    console.error('解析失败:', {
+      error: e,
+      sampleData: riverData.geom?.substring(0, 50) + '...',
+    })
+  }
+}
+//样式优化
+function getRiverStyle(fclass) {
+  const styles = {
+    river: { color: Cesium.Color.BLUE.withAlpha(0.8), width: 5 },
+    canal: { color: Cesium.Color.SKYBLUE.withAlpha(0.8), width: 3 },
+    stream: { color: Cesium.Color.NAVY.withAlpha(0.6), width: 2 },
+  }
+  return styles[fclass] || styles.river
+}
+function hexToBytes(hex) {
+  const bytes = new Uint8Array(hex.length / 2)
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substr(i, 2), 16)
+  }
+  return bytes
+}
+
+function readDouble(dataView, offset) {
+  return dataView.getFloat64(offset, true) // little endian
+}
+
+function readUInt32(dataView, offset) {
+  return dataView.getUint32(offset, true)
+}
+
+// 主解析函数：仅支持 WKB MultiLineString
+// function parseWKBMultiLineString(hex) {
+//   const bytes = hexToBytes(hex)
+//   const view = new DataView(bytes.buffer)
+
+//   let offset = 0
+
+//   // 1. 读取字节序：0=big endian，1=little endian（目前假设始终是1）
+//   const byteOrder = view.getUint8(offset)
+//   if (byteOrder !== 1) throw new Error('Only little endian supported')
+//   offset += 1
+
+//   // 2. 读取 geometry 类型（5 表示 MultiLineString）
+//   const type = readUInt32(view, offset)
+//   if (type !== 5) throw new Error('Only MultiLineString supported')
+//   offset += 4
+
+//   // 3. 读取 LineString 数量
+//   const numLineStrings = readUInt32(view, offset)
+//   offset += 4
+
+//   const coordinates = []
+
+//   for (let i = 0; i < numLineStrings; i++) {
+//     // 每个 LineString 都是一个完整的子几何对象
+//     const subByteOrder = view.getUint8(offset)
+//     offset += 1
+
+//     const subType = readUInt32(view, offset)
+//     if (subType !== 2) throw new Error('Expected LineString')
+//     offset += 4
+
+//     const numPoints = readUInt32(view, offset)
+//     offset += 4
+
+//     const line = []
+//     for (let j = 0; j < numPoints; j++) {
+//       const x = readDouble(view, offset)
+//       offset += 8
+//       const y = readDouble(view, offset)
+//       offset += 8
+//       line.push([x, y])
+//     }
+
+//     coordinates.push(line)
+//   }
+
+//   return {
+//     type: 'MultiLineString',
+//     coordinates,
+//   }
+// }
+function parseWKBMultiLineString(hex) {
+  const bytes = hexToBytes(hex)
+  const view = new DataView(bytes.buffer)
+
+  let offset = 0
+
+  const byteOrder = view.getUint8(offset)
+  if (byteOrder !== 1) throw new Error('Only little endian supported')
+  offset += 1
+
+  let type = readUInt32(view, offset)
+  const hasSRID = (type & 0x20000000) !== 0
+  type = type & 0xffff // 去掉高位 SRID 标志
+  offset += 4
+
+  if (hasSRID) {
+    const srid = readUInt32(view, offset)
+    // console.log('SRID:', srid) // 可能是4326
+    offset += 4
+  }
+
+  if (type !== 5) throw new Error('Only MultiLineString supported')
+
+  const numLineStrings = readUInt32(view, offset)
+  offset += 4
+
+  const coordinates = []
+
+  for (let i = 0; i < numLineStrings; i++) {
+    const subByteOrder = view.getUint8(offset)
+    offset += 1
+
+    let subType = readUInt32(view, offset)
+    subType = subType & 0xffff
+    offset += 4
+
+    const numPoints = readUInt32(view, offset)
+    offset += 4
+
+    const line = []
+    for (let j = 0; j < numPoints; j++) {
+      const x = readDouble(view, offset)
+      offset += 8
+      const y = readDouble(view, offset)
+      offset += 8
+      line.push([x, y])
+    }
+
+    coordinates.push(line)
+  }
+
+  return {
+    type: 'MultiLineString',
+    coordinates,
+  }
+}
+
+//移除河流
+const removeLayer_river = () => {
+  const entities = viewer.value.entities.values
+  for (let i = entities.length - 1; i >= 0; i--) {
+    const e = entities[i]
+    if (e.riverTag) {
+      viewer.value.entities.remove(e)
+    }
+  }
+}
+//添加冰川面
+const addLayer_glacier = () => {
+  // console.log(data)
+  axios.get('/node/glacier').then(res => {
+    const data = res.data
+
+    data.forEach(glacier => {
+      try {
+        const geoJSON = parseWKBMultiPolygon(glacier.geom) // ⬅️ 新函数（见下方）
+        const style = getGlacierStyle(glacier.fclass)
+        geoJSON.coordinates.forEach(polygon => {
+          // polygon 是二维数组，外环 + 若干内环
+          const hierarchy = polygon.map(ring =>
+            ring.map(point =>
+              Cesium.Cartesian3.fromDegrees(point[0], point[1], point[2] || 0)
+            )
+          )
+
+          const entity = viewer.value.entities.add({
+            name: glacier.Name || 'Glacier',
+            polygon: {
+              hierarchy: {
+                positions: hierarchy[0], // 外环
+                holes: hierarchy.slice(1).map(inner => ({ positions: inner })), // 内环
+              },
+              // material: Cesium.Color.ALICEBLUE.withAlpha(0.6),
+              material: style,
+              clampToGround: !polygon[0][0][2], // 判断有无Z坐标
+            },
+            properties: {
+              code: glacier.code,
+              id: glacier.id,
+              fclass: glacier.fclass,
+            },
+          })
+
+          // 添加 glacierTag 方便后续删除
+          entity.glacierTag = true
+        })
+      } catch (e) {
+        console.error('解析失败:', {
+          error: e,
+          sampleData: glacier.geom?.substring(0, 50) + '...',
+        })
+      }
+    })
+  })
+  viewer.value.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+    //相机的姿态
+    orientation: {
+      heading: Cesium.Math.toRadians(56.34), //朝向
+      pitch: Cesium.Math.toRadians(-31), //俯仰
+      // pitch: Cesium.Math.toRadians(-90), //俯仰
+      roll: 0.0, //滚转
+    },
+  })
+}
+function parseWKBMultiPolygon(hex) {
+  const bytes = hexToBytes(hex)
+  const view = new DataView(bytes.buffer)
+
+  let offset = 0
+  const byteOrder = view.getUint8(offset)
+  if (byteOrder !== 1) throw new Error('Only little endian supported')
+  offset += 1
+
+  let type = view.getUint32(offset, true)
+  const hasSRID = (type & 0x20000000) !== 0
+  type = type & 0xffff
+  offset += 4
+
+  if (hasSRID) offset += 4 // skip SRID
+
+  if (type !== 6) throw new Error('Only MultiPolygon supported')
+
+  const numPolygons = view.getUint32(offset, true)
+  offset += 4
+
+  const coordinates = []
+
+  for (let i = 0; i < numPolygons; i++) {
+    offset += 1 // skip byte order
+    offset += 4 // skip Polygon type
+
+    const numRings = view.getUint32(offset, true)
+    offset += 4
+
+    const polygon = []
+
+    for (let j = 0; j < numRings; j++) {
+      const numPoints = view.getUint32(offset, true)
+      offset += 4
+
+      const ring = []
+      for (let k = 0; k < numPoints; k++) {
+        const x = view.getFloat64(offset, true)
+        offset += 8
+        const y = view.getFloat64(offset, true)
+        offset += 8
+        ring.push([x, y])
+      }
+
+      polygon.push(ring)
+    }
+
+    coordinates.push(polygon)
+  }
+
+  return {
+    type: 'MultiPolygon',
+    coordinates,
+  }
+}
+
+function getGlacierStyle(fclass) {
+  const styles = {
+    glacier: Cesium.Color.ALICEBLUE.withAlpha(0.6),
+    ice_cap: Cesium.Color.CYAN.withAlpha(0.5),
+    mountain_glacier: Cesium.Color.LIGHTSKYBLUE.withAlpha(0.5),
+    ice_sheet: Cesium.Color.LIGHTSTEELBLUE.withAlpha(0.5),
+  }
+
+  return styles[fclass] || Cesium.Color.ALICEBLUE.withAlpha(0.4)
+}
+//移除冰川面
+const removeLayer_glacier = () => {
+  const entities = viewer.value.entities.values
+  for (let i = entities.length - 1; i >= 0; i--) {
+    const e = entities[i]
+    if (e.glacierTag) {
+      viewer.value.entities.remove(e)
+    }
+  }
+}
 //加载全国气象站
 const addLayer_weatherstation = () => {
   axios.get('/node/weatherstation').then(res => {
@@ -1322,18 +1743,6 @@ const addLayer_weatherstation = () => {
           pixelOffset: new Cesium.Cartesian2(0, -10),
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
         },
-        // 自定义属性（用于点击弹窗）
-        properties: {
-          id: station.ID,
-          type: station.TYPES,
-          height: `${station.HEIGHT}米`,
-          county: `${station.COUNTYNAME} (${station.COUNTYID})`,
-          period: station.TIMES,
-          comment: station.COMMENT,
-          rain: station.RAIN,
-          temperature: station.TEMPE,
-          sunshine: station.SUN,
-        },
       })
     })
 
@@ -1354,7 +1763,6 @@ const addLayer_weatherstation = () => {
   })
 
   // 3. 添加点击事件
-  // 设置点击事件处理器
   const layerwsClickHandler = new Cesium.ScreenSpaceEventHandler(
     viewer.value.scene.canvas
   )
@@ -1403,7 +1811,7 @@ const handleLayerwsClick = event => {
   }
   dialogs.value = new Dialog(opts)
 }
-// 解析WKT坐标（示例：'0101000000F775E09C11A15E4088855AD3BC7B4A40' → [122.5167, 52.9667]）
+// 解析点的WKT坐标（示例：'0101000000F775E09C11A15E4088855AD3BC7B4A40' → [122.5167, 52.9667]）
 const parseWKB = hexString => {
   if (!hexString || hexString.length < 32) return [null, null]
 
@@ -1428,6 +1836,51 @@ const parseWKB = hexString => {
     return [null, null]
   }
 }
+
+//解析线的WKB坐标
+const parseLineStringWKB = hexString => {
+  if (!hexString || hexString.length < 32) return []
+
+  try {
+    // 1. 处理可能的十六进制前缀
+    const hex = hexString.startsWith('0x') ? hexString.substring(2) : hexString
+
+    // 2. 转换为字节数组
+    const bytes = new Uint8Array(hex.match(/../g).map(h => parseInt(h, 16)))
+    const view = new DataView(bytes.buffer)
+
+    // 3. 检查字节序 (1=小端序)
+    const littleEndian = view.getUint8(0) === 1
+
+    // 4. 读取几何类型（跳过1字节序）
+    const geomType = view.getUint32(1, littleEndian)
+
+    // 5. 仅处理LineString类型（类型代码=2）
+    if (geomType !== 2) {
+      console.warn('非LineString类型:', geomType)
+      return []
+    }
+
+    // 6. 读取点数（跳过5字节头：1字节序+4字节类型）
+    const pointCount = view.getUint32(5, littleEndian)
+    const coordinates = []
+
+    // 7. 读取每个点的坐标
+    for (let i = 0; i < pointCount; i++) {
+      const offset = 9 + i * 16 // 9=头部长度，16=每个点占16字节(双精度x,y)
+      coordinates.push([
+        view.getFloat64(offset, littleEndian), // 经度
+        view.getFloat64(offset + 8, littleEndian), // 纬度
+      ])
+    }
+
+    return coordinates
+  } catch (e) {
+    console.error('WKB解析失败:', e)
+    return []
+  }
+}
+
 // 按气象站类型返回颜色
 const getColorByType = type => {
   const colors = {
@@ -1489,7 +1942,7 @@ const addlayer_DZDdevice = () => {
       })
       viewer.value.selectedEntityChanged.addEventListener(selectedEntity => {
         if (selectedEntity) {
-          console.log('选中实体:', selectedEntity)
+          // console.log('选中实体:', selectedEntity)
 
           showPopup(selectedEntity)
         } else {
@@ -1500,14 +1953,14 @@ const addlayer_DZDdevice = () => {
       // showPopup(entity) // 调用 addEarthquakeDevices 的弹窗逻辑
     })
     .catch(error => {
-      console.error('加载地震监测设备失败:', error)
+      // console.error('加载地震监测设备失败:', error)
     })
 }
 const removeLayer_DZDdevice = () => {
-  if (!layer17_guid.value) {
-    console.error('地震监测设备未加载.')
-    return
-  }
+  // if (!layer17_guid.value) {
+  //   console.error('地震监测设备未加载.')
+  //   return
+  // }
 
   const dataSources = viewer.value.dataSources._dataSources
   const dataSourceToRemove = dataSources.find(
@@ -1519,7 +1972,7 @@ const removeLayer_DZDdevice = () => {
     layer17_guid.value = null // 清空 GUID
     console.log('地震监测设备已移除.')
   } else {
-    console.error('未找到地震监测设备数据源.')
+    // console.error('未找到地震监测设备数据源.')
   }
 }
 
@@ -1730,7 +2183,39 @@ const addLayer3 = (p1, p2, p3, p4, p5) => {
     destination: Cesium.Cartesian3.fromDegrees(p2, p1 + 0.1, 50000),
   })
 }
+// const imageCache = new Set()
+// const addLayer3 = (p1, p2, p3, p4, p5) => {
+//   const imgUrl = `/ng/${p5}`
+//   if (imageCache.has(imgUrl)) {
+//     console.log('图像已加载过，跳过')
+//     return
+//   }
+//   imageCache.add(imgUrl)
+//   extractString(p5)
+//   hd.value = p5
+//   const img = new Image()
+//   img.onload = () => {
+//     const rectangle = Cesium.Rectangle.fromDegrees(p2, p1, p4, p3)
+//     viewer.value.entities.add({
+//       rectangle: {
+//         coordinates: rectangle,
+//         material: new Cesium.ImageMaterialProperty({
+//           image: imgUrl,
+//           repeat: new Cesium.Cartesian2(1.0, 1.0),
+//         }),
+//       },
+//     })
+//     viewer.value.camera.flyTo({
+//       destination: Cesium.Cartesian3.fromDegrees(p2, p1 + 0.1, 50000),
+//     })
+//   }
+//   img.onerror = () => {
+//     console.error('图像加载失败:', imgUrl)
+//     imageCache.delete(imgUrl) // 下次重新尝试加载
+//   }
 
+//   img.src = imgUrl
+// }
 const addLayer4 = () => {
   Cesium.GeoJsonDataSource.load('/ng/hpps2.geojson')
     .then(function (dataSource) {
@@ -1770,7 +2255,6 @@ const addLayer4 = () => {
       console.error('加载GeoJSON失败:', error)
     })
 }
-
 // 点击事件处理函数
 const handleLayer4Click = movement => {
   const pickedFeature = viewer.value.scene.pick(movement.position)
