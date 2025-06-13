@@ -442,6 +442,7 @@ onMounted(async () => {
     timeline: false, //隐藏时间控件
     infoBox: false,
   })
+  // initRightClickHandler()
   // console.log(pnames.value)
   //ScreenSpaceEventHandler是用于处理屏幕空间事件（例如鼠标点击、移动等）。该代码是将其绑定到指定的Cesiuim场景的canvas元素上。该实例监听canvas元素相关的鼠标和触摸事件。
 
@@ -1904,6 +1905,25 @@ const removeAllStations = () => {
   // 3. 清空实体引用
   // stationEntities.value = {}
 }
+const rightClickHandler = ref(null)
+// 初始化右键事件处理器
+const initRightClickHandler = () => {
+  rightClickHandler.value = new Cesium.ScreenSpaceEventHandler(
+    viewer.value.scene.canvas
+  )
+
+  // 右键点击事件
+  rightClickHandler.value.setInputAction(movement => {
+    const pickedObject = viewer.value.scene.pick(movement.position)
+    if (pickedObject?.id) {
+      const entity = pickedObject.id
+      // 检查 _id 是否包含 'dev'（不区分大小写）
+      if (entity._id?.toLowerCase().includes('dev')) {
+        showPopup(entity)
+      }
+    }
+  }, Cesium.ScreenSpaceEventType.RIGHT_CLICK)
+}
 
 //加载地震动设备
 const addlayer_DZDdevice = () => {
@@ -1940,11 +1960,15 @@ const addlayer_DZDdevice = () => {
           roll: 0.0, //滚转
         },
       })
+
       viewer.value.selectedEntityChanged.addEventListener(selectedEntity => {
         if (selectedEntity) {
-          // console.log('选中实体:', selectedEntity)
-
-          showPopup(selectedEntity)
+          // console.log('选中实体:', selectedEntity._id)
+          // 检查 _id 是否包含 'dev'
+          if (selectedEntity._id.includes('dev')) {
+            showPopup(selectedEntity)
+          }
+          // showPopup(selectedEntity)
         } else {
           hidePopup()
         }
@@ -2248,7 +2272,7 @@ const addLayer4 = () => {
       )
       layer4ClickHandler.setInputAction(
         handleLayer4Click,
-        Cesium.ScreenSpaceEventType.LEFT_CLICK
+        Cesium.ScreenSpaceEventType.RIGHT_CLICK
       )
     })
     .catch(error => {
@@ -2337,7 +2361,7 @@ const addLayer5 = () => {
     )
     layer5ClickHandler.setInputAction(
       handleLayer5Click,
-      Cesium.ScreenSpaceEventType.LEFT_CLICK
+      Cesium.ScreenSpaceEventType.RIGHT_CLICK
     )
   })
 }
@@ -2350,8 +2374,8 @@ const handleLayer5Click = movement => {
     return pickedFeature.id._properties[prop]?._value ?? '无数据'
   }
 
-  console.log(pickedFeature)
-  console.log(getProperty('_OBJECTID'))
+  // console.log(pickedFeature)
+  // console.log(getProperty('_OBJECTID'))
   // 准备弹窗内容
   const opts = {
     viewer,

@@ -12,9 +12,9 @@ export default defineConfig({
     global: 'window', // 直接替换所有代码中的 global 为 window
   },
   build: {
-    outDir: 'cs',
+    outDir: 'CS',
   },
-  base: '/cs',
+  base: '/CS',
   plugins: [
     vue(),
     cesium(),
@@ -41,21 +41,24 @@ export default defineConfig({
         rewrite: path => path.replace(/^\/api/, ''),
       },
       '/native': {
-        // target: 'http://13dc9cd5.r27.cpolar.top', //需代理的后端接口848c446.r9.cpolar.cn
-        // target: 'http://192.168.110.11:8080', //需代理的后端接口
-        target: 'http://localhost:8080',
+        // target: 'http://3a5b822.r40.cpolar.top', //需代理的后端接口848c446.r9.cpolar.cn
+        target: 'http://192.168.110.11:8080', //需代理的后端接口
+        // target: 'http://localhost:8080',
         secure: false, //开启代理：在本地会创建一个虚拟服务端，然后发送请求的数据，并同时接收请求
         changeOrigin: true,
         rewrite: path => path.replace(/^\/native/, ''),
       },
       '/testapi': {
-        target: 'http://localhost:8088', //需代理的后端接口
+        target: 'http://localhost:8088', //需代理的后端接口\
+        // target: 'http://42f9ead9.r40.cpolar.top', //需代理的后端接口
         secure: false, //开启代理：在本地会创建一个虚拟服务端，然后发送请求的数据，并同时接收请求
         changeOrigin: true,
         rewrite: path => path.replace(/^\/testapi/, ''),
       },
       '/ng': {
         target: 'http://localhost:8086', //需代理的后端接口
+        // target: 'http://10fceffa.r40.cpolar.top', //需代理的后端接口
+
         secure: false, //开启代理：在本地会创建一个虚拟服务端，然后发送请求的数据，并同时接收请求
         changeOrigin: true,
         rewrite: path => path.replace(/^\/ng/, ''),
