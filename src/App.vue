@@ -2023,7 +2023,7 @@ const showPopup = entity => {
   // 更新弹出窗口内容
   popup.innerHTML = `
     <h3>Device: ${entity.id}</h3>
-    <div id="chart" style="width: 400px; height: 300px;"></div>
+    <div id="chart" style="width: 480px; height: 360px;"></div>
   `
 
   // 初始化 ECharts 并绘制折线图
@@ -2034,7 +2034,13 @@ const showPopup = entity => {
   const LpX = entity.properties.ChannelOneLpX.getValue()
   const LpY = entity.properties.ChannelOneLpY.getValue()
   const LpZ = entity.properties.ChannelOneLpZ.getValue()
-  const time = Array.from({ length: LpX.length }, (_, i) => `Time ${i + 1}`)
+  const times = Array.from({ length: LpX.length }, (_, i) => `Time ${i + 1}`)
+
+  // 自动缩放y轴范围并加padding
+  const allValues = [...LpX]
+  const min = Math.min(...allValues)
+  const max = Math.max(...allValues)
+  const padding = (max - min) * 0.15 || 0.001
 
   // 默认只显示 LpX 数据
   const option = {
@@ -2054,26 +2060,89 @@ const showPopup = entity => {
     },
     xAxis: {
       type: 'category',
-      data: time,
+      data: times,
+      minInterval: 1, // 每个刻度至少间隔1
+      axisLabel: {
+        show: false,
+      },
+      axisTick: {
+        show: true, // 隐藏刻度线
+      },
+      axisLine: {
+        show: true, // 隐藏轴线
+      },
     },
     yAxis: {
       type: 'value',
+      min: min - padding,
+      max: max + padding,
     },
+    grid: {
+      left: 60,
+      right: 30,
+      top: 60,
+      bottom: 30,
+      containLabel: true,
+      width: 800, // 横坐标轴变长，图表整体拉宽
+    },
+    dataZoom: [
+      {
+        type: 'slider',
+        yAxisIndex: 0,
+        filterMode: 'empty',
+        start: 0,
+        end: times.length > 40 ? (40 / times.length) * 100 : 100, // 默认显示40个点
+      },
+      {
+        type: 'inside',
+        xAxisIndex: 0,
+        filterMode: 'empty',
+      },
+      {
+        type: 'slider',
+        yAxisIndex: 0,
+        filterMode: 'empty',
+      },
+    ],
     series: [
       {
         name: 'LpX',
         type: 'line',
         data: LpX,
+        symbol: 'circle', // 使用圆形点
+        symbolSize: 6, // 点的大小
+        itemStyle: {
+          color: '#ff3333', // 实心点颜色，可自定义
+        },
+        lineStyle: {
+          width: 2,
+        },
       },
       {
         name: 'LpY',
         type: 'line',
         data: LpY,
+        symbol: 'circle', // 使用圆形点
+        symbolSize: 6, // 点的大小
+        itemStyle: {
+          color: '#ff3333', // 实心点颜色，可自定义
+        },
+        lineStyle: {
+          width: 2,
+        },
       },
       {
         name: 'LpZ',
         type: 'line',
         data: LpZ,
+        symbol: 'circle', // 使用圆形点
+        symbolSize: 6, // 点的大小
+        itemStyle: {
+          color: '#ff3333', // 实心点颜色，可自定义
+        },
+        lineStyle: {
+          width: 2,
+        },
       },
     ],
   }

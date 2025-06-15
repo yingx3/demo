@@ -24,7 +24,7 @@
             alt="林芝市灾害应急管理局"
           />
           <!-- <img src="../assets/img/top8.png" alt="" /> -->
-          <span>冰川区灾害链判识-评估-预警-断链综合防控系统</span>
+          <span>高山工程区灾害链数值模型集成平台</span>
         </div>
       </div>
       <!-- <div class="top-right6">
@@ -182,13 +182,13 @@ function formatTime(time) {
 }
 .top .top-left .theme {
   position: absolute;
-  left: 560px;
+  left: 585px;
   top: 0;
-  font-size: 31px;
+  font-size: 38px;
   font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande',
     'Lucida Sans', Arial, sans-serif;
   font-weight: 700;
-  letter-spacing: 4px;
+  letter-spacing: 6px;
   color: rgba(255, 255, 255, 1);
   text-align: left;
   text-shadow: 0px 2px 4px;

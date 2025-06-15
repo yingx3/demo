@@ -63,6 +63,16 @@
                     >
                   </el-checkbox-group>
                 </div>
+                <!-- <div>
+                  <el-radio-group v-model="form.time">
+                    <el-radio :label="'3h'" :value="10800">3h</el-radio>
+                    <el-radio :label="'6h'" :value="21600">6h</el-radio>
+                    <el-radio :label="'12h'" :value="43200">12h</el-radio>
+                    <el-radio :label="'24h'" :value="86400">24h</el-radio>
+                    <el-radio :label="'48h'" :value="172800">48h</el-radio>
+                    <el-radio :label="'60h'" :value="216000">60h</el-radio>
+                  </el-radio-group>
+                </div> -->
               </el-form-item>
               <el-form-item label="入渗率" class="form4_trigrs">
                 <el-input v-model="form.rsl" placeholder="1.0e-6" />

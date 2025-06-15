@@ -42,8 +42,8 @@ export default defineConfig({
       },
       '/native': {
         // target: 'http://3a5b822.r40.cpolar.top', //需代理的后端接口848c446.r9.cpolar.cn
-        target: 'http://192.168.110.11:8080', //需代理的后端接口
-        // target: 'http://localhost:8080',
+        // target: 'http://192.168.110.11:8080', //需代理的后端接口
+        target: 'http://localhost:8080',
         secure: false, //开启代理：在本地会创建一个虚拟服务端，然后发送请求的数据，并同时接收请求
         changeOrigin: true,
         rewrite: path => path.replace(/^\/native/, ''),
