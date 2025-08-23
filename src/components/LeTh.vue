@@ -207,7 +207,7 @@
               </el-form-item>
 
             </el-form>
-            <el-button type="primary" @click="submit_inverseV()" style="margin-left: 280px;">运行</el-button>
+            <el-button type="primary" @click="submit_inverseV(),dialog_inverseV = false" style="margin-left: 280px;">运行</el-button>
             <el-button @click="dialog_inverseV = false">取消</el-button>
           </el-dialog>
         </div>
@@ -578,13 +578,29 @@ const handleFileChange = (file) => {
   uploadRef.value.submit()
 }
 //执行R脚本
+// const submit_inverseV = async () => {
+//   try {
+//     const response = await axios.post('node/rscript', {
+//       path: 'E:/practice/demo/PFTF_1.0.0/PFTF-PFTF_1.0.0',
+//       script: '1_1_input.R'
+//     })
+//     console.log('执行结果:', response.data)
+//   } catch (error) {
+//     console.error('执行失败:', error.response?.data || error.message)
+//   }
+// }
 const submit_inverseV = async () => {
   try {
-    const response = await axios.post('node/rscript', {
-      path: 'E:/practice/demo/PFTF_1.0.0/PFTF-PFTF_1.0.0',
-      script: '1_1_input.R'
-    })
+    ElMessage({ message: '运行中!(约2分钟)', type: 'success', duration: 120000 })
+    const response = await axios.get('node/api/crack/ZXPRTL5002024A0454')
+
     console.log('执行结果:', response.data)
+    if (response.data.ooaDetected==false){
+      alert("并未出现滑坡！")
+    }else{
+      alert("请您及时关注预警！！！")
+    }
+
   } catch (error) {
     console.error('执行失败:', error.response?.data || error.message)
   }
