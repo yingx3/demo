@@ -6,22 +6,33 @@ import { exec } from 'child_process'
 import dotenv from 'dotenv'
 import fs from 'fs'
 import path from 'path'
+import { fileURLToPath } from 'url'
 
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 // 加载环境变量
 dotenv.config()
-
 const app = express()
-
 app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
-const upload = multer({ dest: 'uploads/' })
-
+// const upload = multer({ dest: 'uploads/' })
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/')
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname)  // 保留原始文件名
+  }
+})
+const upload = multer({ storage })
+let filePath
 // 文件保存路径
 const SAVE_PATH = 'E:\\practice\\PFTF\\icelake';
 // 目标R脚本路径
 const TARGET_PATH = 'E:\\practice\\PFTF\\PFTF_1.0.0\\PFTF-PFTF_1.0.0';
 const R_SCRIPT_PATH = path.join(TARGET_PATH, '1_1_input.R');
+const displ_file = '';
 
 // Kingbase8 数据库配置
 const dbConfig = {
@@ -36,7 +47,6 @@ const dbConfig = {
 
 // 创建数据库连接池
 let pool;
-
 try {
   const { Pool } = await import('pg');
   pool = new Pool(dbConfig);
@@ -62,39 +72,39 @@ function formatTimestamp(date) {
 // 处理时间数据并转换为整点
 function processHourlyData(data) {
   console.log('🔄 正在处理时间数据（转换为整点）...');
-  
+
   // 按小时分组
   const hourlyGroups = {};
-  
+  console.log(data)
   data.forEach(row => {
     const timestamp = new Date(row.update_time);
     const hourKey = new Date(timestamp);
     hourKey.setMinutes(0, 0, 0); // 设置为整点
-    
+
     const hourKeyStr = hourKey.toISOString();
-    
+
     if (!hourlyGroups[hourKeyStr]) {
       hourlyGroups[hourKeyStr] = [];
     }
-    
+
     hourlyGroups[hourKeyStr].push({
       timestamp: timestamp,
       displ: row.lf
     });
   });
-  
+
   // 对每小时的数据进行处理
   const processedData = [];
-  
+
   Object.keys(hourlyGroups).sort().forEach(hourKey => {
     const hourData = hourlyGroups[hourKey];
     const hourDate = new Date(hourKey);
-    
+
     // 检查是否有整点数据
-    const exactHourData = hourData.find(item => 
+    const exactHourData = hourData.find(item =>
       item.timestamp.getTime() === hourDate.getTime()
     );
-    
+
     if (exactHourData) {
       // 如果有整点数据，使用第一个整点数据
       processedData.push({
@@ -109,7 +119,7 @@ function processHourlyData(data) {
       });
     }
   });
-  
+
   console.log(`📊 处理前: ${data.length} 条, 处理后: ${processedData.length} 条`);
   return processedData;
 }
@@ -118,28 +128,28 @@ function processHourlyData(data) {
 function saveProcessedCSV(data) {
   try {
     ensureDirectoryExists(SAVE_PATH);
-    
+
     const filename = 'displ_data_processed.csv';
     const filepath = path.join(SAVE_PATH, filename);
-    
+
     // 检查文件是否存在，如果存在则删除
     if (fs.existsSync(filepath)) {
       fs.unlinkSync(filepath);
       console.log('🗑️  删除已存在的CSV文件');
     }
-    
+
     // CSV文件头
     let csvContent = 'timestamp,displ\n';
-    
+
     // 添加数据行（使用格式化的时间字符串）
     data.forEach(row => {
       csvContent += `"${row.timestamp}","${row.displ}"\n`;
     });
-    
+
     // 写入文件
     fs.writeFileSync(filepath, csvContent, 'utf8');
     console.log(`💾 CSV文件已保存（覆写模式）: ${filepath}`);
-    
+
     return {
       filename: filename,
       filepath: filepath,
@@ -157,13 +167,13 @@ function convertToRDA(csvFilePath) {
     try {
       const rdaFilename = 'displ_data.rda';
       const rdaFilePath = path.join(SAVE_PATH, rdaFilename);
-      
+
       // 检查RDA文件是否存在，如果存在则删除
       if (fs.existsSync(rdaFilePath)) {
         fs.unlinkSync(rdaFilePath);
         console.log('🗑️  删除已存在的RDA文件');
       }
-      
+
       // R脚本 - 使用指定的时间格式和时区
       const rScriptContent = `
 # 读取CSV文件
@@ -188,41 +198,41 @@ cat("RDA文件已保存:", "${rdaFilePath.replace(/\\/g, '/')}\\n")
 cat("时间格式: %Y-%m-%d %H:%M\\n")
 cat("时区: UTC\\n")
 `;
-      
+
       // 写入临时R脚本（覆写模式）
       const rScriptPath = path.join(SAVE_PATH, 'convert_to_rda.R');
       if (fs.existsSync(rScriptPath)) {
         fs.unlinkSync(rScriptPath);
       }
       fs.writeFileSync(rScriptPath, rScriptContent, 'utf8');
-      
+
       // 执行R脚本
       const Rscript = '"C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe"';
       const command = `cd /d "${SAVE_PATH}" && ${Rscript} "${rScriptPath}"`;
-      
+
       console.log('🔄 正在转换为RDA格式...');
       exec(command, (error, stdout, stderr) => {
         // 清理临时文件
-        try { 
+        try {
           if (fs.existsSync(rScriptPath)) {
-            fs.unlinkSync(rScriptPath); 
+            fs.unlinkSync(rScriptPath);
           }
-        } catch (e) {}
-        
+        } catch (e) { }
+
         if (error) {
           console.error('❌ R脚本执行失败:', error.message);
           if (stderr) console.error('R脚本错误:', stderr);
           reject(error);
           return;
         }
-        
+
         console.log('✅ R脚本输出:', stdout);
         if (stderr) {
           console.warn('⚠️ R脚本警告:', stderr);
         }
-        
+
         const recordCount = parseInt(stdout.match(/成功转换 (\d+) 条记录/)?.[1] || '0');
-        
+
         resolve({
           filename: rdaFilename,
           filepath: rdaFilePath,
@@ -232,7 +242,7 @@ cat("时区: UTC\\n")
           timezone: 'UTC'
         });
       });
-      
+
     } catch (error) {
       reject(error);
     }
@@ -248,12 +258,12 @@ function copyFile(sourcePath, targetPath) {
       if (!fs.existsSync(targetDir)) {
         fs.mkdirSync(targetDir, { recursive: true });
       }
-      
+
       // 如果目标文件已存在，先删除
       if (fs.existsSync(targetPath)) {
         fs.unlinkSync(targetPath);
       }
-      
+
       // 复制文件
       fs.copyFileSync(sourcePath, targetPath);
       console.log(`📋 文件已复制到: ${targetPath}`);
@@ -270,22 +280,22 @@ function getCSVTimeRange(csvFilePath) {
   try {
     const csvContent = fs.readFileSync(csvFilePath, 'utf8');
     const lines = csvContent.trim().split('\n');
-    
+
     // 跳过标题行，获取数据行
     if (lines.length <= 1) {
       throw new Error('CSV文件没有数据');
     }
-    
+
     // 获取第一行数据（第二行，因为第一行是标题）
     const firstLine = lines[1].split(',');
     const firstTimestamp = firstLine[0].replace(/"/g, '').trim();
-    
+
     // 获取最后一行数据
     const lastLine = lines[lines.length - 1].split(',');
     const lastTimestamp = lastLine[0].replace(/"/g, '').trim();
-    
+
     console.log(`📅 时间范围: ${firstTimestamp} 至 ${lastTimestamp}`);
-    
+
     return {
       firstTimestamp: firstTimestamp,
       lastTimestamp: lastTimestamp
@@ -296,12 +306,12 @@ function getCSVTimeRange(csvFilePath) {
   }
 }
 
-// 计算最后一天的前5天时间
+// 计算最后一天的时间
 function getFiveDaysBeforeLast(lastTimestamp) {
   const lastDate = new Date(lastTimestamp);
   const fiveDaysBefore = new Date(lastDate);
-  fiveDaysBefore.setDate(lastDate.getDate() - 5);
-  
+  fiveDaysBefore.setDate(lastDate.getDate());
+
   // 格式化为 YYYY-MM-DD HH:00:00
   const pad = (n) => n.toString().padStart(2, '0');
   return `${fiveDaysBefore.getFullYear()}-${pad(fiveDaysBefore.getMonth() + 1)}-${pad(fiveDaysBefore.getDate())} ${pad(fiveDaysBefore.getHours())}:00:00`;
@@ -316,26 +326,26 @@ function modifyRScript(rScriptPath, startTime, endTime) {
       fs.copyFileSync(rScriptPath, backupPath);
       console.log('📦 已创建R脚本备份文件');
     }
-    
+
     // 读取R脚本内容
     let content = fs.readFileSync(rScriptPath, 'utf8');
-    
+
     // 修改第16行的开始时间
     content = content.replace(
       /start_of_calc <- as\.POSIXct\(".*?", tz="UTC"\)/,
       `start_of_calc <- as.POSIXct("${startTime}", tz="UTC")`
     );
-    
+
     // 修改第21行的结束时间（最后一天的前5天）
     content = content.replace(
       /start_of_sim <- as\.POSIXct\(".*?", tz="UTC"\)/,
       `start_of_sim <- as.POSIXct("${endTime}", tz="UTC")`
     );
-    
+
     // 写入修改后的内容
     fs.writeFileSync(rScriptPath, content, 'utf8');
     console.log(`✏️  R脚本已修改: 开始时间=${startTime}, 结束时间=${endTime}`);
-    
+
     return true;
   } catch (error) {
     console.error('❌ 修改R脚本失败:', error.message);
@@ -365,10 +375,10 @@ function executeRScript(rScriptPath) {
     try {
       const Rscript = '"C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe"';
       const command = `cd /d "${path.dirname(rScriptPath)}" && ${Rscript} "${rScriptPath}"`;
-      
+
       console.log('🚀 正在执行R脚本...');
       console.log('执行命令:', command);
-      
+
       exec(command, (error, stdout, stderr) => {
         if (error) {
           console.error('❌ R脚本执行失败:', error.message);
@@ -376,13 +386,13 @@ function executeRScript(rScriptPath) {
           reject(error);
           return;
         }
-        
+
         console.log('✅ R脚本执行成功');
         console.log('输出:', stdout);
         if (stderr) {
           console.warn('警告:', stderr);
         }
-        
+
         resolve(stdout);
       });
     } catch (error) {
@@ -392,43 +402,56 @@ function executeRScript(rScriptPath) {
 }
 
 // 检测日志文件中是否存在"OOA detected"
-function checkOOADetected() {
-  try {
-    const logFilePath = path.join(TARGET_PATH, 'plots', 'main', '24_log.txt');
-    
-    if (!fs.existsSync(logFilePath)) {
-      console.log('❌ 日志文件不存在:', logFilePath);
-      return false;
-    }
-    
-    // 读取日志文件内容
-    const logContent = fs.readFileSync(logFilePath, 'utf8');
-    const lines = logContent.trim().split('\n');
-    
-    if (lines.length < 2) {
-      console.log('❌ 日志文件内容不足');
-      return false;
-    }
-    
-    // 获取倒数第二行
-    const secondLastLine = lines[lines.length - 2].trim();
-    console.log('📋 倒数第二行内容:', secondLastLine);
-    
-    // 检查是否包含"OOA detected"
-    const hasOOADetected = secondLastLine.includes('OOA detected');
-    console.log('🔍 OOA detected:', hasOOADetected);
-    
-    return hasOOADetected;
-  } catch (error) {
-    console.error('❌ 检测OOA失败:', error.message);
-    return false;
-  }
-}
+// function checkOOADetected() {
+//   try {
+//     const logFilePath = path.join(TARGET_PATH, 'plots', 'main', '24_log.txt');
+
+//     if (!fs.existsSync(logFilePath)) {
+//       console.log('❌ 日志文件不存在:', logFilePath);
+//       return false;
+//     }
+
+//     // 读取日志文件内容
+//     const logContent = fs.readFileSync(logFilePath, 'utf8');
+//     const lines = logContent.trim().split('\n');
+
+//     if (lines.length < 2) {
+//       console.log('❌ 日志文件内容不足');
+//       return false;
+//     }
+
+//     // 获取倒数第二行
+//     const secondLastLine = lines[lines.length - 2].trim();
+//     console.log('📋 倒数第二行内容:', secondLastLine);
+
+//     // 检查是否包含"OOA detected"
+//     const hasOOADetected = secondLastLine.includes('OOA detected');
+//     console.log('🔍 OOA detected:', hasOOADetected);
+
+//     return hasOOADetected;
+//   } catch (error) {
+//     console.error('❌ 检测OOA失败:', error.message);
+//     return false;
+//   }
+// }
 
 // 现有的文件上传路由
 app.post('/displ', upload.single('file'), (req, res) => {
-  res.json({ code: 200, fileName: req.file.originalname })
+  if (!req.file) {
+    return res.status(400).json({ code: 400, message: '没有文件上传' })
+  }
+
+
+  // 这里 req.file.originalname 才是上传时的真实文件名
+  filePath = path.join(__dirname, "uploads", req.file.originalname);
+  console.log("保存路径：", filePath);
+  res.json({
+    code: 200,
+    fileName: req.file.originalname, // 上传时的文件名
+    savedPath: filePath         // 保存到服务器的路径 (uploads/xxxx)
+  })
 })
+
 
 // 现有的 R 脚本执行路由
 // app.post('/rscript', (req, res) => {
@@ -457,6 +480,70 @@ app.post('/displ', upload.single('file'), (req, res) => {
 //   });
 // });
 
+//使用用户上传文件预测滑坡时间
+app.get('/displ_file', async (req, res) => {
+  try {
+
+    // 处理时间数据（转换为整点）
+    const processedData = processHourlyData(filePath);
+
+    // 保存处理后的CSV文件
+    const csvInfo = saveProcessedCSV(processedData);
+
+    // 转换为RDA文件
+    const rdaInfo = await convertToRDA(csvInfo.filepath);
+
+    // 复制RDA文件到目标路径
+    const targetRdaPath = path.join(TARGET_PATH, 'displ_data.rda');
+    await copyFile(rdaInfo.filepath, targetRdaPath);
+
+    // 读取CSV文件的时间范围
+    const timeRange = getCSVTimeRange(csvInfo.filepath);
+
+    // 计算最后一天的时间
+    const fiveDaysBeforeLast = getFiveDaysBeforeLast(timeRange.lastTimestamp);
+
+    // 修改R脚本
+    await modifyRScript(R_SCRIPT_PATH, timeRange.firstTimestamp, fiveDaysBeforeLast);
+
+    // 执行R脚本
+    const rScriptOutput = await executeRScript(R_SCRIPT_PATH);
+
+    // 恢复R脚本到原始状态
+    await restoreRScript(R_SCRIPT_PATH);
+
+    res.json({
+      success: true,
+      originalCount: result.rowCount,
+      processedCount: rdaInfo.recordCount,
+      timeRange: {
+        start: timeRange.firstTimestamp,
+        end: timeRange.lastTimestamp,
+        simulationStart: fiveDaysBeforeLast
+      },
+      rdaFile: targetRdaPath,
+      rScriptExecuted: true,
+      rScriptOutput: rScriptOutput,
+    });
+
+  } catch (error) {
+    console.error('处理失败:', error);
+
+    // 尝试恢复R脚本（如果修改过）
+    try {
+      await restoreRScript(R_SCRIPT_PATH);
+    } catch (restoreError) {
+      console.error('恢复R脚本失败:', restoreError.message);
+    }
+
+    res.status(500).json({
+      success: false,
+      message: '处理失败',
+      error: error.message,
+      ooaDetected: false
+    });
+  }
+});
 // 根据设备ID查询crack数据并处理为RDA
 app.get('/api/crack/:deviceId', async (req, res) => {
   const { deviceId } = req.params;
@@ -465,9 +552,9 @@ app.get('/api/crack/:deviceId', async (req, res) => {
   let client;
   try {
     client = await pool.connect();
-    
+
     console.log(`🔍 查询设备: ${deviceId}, 时间范围: 最近${months}个月`);
-    
+
     // 查询所有匹配的数据
     const result = await client.query(`
       SELECT 
@@ -481,9 +568,9 @@ app.get('/api/crack/:deviceId', async (req, res) => {
       ORDER BY 
         update_time
     `, [deviceId]);
-    
+
     console.log(`📊 查询到 ${result.rowCount} 条记录`);
-    
+
     if (result.rowCount === 0) {
       return res.json({
         success: true,
@@ -492,38 +579,38 @@ app.get('/api/crack/:deviceId', async (req, res) => {
         ooaDetected: false
       });
     }
-    
+
     // 处理时间数据（转换为整点）
     const processedData = processHourlyData(result.rows);
-    
+
     // 保存处理后的CSV文件
     const csvInfo = saveProcessedCSV(processedData);
-    
+
     // 转换为RDA文件
     const rdaInfo = await convertToRDA(csvInfo.filepath);
-    
+
     // 复制RDA文件到目标路径
     const targetRdaPath = path.join(TARGET_PATH, 'displ_data.rda');
     await copyFile(rdaInfo.filepath, targetRdaPath);
-    
+
     // 读取CSV文件的时间范围
     const timeRange = getCSVTimeRange(csvInfo.filepath);
-    
+
     // 计算最后一天的前5天时间
     const fiveDaysBeforeLast = getFiveDaysBeforeLast(timeRange.lastTimestamp);
-    
+
     // 修改R脚本
     await modifyRScript(R_SCRIPT_PATH, timeRange.firstTimestamp, fiveDaysBeforeLast);
-    
+
     // 执行R脚本
     const rScriptOutput = await executeRScript(R_SCRIPT_PATH);
-    
+
     // 检测OOA detected
     const ooaDetected = checkOOADetected();
-    
+
     // 恢复R脚本到原始状态
     await restoreRScript(R_SCRIPT_PATH);
-    
+
     res.json({
       success: true,
       deviceId: deviceId,
@@ -540,17 +627,17 @@ app.get('/api/crack/:deviceId', async (req, res) => {
       rScriptOutput: rScriptOutput,
       message: `数据处理完成并已执行R脚本，OOA检测结果: ${ooaDetected ? '存在' : '不存在'}`
     });
-    
+
   } catch (error) {
     console.error('处理失败:', error);
-    
+
     // 尝试恢复R脚本（如果修改过）
     try {
       await restoreRScript(R_SCRIPT_PATH);
     } catch (restoreError) {
       console.error('恢复R脚本失败:', restoreError.message);
     }
-    
+
     res.status(500).json({
       success: false,
       message: '处理失败',
@@ -561,6 +648,7 @@ app.get('/api/crack/:deviceId', async (req, res) => {
     if (client) client.release();
   }
 });
+
 
 app.listen(3000, () => {
   console.log('Server running on http://localhost:3000');

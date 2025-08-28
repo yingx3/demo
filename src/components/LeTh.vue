@@ -190,24 +190,21 @@
               </el-form-item>
 
               <el-form-item label="位移文件">
-                <el-upload ref="uploadRef" action="/node/displ" name="file" :auto-upload="false" :show-file-list="false"
-                  @change="handleFileChange">
-                  <el-input v-model="fileName_inverseV" placeholder="点击上传文件" readonly @click="triggerUpload">
-                    <template #append>
-                      <el-button icon="Upload" style="
-      background: transparent;
-      border: none;
-      color: blueviolet;
-      padding: 0;
-      margin-left: 8px;
-    " @click.stop="triggerUpload" />
-                    </template>
-                  </el-input>
-                </el-upload>
+                <el-input v-model="fileName_inverseV" placeholder="上传文件" readonly style="width: 100px;">
+                  <template #append>
+                    <el-upload ref="uploadRef" action="/node/displ" name="file" :auto-upload="false"
+                      :show-file-list="false" @change="handleFileChange">
+                      <el-button style="border:none; color:white; padding:0; margin-left:8px;"
+                        @click.stop="triggerUpload">
+                        <i class="iconfont icon-daoru"></i>
+                      </el-button>
+                    </el-upload>
+                  </template>
+                </el-input>
               </el-form-item>
-
             </el-form>
-            <el-button type="primary" @click="submit_inverseV(),dialog_inverseV = false" style="margin-left: 280px;">运行</el-button>
+            <el-button type="primary" @click="submit_inverseV(), dialog_inverseV = false"
+              style="margin-left: 280px;">运行</el-button>
             <el-button @click="dialog_inverseV = false">取消</el-button>
           </el-dialog>
         </div>
@@ -574,7 +571,7 @@ const handleFileChange = (file) => {
   fileName_inverseV.value = file.name
   // 这里可以添加文件处理逻辑
   console.log('已选择文件:', file.name)
-   // 自动触发上传（如需手动上传可删除这部分）
+  // 自动触发上传（如需手动上传可删除这部分）
   uploadRef.value.submit()
 }
 //执行R脚本
@@ -589,6 +586,22 @@ const handleFileChange = (file) => {
 //     console.error('执行失败:', error.response?.data || error.message)
 //   }
 // }
+const submit_inverseVl = async () => {
+  try {
+    ElMessage({ message: '运行中!(约2分钟)', type: 'success', duration: 120000 })
+    const response = await axios.get('node/displ_file')
+
+    console.log('执行结果:', response.data)
+    // if (response.data.ooaDetected == false) {
+    //   alert("并未出现滑坡！")
+    // } else {
+    //   alert("请您及时关注预警！！！")
+    // }
+
+  } catch (error) {
+    console.error('执行失败:', error.response?.data || error.message)
+  }
+}
 const submit_inverseV = async () => {
   try {
     ElMessage({ message: '运行中!(约2分钟)', type: 'success', duration: 120000 })
@@ -845,7 +858,7 @@ const submit_inverseV = async () => {
 
 :deep(.el-dialog.dialog_inverseV) {
   --el-dialog-bg-color: transparent;
-  margin-top:15%;
+  margin-top: 15%;
   width: 450px;
   height: 280px;
   background-image: url('../assets/img/fz173.png');
@@ -916,6 +929,18 @@ const submit_inverseV = async () => {
 
 :deep(.header.el-dialog_header.show-close) {
   padding: 15px 25px 16px 0px;
+}
+
+:deep(.el-input-group__append, .el-input-group__prepend) {
+  background-color: transparent;
+}
+
+:deep(.el-input-group__append, .el-input-group__prepend) {
+  padding: 0px;
+}
+
+:deep(.el-input-group__append .el-button, .el-input-group__append .el-select, .el-input-group__prepend .el-button, .el-input-group__prepend .el-select) {
+  margin: 0px;
 }
 
 .form_trigrs {
