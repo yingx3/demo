@@ -7,6 +7,8 @@ import dotenv from 'dotenv'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import XLSX from 'xlsx'
+import moment from 'moment';
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -64,63 +66,165 @@ function ensureDirectoryExists(dirPath) {
 }
 
 // 格式化时间为 YYYY-MM-DD HH:MM 格式
-function formatTimestamp(date) {
+// function formatUTCTimestamp(date) {
+//   const pad = (n) => n.toString().padStart(2, '0');
+//   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+// }
+function formatUTCTimestamp(date) {
   const pad = (n) => n.toString().padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
 }
 
+// // 处理时间数据并转换为整点
+// function processHourlyData(data) {
+//   console.log('🔄 正在处理时间数据（转换为整点）...');
+
+//   // 按小时分组
+//   const hourlyGroups = {};
+//   console.log(data)
+//   data.forEach(row => {
+//     const timestamp = new Date(row.update_time);
+//     const hourKey = new Date(timestamp);
+//     hourKey.setMinutes(0, 0, 0); // 设置为整点
+
+//     const hourKeyStr = hourKey.toISOString();
+
+//     if (!hourlyGroups[hourKeyStr]) {
+//       hourlyGroups[hourKeyStr] = [];
+//     }
+
+//     hourlyGroups[hourKeyStr].push({
+//       timestamp: timestamp,
+//       displ: row.lf
+//     });
+//   });
+
+//   // 对每小时的数据进行处理
+//   const processedData = [];
+
+//   Object.keys(hourlyGroups).sort().forEach(hourKey => {
+//     const hourData = hourlyGroups[hourKey];
+//     const hourDate = new Date(hourKey);
+
+//     // 检查是否有整点数据
+//     const exactHourData = hourData.find(item =>
+//       item.timestamp.getTime() === hourDate.getTime()
+//     );
+
+//     if (exactHourData) {
+//       // 如果有整点数据，使用第一个整点数据
+//       processedData.push({
+//         timestamp: formatTimestamp(exactHourData.timestamp),
+//         displ: exactHourData.displ
+//       });
+//     } else {
+//       // 如果没有整点数据，使用该小时第一个数据，时间调整为整点
+//       processedData.push({
+//         timestamp: formatTimestamp(hourDate),
+//         displ: hourData[0].displ
+//       });
+//     }
+//   });
+
+//   console.log(`📊 处理前: ${data.length} 条, 处理后: ${processedData.length} 条`);
+//   return processedData;
+// }
+
+// function formatTimestamp(date) {
+//   return moment(date).format('YYYY-MM-DDTHH:mm:ss.SSSZ');
+// }
+// function formatTimestamp(date) {
+//   return moment(date).format('YYYY-MM-DDTHH:mm:ss.SSSZ');
+// }
+function readExcelData(filePath) {
+  // console.log(filePath)
+  try {
+    const workbook = XLSX.readFile(filePath);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+
+    // 直接获取原始数据，避免自动日期转换
+    const data = XLSX.utils.sheet_to_json(worksheet, { raw: false });
+
+    console.log(`从Excel读取 ${data.length} 条记录`);
+
+    // 检查数据格式
+    if (data.length > 0) {
+      const firstRow = data[0];
+      // console.log('数据格式:', Object.keys(firstRow));
+      console.log('时间示例:', firstRow.timestamp);
+      console.log('位移示例:', firstRow.displ);
+    }
+    return data;
+  } catch (error) {
+    console.error('❌ 读取Excel失败:', error.message);
+    throw error;
+  }
+}
 // 处理时间数据并转换为整点
-function processHourlyData(data) {
-  console.log('🔄 正在处理时间数据（转换为整点）...');
-
-  // 按小时分组
+function processHourlyData(filePath) {
+  console.log('🔄 正在处理时间数据...');
+  const data = readExcelData(filePath);
+  // console.log(data)
   const hourlyGroups = {};
-  console.log(data)
-  data.forEach(row => {
-    const timestamp = new Date(row.update_time);
-    const hourKey = new Date(timestamp);
-    hourKey.setMinutes(0, 0, 0); // 设置为整点
 
-    const hourKeyStr = hourKey.toISOString();
-
-    if (!hourlyGroups[hourKeyStr]) {
-      hourlyGroups[hourKeyStr] = [];
+  data.forEach((row, index) => {
+    if (!row || !row.timestamp) {
+      console.warn(`⚠️ 第${index + 1}行: 缺少timestamp`);
+      return;
     }
 
-    hourlyGroups[hourKeyStr].push({
-      timestamp: timestamp,
-      displ: row.lf
-    });
+    try {
+      // 直接使用字符串时间，避免时区转换
+      const timeStr = row.timestamp.toString();
+
+      // 解析时间字符串（保持原有时区）
+      const [datePart, timePart] = timeStr.split(' ');
+      const [year, month, day] = datePart.split('-').map(Number);
+      const [hours, minutes] = timePart.split(':').map(Number);
+
+      // 创建UTC时间对象（避免时区转换）
+      const timestamp = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+
+      // 创建整点时间键（UTC时间）
+      const hourKey = new Date(Date.UTC(year, month - 1, day, hours, 0));
+
+      const hourKeyStr = hourKey.toISOString();
+
+      if (!hourlyGroups[hourKeyStr]) {
+        hourlyGroups[hourKeyStr] = [];
+      }
+
+      const displValue = parseFloat(row.displ) || 0;
+
+      hourlyGroups[hourKeyStr].push({
+        originalTime: timeStr, // 保留原始时间字符串
+        timestamp: timestamp,
+        displ: displValue
+      });
+
+    } catch (error) {
+      // console.warn(`第${index + 1}行: 时间解析错误`, error.message);
+    }
   });
 
-  // 对每小时的数据进行处理
   const processedData = [];
 
   Object.keys(hourlyGroups).sort().forEach(hourKey => {
     const hourData = hourlyGroups[hourKey];
     const hourDate = new Date(hourKey);
 
-    // 检查是否有整点数据
-    const exactHourData = hourData.find(item =>
-      item.timestamp.getTime() === hourDate.getTime()
-    );
-
-    if (exactHourData) {
-      // 如果有整点数据，使用第一个整点数据
+    // 使用该小时第一个数据（保持数据一致性）
+    if (hourData.length > 0) {
       processedData.push({
-        timestamp: formatTimestamp(exactHourData.timestamp),
-        displ: exactHourData.displ
-      });
-    } else {
-      // 如果没有整点数据，使用该小时第一个数据，时间调整为整点
-      processedData.push({
-        timestamp: formatTimestamp(hourDate),
+        timestamp: formatUTCTimestamp(hourDate), // 使用整点时间
         displ: hourData[0].displ
       });
     }
   });
 
-  console.log(`📊 处理前: ${data.length} 条, 处理后: ${processedData.length} 条`);
+  console.log(`处理前: ${data.length} 条, 处理后: ${processedData.length} 条`);
+  // console.log(processedData)
   return processedData;
 }
 
@@ -135,7 +239,7 @@ function saveProcessedCSV(data) {
     // 检查文件是否存在，如果存在则删除
     if (fs.existsSync(filepath)) {
       fs.unlinkSync(filepath);
-      console.log('🗑️  删除已存在的CSV文件');
+      // console.log('删除已存在的CSV文件');
     }
 
     // CSV文件头
@@ -148,7 +252,7 @@ function saveProcessedCSV(data) {
 
     // 写入文件
     fs.writeFileSync(filepath, csvContent, 'utf8');
-    console.log(`💾 CSV文件已保存（覆写模式）: ${filepath}`);
+    console.log(`CSV文件已保存（覆写模式）: ${filepath}`);
 
     return {
       filename: filename,
@@ -156,7 +260,7 @@ function saveProcessedCSV(data) {
       recordCount: data.length
     };
   } catch (error) {
-    console.error('❌ 保存CSV文件失败:', error.message);
+    console.error('保存CSV文件失败:', error.message);
     throw error;
   }
 }
@@ -171,7 +275,7 @@ function convertToRDA(csvFilePath) {
       // 检查RDA文件是否存在，如果存在则删除
       if (fs.existsSync(rdaFilePath)) {
         fs.unlinkSync(rdaFilePath);
-        console.log('🗑️  删除已存在的RDA文件');
+        // console.log('删除已存在的RDA文件');
       }
 
       // R脚本 - 使用指定的时间格式和时区
@@ -194,7 +298,7 @@ cat("\\n时间范围: ", as.character(range(displ_data$timestamp)), "\\n")
 save(displ_data, file = "${rdaFilePath.replace(/\\/g, '/')}")
 
 cat("成功转换", nrow(displ_data), "条记录到RDA文件\\n")
-cat("RDA文件已保存:", "${rdaFilePath.replace(/\\/g, '/')}\\n")
+# cat("RDA文件已保存:", "${rdaFilePath.replace(/\\/g, '/')}\\n")
 cat("时间格式: %Y-%m-%d %H:%M\\n")
 cat("时区: UTC\\n")
 `;
@@ -210,7 +314,7 @@ cat("时区: UTC\\n")
       const Rscript = '"C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe"';
       const command = `cd /d "${SAVE_PATH}" && ${Rscript} "${rScriptPath}"`;
 
-      console.log('🔄 正在转换为RDA格式...');
+      console.log('正在转换为RDA格式...');
       exec(command, (error, stdout, stderr) => {
         // 清理临时文件
         try {
@@ -226,9 +330,9 @@ cat("时区: UTC\\n")
           return;
         }
 
-        console.log('✅ R脚本输出:', stdout);
+        console.log('R脚本输出:', stdout);
         if (stderr) {
-          console.warn('⚠️ R脚本警告:', stderr);
+          console.warn('R脚本警告:', stderr);
         }
 
         const recordCount = parseInt(stdout.match(/成功转换 (\d+) 条记录/)?.[1] || '0');
@@ -370,6 +474,88 @@ function restoreRScript(rScriptPath) {
 }
 
 // 执行R脚本
+
+// function executeRScript(rScriptPath) {
+//   return new Promise((resolve, reject) => {
+//     try {
+//       const Rscript = '"C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe"';
+//       const command = `cd /d "${path.dirname(rScriptPath)}" && ${Rscript} "${rScriptPath}"`;
+
+//       console.log('🚀 正在执行R脚本...');
+//       console.log('执行命令:', command);
+
+//       exec(command, (error, stdout, stderr) => {
+//         console.log('输出:', stdout);
+//         if (error) {
+//           console.error('❌ R脚本执行失败:', error.message);
+//           if (stderr) console.error('R脚本错误:', stderr);
+//           reject(error);
+//           return;
+//         }
+
+//         console.log('✅ R脚本执行成功');
+//         // console.log('输出:', stdout);
+//         if (stderr) {
+//           console.warn('警告:', stderr);
+//         }
+
+//         resolve(stdout);
+//       });
+//     } catch (error) {
+//       reject(error);
+//     }
+//   });
+// }
+// function executeRScript(rScriptPath) {
+//   return new Promise((resolve, reject) => {
+//     try {
+//       const Rscript = '"C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe"';
+//       const command = `cd /d "${path.dirname(rScriptPath)}" && ${Rscript} "${rScriptPath}"`;
+
+//       console.log('🚀 正在执行R脚本...');
+//       console.log('执行命令:', command);
+
+//       const child = exec(command, { cwd: path.dirname(rScriptPath) });
+
+//       let stdoutData = '';
+//       let stderrData = '';
+
+//       // 实时输出stdout
+//       child.stdout.on('data', (data) => {
+//         process.stdout.write(data); // 实时输出
+//         stdoutData += data;
+//       });
+
+//       // 实时输出stderr
+//       child.stderr.on('data', (data) => {
+//         process.stderr.write(data); // 实时输出
+//         stderrData += data;
+//       });
+
+//       child.on('close', (code) => {
+//         console.log('\n✅ R脚本执行完成，退出码:', code);
+
+//         if (code === 0) {
+//           resolve(stdoutData);
+//         } else {
+//           const error = new Error(`R脚本执行失败，退出码: ${code}`);
+//           error.stdout = stdoutData;
+//           error.stderr = stderrData;
+//           reject(error);
+//         }
+//       });
+
+//       child.on('error', (error) => {
+//         console.error('❌ 启动R脚本失败:', error.message);
+//         reject(error);
+//       });
+
+//     } catch (error) {
+//       reject(error);
+//     }
+//   });
+// }
+
 function executeRScript(rScriptPath) {
   return new Promise((resolve, reject) => {
     try {
@@ -379,28 +565,46 @@ function executeRScript(rScriptPath) {
       console.log('🚀 正在执行R脚本...');
       console.log('执行命令:', command);
 
-      exec(command, (error, stdout, stderr) => {
-        if (error) {
-          console.error('❌ R脚本执行失败:', error.message);
-          if (stderr) console.error('R脚本错误:', stderr);
-          reject(error);
-          return;
-        }
+      const child = exec(command, { cwd: path.dirname(rScriptPath) });
 
-        console.log('✅ R脚本执行成功');
-        console.log('输出:', stdout);
-        if (stderr) {
-          console.warn('警告:', stderr);
-        }
+      let stdoutData = '';
+      let stderrData = '';
 
-        resolve(stdout);
+      // 实时输出stdout
+      child.stdout.on('data', (data) => {
+        process.stdout.write(data); // 实时输出
+        stdoutData += data;
       });
+
+      // 实时输出stderr
+      child.stderr.on('data', (data) => {
+        process.stderr.write(data); // 实时输出
+        stderrData += data;
+      });
+
+      child.on('close', (code) => {
+        // console.log('\n✅ R脚本执行完成，退出码:', code);
+
+        if (code === 0) {
+          resolve(stdoutData);
+        } else {
+          const error = new Error(`R脚本执行失败，退出码: ${code}`);
+          error.stdout = stdoutData;
+          error.stderr = stderrData;
+          reject(error);
+        }
+      });
+
+      child.on('error', (error) => {
+        console.error('❌ 启动R脚本失败:', error.message);
+        reject(error);
+      });
+
     } catch (error) {
       reject(error);
     }
   });
 }
-
 // 检测日志文件中是否存在"OOA detected"
 // function checkOOADetected() {
 //   try {
@@ -507,14 +711,15 @@ app.get('/displ_file', async (req, res) => {
     await modifyRScript(R_SCRIPT_PATH, timeRange.firstTimestamp, fiveDaysBeforeLast);
 
     // 执行R脚本
-    const rScriptOutput = await executeRScript(R_SCRIPT_PATH);
+    const rScriptResult = await executeRScript(R_SCRIPT_PATH);
+    console.log("R脚本执行完毕！")
 
     // 恢复R脚本到原始状态
-    await restoreRScript(R_SCRIPT_PATH);
-
+    // await restoreRScript(R_SCRIPT_PATH);
+    const rt_json = path.join(TARGET_PATH, 'rt_data.json');
+    const data = await fs.promises.readFile(rt_json, 'utf8')
     res.json({
       success: true,
-      originalCount: result.rowCount,
       processedCount: rdaInfo.recordCount,
       timeRange: {
         start: timeRange.firstTimestamp,
@@ -523,18 +728,18 @@ app.get('/displ_file', async (req, res) => {
       },
       rdaFile: targetRdaPath,
       rScriptExecuted: true,
-      rScriptOutput: rScriptOutput,
+      rt_json: JSON.parse(data),
     });
 
   } catch (error) {
     console.error('处理失败:', error);
 
     // 尝试恢复R脚本（如果修改过）
-    try {
-      await restoreRScript(R_SCRIPT_PATH);
-    } catch (restoreError) {
-      console.error('恢复R脚本失败:', restoreError.message);
-    }
+    // try {
+    //   await restoreRScript(R_SCRIPT_PATH);
+    // } catch (restoreError) {
+    //   console.error('恢复R脚本失败:', restoreError.message);
+    // }
 
     res.status(500).json({
       success: false,
@@ -543,7 +748,8 @@ app.get('/displ_file', async (req, res) => {
       ooaDetected: false
     });
   }
-});
+}
+);
 // 根据设备ID查询crack数据并处理为RDA
 app.get('/api/crack/:deviceId', async (req, res) => {
   const { deviceId } = req.params;
@@ -651,9 +857,9 @@ app.get('/api/crack/:deviceId', async (req, res) => {
 
 
 app.listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
-  console.log('💾 文件保存路径:', SAVE_PATH);
-  console.log('🎯 目标路径:', TARGET_PATH);
-  console.log('📝 R脚本路径:', R_SCRIPT_PATH);
-  console.log('🚀 可用接口: GET /api/crack/:deviceId');
+  // console.log('Server running on http://localhost:3000');
+  // console.log('💾 文件保存路径:', SAVE_PATH);
+  // console.log('🎯 目标路径:', TARGET_PATH);
+  // console.log('📝 R脚本路径:', R_SCRIPT_PATH);
+  // console.log('🚀 可用接口: GET /api/crack/:deviceId');
 });

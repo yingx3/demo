@@ -22,6 +22,8 @@
     "gif.js": "^0.2.0",
     "i": "^0.3.7",
     "mitt": "^3.0.1",
+    "moment": "^2.30.1",
+    "moment-timezone": "^0.6.0",
     "multer": "^2.0.2",
     "pg": "^8.16.3",
     "pinia": "^2.2.8",
@@ -32,7 +34,8 @@
     "vue-router": "^4.4.5",
     "wellknown": "^0.5.0",
     "wkb": "^0.0.1",
-    "wkx": "^0.5.0"
+    "wkx": "^0.5.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/sockjs-client": "^1.5.4",

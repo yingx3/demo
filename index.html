@@ -1,24 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="src/assets/img/应急管理局_1.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>冰川区灾害链判识-评估-预警-断链综合防控系统</title>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-      }
-    </style>
-    <script
-      rel="stylesheet"
-      href="/cesium1.99/Build/Cesium/Widgets/widgets.css"
-    ></script>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
-    <script src="/lib/heatmap/heatmap.js"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="src/assets/img/应急管理局_1.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>冰川区灾害链判识-评估-预警-断链综合防控系统</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+  <!-- 正确加载 CSS -->
+  <link rel="stylesheet" href="/cesium1.99/Build/Cesium/Widgets/widgets.css" />
+
+  <style>
+    /* 你可以在此处添加其他自定义样式 */
+    .cesium-infoBox {
+      right: 400px !important;
+      top: 90px !important;
+      height: 80px !important;
+      width: 230px !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+  <script type="module" src="/src/main.js"></script>
+  <script src="/lib/heatmap/heatmap.js"></script>
+</body>
+
 </html>

@@ -275,12 +275,14 @@ import { useSquareStore } from '../stores/squareStore'
 import { emitter } from '../eventBus'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
+// import { emit } from 'process'
 
 let $emit = defineEmits([
   'openLayers',
   'timeSelected',
   'yjLayers',
   'floodLayers',
+  'forecast',
 ])
 // 获取 store 实例
 const squareStore = useSquareStore()
@@ -570,7 +572,7 @@ const triggerUpload = () => {
 const handleFileChange = (file) => {
   fileName_inverseV.value = file.name
   // 这里可以添加文件处理逻辑
-  console.log('已选择文件:', file.name)
+  // console.log('已选择文件:', file.name)
   // 自动触发上传（如需手动上传可删除这部分）
   uploadRef.value.submit()
 }
@@ -586,38 +588,47 @@ const handleFileChange = (file) => {
 //     console.error('执行失败:', error.response?.data || error.message)
 //   }
 // }
-const submit_inverseVl = async () => {
-  try {
-    ElMessage({ message: '运行中!(约2分钟)', type: 'success', duration: 120000 })
-    const response = await axios.get('node/displ_file')
-
-    console.log('执行结果:', response.data)
-    // if (response.data.ooaDetected == false) {
-    //   alert("并未出现滑坡！")
-    // } else {
-    //   alert("请您及时关注预警！！！")
-    // }
-
-  } catch (error) {
-    console.error('执行失败:', error.response?.data || error.message)
-  }
-}
 const submit_inverseV = async () => {
   try {
-    ElMessage({ message: '运行中!(约2分钟)', type: 'success', duration: 120000 })
-    const response = await axios.get('node/api/crack/ZXPRTL5002024A0454')
+    ElMessage({ message: '运行中!', type: 'success' })
+    const response = await axios.get('node/displ_file')
 
-    console.log('执行结果:', response.data)
-    if (response.data.ooaDetected==false){
-      alert("并未出现滑坡！")
-    }else{
-      alert("请您及时关注预警！！！")
-    }
-
+    console.log('执行结果:', response.data.rt_json)
+    const rt = response.data.rt_json.rt
+    const time = response.data.rt_json.time
+    // if (rt < 24) {
+    //   console.log("红色警报！")
+    // } else if (rt >= 24 && rt < 48) {
+    //   console.log("橙色警报！")
+    // }
+    // else if (rt >= 48 && rt < 72) {
+    //   console.log("黄色警报!")
+    // } else if (rt >= 72 && rt < 96) {
+    //   console.log("蓝色警报！")
+    // } else {
+    //   console.log("未有险情！")
+    // }
+    $emit("forecast",rt,time)
   } catch (error) {
     console.error('执行失败:', error.response?.data || error.message)
   }
 }
+// const submit_inverseV = async () => {
+//   try {
+//     ElMessage({ message: '运行中!(约2分钟)', type: 'success', duration: 120000 })
+//     const response = await axios.get('node/api/crack/ZXPRTL5002024A0454')
+
+//     console.log('执行结果:', response.data)
+//     if (response.data.ooaDetected==false){
+//       alert("并未出现滑坡！")
+//     }else{
+//       alert("请您及时关注预警！！！")
+//     }
+
+//   } catch (error) {
+//     console.error('执行失败:', error.response?.data || error.message)
+//   }
+// }
 // const submit_inverseV = async () => {
 //   const rscriptPath = '"C:\\Program Files\\R\\R-4.3.1\\bin\\x64\\Rscript.exe"'
 //   const targetDir = 'E:/practice/demo/PFTF_1.0.0/PFTF-PFTF_1.0.0'

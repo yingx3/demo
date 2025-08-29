@@ -2,287 +2,123 @@
   <div class="top-container">
     <div id="cesiumContainer"></div>
     <zh-jc></zh-jc>
-    <le-th
-      @openLayers="openLayers"
-      @timeSelected="handleTimeSelected"
-      @yjLayers="yjLayers"
-      @floodLayers="floodLayers"
-    ></le-th>
-    <zy-ml
-      :time="selectedTime"
-      @checkedLayers="checkedLayers"
-      :checked-ids="selectedIds"
-    ></zy-ml>
+    <le-th @openLayers="openLayers" @timeSelected="handleTimeSelected" @yjLayers="yjLayers" @floodLayers="floodLayers"
+      @forecast="foreCast"></le-th>
+    <zy-ml :time="selectedTime" @checkedLayers="checkedLayers" :checked-ids="selectedIds"></zy-ml>
     <div class="control">
       <div class="control_specific">
-        <a href="#" @click="magnify"
-          ><img src="./assets/img/magnify.png" alt=""
-        /></a>
-        <a href="#" @click="shrink"
-          ><img src="./assets/img/shrink.png" alt=""
-        /></a>
+        <a href="#" @click="magnify"><img src="./assets/img/magnify.png" alt="" /></a>
+        <a href="#" @click="shrink"><img src="./assets/img/shrink.png" alt="" /></a>
         <a href="#" @click="move"><img src="./assets/img/move.png" alt="" /></a>
-        <a href="#" @click="measure"
-          ><img src="./assets/img/measure.png" alt=""
-        /></a>
-        <a href="#" @click="polygon"
-          ><img src="./assets/img/polygon.png" alt=""
-        /></a>
+        <a href="#" @click="measure"><img src="./assets/img/measure.png" alt="" /></a>
+        <a href="#" @click="polygon"><img src="./assets/img/polygon.png" alt="" /></a>
         <a href="#" @click="position">
-          <img src="./assets/img/position.png" alt=""
-        /></a>
+          <img src="./assets/img/position.png" alt="" /></a>
         <a href="#" @click="addattribute">
-          <img src="./assets/img/flag.png" alt=""
-        /></a>
+          <img src="./assets/img/flag.png" alt="" /></a>
         <a href="#" @click="searchdisaster">
-          <img src="./assets/img/table.png" alt=""
-        /></a>
+          <img src="./assets/img/table.png" alt="" /></a>
         <a href="#" @click="cleanentity">
-          <img src="./assets/img/clean.png" alt=""
-        /></a>
+          <img src="./assets/img/clean.png" alt="" /></a>
         <a href="#"> <img src="./assets/img/roll.png" alt="" /></a>
 
-        <el-dialog
-          v-model="dialogVisible_disaster"
-          title="添加属性"
-          width="500"
-        >
+        <el-dialog v-model="dialogVisible_disaster" title="添加属性" width="500">
           <el-form :model="form">
-            <el-form-item label="名称"
-              ><el-input v-model="form.name"></el-input></el-form-item
-            ><el-form-item label="断层密度"
-              ><el-input v-model="form.dcmd"></el-input></el-form-item
-            ><el-form-item label="隆升速率"
-              ><el-input v-model="form.lssl"></el-input></el-form-item
-            ><el-form-item label="坡度"
-              ><el-input v-model="form.slope"></el-input></el-form-item
-            ><el-form-item label="河流下切速率"
-              ><el-input v-model="form.hlxqsl"></el-input></el-form-item
-            ><el-form-item label="坡体后端汇水面积"
-              ><el-input v-model="form.pthhsmj"></el-input></el-form-item
-            ><el-form-item label="高差"
-              ><el-input v-model="form.elevation"></el-input></el-form-item
-            ><el-form-item label="潜在滑坡体积规模"
-              ><el-select v-model="form.scale"
-                ><el-option label="小型" value="small" /><el-option
-                  label="中型"
-                  value="middle" /><el-option
-                  label="大型"
-                  value="big" /><el-option
-                  label="特大型"
-                  value="heavy" /></el-select
-            ></el-form-item>
-            <el-form-item
-              ><el-button @click="submit_disaster">提交</el-button
-              ><el-button @click="dialogVisible_disaster = false"
-                >取消</el-button
-              ></el-form-item
-            ></el-form
-          ></el-dialog
-        >
-        <el-dialog
-          v-model="dialogVisible_searchdisaster"
-          title="查询属性"
-          width="500"
-        >
+            <el-form-item label="名称"><el-input v-model="form.name"></el-input></el-form-item><el-form-item
+              label="断层密度"><el-input v-model="form.dcmd"></el-input></el-form-item><el-form-item label="隆升速率"><el-input
+                v-model="form.lssl"></el-input></el-form-item><el-form-item label="坡度"><el-input
+                v-model="form.slope"></el-input></el-form-item><el-form-item label="河流下切速率"><el-input
+                v-model="form.hlxqsl"></el-input></el-form-item><el-form-item label="坡体后端汇水面积"><el-input
+                v-model="form.pthhsmj"></el-input></el-form-item><el-form-item label="高差"><el-input
+                v-model="form.elevation"></el-input></el-form-item><el-form-item label="潜在滑坡体积规模"><el-select
+                v-model="form.scale"><el-option label="小型" value="small" /><el-option label="中型"
+                  value="middle" /><el-option label="大型" value="big" /><el-option label="特大型"
+                  value="heavy" /></el-select></el-form-item>
+            <el-form-item><el-button @click="submit_disaster">提交</el-button><el-button
+                @click="dialogVisible_disaster = false">取消</el-button></el-form-item></el-form></el-dialog>
+        <el-dialog v-model="dialogVisible_searchdisaster" title="查询属性" width="500">
           <el-form :model="form_disastersearch">
             <el-form-item label="区划查询" style="width: 500px">
               <div class="flex-container">
-                <el-select v-model="form_disastersearch.location"
-                  ><el-option label="林芝市" value="林芝市"> </el-option
-                  ><el-option label="朗县" value="朗县"> </el-option
-                  ><el-option label="察隅县" value="察隅县"> </el-option
-                  ><el-option label="工布江达县" value="工布江达县"> </el-option
-                  ><el-option label="米林县" value="米林县"> </el-option
-                  ><el-option label="墨脱县" value="墨脱县"> </el-option
-                  ><el-option label="波密县" value="波密县">
-                  </el-option></el-select
-                ><el-button
-                  @click="locationsearch"
-                  v-on:click.middle="locationsearchqxz"
-                  >查询</el-button
-                >
-              </div></el-form-item
-            >
+                <el-select v-model="form_disastersearch.location"><el-option label="林芝市" value="林芝市">
+                  </el-option><el-option label="朗县" value="朗县"> </el-option><el-option label="察隅县" value="察隅县">
+                  </el-option><el-option label="工布江达县" value="工布江达县"> </el-option><el-option label="米林县" value="米林县">
+                  </el-option><el-option label="墨脱县" value="墨脱县"> </el-option><el-option label="波密县" value="波密县">
+                  </el-option></el-select><el-button @click="locationsearch"
+                  v-on:click.middle="locationsearchqxz">查询</el-button>
+              </div>
+            </el-form-item>
             <el-form-item label="属性查询" style="width: 500px">
               <div class="flex-container">
                 <el-select v-model="form_disastersearch.attribute">
-                  <el-option label="地点" value="location"></el-option
-                  ><el-option label="坡度" value="slope"></el-option
-                  ><el-option label="规模" value="scale"></el-option></el-select
-                ><el-input
-                  v-model="form_disastersearch.attributevalue"
-                ></el-input
-                ><el-button @click="attributesearch">查询</el-button>
-              </div></el-form-item
-            >
+                  <el-option label="地点" value="location"></el-option><el-option label="坡度"
+                    value="slope"></el-option><el-option label="规模" value="scale"></el-option></el-select><el-input
+                  v-model="form_disastersearch.attributevalue"></el-input><el-button
+                  @click="attributesearch">查询</el-button>
+              </div>
+            </el-form-item>
             <el-button style="margin-left: 284px">清空查询条件</el-button>
           </el-form>
         </el-dialog>
 
-        <el-dialog
-          v-model="dialogVisible_checkattribute"
-          title="属性表"
-          width="860"
-        >
+        <el-dialog v-model="dialogVisible_checkattribute" title="属性表" width="860">
           <div class="dynamic-table-container">
             <!-- 搜索和过滤区域 -->
             <div class="table-controls">
-              <el-input
-                v-model="searchKeyword"
-                placeholder="输入关键字搜索"
-                style="width: 300px; margin-right: 20px"
-              />
+              <el-input v-model="searchKeyword" placeholder="输入关键字搜索" style="width: 300px; margin-right: 20px" />
               <el-button type="primary">搜索</el-button>
             </div>
 
             <!-- 数据表格 -->
-            <el-table
-              v-loading="loading"
-              :data="tableData"
-              stripe
-              style="width: 100%"
-            >
-              <el-table-column
-                prop="name"
-                label="名称"
-                width="80"
-                sortable="custom"
-                align="center"
-              />
-              <el-table-column
-                prop="dcmd"
-                label="断层密度"
-                width="80"
-                align="center"
-              />
-              <el-table-column
-                prop="lssl"
-                label="隆升速率"
-                width="80"
-                align="center"
-              />
-              <el-table-column
-                prop="slope"
-                label="坡度"
-                width="80"
-                align="center"
-              />
+            <el-table v-loading="loading" :data="tableData" stripe style="width: 100%">
+              <el-table-column prop="name" label="名称" width="80" sortable="custom" align="center" />
+              <el-table-column prop="dcmd" label="断层密度" width="80" align="center" />
+              <el-table-column prop="lssl" label="隆升速率" width="80" align="center" />
+              <el-table-column prop="slope" label="坡度" width="80" align="center" />
 
-              <el-table-column
-                prop="hlxqsl"
-                label="河流下切速率"
-                width="140"
-                align="center"
-              />
+              <el-table-column prop="hlxqsl" label="河流下切速率" width="140" align="center" />
 
-              <el-table-column
-                prop="pthhsmj"
-                label="坡体后汇水面积"
-                width="140"
-                align="center"
-              />
+              <el-table-column prop="pthhsmj" label="坡体后汇水面积" width="140" align="center" />
 
-              <el-table-column
-                prop="elevation"
-                label="高差"
-                width="80"
-                align="center"
-              />
+              <el-table-column prop="elevation" label="高差" width="80" align="center" />
 
-              <el-table-column
-                prop="scale"
-                label="潜在滑坡体积规模"
-                width="140"
-                align="center"
-              />
+              <el-table-column prop="scale" label="潜在滑坡体积规模" width="140" align="center" />
             </el-table>
 
             <!-- 分页组件 -->
             <div class="pagination-container">
-              <el-pagination
-                v-model:current-page="pagination.currentPage"
-                v-model:page-size="pagination.pageSize"
-                :page-sizes="[5, 10, 20, 50]"
-                layout="total, sizes, prev, pager, next, jumper"
-              />
+              <el-pagination v-model:current-page="pagination.currentPage" v-model:page-size="pagination.pageSize"
+                :page-sizes="[5, 10, 20, 50]" layout="total, sizes, prev, pager, next, jumper" />
             </div>
 
             <!-- 错误提示 -->
-            <el-alert
-              v-if="errorMessage"
-              :title="errorMessage"
-              type="error"
-              show-icon
-              closable
-              class="error-alert"
-            />
+            <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon closable class="error-alert" />
           </div>
         </el-dialog>
 
-        <el-dialog
-          v-model="dialogVisible_checkqxz"
-          title="站点信息"
-          width="415"
-        >
+        <el-dialog v-model="dialogVisible_checkqxz" title="站点信息" width="415">
           <div class="dynamic-table-container">
             <!-- 搜索和过滤区域 -->
             <div class="table-controls">
-              <el-input
-                v-model="searchKeyword"
-                placeholder="输入关键字搜索"
-                style="width: 300px; margin-right: 20px"
-              />
+              <el-input v-model="searchKeyword" placeholder="输入关键字搜索" style="width: 300px; margin-right: 20px" />
               <el-button type="primary">搜索</el-button>
             </div>
 
             <!-- 数据表格 -->
-            <el-table
-              v-loading="loading"
-              :data="tableData_qxz"
-              stripe
-              style="width: 100%"
-            >
-              <el-table-column
-                prop="z_name"
-                label="站点名称"
-                width="80"
-                sortable="custom"
-                align="center"
-              />
-              <el-table-column
-                prop="jyl"
-                label="降雨量"
-                width="80"
-                align="center"
-              />
-              <el-table-column
-                prop="wind"
-                label="风速"
-                width="80"
-                align="center"
-              />
+            <el-table v-loading="loading" :data="tableData_qxz" stripe style="width: 100%">
+              <el-table-column prop="z_name" label="站点名称" width="80" sortable="custom" align="center" />
+              <el-table-column prop="jyl" label="降雨量" width="80" align="center" />
+              <el-table-column prop="wind" label="风速" width="80" align="center" />
             </el-table>
 
             <!-- 分页组件 -->
             <div class="pagination-container">
-              <el-pagination
-                v-model:current-page="pagination.currentPage"
-                v-model:page-size="pagination.pageSize"
-                :page-sizes="[5, 10, 20, 50]"
-                layout="total, sizes, prev, pager, next, jumper"
-              />
+              <el-pagination v-model:current-page="pagination.currentPage" v-model:page-size="pagination.pageSize"
+                :page-sizes="[5, 10, 20, 50]" layout="total, sizes, prev, pager, next, jumper" />
             </div>
 
             <!-- 错误提示 -->
-            <el-alert
-              v-if="errorMessage"
-              :title="errorMessage"
-              type="error"
-              show-icon
-              closable
-              class="error-alert"
-            />
+            <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon closable class="error-alert" />
           </div>
         </el-dialog>
       </div>
@@ -437,10 +273,10 @@ onMounted(async () => {
     homeButton: false, //隐藏主页
     sceneModePicker: false, //隐藏投影方式
     navigationHelpButton: false, //隐藏帮助按钮
-    fullscreenButton: false, //隐藏全屏按钮s
+    fullscreenButton: false, //隐藏全屏按钮
     animation: false, //隐藏动画控件
     timeline: false, //隐藏时间控件
-    infoBox: false,
+    infoBox: true,
   })
   // initRightClickHandler()
   // console.log(pnames.value)
@@ -1012,6 +848,78 @@ const floodLayers = () => {
     }
   })
   // console.log('已跳转！！！')
+}
+
+const foreCast = (rt, time) => {
+
+  let picture
+  let integer = Math.round(rt);
+  if (rt>0&&rt < 24) {
+    // alert("红色警报！")
+    picture = 'warning_red'
+  } else if (rt >= 24 && rt < 48) {
+    // alert("橙色警报！")
+    picture = 'warning_orange'
+  }
+  else if (rt >= 48 && rt < 72) {
+    // alert("黄色警报!")
+    picture = 'warning_yellow'
+  } else if (rt >= 72 && rt < 96) {
+    // alert("蓝色警报！")
+    picture = 'warning_blue'
+  } else {
+    // alert("未有险情！")
+    picture = 'safe'
+  }
+  // console.log(rt, time)
+  // 相机飞到目标位置
+  viewer.value.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(95.222479, 30.067881, 10565),
+    orientation: {
+      heading: Cesium.Math.toRadians(250.0), // 朝向
+      pitch: Cesium.Math.toRadians(-35.4),   // 俯仰
+      roll: 0.0,                             // 滚转
+    },
+    complete: () => {
+      // 检测并移除已有实体
+      const entityId = 'targetEntity';
+      const existingEntity = viewer.value.entities.getById(entityId);
+
+      if (existingEntity) {
+        viewer.value.entities.remove(existingEntity);
+      }
+      // 飞行结束后添加实体
+
+      const entity = viewer.value.entities.add({
+        id: 'targetEntity',
+        name: "预警信息",
+        position: Cesium.Cartesian3.fromDegrees(95.137369, 30.038497, 10556),
+        billboard: {
+          image: `CS/img/${picture}.png`,
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          width: 32,
+          height: 32,
+        },
+        description: `
+    <div>
+      <p>预计还有${integer}小时发生滑坡，于${time}进行预测！</p>
+    </div>
+  `,
+      });
+
+      // 点击 billboard 时弹出信息框
+      const handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas);
+      handler.setInputAction((movement) => {
+        const picked = viewer.value.scene.pick(movement.position);
+        console.log(picked); // 调试输出
+        if (Cesium.defined(picked) && picked.id === entity) {
+          viewer.value.selectedEntity = entity;  // 使用 Cesium 内置 InfoBox 弹窗
+        }
+      }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+    }
+  })
 }
 //获取数据
 const addLayer1 = () => {
@@ -3069,9 +2977,9 @@ const addattribute = () => {
 
     // console.log(cartographic)
     position_point.value = position
-    ;(dialogVisible_disaster.value = true),
-      // 自动移除事件监听（单次点击模式）
-      handler.destroy()
+      ; (dialogVisible_disaster.value = true),
+        // 自动移除事件监听（单次点击模式）
+        handler.destroy()
   }, Cesium.ScreenSpaceEventType.LEFT_DOWN)
 }
 const submit_disaster = () => {
@@ -3237,6 +3145,7 @@ const cleanentity = () => {
   display: flex;
   gap: 30px;
 }
+
 .top-container {
   /* max-height: 947px; */
   position: relative;
@@ -3248,6 +3157,7 @@ const cleanentity = () => {
   justify-self: center;
   align-content: center; */
 }
+
 #cesiumContainer {
   position: absolute;
   left: 0px;
@@ -3257,9 +3167,11 @@ const cleanentity = () => {
   /* padding: 16px; */
   /* box-sizing: border-box; */
 }
+
 .cesium-viewer-bottom {
   display: none;
 }
+
 /* 媒体查询设置显示比例 */
 @media (max-height: 911px) {
   .top-container {
@@ -3267,24 +3179,28 @@ const cleanentity = () => {
     transform-origin: top;
   }
 }
+
 @media (max-height: 947px) {
   .top-container {
     transform: scale(1);
     transform-origin: top;
   }
 }
+
 @media (max-height: 956.55px) {
   .top-container {
     transform: scale(0.999);
     transform-origin: top;
   }
 }
+
 @media (max-height: 1080px) {
   .top-container {
     transform: scale(1);
     transform-origin: top;
   }
 }
+
 /* @media (max-width: 840px) and (max-height: 600px) {
   .top-container {
     transform: scale(0.5);
@@ -3295,6 +3211,7 @@ const cleanentity = () => {
 :deep(.el-table__header) {
   width: 350px !important;
 }
+
 :deep(.el-table__body) {
   width: 350px !important;
 }
@@ -3310,7 +3227,14 @@ const cleanentity = () => {
   right: 350px;
   align-items: center;
 }
+
 .top-container .control .control_specific img {
   transform: scale(0.7);
+}
+
+.cesium-infoBox {
+  right: 450px !important;
+  top: 460px !important;
+  // height: 100px !important;
 }
 </style>
