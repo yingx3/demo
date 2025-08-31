@@ -7,6 +7,7 @@
       @timeSelected="handleTimeSelected"
       @yjLayers="yjLayers"
       @floodLayers="floodLayers"
+      @forecast="foreCast"
     ></le-th>
     <zy-ml
       :time="selectedTime"
@@ -102,47 +103,39 @@
                   v-on:click.middle="locationsearchqxz"
                   >查询</el-button
                 >
-              </div></el-form-item
-            >
+              </div>
+            </el-form-item>
             <el-form-item label="属性查询" style="width: 500px">
               <div class="flex-container">
                 <el-select v-model="form_disastersearch.attribute">
                   <el-option label="地点" value="location"></el-option
                   ><el-option label="坡度" value="slope"></el-option
-                  ><el-option label="规模" value="scale"></el-option>
-                  <el-option label="降雨量" value="jyl"></el-option>
-                  <el-option label="风速" value="wind"></el-option></el-select
+                  ><el-option label="规模" value="scale"></el-option></el-select
                 ><el-input
                   v-model="form_disastersearch.attributevalue"
                 ></el-input
-                ><el-button
-                  @click="attributesearch_disaster"
-                  v-on:click.middle="attributesearch_qxz"
-                  >查询</el-button
-                >
-              </div></el-form-item
-            >
-            <!-- <el-button style="margin-left: 284px">清空查询条件</el-button> -->
+                ><el-button @click="attributesearch">查询</el-button>
+              </div>
+            </el-form-item>
+            <el-button style="margin-left: 284px">清空查询条件</el-button>
           </el-form>
         </el-dialog>
 
         <el-dialog
           v-model="dialogVisible_checkattribute"
-          title="灾害点属性表"
+          title="属性表"
           width="860"
         >
           <div class="dynamic-table-container">
             <!-- 搜索和过滤区域 -->
-            <!-- <div class="table-controls">
+            <div class="table-controls">
               <el-input
                 v-model="searchKeyword"
                 placeholder="输入关键字搜索"
                 style="width: 300px; margin-right: 20px"
               />
-              <el-button type="primary" @click="search_dis_location"
-                >搜索</el-button
-              >
-            </div> -->
+              <el-button type="primary">搜索</el-button>
+            </div>
 
             <!-- 数据表格 -->
             <el-table
@@ -207,24 +200,24 @@
             </el-table>
 
             <!-- 分页组件 -->
-            <!-- <div class="pagination-container">
+            <div class="pagination-container">
               <el-pagination
                 v-model:current-page="pagination.currentPage"
                 v-model:page-size="pagination.pageSize"
                 :page-sizes="[5, 10, 20, 50]"
                 layout="total, sizes, prev, pager, next, jumper"
               />
-            </div> -->
+            </div>
 
             <!-- 错误提示 -->
-            <!-- <el-alert
+            <el-alert
               v-if="errorMessage"
               :title="errorMessage"
               type="error"
               show-icon
               closable
               class="error-alert"
-            /> -->
+            />
           </div>
         </el-dialog>
 
@@ -235,14 +228,15 @@
         >
           <div class="dynamic-table-container">
             <!-- 搜索和过滤区域 -->
-            <!-- <div class="table-controls">
+            <div class="table-controls">
               <el-input
                 v-model="searchKeyword"
                 placeholder="输入关键字搜索"
                 style="width: 300px; margin-right: 20px"
               />
               <el-button type="primary">搜索</el-button>
-            </div> -->
+            </div>
+            -->
 
             <!-- 数据表格 -->
             <el-table
@@ -273,14 +267,14 @@
             </el-table>
 
             <!-- 分页组件 -->
-            <!-- <div class="pagination-container">
+            <div class="pagination-container">
               <el-pagination
                 v-model:current-page="pagination.currentPage"
                 v-model:page-size="pagination.pageSize"
                 :page-sizes="[5, 10, 20, 50]"
                 layout="total, sizes, prev, pager, next, jumper"
               />
-            </div> -->
+            </div>
 
             <!-- 错误提示 -->
             <el-alert
@@ -445,10 +439,10 @@ onMounted(async () => {
     homeButton: false, //隐藏主页
     sceneModePicker: false, //隐藏投影方式
     navigationHelpButton: false, //隐藏帮助按钮
-    fullscreenButton: false, //隐藏全屏按钮s
+    fullscreenButton: false, //隐藏全屏按钮
     animation: false, //隐藏动画控件
     timeline: false, //隐藏时间控件
-    infoBox: false,
+    infoBox: true,
   })
   // initRightClickHandler()
   // console.log(pnames.value)
@@ -1040,6 +1034,77 @@ const floodLayers = () => {
     }
   })
   // console.log('已跳转！！！')
+}
+
+const foreCast = (rt, time) => {
+  let picture
+  let integer = Math.round(rt)
+  if (rt > 0 && rt < 24) {
+    // alert("红色警报！")
+    picture = 'warning_red'
+  } else if (rt >= 24 && rt < 48) {
+    // alert("橙色警报！")
+    picture = 'warning_orange'
+  } else if (rt >= 48 && rt < 72) {
+    // alert("黄色警报!")
+    picture = 'warning_yellow'
+  } else if (rt >= 72 && rt < 96) {
+    // alert("蓝色警报！")
+    picture = 'warning_blue'
+  } else {
+    // alert("未有险情！")
+    picture = 'safe'
+  }
+  // console.log(rt, time)
+  // 相机飞到目标位置
+  viewer.value.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(95.222479, 30.067881, 10565),
+    orientation: {
+      heading: Cesium.Math.toRadians(250.0), // 朝向
+      pitch: Cesium.Math.toRadians(-35.4), // 俯仰
+      roll: 0.0, // 滚转
+    },
+    complete: () => {
+      // 检测并移除已有实体
+      const entityId = 'targetEntity'
+      const existingEntity = viewer.value.entities.getById(entityId)
+
+      if (existingEntity) {
+        viewer.value.entities.remove(existingEntity)
+      }
+      // 飞行结束后添加实体
+
+      const entity = viewer.value.entities.add({
+        id: 'targetEntity',
+        name: '预警信息',
+        position: Cesium.Cartesian3.fromDegrees(95.137369, 30.038497, 10556),
+        billboard: {
+          image: `CS/img/${picture}.png`,
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          width: 32,
+          height: 32,
+        },
+        description: `
+    <div>
+      <p>预计还有${integer}小时发生滑坡，于${time}进行预测！</p>
+    </div>
+  `,
+      })
+
+      // 点击 billboard 时弹出信息框
+      const handler = new Cesium.ScreenSpaceEventHandler(
+        viewer.value.scene.canvas
+      )
+      handler.setInputAction(movement => {
+        const picked = viewer.value.scene.pick(movement.position)
+        console.log(picked) // 调试输出
+        if (Cesium.defined(picked) && picked.id === entity) {
+          viewer.value.selectedEntity = entity // 使用 Cesium 内置 InfoBox 弹窗
+        }
+      }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+    },
+  })
 }
 //获取数据
 const addLayer1 = () => {
@@ -3390,6 +3455,7 @@ const cleanentity = () => {
   display: flex;
   gap: 30px;
 }
+
 .top-container {
   /* max-height: 947px; */
   position: relative;
@@ -3401,6 +3467,7 @@ const cleanentity = () => {
   justify-self: center;
   align-content: center; */
 }
+
 #cesiumContainer {
   position: absolute;
   left: 0px;
@@ -3410,9 +3477,11 @@ const cleanentity = () => {
   /* padding: 16px; */
   /* box-sizing: border-box; */
 }
+
 .cesium-viewer-bottom {
   display: none;
 }
+
 /* 媒体查询设置显示比例 */
 @media (max-height: 911px) {
   .top-container {
@@ -3420,24 +3489,28 @@ const cleanentity = () => {
     transform-origin: top;
   }
 }
+
 @media (max-height: 947px) {
   .top-container {
     transform: scale(1);
     transform-origin: top;
   }
 }
+
 @media (max-height: 956.55px) {
   .top-container {
     transform: scale(0.999);
     transform-origin: top;
   }
 }
+
 @media (max-height: 1080px) {
   .top-container {
     transform: scale(1);
     transform-origin: top;
   }
 }
+
 /* @media (max-width: 840px) and (max-height: 600px) {
   .top-container {
     transform: scale(0.5);
@@ -3448,6 +3521,7 @@ const cleanentity = () => {
 :deep(.el-table__header) {
   width: 350px !important;
 }
+
 :deep(.el-table__body) {
   width: 350px !important;
 }
@@ -3463,7 +3537,14 @@ const cleanentity = () => {
   right: 350px;
   align-items: center;
 }
+
 .top-container .control .control_specific img {
   transform: scale(0.7);
+}
+
+.cesium-infoBox {
+  right: 450px !important;
+  top: 460px !important;
+  // height: 100px !important;
 }
 </style>
