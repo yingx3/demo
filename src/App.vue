@@ -109,32 +109,40 @@
                 <el-select v-model="form_disastersearch.attribute">
                   <el-option label="地点" value="location"></el-option
                   ><el-option label="坡度" value="slope"></el-option
-                  ><el-option label="规模" value="scale"></el-option></el-select
+                  ><el-option label="规模" value="scale"></el-option>
+                  <el-option label="降雨量" value="jyl"></el-option>
+                  <el-option label="风速" value="wind"></el-option></el-select
                 ><el-input
                   v-model="form_disastersearch.attributevalue"
                 ></el-input
-                ><el-button @click="attributesearch">查询</el-button>
+                ><el-button
+                  @click="attributesearch_disaster"
+                  v-on:click.middle="attributesearch_qxz"
+                  >查询</el-button
+                >
               </div></el-form-item
             >
-            <el-button style="margin-left: 284px">清空查询条件</el-button>
+            <!-- <el-button style="margin-left: 284px">清空查询条件</el-button> -->
           </el-form>
         </el-dialog>
 
         <el-dialog
           v-model="dialogVisible_checkattribute"
-          title="属性表"
+          title="灾害点属性表"
           width="860"
         >
           <div class="dynamic-table-container">
             <!-- 搜索和过滤区域 -->
-            <div class="table-controls">
+            <!-- <div class="table-controls">
               <el-input
                 v-model="searchKeyword"
                 placeholder="输入关键字搜索"
                 style="width: 300px; margin-right: 20px"
               />
-              <el-button type="primary">搜索</el-button>
-            </div>
+              <el-button type="primary" @click="search_dis_location"
+                >搜索</el-button
+              >
+            </div> -->
 
             <!-- 数据表格 -->
             <el-table
@@ -199,24 +207,24 @@
             </el-table>
 
             <!-- 分页组件 -->
-            <div class="pagination-container">
+            <!-- <div class="pagination-container">
               <el-pagination
                 v-model:current-page="pagination.currentPage"
                 v-model:page-size="pagination.pageSize"
                 :page-sizes="[5, 10, 20, 50]"
                 layout="total, sizes, prev, pager, next, jumper"
               />
-            </div>
+            </div> -->
 
             <!-- 错误提示 -->
-            <el-alert
+            <!-- <el-alert
               v-if="errorMessage"
               :title="errorMessage"
               type="error"
               show-icon
               closable
               class="error-alert"
-            />
+            /> -->
           </div>
         </el-dialog>
 
@@ -227,14 +235,14 @@
         >
           <div class="dynamic-table-container">
             <!-- 搜索和过滤区域 -->
-            <div class="table-controls">
+            <!-- <div class="table-controls">
               <el-input
                 v-model="searchKeyword"
                 placeholder="输入关键字搜索"
                 style="width: 300px; margin-right: 20px"
               />
               <el-button type="primary">搜索</el-button>
-            </div>
+            </div> -->
 
             <!-- 数据表格 -->
             <el-table
@@ -265,14 +273,14 @@
             </el-table>
 
             <!-- 分页组件 -->
-            <div class="pagination-container">
+            <!-- <div class="pagination-container">
               <el-pagination
                 v-model:current-page="pagination.currentPage"
                 v-model:page-size="pagination.pageSize"
                 :page-sizes="[5, 10, 20, 50]"
                 layout="total, sizes, prev, pager, next, jumper"
               />
-            </div>
+            </div> -->
 
             <!-- 错误提示 -->
             <el-alert
@@ -447,53 +455,53 @@ onMounted(async () => {
   //ScreenSpaceEventHandler是用于处理屏幕空间事件（例如鼠标点击、移动等）。该代码是将其绑定到指定的Cesiuim场景的canvas元素上。该实例监听canvas元素相关的鼠标和触摸事件。
 
   //获取相机经纬度，姿态等
-  // const handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
-  // handler.setInputAction(event => {
-  //   // 获取点击位置的地理坐标
-  //   const screenPosition = event.position
-  //   const ray = viewer.value.camera.getPickRay(screenPosition)
-  //   const position = viewer.value.scene.globe.pick(ray, viewer.value.scene)
+  const handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
+  handler.setInputAction(event => {
+    // 获取点击位置的地理坐标
+    const screenPosition = event.position
+    const ray = viewer.value.camera.getPickRay(screenPosition)
+    const position = viewer.value.scene.globe.pick(ray, viewer.value.scene)
 
-  //   if (position) {
-  //     // 转换坐标为经纬度（WGS84）
-  //     const cartographic = Cesium.Cartographic.fromCartesian(position)
-  //     const longitude = Cesium.Math.toDegrees(cartographic.longitude).toFixed(6)
-  //     const latitude = Cesium.Math.toDegrees(cartographic.latitude).toFixed(6)
-  //     const height = cartographic.height.toFixed(2)
+    if (position) {
+      // 转换坐标为经纬度（WGS84）
+      const cartographic = Cesium.Cartographic.fromCartesian(position)
+      const longitude = Cesium.Math.toDegrees(cartographic.longitude).toFixed(6)
+      const latitude = Cesium.Math.toDegrees(cartographic.latitude).toFixed(6)
+      const height = cartographic.height.toFixed(2)
 
-  //     // 获取相机当前姿态参数
-  //     const camera = viewer.value.camera
-  //     const cameraPositionCarto = Cesium.Cartographic.fromCartesian(
-  //       camera.position
-  //     )
-  //     const cameraLon = Cesium.Math.toDegrees(
-  //       cameraPositionCarto.longitude
-  //     ).toFixed(6)
-  //     const cameraLat = Cesium.Math.toDegrees(
-  //       cameraPositionCarto.latitude
-  //     ).toFixed(6)
-  //     const cameraHeight = cameraPositionCarto.height.toFixed(2)
-  //     const heading = Cesium.Math.toDegrees(camera.heading).toFixed(2)
-  //     const pitch = Cesium.Math.toDegrees(camera.pitch).toFixed(2)
-  //     const roll = Cesium.Math.toDegrees(camera.roll).toFixed(2)
+      // 获取相机当前姿态参数
+      const camera = viewer.value.camera
+      const cameraPositionCarto = Cesium.Cartographic.fromCartesian(
+        camera.position
+      )
+      const cameraLon = Cesium.Math.toDegrees(
+        cameraPositionCarto.longitude
+      ).toFixed(6)
+      const cameraLat = Cesium.Math.toDegrees(
+        cameraPositionCarto.latitude
+      ).toFixed(6)
+      const cameraHeight = cameraPositionCarto.height.toFixed(2)
+      const heading = Cesium.Math.toDegrees(camera.heading).toFixed(2)
+      const pitch = Cesium.Math.toDegrees(camera.pitch).toFixed(2)
+      const roll = Cesium.Math.toDegrees(camera.roll).toFixed(2)
 
-  //     // 打印结果
-  //     console.log(`
-  // ==== 点击位置 ====
-  // 经度: ${longitude}°
-  // 纬度: ${latitude}°
-  // 高程: ${height}m
+      // 打印结果
+      console.log(`
+  ==== 点击位置 ====
+  经度: ${longitude}°
+  纬度: ${latitude}°
+  高程: ${height}m
 
-  // ==== 相机姿态 ====
-  // 经度: ${cameraLon}°
-  // 纬度: ${cameraLat}°
-  // 高度: ${cameraHeight}m
-  // 朝向: ${heading}°（正北为0°，顺时针增加）
-  // 俯仰: ${pitch}°（0°水平，正值为俯视）
-  // 横滚: ${roll}°（0°水平，正值为向右倾斜）
-  //     `)
-  //   }
-  // }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+  ==== 相机姿态 ====
+  经度: ${cameraLon}°
+  纬度: ${cameraLat}°
+  高度: ${cameraHeight}m
+  朝向: ${heading}°（正北为0°，顺时针增加）
+  俯仰: ${pitch}°（0°水平，正值为俯视）
+  横滚: ${roll}°（0°水平，正值为向右倾斜）
+      `)
+    }
+  }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
 })
 
 //选中与未选中图层
@@ -949,22 +957,42 @@ const openLayers = params => {
   addLayer3(leftlat, leftlong, rightlat, rightlong, pnames[0])
   selectedIds.value = [131]
 }
-
-const yjLayers = () => {
-  viewer.value.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(95.137369, 30.038497, 10556),
-    //相机的姿态
-    orientation: {
-      heading: Cesium.Math.toRadians(250.0), //朝向
-      pitch: Cesium.Math.toRadians(-35.4), //俯仰
-      // pitch: Cesium.Math.toRadians(-90), //俯仰
-      roll: 0.0, //滚转
-    },
-    complete: () => {
-      // 飞行完成后启动热力图
-      startHeatmapCycle()
-    },
-  })
+const area_avaflow = ref(null)
+const yjLayers = area => {
+  // console.log(area)
+  area_avaflow.value = area
+  if (area_avaflow.value == '巴宜区') {
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(95.137369, 30.038497, 10556),
+      //相机的姿态
+      orientation: {
+        heading: Cesium.Math.toRadians(250.0), //朝向
+        pitch: Cesium.Math.toRadians(-35.4), //俯仰
+        // pitch: Cesium.Math.toRadians(-90), //俯仰
+        roll: 0.0, //滚转
+      },
+      complete: () => {
+        // 飞行完成后启动热力图
+        startHeatmapCycle()
+      },
+    })
+  }
+  if (area_avaflow.value == '波密县') {
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(95.415357, 29.865934, 5929),
+      //相机的姿态
+      orientation: {
+        heading: Cesium.Math.toRadians(26.0), //朝向
+        pitch: Cesium.Math.toRadians(-15.77), //俯仰
+        // pitch: Cesium.Math.toRadians(-90), //俯仰
+        roll: 0.0, //滚转
+      },
+      complete: () => {
+        // 飞行完成后启动热力图
+        startHeatmapCycle()
+      },
+    })
+  }
   // loadHeatmap().catch(error => {
   //   console.log('加载热力图失败', error)
   // })
@@ -2680,10 +2708,17 @@ async function loadHeatmap(index) {
     }
 
     // 2. 加载新数据
-    const geoJson = await Cesium.Resource.fetchJson(
-      `/ng/avaflow/avaflow_output${index}.geojson`
-    )
-
+    // console.log(area_avaflow.value)
+    let geoJson = null
+    if (area_avaflow.value == '巴宜区') {
+      geoJson = await Cesium.Resource.fetchJson(
+        `/ng/avaflow/avaflow_output${index}.geojson`
+      )
+    } else if (area_avaflow.value == '波密县') {
+      geoJson = await Cesium.Resource.fetchJson(
+        `/ng/avaflow_bomi/avaflow_output${index}.geojson`
+      )
+    }
     // 3. 转换数据格式
     const list = geoJson.features.map(feature => ({
       lnglat: feature.geometry.coordinates,
@@ -3130,7 +3165,9 @@ const locationsearch = () => {
       },
     })
     .then(res => {
+      tableData.value = [] // 清空表格数据
       const data = res.data
+      // console.log(typeof data)
       // console.log(typeof data[0].lng)
       if (data.length > 0) {
         data.forEach(item => {
@@ -3174,6 +3211,9 @@ const locationsearch = () => {
     dialogVisible_checkattribute.value = true
   }, 2000)
 }
+const search_dis_location = () => {
+  console.log(tableData.value)
+}
 const locationsearchqxz = () => {
   dialogVisible_searchdisaster.value = false
   axios
@@ -3183,6 +3223,7 @@ const locationsearchqxz = () => {
       },
     })
     .then(res => {
+      tableData_qxz.value = [] // 清空表格数据
       const data = res.data
       // console.log(typeof data[0].lng)
       if (data.length > 0) {
@@ -3223,8 +3264,120 @@ const locationsearchqxz = () => {
   }, 2000)
 }
 //属性查询
-const attributesearch = () => {
+const attributesearch_disaster = () => {
   dialogVisible_searchdisaster.value = false
+  // console.log(form_disastersearch.attribute, form_disastersearch.attributevalue)
+  const name = form_disastersearch.attribute
+  const value = form_disastersearch.attributevalue
+  axios
+    .get('/node/point/attribute', {
+      params: {
+        attribute_name: name,
+        attribute_value: value,
+      },
+    })
+    .then(res => {
+      tableData.value = []
+      const data = res.data.data
+      // console.log(data)
+      // console.log(typeof data)
+      if (data.length > 0) {
+        data.forEach(item => {
+          viewer.value.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(item.lng, item.lat),
+            billboard: {
+              image: '/ng/position.png',
+              heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
+              width: 48,
+              height: 48,
+            },
+          })
+          // 2. 格式化表格数据
+          tableData.value.push({
+            name: item.name || '--', // 处理空值
+            dcmd: item.dcmd || '--',
+            lssl: item.lssl || '--',
+            slope: item.slope ? `${item.slope}°` : '--', // 添加单位
+            hlxqsl: item.hlxqsl || '--',
+            pthhsmj: item.pthhsmj ? `${item.pthhsmj} m²` : '--',
+            elevation: item.elevation ? `${item.elevation} 米` : '--',
+            scale: item.scale || '--',
+          })
+        })
+      } else {
+        console.log('未查询到数据')
+      }
+      console.log(data[0])
+      viewer.value.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(
+          data[0].lng,
+          data[0].lat,
+          50000
+        ),
+      })
+    })
+    .catch(err => {
+      console.log(err)
+    })
+  setTimeout(() => {
+    dialogVisible_checkattribute.value = true
+  }, 2000)
+}
+const attributesearch_qxz = () => {
+  dialogVisible_searchdisaster.value = false
+  // console.log(form_disastersearch.attribute, form_disastersearch.attributevalue)
+  const name = form_disastersearch.attribute
+  const value = form_disastersearch.attributevalue
+  axios
+    .get('/node/point/attribute_qxz', {
+      params: {
+        attribute_name: name,
+        attribute_value: value,
+      },
+    })
+    .then(res => {
+      tableData_qxz.value = []
+      const data = res.data.data
+      // console.log(data)
+      // console.log(typeof data)
+      if (data.length > 0) {
+        data.forEach(item => {
+          viewer.value.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(item.lng, item.lat),
+            billboard: {
+              image: '/ng/position.png',
+              heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
+              width: 48,
+              height: 48,
+            },
+          })
+          // 2. 格式化表格数据
+          tableData_qxz.value.push({
+            z_name: item.z_name || '--', // 处理空值
+            jyl: item.jyl || '--',
+            wind: item.wind || '--',
+          })
+        })
+      } else {
+        console.log('未查询到数据')
+      }
+      console.log(data[0])
+      viewer.value.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(
+          data[0].lng,
+          data[0].lat,
+          50000
+        ),
+      })
+    })
+    .catch(err => {
+      console.log(err)
+    })
+  setTimeout(() => {
+    dialogVisible_checkqxz.value = true
+  }, 2000)
 }
 
 const cleanentity = () => {

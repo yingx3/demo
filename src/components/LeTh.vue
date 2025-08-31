@@ -19,7 +19,10 @@
         </div>
         <div class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
-          <el-button :plain="true" @click="dialogVisible = true"
+          <!-- <el-button :plain="true" @click="dialogVisible = true"
+            ><span>风险源定量识别与表征模型</span></el-button
+          > -->
+          <el-button :plain="true" @click="openRiskModelPage"
             ><span>风险源定量识别与表征模型</span></el-button
           >
           <el-dialog
@@ -121,7 +124,10 @@
               style="max-width: 600px"
               class="form_avaflow"
             >
-              <el-form-item label="相数" class="form1_avaflow">
+              <el-form-item label="地区" class="form2_avaflow">
+                <el-input v-model="form1.area" placeholder="巴宜区" />
+              </el-form-item>
+              <el-form-item label="相       数" class="form1_avaflow">
                 <el-select v-model="form1.phases" placeholder="1">
                   <el-option label="单相" value="1" />
                   <el-option label="双相" value="2" />
@@ -134,9 +140,9 @@
               <el-form-item label="基底摩擦" class="form3_avaflow">
                 <el-input v-model="form1.bf" placeholder="20" />
               </el-form-item>
-              <el-form-item label="水摩擦" class="form4_avaflow">
+              <!-- <el-form-item label="水摩擦" class="form4_avaflow">
                 <el-input v-model="form.ff" placeholder="0.05" />
-              </el-form-item>
+              </el-form-item> -->
               <el-form-item>
                 <el-button
                   type="primary"
@@ -342,6 +348,7 @@ const form = reactive({
   ksat: '1.32e-05',
 })
 const form1 = reactive({
+  area: '巴宜区',
   phases: '1',
   cf: '35',
   bf: '20',
@@ -450,7 +457,8 @@ const subitForm1 = () => {
   //     console.error(error)
   //     // 处理错误
   //   })
-  $emit('yjLayers')
+  // console.log(form1.area)
+  $emit('yjLayers', form1.area)
   // setTimeout(() => {
   //   $emit('yjLayers')
   // }, 150000)
@@ -597,6 +605,13 @@ const leave = (el, done) => {
   el.style.opacity = '0'
   el.style.transform = 'scale(0)'
   done()
+}
+//绑定跳转页
+const openRiskModelPage = () => {
+  window.open(
+    'http://106.54.237.188:7002/RiskInsight/#/modelPages/TRIGRS',
+    '_blank'
+  )
 }
 </script>
 <style lang="scss" scoped>
