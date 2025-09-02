@@ -9,6 +9,8 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import XLSX from 'xlsx'
 import moment from 'moment'
+import { point } from 'turf'
+import { da } from 'element-plus/es/locale/index.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -668,6 +670,7 @@ app.post('/displ', upload.single('file'), (req, res) => {
 })
 
 // 现有的 R 脚本执行路由
+
 // app.post('/rscript', (req, res) => {
 //   const { path: scriptPath, script } = req.body;
 
@@ -695,18 +698,314 @@ app.post('/displ', upload.single('file'), (req, res) => {
 // });
 
 //使用用户上传文件预测滑坡时间
+// app.get('/displ_file', async (req, res) => {
+//   // console.log(req.query)
+//   const longitude = req.query['form_inverseV[longitude]'] // '109'
+//   const latitude = req.query['form_inverseV[latitude]'] // '110'
+//   const Name = req.query['form_inverseV[Name]'] // '测试点'
+//   // console.log(`经度: ${longitude}, 纬度: ${latitude}`)
+//   // if (!fs.existsSync(filePath)) {
+//   //   return res.status(400).json({ error: '请先上传文件' })
+//   // }
+//   // const processedData = processHourlyData(filePath)
+//   // 移除可能的表头行（如果Excel有表头）
+//   const timeSeriesData = processHourlyData(filePath)
+//   // const timeSeriesData = data.filter(
+//   //   row => row.timestamp && row.displ && typeof row.timestamp !== 'string'
+//   // )
+//   // console.log(`从Excel读取到 ${timeSeriesData.length} 条数据`)
+
+//   // 3. 数据库操作 - 查找或创建监测点
+//   const client = await pool.connect()
+//   try {
+//     await client.query('BEGIN') // 开始事务
+
+//     // 查找是否已存在该坐标的监测点（在一定容差范围内）
+//     const findPointQuery = `
+//         SELECT point_id FROM monitoring_points
+//         WHERE ST_DWithin(geom, ST_SetSRID(ST_MakePoint($1, $2), 4326), 0.001)
+//         LIMIT 1
+//       `
+//     const pointResult = await client.query(findPointQuery, [
+//       longitude,
+//       latitude,
+//     ])
+//     // console.log(pointResult)
+//     let pointId
+
+//     if (pointResult.rows.length > 0) {
+//       // 点已存在，使用现有point_id
+//       pointId = pointResult.rows[0].point_id
+//       console.log(`找到现有监测点，ID: ${pointId}`)
+//     } else {
+//       // 点不存在，创建新监测点
+//       const insertPointQuery = `
+//           INSERT INTO monitoring_points (point_name, geom, description)
+//           VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $2 || ',' || $3 || '的监测点')
+//           RETURNING point_id
+//         `
+//       const pointName = `${Name}`
+//       const newPointResult = await client.query(insertPointQuery, [
+//         pointName,
+//         longitude,
+//         latitude,
+//       ])
+//       pointId = newPointResult.rows[0].point_id
+//       console.log(`创建新监测点，ID: ${pointId}`)
+//     }
+
+//     // 4. 插入时间序列数据
+//     const insertDataQuery = `
+//         INSERT INTO displacement_data (point_id, record_time, displacement)
+//         VALUES ($1, $2, $3)
+//         ON CONFLICT (point_id,record_time) DO UPDATE
+//         SET displacement = EXCLUDED.displacement
+//       `
+
+//     let insertedCount = 0
+//     for (const row of timeSeriesData) {
+//       // 处理Excel日期格式（可能是数字或日期对象）
+//       let recordTime
+//       if (typeof row.timestamp === 'number') {
+//         // Excel日期数字转JS日期
+//         recordTime = XLSX.SSF.parse_date_code(row.timestamp)
+//       } else if (row.timestamp instanceof Date) {
+//         recordTime = row.timestamp
+//       } else if (typeof row.timestamp === 'string') {
+//         try {
+//           // 将字符串转换为Date对象
+//           recordTime = new Date(row.timestamp)
+
+//           // 验证日期是否有效
+//           if (isNaN(recordTime.getTime())) {
+//             console.warn('无效的时间戳字符串，跳过:', row.timestamp)
+//             continue
+//           }
+
+//           // console.log(
+//           //   `解析时间字符串: ${row.timestamp} -> ${recordTime.toISOString()}`
+//           // )
+//         } catch (error) {
+//           console.warn('解析时间字符串时出错，跳过:', row.timestamp, error)
+//           continue
+//         }
+//       } else {
+//         console.warn('跳过无法解析的时间戳:', row.timestamp)
+//         continue
+//       }
+
+//       await client.query(insertDataQuery, [
+//         pointId,
+//         recordTime,
+//         parseFloat(row.displ),
+//       ])
+//       insertedCount++
+//     }
+
+//     await client.query('COMMIT') // 提交事务
+
+//     // 5. 返回成功响应
+//     res.json({
+//       success: true,
+//       message: `数据上传成功`,
+//       pointId: pointId,
+//       recordsInserted: insertedCount,
+//       coordinates: { longitude, latitude },
+//     })
+//   } catch (dbError) {
+//     await client.query('ROLLBACK') // 回滚事务
+//     throw dbError
+//   } finally {
+//     client.release() // 释放数据库连接
+//   }
+
+// })
+
+// app.get('/displ_file', async (req, res) => {
+//   try {
+//     // 处理时间数据（转换为整点）
+//     // console.log(req)
+//     const processedData = processHourlyData(filePath)
+
+//     // 保存处理后的CSV文件
+//     const csvInfo = saveProcessedCSV(processedData)
+
+//     // 转换为RDA文件
+//     const rdaInfo = await convertToRDA(csvInfo.filepath)
+
+//     // 复制RDA文件到目标路径
+//     const targetRdaPath = path.join(TARGET_PATH, 'displ_data.rda')
+//     await copyFile(rdaInfo.filepath, targetRdaPath)
+
+//     // 读取CSV文件的时间范围
+//     const timeRange = getCSVTimeRange(csvInfo.filepath)
+
+//     // 计算最后一天的时间
+//     const fiveDaysBeforeLast = getFiveDaysBeforeLast(timeRange.lastTimestamp)
+
+//     // 修改R脚本
+//     await modifyRScript(
+//       R_SCRIPT_PATH,
+//       timeRange.firstTimestamp,
+//       fiveDaysBeforeLast
+//     )
+
+//     // 执行R脚本
+//     const rScriptResult = await executeRScript(R_SCRIPT_PATH)
+//     console.log('R脚本执行完毕！')
+
+//     // 恢复R脚本到原始状态
+//     // await restoreRScript(R_SCRIPT_PATH);
+//     const rt_json = path.join(TARGET_PATH, 'rt_data.json')
+//     const data = await fs.promises.readFile(rt_json, 'utf8')
+//     res.json({
+//       success: true,
+//       processedCount: rdaInfo.recordCount,
+//       timeRange: {
+//         start: timeRange.firstTimestamp,
+//         end: timeRange.lastTimestamp,
+//         simulationStart: fiveDaysBeforeLast,
+//       },
+//       rdaFile: targetRdaPath,
+//       rScriptExecuted: true,
+//       rt_json: JSON.parse(data),
+//     })
+//   } catch (error) {
+//     console.error('处理失败:', error)
+
+//     // 尝试恢复R脚本（如果修改过）
+//     // try {
+//     //   await restoreRScript(R_SCRIPT_PATH);
+//     // } catch (restoreError) {
+//     //   console.error('恢复R脚本失败:', restoreError.message);
+//     // }
+
+//     // res.status(500).json({
+//     //   success: false,
+//     //   message: '处理失败',
+//     //   error: error.message,
+//     //   ooaDetected: false,
+//     // })
+//   }
+//   const longitude = req.query['form_inverseV[longitude]'] // '109'
+//   const latitude = req.query['form_inverseV[latitude]'] // '110'
+//   const Name = req.query['form_inverseV[Name]'] // '测试点'
+//   const timeSeriesData = processHourlyData(filePath)
+//   // console.log(`从Excel读取到 ${timeSeriesData.length} 条数据`)
+//   // 3. 数据库操作 - 查找或创建监测点
+//   const client = await pool.connect()
+//   try {
+//     await client.query('BEGIN') // 开始事务
+
+//     // 查找是否已存在该坐标的监测点（在一定容差范围内）
+//     const findPointQuery = `
+//         SELECT point_id FROM monitoring_points
+//         WHERE ST_DWithin(geom, ST_SetSRID(ST_MakePoint($1, $2), 4326), 0.001)
+//         LIMIT 1
+//       `
+//     const pointResult = await client.query(findPointQuery, [
+//       longitude,
+//       latitude,
+//     ])
+//     let pointId
+//     if (pointResult.rows.length > 0) {
+//       // 点已存在，使用现有point_id
+//       pointId = pointResult.rows[0].point_id
+//       console.log(`找到现有监测点，ID: ${pointId}`)
+//     } else {
+//       // 点不存在，创建新监测点
+//       const insertPointQuery = `
+//           INSERT INTO monitoring_points (point_name, geom, description)
+//           VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $2 || ',' || $3 || '的监测点')
+//           RETURNING point_id
+//         `
+//       const pointName = `${Name}`
+//       const newPointResult = await client.query(insertPointQuery, [
+//         pointName,
+//         longitude,
+//         latitude,
+//       ])
+//       pointId = newPointResult.rows[0].point_id
+//       console.log(`创建新监测点，ID: ${pointId}`)
+//     }
+
+//     // 4. 插入时间序列数据
+//     const insertDataQuery = `
+//         INSERT INTO displacement_data (point_id, record_time, displacement)
+//         VALUES ($1, $2, $3)
+//         ON CONFLICT (point_id,record_time) DO UPDATE
+//         SET displacement = EXCLUDED.displacement
+//       `
+
+//     let insertedCount = 0
+//     for (const row of timeSeriesData) {
+//       // 处理Excel日期格式（可能是数字或日期对象）
+//       let recordTime
+//       if (typeof row.timestamp === 'number') {
+//         // Excel日期数字转JS日期
+//         recordTime = XLSX.SSF.parse_date_code(row.timestamp)
+//       } else if (row.timestamp instanceof Date) {
+//         recordTime = row.timestamp
+//       } else if (typeof row.timestamp === 'string') {
+//         try {
+//           // 将字符串转换为Date对象
+//           recordTime = new Date(row.timestamp)
+
+//           // 验证日期是否有效
+//           if (isNaN(recordTime.getTime())) {
+//             console.warn('无效的时间戳字符串，跳过:', row.timestamp)
+//             continue
+//           }
+
+//           // console.log(
+//           //   `解析时间字符串: ${row.timestamp} -> ${recordTime.toISOString()}`
+//           // )
+//         } catch (error) {
+//           console.warn('解析时间字符串时出错，跳过:', row.timestamp, error)
+//           continue
+//         }
+//       } else {
+//         console.warn('跳过无法解析的时间戳:', row.timestamp)
+//         continue
+//       }
+
+//       await client.query(insertDataQuery, [
+//         pointId,
+//         recordTime,
+//         parseFloat(row.displ),
+//       ])
+//       insertedCount++
+//     }
+
+//     await client.query('COMMIT') // 提交事务
+
+//     // 5. 返回成功响应
+//     res.json({
+//       success: true,
+//       message: `数据上传成功`,
+//       pointId: pointId,
+//       recordsInserted: insertedCount,
+//       coordinates: { longitude, latitude },
+//     })
+//   } catch (dbError) {
+//     await client.query('ROLLBACK') // 回滚事务
+//     throw dbError
+//   } finally {
+//     client.release() // 释放数据库连接
+//   }
+// })
+// 根据设备ID查询crack数据并处理为RDA
+
 app.get('/displ_file', async (req, res) => {
   try {
-    // 处理时间数据（转换为整点）
+    // 1. 首先处理文件和执行R脚本
     const processedData = processHourlyData(filePath)
+    const timeSeriesData = processHourlyData(filePath)
 
-    // 保存处理后的CSV文件
     const csvInfo = saveProcessedCSV(processedData)
-
-    // 转换为RDA文件
     const rdaInfo = await convertToRDA(csvInfo.filepath)
-
-    // 复制RDA文件到目标路径
+    // ... 其他文件处理操作 ...
+    //     // 复制RDA文件到目标路径
     const targetRdaPath = path.join(TARGET_PATH, 'displ_data.rda')
     await copyFile(rdaInfo.filepath, targetRdaPath)
 
@@ -731,37 +1030,201 @@ app.get('/displ_file', async (req, res) => {
     // await restoreRScript(R_SCRIPT_PATH);
     const rt_json = path.join(TARGET_PATH, 'rt_data.json')
     const data = await fs.promises.readFile(rt_json, 'utf8')
-    res.json({
-      success: true,
-      processedCount: rdaInfo.recordCount,
-      timeRange: {
-        start: timeRange.firstTimestamp,
-        end: timeRange.lastTimestamp,
-        simulationStart: fiveDaysBeforeLast,
-      },
-      rdaFile: targetRdaPath,
-      rScriptExecuted: true,
-      rt_json: JSON.parse(data),
-    })
+    // console.log(data)
+    // 2. 然后进行数据库操作
+    const longitude = req.query['form_inverseV[longitude]']
+    const latitude = req.query['form_inverseV[latitude]']
+    const Name = req.query['form_inverseV[name]']
+    // console.log(Name)
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
+      // ... 数据库操作 ...
+      // 查找是否已存在该坐标的监测点（在一定容差范围内）
+      const findPointQuery = `
+        SELECT point_id FROM monitoring_points 
+        WHERE ST_DWithin(geom, ST_SetSRID(ST_MakePoint($1, $2), 4326), 0.001)
+        LIMIT 1
+      `
+      const pointResult = await client.query(findPointQuery, [
+        longitude,
+        latitude,
+      ])
+      let pointId
+      const data_forecast = JSON.parse(data)
+      if (pointResult.rows.length > 0) {
+        // 点已存在，使用现有point_id
+        pointId = pointResult.rows[0].point_id
+        console.log(`找到现有监测点，ID: ${pointId}`)
+      } else {
+        // 点不存在，创建新监测点
+        const insertPointQuery = `
+          INSERT INTO monitoring_points (point_name, geom, description,rt,time)
+          VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $2 || ',' || $3 || '的监测点',$4,$5)
+          RETURNING point_id
+        `
+        const pointName = `${Name}`
+        const newPointResult = await client.query(insertPointQuery, [
+          pointName,
+          longitude,
+          latitude,
+          data_forecast.rt,
+          data_forecast.time,
+        ])
+        pointId = newPointResult.rows[0].point_id
+        console.log(`创建新监测点，ID: ${pointId}`)
+      }
+      // console.log(Json.parse(data))
+      // console.log(data_forecast.rt, data_forecast.time)
+
+      // 4. 插入时间序列数据
+      const insertDataQuery = `
+        INSERT INTO displacement_data (point_id, record_time, displacement)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (point_id,record_time) DO UPDATE 
+        SET displacement = EXCLUDED.displacement
+      `
+
+      let insertedCount = 0
+      for (const row of timeSeriesData) {
+        // 处理Excel日期格式（可能是数字或日期对象）
+        let recordTime
+        if (typeof row.timestamp === 'number') {
+          // Excel日期数字转JS日期
+          recordTime = XLSX.SSF.parse_date_code(row.timestamp)
+        } else if (row.timestamp instanceof Date) {
+          recordTime = row.timestamp
+        } else if (typeof row.timestamp === 'string') {
+          try {
+            // 将字符串转换为Date对象
+            recordTime = new Date(row.timestamp)
+
+            // 验证日期是否有效
+            if (isNaN(recordTime.getTime())) {
+              console.warn('无效的时间戳字符串，跳过:', row.timestamp)
+              continue
+            }
+
+            // console.log(
+            //   `解析时间字符串: ${row.timestamp} -> ${recordTime.toISOString()}`
+            // )
+          } catch (error) {
+            console.warn('解析时间字符串时出错，跳过:', row.timestamp, error)
+            continue
+          }
+        } else {
+          console.warn('跳过无法解析的时间戳:', row.timestamp)
+          continue
+        }
+
+        await client.query(insertDataQuery, [
+          pointId,
+          recordTime,
+          parseFloat(row.displ),
+        ])
+        insertedCount++
+      }
+
+      await client.query('COMMIT')
+
+      // 3. 最后发送一次组合的响应
+      return res.json({
+        success: true,
+        fileProcessing: {
+          processedCount: rdaInfo.recordCount,
+          timeRange: {
+            /* ... */
+          },
+          rdaFile: targetRdaPath,
+          rScriptExecuted: true,
+          rt_json: JSON.parse(data),
+        },
+        databaseOperation: {
+          pointId: pointId,
+          recordsInserted: insertedCount,
+          coordinates: { longitude, latitude },
+        },
+      })
+    } catch (dbError) {
+      await client.query('ROLLBACK')
+      throw dbError
+    } finally {
+      client.release()
+    }
   } catch (error) {
     console.error('处理失败:', error)
-
-    // 尝试恢复R脚本（如果修改过）
-    // try {
-    //   await restoreRScript(R_SCRIPT_PATH);
-    // } catch (restoreError) {
-    //   console.error('恢复R脚本失败:', restoreError.message);
-    // }
-
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '处理失败',
       error: error.message,
-      ooaDetected: false,
     })
   }
 })
-// 根据设备ID查询crack数据并处理为RDA
+
+//获取数据库的位移数据
+app.get('/search_displ', async (req, res) => {
+  const pointId = req.query.pointId // 从查询参数获取 pointId
+
+  // 验证参数
+  if (!pointId) {
+    return res.status(400).json({
+      success: false,
+      message: '缺少必要参数: pointId',
+    })
+  }
+
+  // 验证 pointId 是否为有效数字
+  const pointIdNum = parseInt(pointId)
+  if (isNaN(pointIdNum)) {
+    return res.status(400).json({
+      success: false,
+      type: 'warning',
+      message: 'pointId 必须是有效的数字',
+    })
+  }
+
+  const client = await pool.connect()
+
+  try {
+    // 查询数据库，获取指定 pointId 的所有位移数据
+    const query = `
+      SELECT record_time, displacement
+      FROM displacement_data
+      WHERE point_id = $1
+      ORDER BY record_time ASC
+    `
+
+    const result = await client.query(query, [pointIdNum])
+
+    if (result.rows.length === 0) {
+      // 没有找到数据
+      return res.status(404).json({
+        success: false,
+        type: 'warning',
+        message: '未找到该监测点的位移数据',
+        data: [],
+      })
+    }
+
+    // 找到数据，返回成功响应
+    res.json({
+      success: true,
+      message: '数据获取成功',
+      data: result.rows,
+      total: result.rows.length,
+    })
+  } catch (error) {
+    console.error('数据库查询错误:', error)
+    res.status(500).json({
+      success: false,
+      type: 'error',
+      message: '数据库查询失败',
+      error: error.message,
+    })
+  } finally {
+    client.release()
+  }
+})
 app.get('/api/crack/:deviceId', async (req, res) => {
   const { deviceId } = req.params
   const { months = 2 } = req.query

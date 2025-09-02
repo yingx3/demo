@@ -243,13 +243,13 @@
             class="dialog_inverseV"
           >
             <el-form
-              :model="form"
+              :model="form_inverseV"
               label-width="auto"
               style="max-width: 600px"
               class="form_inverseV"
             >
               <el-form-item label="地点" class="">
-                <el-input placeholder="林芝" />
+                <el-input v-model="form_inverseV.name" placeholder="林芝" />
               </el-form-item>
 
               <el-form-item label="位移文件">
@@ -283,14 +283,29 @@
                   </template>
                 </el-input>
               </el-form-item>
+
+              <el-form-item label="经度" class="">
+                <el-input
+                  v-model="form_inverseV.longitude"
+                  placeholder="十进制度"
+                />
+              </el-form-item>
+              <el-form-item label="纬度" class="">
+                <el-input
+                  v-model="form_inverseV.latitude"
+                  placeholder="十进制度"
+                />
+              </el-form-item>
             </el-form>
             <el-button
               type="primary"
               @click="submit_inverseV(), (dialog_inverseV = false)"
-              style="margin-left: 280px"
+              style="margin-left: 280px; margin-top: 20px"
               >运行</el-button
             >
-            <el-button @click="dialog_inverseV = false">取消</el-button>
+            <el-button style="margin-top: 20px" @click="dialog_inverseV = false"
+              >取消</el-button
+            >
           </el-dialog>
         </div>
         <div class="box">
@@ -424,6 +439,12 @@ const form2 = reactive({
   rouf: '1000',
   interval: '10',
   Tmax: '100',
+})
+const form_inverseV = reactive({
+  name: '',
+  longitude: '',
+  latitude: '',
+  file: '',
 })
 const isProcessing = ref(false)
 function onSubmit() {
@@ -695,11 +716,21 @@ const handleFileChange = file => {
 const submit_inverseV = async () => {
   try {
     ElMessage({ message: '运行中!', type: 'success' })
-    const response = await axios.get('node/displ_file')
+    const params = { form_inverseV }
+    const response = await axios.get('node/displ_file', { params })
+    // console.log('执行结果:', response.data.rt_json)
+    // console.log('执行结果:', response.data)
+    // console.log('执行结果:', response.data.fileProcessing.rt_json.rt)
 
-    console.log('执行结果:', response.data.rt_json)
-    const rt = response.data.rt_json.rt
-    const time = response.data.rt_json.time
+    const rt = response.data.fileProcessing.rt_json.rt
+    const time = response.data.fileProcessing.rt_json.time
+    const databaseOperation = response.data.databaseOperation
+    const pointId = response.data.databaseOperation.pointId
+    const lon = response.data.databaseOperation.coordinates.longitude
+    const lat = response.data.databaseOperation.coordinates.latitude
+    const params_return = { pointId, lon, lat, rt, time }
+    // console.log(databaseOperation)
+    // console.log(lon, lat)
     // if (rt < 24) {
     //   console.log("红色警报！")
     // } else if (rt >= 24 && rt < 48) {
@@ -712,7 +743,7 @@ const submit_inverseV = async () => {
     // } else {
     //   console.log("未有险情！")
     // }
-    $emit('forecast', rt, time)
+    $emit('forecast', params_return)
   } catch (error) {
     console.error('执行失败:', error.response?.data || error.message)
   }

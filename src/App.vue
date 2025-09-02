@@ -289,6 +289,10 @@
         </el-dialog>
       </div>
     </div>
+
+    <div class="chart-container" :class="{ show_displ: isChartVisible }">
+      <div id="displacement-chart"></div>
+    </div>
   </div>
 </template>
 <script setup>
@@ -326,6 +330,7 @@ const layer17_guid = ref(null)
 const layer4_guid = ref(null)
 const layer5_guid = ref(null)
 const entityInterval = ref(null)
+const isChartVisible = ref(true) // 控制图表显示的标志
 
 const data = ref(null)
 const dialogs = ref()
@@ -449,53 +454,53 @@ onMounted(async () => {
   //ScreenSpaceEventHandler是用于处理屏幕空间事件（例如鼠标点击、移动等）。该代码是将其绑定到指定的Cesiuim场景的canvas元素上。该实例监听canvas元素相关的鼠标和触摸事件。
 
   //获取相机经纬度，姿态等
-  const handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
-  handler.setInputAction(event => {
-    // 获取点击位置的地理坐标
-    const screenPosition = event.position
-    const ray = viewer.value.camera.getPickRay(screenPosition)
-    const position = viewer.value.scene.globe.pick(ray, viewer.value.scene)
+  // const handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
+  // handler.setInputAction(event => {
+  //   // 获取点击位置的地理坐标
+  //   const screenPosition = event.position
+  //   const ray = viewer.value.camera.getPickRay(screenPosition)
+  //   const position = viewer.value.scene.globe.pick(ray, viewer.value.scene)
 
-    if (position) {
-      // 转换坐标为经纬度（WGS84）
-      const cartographic = Cesium.Cartographic.fromCartesian(position)
-      const longitude = Cesium.Math.toDegrees(cartographic.longitude).toFixed(6)
-      const latitude = Cesium.Math.toDegrees(cartographic.latitude).toFixed(6)
-      const height = cartographic.height.toFixed(2)
+  //   if (position) {
+  //     // 转换坐标为经纬度（WGS84）
+  //     const cartographic = Cesium.Cartographic.fromCartesian(position)
+  //     const longitude = Cesium.Math.toDegrees(cartographic.longitude).toFixed(6)
+  //     const latitude = Cesium.Math.toDegrees(cartographic.latitude).toFixed(6)
+  //     const height = cartographic.height.toFixed(2)
 
-      // 获取相机当前姿态参数
-      const camera = viewer.value.camera
-      const cameraPositionCarto = Cesium.Cartographic.fromCartesian(
-        camera.position
-      )
-      const cameraLon = Cesium.Math.toDegrees(
-        cameraPositionCarto.longitude
-      ).toFixed(6)
-      const cameraLat = Cesium.Math.toDegrees(
-        cameraPositionCarto.latitude
-      ).toFixed(6)
-      const cameraHeight = cameraPositionCarto.height.toFixed(2)
-      const heading = Cesium.Math.toDegrees(camera.heading).toFixed(2)
-      const pitch = Cesium.Math.toDegrees(camera.pitch).toFixed(2)
-      const roll = Cesium.Math.toDegrees(camera.roll).toFixed(2)
+  //     // 获取相机当前姿态参数
+  //     const camera = viewer.value.camera
+  //     const cameraPositionCarto = Cesium.Cartographic.fromCartesian(
+  //       camera.position
+  //     )
+  //     const cameraLon = Cesium.Math.toDegrees(
+  //       cameraPositionCarto.longitude
+  //     ).toFixed(6)
+  //     const cameraLat = Cesium.Math.toDegrees(
+  //       cameraPositionCarto.latitude
+  //     ).toFixed(6)
+  //     const cameraHeight = cameraPositionCarto.height.toFixed(2)
+  //     const heading = Cesium.Math.toDegrees(camera.heading).toFixed(2)
+  //     const pitch = Cesium.Math.toDegrees(camera.pitch).toFixed(2)
+  //     const roll = Cesium.Math.toDegrees(camera.roll).toFixed(2)
 
-      // 打印结果
-      console.log(`
-  ==== 点击位置 ====
-  经度: ${longitude}°
-  纬度: ${latitude}°
-  高程: ${height}m
+  //     // 打印结果
+  //     console.log(`
+  // ==== 点击位置 ====
+  // 经度: ${longitude}°
+  // 纬度: ${latitude}°
+  // 高程: ${height}m
 
-  ==== 相机姿态 ====
-  经度: ${cameraLon}°
-  纬度: ${cameraLat}°
-  高度: ${cameraHeight}m
-  朝向: ${heading}°（正北为0°，顺时针增加）
-  俯仰: ${pitch}°（0°水平，正值为俯视）
-  横滚: ${roll}°（0°水平，正值为向右倾斜）
-      `)
-    }
-  }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+  // ==== 相机姿态 ====
+  // 经度: ${cameraLon}°
+  // 纬度: ${cameraLat}°
+  // 高度: ${cameraHeight}m
+  // 朝向: ${heading}°（正北为0°，顺时针增加）
+  // 俯仰: ${pitch}°（0°水平，正值为俯视）
+  // 横滚: ${roll}°（0°水平，正值为向右倾斜）
+  //     `)
+  //   }
+  // }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
 })
 
 //选中与未选中图层
@@ -1036,8 +1041,13 @@ const floodLayers = () => {
   // console.log('已跳转！！！')
 }
 
-const foreCast = (rt, time) => {
+const foreCast = params => {
   let picture
+  const rt = params.rt
+  const time = params.time
+  const longitude = params.lon
+  const latitude = params.lat
+  const pointId = params.pointId
   let integer = Math.round(rt)
   if (rt > 0 && rt < 24) {
     // alert("红色警报！")
@@ -1075,7 +1085,7 @@ const foreCast = (rt, time) => {
       // 飞行结束后添加实体
 
       const entity = viewer.value.entities.add({
-        id: 'targetEntity',
+        id: 'pointId',
         name: '预警信息',
         position: Cesium.Cartesian3.fromDegrees(95.137369, 30.038497, 10556),
         billboard: {
@@ -1102,6 +1112,153 @@ const foreCast = (rt, time) => {
         if (Cesium.defined(picked) && picked.id === entity) {
           viewer.value.selectedEntity = entity // 使用 Cesium 内置 InfoBox 弹窗
         }
+        axios
+          .get('node/search_displ', {
+            params: {
+              pointId: pointId, // 确保 pointId 有值
+            },
+          })
+          .then(response => {
+            const data = response.data
+            isChartVisible.value = false // 显示图表
+            if (data.success) {
+              // 数据处理成功
+              console.log('获取到的位移数据:', data.data)
+              // 这里可以处理返回的数据，比如绘制图表等
+              // data.data 是一个数组，包含 { record_time: '2023-01-01 08:00:00', displacement: 10.2 } 这样的对象
+              // 准备图表数据
+              const chartData = data.data
+
+              // 分离时间和位移数据
+              const times = chartData.map(item => item.record_time)
+              const displacements = chartData.map(item => item.displacement)
+
+              // 初始化ECharts实例
+              const chartDom = document.getElementById('displacement-chart')
+              const myChart = echarts.init(chartDom)
+
+              // 配置图表选项
+              const option = {
+                title: {
+                  text: '位移变化趋势图',
+                  left: 'center',
+                  textStyle: {
+                    fontSize: 8,
+                    fontWeight: 'regular',
+                  },
+                },
+                tooltip: {
+                  trigger: 'axis',
+                  formatter: function (params) {
+                    const date = new Date(params[0].data[0])
+                    const formattedDate = date.toLocaleString('zh-CN', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                    })
+                    return `时间: ${formattedDate}<br/>位移: ${params[0].data[1]} mm`
+                  },
+                },
+                grid: {
+                  left: '3%',
+                  right: '4%',
+                  bottom: '3%',
+                  containLabel: true,
+                },
+                xAxis: {
+                  type: 'time',
+                  name: '时间',
+                  nameLocation: 'middle',
+                  nameGap: 30,
+                  axisLabel: {
+                    formatter: function (value) {
+                      return new Date(value).toLocaleDateString('zh-CN', {
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    },
+                  },
+                },
+                yAxis: {
+                  type: 'value',
+                  name: '位移 (mm)',
+                  nameGap: 30,
+                  axisLabel: {
+                    formatter: '{value} mm',
+                  },
+                },
+                dataZoom: [
+                  {
+                    type: 'inside',
+                    start: 0,
+                    end: 100,
+                  },
+                  {
+                    type: 'slider',
+                    start: 0,
+                    end: 100,
+                  },
+                ],
+                series: [
+                  {
+                    name: '位移',
+                    type: 'line',
+                    data: chartData.map(item => [
+                      item.record_time,
+                      item.displacement,
+                    ]),
+                    smooth: true,
+                    symbol: 'circle',
+                    symbolSize: 6,
+                    itemStyle: {
+                      color: '#5470c6',
+                    },
+                    lineStyle: {
+                      width: 2,
+                    },
+                    areaStyle: {
+                      color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: 'rgba(84, 112, 198, 0.6)' },
+                        { offset: 1, color: 'rgba(84, 112, 198, 0.1)' },
+                      ]),
+                    },
+                  },
+                ],
+                width: '280px',
+                height: '180px',
+              }
+
+              // 应用配置项并渲染图表
+              myChart.setOption(option)
+
+              // 响应式调整
+              window.addEventListener('resize', function () {
+                myChart.resize()
+              })
+              ElMessage({
+                message: data.message,
+                type: 'success',
+              })
+            } else {
+              // 后端返回了错误信息
+              ElMessage({
+                message: data.message,
+                type: data.type || 'warning',
+              })
+            }
+          })
+          .catch(error => {
+            console.error('请求失败:', error)
+            ElMessage({
+              message: '请求数据失败',
+              type: 'error',
+            })
+          })
       }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
     },
   })
@@ -1869,7 +2026,7 @@ const addLayer_weatherstation = () => {
 const handleLayerwsClick = event => {
   // 获取点击位置
   const pickedFeature = viewer.value.scene.pick(event.position)
-  console.log(pickedFeature)
+  // console.log(pickedFeature)
   const getProperty = prop => {
     return pickedFeature.id._properties[prop]?._value ?? '无数据'
   }
@@ -3546,5 +3703,23 @@ const cleanentity = () => {
   right: 450px !important;
   top: 460px !important;
   // height: 100px !important;
+}
+#displacement-chart {
+  width: 300px;
+  height: 200px;
+  margin: 2px 0;
+}
+.chart-container {
+  position: absolute;
+  top: 445px;
+  right: 630px;
+  height: 200px;
+  width: 300px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+.show_displ {
+  display: none;
 }
 </style>
