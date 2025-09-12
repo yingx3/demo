@@ -713,57 +713,57 @@ const handleFileChange = file => {
 //     console.error('执行失败:', error.response?.data || error.message)
 //   }
 // }
-const submit_inverseV = async () => {
-  try {
-    ElMessage({ message: '运行中!', type: 'success' })
-    const params = { form_inverseV }
-    const response = await axios.get('node/displ_file', { params })
-    // console.log('执行结果:', response.data.rt_json)
-    // console.log('执行结果:', response.data)
-    // console.log('执行结果:', response.data.fileProcessing.rt_json.rt)
-
-    const rt = response.data.fileProcessing.rt_json.rt
-    const time = response.data.fileProcessing.rt_json.time
-    const databaseOperation = response.data.databaseOperation
-    const pointId = response.data.databaseOperation.pointId
-    const lon = response.data.databaseOperation.coordinates.longitude
-    const lat = response.data.databaseOperation.coordinates.latitude
-    const params_return = { pointId, lon, lat, rt, time }
-    // console.log(databaseOperation)
-    // console.log(lon, lat)
-    // if (rt < 24) {
-    //   console.log("红色警报！")
-    // } else if (rt >= 24 && rt < 48) {
-    //   console.log("橙色警报！")
-    // }
-    // else if (rt >= 48 && rt < 72) {
-    //   console.log("黄色警报!")
-    // } else if (rt >= 72 && rt < 96) {
-    //   console.log("蓝色警报！")
-    // } else {
-    //   console.log("未有险情！")
-    // }
-    $emit('forecast', params_return)
-  } catch (error) {
-    console.error('执行失败:', error.response?.data || error.message)
-  }
-}
 // const submit_inverseV = async () => {
 //   try {
-//     ElMessage({ message: '运行中!(约2分钟)', type: 'success', duration: 120000 })
-//     const response = await axios.get('node/api/crack/ZXPRTL5002024A0454')
+//     ElMessage({ message: '运行中!', type: 'success' })
+//     const params = { form_inverseV }
+//     const response = await axios.get('node/displ_file', { params })
+//     // console.log('执行结果:', response.data.rt_json)
+//     // console.log('执行结果:', response.data)
+//     // console.log('执行结果:', response.data.fileProcessing.rt_json.rt)
 
-//     console.log('执行结果:', response.data)
-//     if (response.data.ooaDetected==false){
-//       alert("并未出现滑坡！")
-//     }else{
-//       alert("请您及时关注预警！！！")
-//     }
-
+//     const rt = response.data.fileProcessing.rt_json.rt
+//     const time = response.data.fileProcessing.rt_json.time
+//     const databaseOperation = response.data.databaseOperation
+//     const pointId = response.data.databaseOperation.pointId
+//     const lon = response.data.databaseOperation.coordinates.longitude
+//     const lat = response.data.databaseOperation.coordinates.latitude
+//     const params_return = { pointId, lon, lat, rt, time }
+//     // console.log(databaseOperation)
+//     // console.log(lon, lat)
+//     // if (rt < 24) {
+//     //   console.log("红色警报！")
+//     // } else if (rt >= 24 && rt < 48) {
+//     //   console.log("橙色警报！")
+//     // }
+//     // else if (rt >= 48 && rt < 72) {
+//     //   console.log("黄色警报!")
+//     // } else if (rt >= 72 && rt < 96) {
+//     //   console.log("蓝色警报！")
+//     // } else {
+//     //   console.log("未有险情！")
+//     // }
+//     $emit('forecast', params_return)
 //   } catch (error) {
 //     console.error('执行失败:', error.response?.data || error.message)
 //   }
 // }
+const submit_inverseV = async () => {
+  try {
+    ElMessage({ message: '运行中!(约2分钟)', type: 'success', duration: 120000 })
+    const response = await axios.get('node/api/crack/ZXPRTL5002024A0454')
+
+    console.log('执行结果:', response.data)
+    // if (response.data.ooaDetected==false){
+    //   alert("并未出现滑坡！")
+    // }else{
+    //   alert("请您及时关注预警！！！")
+    // }
+
+  } catch (error) {
+    console.error('执行失败:', error.response?.data || error.message)
+  }
+}
 // const submit_inverseV = async () => {
 //   const rscriptPath = '"C:\\Program Files\\R\\R-4.3.1\\bin\\x64\\Rscript.exe"'
 //   const targetDir = 'E:/practice/demo/PFTF_1.0.0/PFTF-PFTF_1.0.0'

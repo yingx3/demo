@@ -11,6 +11,9 @@ import XLSX from 'xlsx'
 import moment from 'moment'
 import { point } from 'turf'
 import { da } from 'element-plus/es/locale/index.mjs'
+// const ExcelJS = require('exceljs');
+import ExcelJS from 'exceljs';
+
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -40,18 +43,18 @@ const displ_file = ''
 
 // Kingbase8 数据库配置
 const dbConfig = {
-  // user: 'system',
-  // host: '172.21.135.11',
-  // database: 'icelake',
-  // password: 'Sipsd123!@#',
-  // port: 54321,
-  // connectionTimeoutMillis: 10000,
-  // idleTimeoutMillis: 30000,
-  user: 'postgres',
-  host: 'localhost',
-  database: 'postgis',
-  password: '123456',
-  port: 5432,
+  user: 'system',
+  host: '172.21.135.11',
+  database: 'icelake',
+  password: 'Sipsd123!@#',
+  port: 54321,
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
+  // user: 'postgres',
+  // host: 'localhost',
+  // database: 'postgis',
+  // password: '123456',
+  // port: 5432,
 }
 
 // 创建数据库连接池
@@ -146,7 +149,7 @@ function formatUTCTimestamp(date) {
 //   return moment(date).format('YYYY-MM-DDTHH:mm:ss.SSSZ');
 // }
 function readExcelData(filePath) {
-  // console.log(filePath)
+  console.log(filePath)
   try {
     const workbook = XLSX.readFile(filePath)
     const sheetName = workbook.SheetNames[0]
@@ -173,7 +176,10 @@ function readExcelData(filePath) {
 // 处理时间数据并转换为整点
 function processHourlyData(filePath) {
   console.log('🔄 正在处理时间数据...')
-  const data = readExcelData(filePath)
+  // let filePath=filePath
+  // console.log(filePath)
+ const save_path =  processAndSaveData(filePath);
+  const data = readExcelData(save_path)
   // console.log(data)
   const hourlyGroups = {}
 
@@ -331,7 +337,7 @@ cat("时区: UTC\\n")
           if (fs.existsSync(rScriptPath)) {
             fs.unlinkSync(rScriptPath)
           }
-        } catch (e) {}
+        } catch (e) { }
 
         if (error) {
           console.error('❌ R脚本执行失败:', error.message)
@@ -1259,7 +1265,7 @@ app.get('/api/crack/:deviceId', async (req, res) => {
         success: true,
         deviceId: deviceId,
         message: '未找到匹配的数据',
-        ooaDetected: false,
+     
       })
     }
 
@@ -1293,11 +1299,23 @@ app.get('/api/crack/:deviceId', async (req, res) => {
     const rScriptOutput = await executeRScript(R_SCRIPT_PATH)
 
     // 检测OOA detected
-    const ooaDetected = checkOOADetected()
+    // const ooaDetected = checkOOADetected()
 
     // 恢复R脚本到原始状态
-    await restoreRScript(R_SCRIPT_PATH)
+    // await restoreRScript(R_SCRIPT_PATH)
 
+
+    const rt_json = path.join(TARGET_PATH, 'rt_data.json')
+    const data = await fs.promises.readFile(rt_json, 'utf8')
+    const data_forecast = JSON.parse(data)
+    const insertPointQuery = `
+          INSERT INTO public.forecast (rt,time)
+          VALUES ($1,$2)
+        `
+    const newPointResult = await client.query(insertPointQuery, [
+      data_forecast.rt,
+      data_forecast.time,
+    ])
     res.json({
       success: true,
       deviceId: deviceId,
@@ -1310,11 +1328,10 @@ app.get('/api/crack/:deviceId', async (req, res) => {
       },
       rdaFile: targetRdaPath,
       rScriptExecuted: true,
-      ooaDetected: ooaDetected,
+
       rScriptOutput: rScriptOutput,
-      message: `数据处理完成并已执行R脚本，OOA检测结果: ${
-        ooaDetected ? '存在' : '不存在'
-      }`,
+
+      rt_json: JSON.parse(data),
     })
   } catch (error) {
     console.error('处理失败:', error)
@@ -1330,12 +1347,74 @@ app.get('/api/crack/:deviceId', async (req, res) => {
       success: false,
       message: '处理失败',
       error: error.message,
-      ooaDetected: false,
+
     })
   } finally {
     if (client) client.release()
   }
 })
+
+
+//文件转换
+async function saveDataToExcel(data, filePath) {
+    try {
+        // 创建 workbook 和 worksheet
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Displacement Data');
+
+        // 设置表头
+        worksheet.columns = [
+            { header: 'timestamp', key: 'timestamp', width: 25 },
+            { header: 'displ', key: 'displ', width: 15 }
+        ];
+
+        // 添加数据行
+        data.forEach(item => {
+            worksheet.addRow({
+                timestamp: item.update_time, // 使用原始的 update_time
+                displ: item.lf              // 使用原始的 lf，但列头显示为 displ
+            });
+        });
+
+        // 设置表头样式
+        worksheet.getRow(1).eachCell((cell) => {
+            cell.font = { bold: true };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFE6E6FA' } // 浅紫色背景
+            };
+        });
+
+        // 确保目录存在
+        const dir = path.dirname(filePath);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+
+        // 保存文件
+        await workbook.xlsx.writeFile(filePath);
+        console.log(`Excel文件已成功保存到: ${filePath}`);
+        return filePath;
+
+    } catch (error) {
+        console.error('保存Excel文件时出错:', error);
+        throw error;
+    }
+}
+function processAndSaveData(data) {
+    const fileName = 'displ.xlsx';
+    const savePath = path.join('D:/practice/PFTF/icelake', fileName);
+
+    try {
+        const resultPath =saveDataToExcel(data, savePath);
+        console.log('文件保存成功:', resultPath);
+    } catch (error) {
+        console.error('处理数据失败:', error);
+    }
+    return savePath
+}
 //获取所有空间参考数据
 app.get('/', async (req, res) => {
   //   res.send('Success!')
