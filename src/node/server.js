@@ -32,9 +32,9 @@ const storage = multer.diskStorage({
 const upload = multer({ storage })
 let filePath
 // 文件保存路径
-const SAVE_PATH = 'D:\\practice\\PFTF\\icelake'
+const SAVE_PATH = 'E:/Projects/ZHLXT/算法/基于位移监测滑坡预警/PFTF_1.0.0/PFTF_1.0.0/icelake'
 // 目标R脚本路径
-const TARGET_PATH = 'D:\\practice\\PFTF\\PFTF_1.0.0\\PFTF-PFTF_1.0.0'
+const TARGET_PATH = 'E:/Projects/ZHLXT/算法/基于位移监测滑坡预警/PFTF_1.0.0/PFTF_1.0.0/PFTF-PFTF_1.0.0'
 const R_SCRIPT_PATH = path.join(TARGET_PATH, '1_1_input.R')
 const displ_file = ''
 
@@ -49,7 +49,7 @@ const dbConfig = {
   // idleTimeoutMillis: 30000,
   user: 'postgres',
   host: 'localhost',
-  database: 'postgis',
+  database: 'postgres',
   password: '123456',
   port: 5432,
 }
@@ -321,7 +321,7 @@ cat("时区: UTC\\n")
       fs.writeFileSync(rScriptPath, rScriptContent, 'utf8')
 
       // 执行R脚本
-      const Rscript = '"C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe"'
+      const Rscript = '"D:/application/r/baseR/bin/Rscript.exe"'
       const command = `cd /d "${SAVE_PATH}" && ${Rscript} "${rScriptPath}"`
 
       console.log('正在转换为RDA格式...')
@@ -572,7 +572,7 @@ function restoreRScript(rScriptPath) {
 function executeRScript(rScriptPath) {
   return new Promise((resolve, reject) => {
     try {
-      const Rscript = '"C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe"'
+      const Rscript = '"D:/application/r/baseR/bin/Rscript.exe"'
       const command = `cd /d "${path.dirname(
         rScriptPath
       )}" && ${Rscript} "${rScriptPath}"`
@@ -1561,6 +1561,88 @@ app.post('/point', async (req, res) => {
     res.status(500).send('创建要素失败')
   }
 })
+// --- 新增：接收 GBM/Shapefile 上传并保存到固定目录 ---
+const GBM_SAVE_DIR = 'E:\\Projects\\ZHLXT\\backend\\hd\\data\\BCNSL'
+// 确保目录存在（使用文件顶部已定义的 ensureDirectoryExists）
+ensureDirectoryExists(GBM_SAVE_DIR)
+
+const storageGBM = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, GBM_SAVE_DIR)
+  },
+  filename: (req, file, cb) => {
+    // 保留原始文件名（如需避免覆盖可在此添加时间戳或 uuid）
+    cb(null, file.originalname)
+  }
+})
+const uploadGBM = multer({ storage: storageGBM })
+
+// 与前端 el-upload 的 action 对应：/node/upload_shp
+app.post('/node/upload_shp', uploadGBM.array('file', 10), (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ code: 400, message: '没有文件上传' })
+    }
+
+      const savedFiles = req.files.map(f => ({
+      originalFileName: f.originalname,
+      savedPath: path.join(GBM_SAVE_DIR, f.originalname)
+    }))
+    console.log('GBM shapefile 保存：', savedFiles)
+
+    // 返回给前端的示例响应，可按需扩展（例如解析 shp 返回 bbox 等）
+    return res.json({
+      code: 200,
+      message: '上传成功',
+      files: savedFiles,
+      name: req.body.name || ''
+    })
+  } catch (err) {
+    console.error('处理 /node/upload_shp 失败:', err)
+    return res.status(500).json({ code: 500, message: err.message || 'server error' })
+  }
+})
+
+// 新存储目录（确保ensureDirectoryExists函数已定义，或添加一个简单mkdir）
+const SEISMIC_SAVE_DIR = 'E:\\Projects\\ZHLXT\\backend\\hd\\data\\seismic';
+if (!fs.existsSync(SEISMIC_SAVE_DIR)) {
+  fs.mkdirSync(SEISMIC_SAVE_DIR, { recursive: true });
+}
+
+const storageSeismic = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, SEISMIC_SAVE_DIR);
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname); // 保留原始文件名
+  }
+});
+const uploadSeismic = multer({ storage: storageSeismic });
+
+// 新端点：只上传并保存Excel
+app.post('/node/upload_excel', uploadSeismic.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ code: 400, message: '没有文件上传' });
+    }
+
+    const savedFile = {
+      originalFileName: req.file.originalname,
+      savedPath: path.join(SEISMIC_SAVE_DIR, req.file.originalname)
+    };
+    console.log('Seismic Excel 保存：', savedFile);
+
+    return res.json({
+      code: 200,
+      message: '上传成功',
+      file: savedFile
+    });
+  } catch (err) {
+    console.error('处理 /node/upload_excel 失败:', err);
+    return res.status(500).json({ code: 500, message: err.message || 'server error' });
+  }
+});
+
 
 app.listen(3000, () => {
   // console.log('Server running on http://localhost:3000');

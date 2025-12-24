@@ -5,18 +5,18 @@
       <div class="theme">
         <div class="title">发育规律与风险源判识</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
-        <div class="box">
+        <!-- <div class="box">
           <img src="../assets/img/云反射率.png" alt="" />
           <span>冰川泥石流、冰岩崩孕灾条件分析模型</span>
-        </div>
+        </div> -->
         <div class="box">
           <img src="../assets/img/云反射率.png" alt="" />
           <span>增温冻融土边坡稳定性预测模型</span>
         </div>
-        <div class="box">
+        <!-- <div class="box">
           <img src="../assets/img/云反射率.png" alt="" />
           <span>冰碛土滑坡/泥石流运动过程模型</span>
-        </div>
+        </div> -->
         <div class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
           <el-button :plain="true" @click="dialogVisible = true"
@@ -94,6 +94,65 @@
                   >运行</el-button
                 >
                 <el-button @click="dialogVisible = false">取消</el-button>
+              </el-form-item>
+            </el-form>
+          </el-dialog>
+        </div>
+        <div class="box box-used p_bottom">
+          <img src="../assets/img/云反射率.png" alt="" />
+          <el-button :plain="true" @click="dialogVisibleGBM = true"
+            ><span>冰川泥石流易发性预测模型</span></el-button
+          >
+          <el-dialog
+            v-model="dialogVisibleGBM"
+            title="冰川泥石流易发性预测模型"
+            width="500"
+            :close-on-click-modal="false"
+            class="dialog_lightGBM"
+          >
+            <p id="name_par_gbm" style="margin-left:48px; font-size:18px; color:#2763CA">模型参数 / 上传 shp</p>
+
+            <el-form
+              :model="formGBM"
+              label-width="auto"
+              style="max-width: 600px"
+              class="form_gbm"
+            >
+              <el-form-item label="Shapefile">
+                <el-input
+                  v-model="fileNameGBM"
+                  placeholder="上传shp文件"
+                  readonly
+                  style="width: 260px"
+                >
+                  <template #append>
+                    <el-upload
+                      ref="uploadRefGBM"
+                      action="http://localhost:3000/node/upload_shp"
+                      name="file"
+                      :auto-upload="false"
+                      :multiple="true"
+                      :show-file-list="false"
+                      accept=".shp,.dbf,.shx,.prj"
+                      :data="uploadDataGBM"
+                      @change="handleFileChangeGBM"
+                      @success="handleUploadSuccessGBM"
+                      @error="handleUploadErrorGBM"
+                    >
+                      <el-button
+                        style="border: none; color: white; padding: 0; margin-left: 8px;"
+                        @click.stop="triggerUploadGBM"
+                      >
+                        <i class="iconfont icon-daoru"></i>
+                      </el-button>
+                    </el-upload>
+                  </template>
+                </el-input>
+              </el-form-item>
+
+              <el-form-item>
+                <el-button type="primary" @click="submitGBM" class="b_ex1">上传并提交</el-button>
+                <el-button @click="dialogVisibleGBM = false">取消</el-button>
               </el-form-item>
             </el-form>
           </el-dialog>
@@ -206,26 +265,46 @@
             </el-form>
           </el-dialog>
         </div>
+        <div class="box">
+          <img src="../assets/img/云反射率.png" alt="" />
+          <span>冰岩崩起动和冰岩碎屑流运动模型</span>
+        </div>
+        <!-- <div class="box">
+          <img src="../assets/img/云反射率.png" alt="" />
+          <span>冰川泥石流动力学模型</span>
+        </div>         -->
       </div>
       <div class="theme">
         <div class="title">定量风险评估</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
-        <div class="box">
+        <!-- <div class="box">
           <img src="../assets/img/云反射率.png" alt="" />
           <span>全域风险评估参数模型</span>
+        </div> -->
+        <div class="box">
+          <img src="../assets/img/云反射率.png" alt="" />
+          <span>冰川流速估算模型</span>
         </div>
         <div class="box">
           <img src="../assets/img/云反射率.png" alt="" />
-          <span>承载体分布模拟模型</span>
+          <span>区域灾点尺度危险性评估模型</span>
         </div>
         <div class="box">
+          <img src="../assets/img/云反射率.png" alt="" />
+          <span>溃决洪水灾害链风险评估模型</span>
+        </div>
+        <div class="box">
+          <img src="../assets/img/云反射率.png" alt="" />
+          <span>承载体识别深度学习模型</span>
+        </div>
+        <!-- <div class="box">
           <img src="../assets/img/云反射率.png" alt="" />
           <span>承载体脆弱性评估参数模拟</span>
         </div>
         <div class="box p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
           <span>致灾危险性评估参数模型</span>
-        </div>
+        </div> -->
       </div>
       <div class="theme">
         <div class="title">突发性灾害监测预警</div>
@@ -308,9 +387,81 @@
             >
           </el-dialog>
         </div>
-        <div class="box">
+        <!-- <div class="box">
           <img src="../assets/img/云反射率.png" alt="" />
           <span>基于地震动信号的反演过程模型</span>
+        </div> -->
+        <!-- <div class="box">
+          <img src="../assets/img/云反射率.png" alt="" />
+          <el-button :plain="true" @click="dialog_inverseV = true">
+            <span>冰川泥石流监测预警模型</span></el-button
+          >
+        </div> -->
+        <div class="box box-used p_bottom">
+          <img src="../assets/img/云反射率.png" alt="" />
+          <el-button :plain="true" @click="dialogVisibleSeismic = true">
+            <span>冰川泥石流监测预警模型</span>
+          </el-button>
+          <el-dialog
+            v-model="dialogVisibleSeismic"
+            title="冰川泥石流监测预警模型"
+            width="500"
+            :close-on-click-modal="false"
+            class="dialog_seismic"
+          >
+            <p id="name_par_seismic" style="margin-left:48px; font-size:18px; color:#2763CA">模型参数 / 上传 Excel</p>
+
+            <el-form
+              :model="formSeismic"
+              label-width="auto"
+              style="max-width: 600px"
+              class="form_seismic"
+            >
+              <el-form-item label="Excel文件">
+                <el-input
+                  v-model="fileNameSeismic"
+                  placeholder="上传.xlsx文件"
+                  readonly
+                  style="width: 260px"
+                >
+                  <template #append>
+                    <el-upload
+                      ref="uploadRefSeismic"
+                      action="http://localhost:3000/node/upload_excel"
+                      name="file"
+                      :auto-upload="false"
+                      :multiple="false"
+                      :show-file-list="false"
+                      accept=".xlsx"
+                      :data="uploadDataSeismic"
+                      @change="handleFileChangeSeismic"
+                      @success="handleUploadSuccessSeismic"
+                      @error="handleUploadErrorSeismic"
+                    >
+                      <el-button
+                        style="border: none; color: white; padding: 0; margin-left: 8px;"
+                        @click.stop="triggerUploadSeismic"
+                      >
+                        <i class="iconfont icon-daoru"></i>
+                      </el-button>
+                    </el-upload>
+                  </template>
+                </el-input>
+              </el-form-item>
+
+              <el-form-item>
+                <el-button type="primary" @click="submitSeismic" class="b_ex1">上传并提交</el-button>
+                <el-button @click="dialogVisibleSeismic = false">取消</el-button>
+              </el-form-item>
+            </el-form>
+          </el-dialog>
+        </div>
+
+
+
+          <div class="box">
+          <img src="../assets/img/云反射率.png" alt="" />
+            <span>基于地震动数据的灾害识别模型</span>
         </div>
       </div>
 
@@ -372,6 +523,7 @@
       </div>
     </transition>
   </div>
+
 </template>
 <script setup>
 import { ElMessageBox } from 'element-plus'
@@ -383,10 +535,35 @@ import axios from 'axios'
 // import { exec } from 'child_process'
 const dialogVisible = ref(false)
 const dialogVisible1 = ref(false)
+const dialogVisibleGBM = ref(false)
 const dialogVisible2 = ref(false)
 const dialog_inverseV = ref(false)
 const uploadRef = ref(null)
 const fileName_inverseV = ref('')
+// --- GBM 上传相关 ---
+const uploadRefGBM = ref(null)
+const fileNameGBM = ref('')
+const fileGBM = ref()
+const formGBM = reactive({
+  name: '',
+  // 前端不用把 targetFolder 强行传死，若后端需要可以传；这里演示也可以传
+  targetFolder: 'E:\\Projects\\ZHLXT\\backend\\hd\\data\\BCNSL'
+})
+const dialogVisibleSeismic = ref(false)
+const uploadRefSeismic = ref(null)
+const fileNameSeismic = ref('')
+const fileSeismic = ref(null)
+const uploadDataSeismic = () => ({})  // 如果需要额外数据，可扩展
+const showBarrage = ref(false)  // 修复 "showBarrage" 未定义
+const formSeismic = reactive({})  // 修复 "formSeismic" 未定义（如果模板中用了 :model="formSeismic"）
+// 返回给 el-upload 的附加表单字段
+const uploadDataGBM = () => {
+  return {
+    name: formGBM.name || '',
+    targetFolder: formGBM.targetFolder || ''
+  }
+
+}
 
 import { useSquareStore } from '../stores/squareStore'
 import { emitter } from '../eventBus'
@@ -400,6 +577,7 @@ let $emit = defineEmits([
   'yjLayers',
   'floodLayers',
   'forecast',
+  'seismicResult',
 ])
 // 获取 store 实例
 const squareStore = useSquareStore()
@@ -701,7 +879,73 @@ const handleFileChange = file => {
   // 自动触发上传（如需手动上传可删除这部分）
   uploadRef.value.submit()
 }
-//执行R脚本
+
+const triggerUploadGBM = () => {
+  // 打开文件选择
+  uploadRefGBM.value?.$el.querySelector('input[type=file]').click()
+}
+
+const handleFileChangeGBM = (uploadFile, uploadFiles) => {
+  // uploadFiles 是所有选中的文件
+  fileGBM.value = uploadFiles.map(f => f.raw || f)
+  fileNameGBM.value = uploadFiles.map(f => f.name).join(', ')
+}
+
+const submitGBM = async () => {
+  if (!fileGBM.value || fileGBM.value.length === 0) {
+    ElMessage({ message: '请先选择要上传的 shapefile 相关文件', type: 'warning' })
+    return
+  }
+  dialogVisibleGBM.value = false
+  ElMessage({ message: '上传中，请稍候...', type: 'info', duration: 0 })
+  try {
+    uploadRefGBM.value?.submit()
+  } catch (err) {
+    ElMessage.closeAll()
+    ElMessage({ message: '上传失败：' + (err.message || err), type: 'error' })
+  }
+}
+// el-upload 成功回调
+const handleUploadSuccessGBM = async (response, file, fileList) => {
+  ElMessage.closeAll()
+  if (response?.code !== 200) {
+    ElMessage({ message: '上传失败：' + (response?.message || '未知错误'), type: 'error' })
+    return
+  }
+
+  ElMessage({ message: '上传成功，正在请求后端处理...', type: 'info', duration: 0 })
+  console.log('GBM upload success resp:', response)
+
+  const savedFiles = response.files || []
+  try {
+    const resp = await axios.post(
+      '/testapi/admin/user/GBM',
+      { files: savedFiles },
+      { timeout: 120000 }
+    )
+
+    ElMessage.closeAll()
+    ElMessage({ message: '后端处理完成，正在加载图层', type: 'success' })
+    $emit('openLayers', { gbmUpload: true, uploadResp: response, processResp: resp.data })
+  } catch (err) {
+    ElMessage.closeAll()
+    ElMessage({ message: '后端处理失败：' + (err?.message || '网络或服务错误'), type: 'error' })
+    console.error('调用 Spring Boot 处理 shp 失败', err)
+  } finally {
+    fileGBM.value = []
+    fileNameGBM.value = ''
+  }
+}
+
+// el-upload 错误回调
+const handleUploadErrorGBM = (err, file, fileList) => {
+  ElMessage.closeAll()
+  ElMessage({ message: '上传失败：' + (err?.message || '网络或后端错误'), type: 'error' })
+  console.error('GBM upload error:', err)
+  fileGBM.value = null
+  fileNameGBM.value = ''
+}
+// 执行R脚本
 // const submit_inverseV = async () => {
 //   try {
 //     const response = await axios.post('node/rscript', {
@@ -779,6 +1023,90 @@ const submit_inverseV = async () => {
 //     console.log('执行成功:', stdout)
 //   })
 // }
+const triggerUploadSeismic = () => {
+  // 打开文件选择
+  uploadRefSeismic.value?.$el.querySelector('input[type=file]').click()
+}
+
+const handleFileChangeSeismic = (uploadFile, uploadFiles) => {
+  // uploadFiles 是所有选中的文件
+  fileSeismic.value = uploadFiles.map(f => f.raw || f)
+  fileNameSeismic.value = uploadFiles.map(f => f.name).join(', ')
+}
+
+const submitSeismic = async () => {
+  if (!fileSeismic.value || fileSeismic.value.length === 0) {
+    ElMessage({ message: '请先选择要上传的 shapefile 相关文件', type: 'warning' })
+    return
+  }
+  dialogVisibleSeismic.value = false
+  ElMessage({ message: '上传中，请稍候...', type: 'info', duration: 0 })
+  try {
+    uploadRefSeismic.value?.submit()
+  } catch (err) {
+    ElMessage.closeAll()
+    ElMessage({ message: '上传失败：' + (err.message || err), type: 'error' })
+  }
+}
+// el-upload 成功回调
+const handleUploadSuccessSeismic = async (response, file, fileList) => {
+  ElMessage.closeAll()
+  if (response?.code !== 200) {
+    ElMessage({ message: '上传失败：' + (response?.message || '未知错误'), type: 'error' })
+    return
+  }
+
+  ElMessage({ message: '上传成功，正在请求后端处理...', type: 'info', duration: 0 })
+  console.log('Seismic upload success resp:', response)
+
+  const savedFile = response.file  // 单文件
+  try {
+    const resp = await axios.post(
+      '/testapi/admin/user/seismic',
+      { file: savedFile },
+      { timeout: 120000 }
+    )
+
+    ElMessage.closeAll()
+    ElMessage({ message: '后端处理完成，正在加载结果', type: 'success' })
+
+    // 不在子组件直接操作 Cesium，改为发事件给父组件由父组件渲染
+    const detected = resp.data?.detected || false
+    // 传回检测结果和可选坐标（若后端返回）
+    const payload = {
+      detected,
+      lon: resp.data?.lon ?? 97.5,
+      lat: resp.data?.lat ?? 31.0,
+      info: resp.data
+    }
+    // 发出事件，父组件监听 seismicResult
+    $emit('seismicResult', payload)
+
+    // 如果需要保留弹幕或内部状态，可在这里处理
+    if (detected) {
+      showBarrage.value = true
+      setTimeout(() => { showBarrage.value = false }, 5000)
+    }
+  } catch (err) {
+    ElMessage.closeAll()
+    ElMessage({ message: '后端处理失败：' + (err?.message || '网络或服务错误'), type: 'error' })
+    console.error('调用后端处理 excel 失败', err)
+  } finally {
+    fileSeismic.value = []
+    fileNameSeismic.value = ''
+  }
+}
+
+// el-upload 错误回调
+const handleUploadErrorSeismic = (err, file, fileList) => {
+  ElMessage.closeAll()
+  ElMessage({ message: '上传失败：' + (err?.message || '网络或后端错误'), type: 'error' })
+  console.error('Seismic upload error:', err)
+  fileSeismic.value = null
+  fileNameSeismic.value = ''
+}
+
+
 </script>
 <style lang="scss" scoped>
 :deep(.el-button.is-plain) {
@@ -809,7 +1137,7 @@ const submit_inverseV = async () => {
   background: url('../assets/img/left_theme_2.png');
   background-size: cover;
   width: 400px;
-  height: 850px;
+  height: 880px;
 }
 
 .name {
@@ -818,7 +1146,7 @@ const submit_inverseV = async () => {
   left: 15px;
   writing-mode: vertical-rl;
   /* 将文字竖向排列，从上到下 */
-  // text-orientation: upright; /* 保持文字方向垂直 */
+  // text-orientation: upright; /* 旋转文字，使其从下到上显示 */
   // white-space: nowrap; /* 防止文字换行 */
   letter-spacing: 2px;
   color: rgba(255, 255, 255, 1);
@@ -981,6 +1309,23 @@ const submit_inverseV = async () => {
   --el-dialog-bg-color: transparent;
   width: 776px;
   height: 503px;
+  background-image: url('../assets/img/fz173.png');
+  background-size: 100% 100%;
+}
+
+:deep(.el-dialog.dialog_lightGBM) {
+  --el-dialog-bg-color: transparent;
+  width: 450px;
+  height: 300px;
+  background-image: url('../assets/img/fz173.png');
+  background-size: 100% 100%;
+}
+
+
+:deep(.el-dialog.dialog_seismic) {
+  --el-dialog-bg-color: transparent;
+  width: 450px;
+  height: 300px;
   background-image: url('../assets/img/fz173.png');
   background-size: 100% 100%;
 }
@@ -1176,6 +1521,10 @@ const submit_inverseV = async () => {
   margin-left: 440px;
 }
 
+.b_ex1 {
+  margin-left: 240px;
+}
+
 .b_ex_avaflow {
   margin-left: 180px;
 }
@@ -1198,5 +1547,29 @@ const submit_inverseV = async () => {
   color: rgba(39, 99, 202, 1);
   margin-left: 27px;
   line-height: 34px;
+}
+
+.barrage-container {
+  position: fixed;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 50px;
+  overflow: hidden;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.barrage-text {
+  position: absolute;
+  white-space: nowrap;
+  font-size: 24px;
+  color: red;
+  animation: barrage-scroll 10s linear infinite;
+}
+
+@keyframes barrage-scroll {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
 }
 </style>
