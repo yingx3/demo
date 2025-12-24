@@ -8,6 +8,7 @@
       @yjLayers="yjLayers"
       @floodLayers="floodLayers"
       @forecast="foreCast"
+      @seismicResult="handleSeismicResult"
     ></le-th>
     <zy-ml
       :time="selectedTime"
@@ -299,6 +300,25 @@
       <div id="displacement-chart"></div>
     </div>
   </div>
+  <el-dialog
+    v-model="popupVisible"
+    title="设备详情"
+    width="600px"
+    :before-close="hidePopup"
+  >
+    <div v-if="currentEntity">
+      <p><strong>设备 ID:</strong> {{ currentEntity.properties.deviceid }}</p>
+      <p>
+        <strong>泥石流检测结果:</strong>
+        {{ detectionResult ? '检测到风险！' : '未检测到' }}
+      </p>
+      <el-button @click="showWaveform">查看波形与检测点</el-button>
+      <div
+        id="waveform-chart"
+        style="width: 100%; height: 300px; margin-top: 20px"
+      ></div>
+    </div>
+  </el-dialog>
 </template>
 <script setup>
 // import wkb from 'wkb'
@@ -325,6 +345,7 @@ import MeasureArea from './js/MeasureArea.js'
 import MeasureManager from './js/MeasureManager.js'
 import RainEffectManager from './js/RainEffectManager.js'
 import { KrigingInstance } from './js/krigingInstance.js'
+import turf from 'turf'
 // import type { TableColumnCtx } from 'element-plus'
 // import * as WKB from 'wkb'
 // import * as wkx from 'wkx'
@@ -390,6 +411,12 @@ const form_disastersearch = reactive({
 })
 
 // 响应式数据
+
+const popupVisible = ref(false);
+const currentEntity = ref(null);
+const currentRecords = ref([]);
+const detectionResult = ref(false);
+const resultArray = ref([]);
 const tableData = ref([
   {
     name: '',
@@ -452,6 +479,20 @@ onMounted(async () => {
     fullscreenButton: false, //隐藏全屏按钮
     animation: false, //隐藏动画控件
     timeline: false, //隐藏时间控件
+    infoBox: true, //显示信息框
+  })
+
+  viewer.value.cesiumWidget.creditContainer.style.display = "none";
+
+  try {
+    const infoBoxFrame = viewer.value?.infoBox?.frame
+    if (infoBoxFrame && typeof infoBoxFrame.setAttribute === 'function') {
+      // 最小必要权限： allow-same-origin + allow-scripts
+      infoBoxFrame.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms')
+    }
+  } catch (e) {
+    console.warn('设置 infoBox iframe sandbox 属性失败', e)
+  }
     infoBox: true,
     cesiumViewerBottom: false,
   })
@@ -932,6 +973,216 @@ function flyToWithRangeCheck(
     },
   })
 }
+
+async function loadShpFromBackend({ filename, folder, endpoint = '/testapi/GBM' }) {
+  ElMessage.closeAll();
+  ElMessage({ message: '请求后端处理 shapefile...', type: 'info', duration: 0 });
+
+  try {
+    const resp = await axios.post(endpoint, { filename, folder }, { timeout: 120000 });
+    ElMessage.closeAll();
+
+    if (!resp?.data) {
+      ElMessage.error('后端返回为空');
+      return null;
+    }
+
+    if (resp.data.status && resp.data.status !== 'ok') {
+      ElMessage.error('后端处理失败：' + (resp.data.message || resp.data.status));
+      return null;
+    }
+
+    // ✅ 获取 GeoJSON
+    let geojson = resp.data.geojson || resp.data.data || resp.data;
+    if (typeof geojson === 'string') {
+      try {
+        geojson = JSON.parse(geojson);
+      } catch (e) {
+        console.warn('geojson 不是 JSON 字符串');
+      }
+    }
+
+    // ✅ 加载到 Cesium
+    const dataSource = await Cesium.GeoJsonDataSource.load(geojson, {
+      clampToGround: false ,
+      stroke: Cesium.Color.WHITE.withAlpha(0),
+      fill: Cesium.Color.WHITE.withAlpha(0),
+    });
+
+    viewer.value.dataSources.add(dataSource);
+
+    debugPrintDataSourceEntities(dataSource, 3);
+
+    // ✅ 应用易发等级符号化
+    const applied = applySuscSymbology(dataSource);
+    ElMessage.success(`图层加载完成，共 ${applied} 个实体已符号化`);
+    viewer.value.flyTo(dataSource);
+
+    return dataSource;
+  } catch (err) {
+    ElMessage.closeAll();
+    ElMessage.error('加载失败：' + (err?.message || err));
+    console.error('loadShpFromBackend error', err);
+    return null;
+  }
+}
+
+function applySuscSymbology(dataSource) {
+  console.log('applySuscSymbology: called', !!dataSource, dataSource?.entities?.values?.length ?? 0);
+
+  if (!dataSource?.entities) {
+    console.warn('applySuscSymbology: dataSource 或 entities 缺失');
+    return 0;
+  }
+
+  const entities = dataSource.entities.values;
+  const now = Cesium.JulianDate.now();
+
+  // 同时支持中文和英文 key
+  const ramp = {
+    // 英文下划线形式
+    very_low: { color: '#4caf50', alpha: 0.55 },   // 绿色
+    low: { color: '#2196f3', alpha: 0.65 },        // 蓝色
+    middle: { color: '#ffeb3b', alpha: 0.78 },     // 黄色
+    midlle: { color: '#ffeb3b', alpha: 0.78 },     // 容错拼写
+    high: { color: '#f44336', alpha: 0.88 },       // 红色
+    very_high: { color: '#8b0000', alpha: 0.95 },  // 红褐色
+
+    // 中文 key（根据 debug 输出）
+    '极低': { color: '#4caf50', alpha: 0.55 },
+    '低': { color: '#2196f3', alpha: 0.65 },
+    '中等': { color: '#ffeb3b', alpha: 0.78 },
+    '高': { color: '#f44336', alpha: 0.88 },
+    '极高': { color: '#8b0000', alpha: 0.95 },
+  };
+
+  // 优先查找的字段名（把 class 放首位）
+  const candidateKeys = ['class', 'susc_class', 'susc class', 'suscClass', 'susc'];
+
+  // ASCII 归一化备用（保留 a-z0-9_）
+  const normalize = s => String(s || '').trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+
+  const getClassValue = (entity) => {
+    if (!entity.properties) return null;
+    const propNames = entity.properties.propertyNames || Object.keys(entity.properties || {});
+
+    // 按候选字段优先读取（不做去除中文的归一化）
+    for (const key of candidateKeys) {
+      for (const pn of propNames) {
+        try {
+          if (pn === key || normalize(pn) === normalize(key)) {
+            const p = entity.properties[pn];
+            const raw = p?._value ?? (typeof p?.getValue === 'function' ? p.getValue(now) : undefined);
+            if (raw !== undefined && raw !== null) return String(raw).trim();
+          }
+        } catch (e) {
+          // 忽略单个属性读取错误
+        }
+      }
+    }
+
+    // 兜底：返回第一个非 id 的属性值（原始字符串）
+    for (const pn of propNames) {
+      try {
+        if (/^id$/i.test(pn)) continue;
+        const p = entity.properties[pn];
+        const raw = p?._value ?? (typeof p?.getValue === 'function' ? p.getValue(now) : undefined);
+        if (raw !== undefined && raw !== null) return String(raw).trim();
+      } catch (e) {}
+    }
+    return null;
+  };
+
+  let applied = 0;
+  for (const e of entities) {
+    try {
+      const rawVal = getClassValue(e);
+      if (!rawVal) continue;
+
+      // 三种尝试顺序：原始值（支持中文）、小写原始值（支持英文字母）、下划线归一化
+      const rawTrim = rawVal;
+      const rawLower = String(rawVal).toLowerCase();
+      const keyNorm = normalize(rawLower);
+
+      const style = ramp[rawTrim] || ramp[rawLower] || ramp[keyNorm];
+      if (!style) {
+        // 便于调试：若没有匹配到样式，打印一次（可删除生产环境）
+        // console.debug('applySuscSymbology: 未匹配等级 key', rawVal, { rawTrim, rawLower, keyNorm });
+        continue;
+      }
+
+      const color = Cesium.Color.fromCssColorString(style.color).withAlpha(style.alpha);
+
+      if (e.polygon) {
+        // 若需要 outline 可显式设置高度（注意性能与贴地行为）
+        try { e.polygon.height = new Cesium.ConstantProperty(0); } catch (err) { try { e.polygon.height = 0.1; } catch (e) {} }
+        e.polygon.material = new Cesium.ColorMaterialProperty(color);
+        e.polygon.outline = true;
+        e.polygon.fill = true;
+        try { e.polygon.outlineColor = new Cesium.ConstantProperty(Cesium.Color.BLACK); } catch (err) { try { e.polygon.outlineColor = Cesium.Color.BLACK; } catch (e) {} }
+      } else if (e.polyline) {
+        e.polyline.material = new Cesium.PolylineGlowMaterialProperty({ color, glowPower: 0.2 });
+        const w = typeof e.polyline.width?.getValue === 'function' ? e.polyline.width.getValue(now) : (e.polyline.width || 3);
+        e.polyline.width = w || 3;
+      } else if (e.point) {
+        e.point.color = new Cesium.ConstantProperty(color);
+        if (e.billboard) e.billboard.color = color;
+      }
+      applied++;
+    } catch (err) {
+      console.warn('applySuscSymbology: 单个实体着色失败', e?.id, err);
+    }
+  }
+
+  console.log(`applySuscSymbology: success, applied ${applied} / ${entities.length}`);
+  return applied;
+}
+
+
+function debugPrintDataSourceEntities(dataSource, sampleCount = 5) {
+  if (!dataSource?.entities) {
+    console.warn('debug: dataSource 或 entities 缺失');
+    return;
+  }
+
+  const entities = dataSource.entities.values;
+  console.log(`🧩 debug: entities total = ${entities.length}`);
+
+  const now = Cesium.JulianDate.now();
+  const max = Math.min(sampleCount, entities.length);
+
+  for (let i = 0; i < max; i++) {
+    const e = entities[i];
+    console.group(`Entity [${i}] id=${e.id || '(无)'}`);
+    const names = e.properties?.propertyNames || Object.keys(e.properties || {});
+    console.log('属性名:', names);
+
+    for (const n of names) {
+      try {
+        const p = e.properties[n];
+        const val = p?._value ?? (typeof p?.getValue === 'function' ? p.getValue(now) : undefined);
+        console.log(`  ${n}:`, val);
+      } catch (err) {
+        console.warn(`  ${n} 读取失败`, err);
+      }
+    }
+
+    const suspectKeys = ['susc', 'susc_class', 'class', '易发性'];
+    for (const k of suspectKeys) {
+      try {
+        const v = e.properties?.[k]?._value ?? e.properties?.[k]?.getValue?.(now);
+        if (v !== undefined) console.log(`  → ${k} 值:`, v);
+      } catch {}
+    }
+
+    console.groupEnd();
+  }
+
+  if (entities.length > max) {
+    console.log(`（已省略 ${entities.length - max} 个实体，增加 sampleCount 可查看更多）`);
+  }
+}
+
 //处理LeTh组件传递的时间
 const handleTimeSelected = time => {
   // console.log(time)
@@ -944,31 +1195,140 @@ const handleTimeSelected = time => {
   // console.log(selectedTime.value)
 }
 
-const openLayers = params => {
-  // console.log(params)
-  const { leftlat, leftlong, rightlat, rightlong, pnames } = params
-  // console.log(pnames)
-  if (pnames && Array.isArray(pnames)) {
-    pname.value.push(...pnames)
-  } else {
-    // 如果 pns 是 undefined 或 null，或者不是数组，将其作为单个元素添加
-    pname.value.push(pnames)
-  }
-  pname.value.reverse() //逆序排列数组
-  // console.log(pname.value)
-  // console.log(leftlat, leftlong, rightlat, rightlong)
-  // console.log(pnames.value) // pnames 是一个数组，包含所有传递的 pname 参数
-  const match = pnames[0].match(/^([^_]+)_/)
-  if (match[1] == 'dangerLevel') {
-    // console.log('111')
-    squareStore.openSquare()
-    squareStore.openRisk()
-  } else {
-    squareStore.closeRisk()
+const openLayers = async (params) => {
+  // 保留原有功能：兼容 params 为空、pnames 不是数组等情况
+  // 原始逻辑：处理 pnames、判断 dangerLevel、调用 addLayer3 并设置 selectedIds
+  try {
+    if (!params) {
+      console.warn('openLayers: params is empty')
+      return
+    }
+
+    const { leftlat, leftlong, rightlat, rightlong, pnames } = params
+
+    // 处理 pname 列表，兼容单个字符串或数组或未提供
+    if (pnames) {
+      if (Array.isArray(pnames)) {
+        pname.value.push(...pnames)
+      } else {
+        pname.value.push(pnames)
+      }
+    } else {
+      // 如果没有 pnames，不影响原有其它流程
+      console.warn('openLayers: pnames is not provided')
+    }
+    // 与原逻辑相同：逆序排列
+    if (pname.value.length > 1) pname.value.reverse()
+
+    // 取第一个用于判断 dangerLevel / addLayer3（安全读取）
+    const firstPname = Array.isArray(pnames) && pnames.length > 0
+      ? pnames[0]
+      : (typeof pnames === 'string' ? pnames : (pname.value[0] || null))
+
+    if (firstPname) {
+      const match = (firstPname && firstPname.match) ? firstPname.match(/^([^_]+)_/) : null
+      if (match && match[1] === 'dangerLevel') {
+        squareStore.openSquare()
+        squareStore.openRisk()
+      } else {
+        squareStore.closeRisk()
+      }
+    }
+
+    // 仅在有完整四角坐标和第一个 pname 时调用 addLayer3（与原行为一致且更安全）
+    if (
+      leftlat !== undefined &&
+      leftlong !== undefined &&
+      rightlat !== undefined &&
+      rightlong !== undefined &&
+      firstPname
+    ) {
+      addLayer3(leftlat, leftlong, rightlat, rightlong, firstPname)
+      selectedIds.value = [131]
+    } else {
+      // 若坐标或 pname 不完整，仍保留原行为但不调用会导致错误的代码
+      console.warn('openLayers: incomplete coordinates or pname, skipped addLayer3')
+    }
+  } catch (err) {
+    console.error('openLayers 原始逻辑执行错误：', err)
   }
 
-  addLayer3(leftlat, leftlong, rightlat, rightlong, pnames[0])
-  selectedIds.value = [131]
+  // 新增：兼容处理后端返回的 processResp（不影响上面原有逻辑）
+  try {
+    if (!params) return
+
+    const pr = params.processResp
+    if (!pr) return
+
+    console.log('openLayers: processResp detected', pr)
+
+    // 兼容多种后端结构：geojson 对象 / geojson 字符串 / data 数组 / filename
+    let maybeGeo = pr.geojson ?? pr.data ?? pr.geoJson ?? pr.result ?? pr
+
+    // 若是数组且第一个元素存在，尝试取第一个（兼容旧接口）
+    if (Array.isArray(maybeGeo)) {
+      if (maybeGeo.length === 0) {
+        maybeGeo = null
+      } else {
+        maybeGeo = maybeGeo[0]
+      }
+    }
+
+    // 尝试直接解析并加载 GeoJSON
+    if (maybeGeo) {
+      let geojsonObj = null
+      if (typeof maybeGeo === 'string') {
+        try {
+          geojsonObj = JSON.parse(maybeGeo)
+        } catch (e) {
+          // 不是 JSON 字符串 -> 可能是文件名，后续回退处理
+          geojsonObj = null
+        }
+      } else if (typeof maybeGeo === 'object') {
+        geojsonObj = maybeGeo
+      }
+
+      if (geojsonObj) {
+        try {
+          const dataSource = await Cesium.GeoJsonDataSource.load(geojsonObj, { clampToGround: true })
+          viewer.value.dataSources.add(dataSource)
+
+          // ← 插入：对新加载的数据调用符号化并打印结果
+          console.log('openLayers: applying susc symbology for processResp GeoJSON')
+          try {
+            const applied = applySuscSymbology(dataSource)
+            console.log(`openLayers: applySuscSymbology applied ${applied} / ${dataSource.entities.values.length}`)
+          } catch (err) {
+            console.warn('openLayers: applySuscSymbology failed', err)
+          }
+
+          debugPrintDataSourceEntities(dataSource)
+          viewer.value.flyTo(dataSource)
+          ElMessage({ message: '后端返回的 GeoJSON 已加载', type: 'success' })
+          return
+        } catch (e) {
+          console.error('将 processResp 的 geojson 加载到 Cesium 失败', e)
+          // 继续尝试回退（filename）
+        }
+      }
+    }
+
+    // 回退：尝试从 processResp 或 uploadResp 中取 filename 再次请求后端处理
+    const filename =
+      pr.filename || pr.savedFilename || params.uploadResp?.savedFilename || params.uploadResp?.filename
+    const folder = pr.folder || params.uploadResp?.folder || ''
+
+    if (filename) {
+      console.log('openLayers: fallback to loadShpFromBackend with filename', filename, folder)
+      await loadShpFromBackend({ filename, folder, endpoint: '/testapi/GBM' })
+      return
+    }
+
+    console.warn('openLayers: processResp 未包含可解析的 geojson 或 filename')
+  } catch (err) {
+    console.error('openLayers 处理 processResp 时出错：', err)
+    ElMessage({ message: '加载图层时发生错误：' + (err?.message || err), type: 'error' })
+  }
 }
 const area_avaflow = ref(null)
 const yjLayers = area => {
@@ -2190,60 +2550,321 @@ const initRightClickHandler = () => {
 }
 
 //加载地震动设备
-const addlayer_DZDdevice = () => {
-  Cesium.GeoJsonDataSource.load('/ng/DZD1.geojson')
-    .then(dataSource => {
-      layer17_guid.value = Cesium.createGuid() // 生成唯一 GUID
-      dataSource.guid = layer17_guid.value
-      viewer.value.dataSources.add(dataSource)
+// const addlayer_DZDdevice = () => {
+//   Cesium.GeoJsonDataSource.load('/ng/DZD1.geojson')
+//     .then(dataSource => {
+//       layer17_guid.value = Cesium.createGuid() // 生成唯一 GUID
+//       dataSource.guid = layer17_guid.value
+//       viewer.value.dataSources.add(dataSource)
 
-      const entities = dataSource.entities.values
+//       const entities = dataSource.entities.values
 
-      // 为每个实体绑定点击事件
-      entities.forEach(entity => {
-        entity.billboard = {
+//       // 为每个实体绑定点击事件
+//       entities.forEach(entity => {
+//         entity.billboard = {
+//           image: '/ng/position.png',
+//           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+//           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+//           width: 32,
+//           height: 32,
+//         }
+//       })
+//       // viewer.value.zoomTo(dataSource) // 自动飞行到数据范围
+//       viewer.value.camera.flyTo({
+//         destination: Cesium.Cartesian3.fromDegrees(
+//           102.166189,
+//           30.091431,
+//           4321.57
+//         ),
+//         //相机的姿态
+//         orientation: {
+//           heading: Cesium.Math.toRadians(237.79), //朝向
+//           pitch: Cesium.Math.toRadians(-12.97), //俯仰
+//           // pitch: Cesium.Math.toRadians(-90), //俯仰
+//           roll: 0.0, //滚转
+//         },
+//       })
+
+//       viewer.value.selectedEntityChanged.addEventListener(selectedEntity => {
+//         if (selectedEntity) {
+//           // console.log('选中实体:', selectedEntity._id)
+//           // 检查 _id 是否包含 'dev'
+//           if (selectedEntity._id.includes('dev')) {
+//             showPopup(selectedEntity)
+//           }
+//           // showPopup(selectedEntity)
+//         } else {
+//           hidePopup()
+//         }
+//       })
+
+//       // showPopup(entity) // 调用 addEarthquakeDevices 的弹窗逻辑
+//     })
+//     .catch(error => {
+//       // console.error('加载地震监测设备失败:', error)
+//     })
+// }
+
+    // 更新 showPopup 函数
+// 修改 showPopupWithDetection，直接操作 popup 元素
+const showPopupWithDetection = async (entity, records, detected, resultArray) => {
+  const position = entity.position.getValue(Cesium.JulianDate.now());
+  const cartographic = Cesium.Cartographic.fromCartesian(position);
+  const longitude = Cesium.Math.toDegrees(cartographic.longitude).toFixed(4);
+  const latitude = Cesium.Math.toDegrees(cartographic.latitude).toFixed(4);
+
+  // 设置弹出窗口位置
+  popup.style.left = `${viewer.value.canvas.clientWidth / 2 + 100}px`;
+  popup.style.top = `${viewer.value.canvas.clientHeight / 2}px`;
+  popup.style.display = 'block';
+
+  // 更新弹出窗口内容，包含检测结果
+  const status = detected ? '检测到泥石流风险！' : '未检测到泥石流';
+  popup.innerHTML = `
+    <p>经度: ${longitude} | 纬度: ${latitude}</p>
+    <p>设备 ID: ${entity.properties.deviceid}</p>
+    <p>检测结果: ${status}</p>
+    <button id="showWaveformBtn">查看波形与检测点</button>
+    <div id="chart" style="width: 480px; height: 360px;"></div>
+  `;
+
+  // 添加按钮事件（显示波形）
+  document.getElementById('showWaveformBtn').addEventListener('click', () => {
+    showWaveform(records, resultArray);
+  });
+
+  // 初始化图表（复用原有逻辑）
+  const chartDom = document.getElementById('chart');
+  const myChart = echarts.init(chartDom);
+
+  if (!records || records.length === 0) {
+    myChart.setOption({ title: { text: '暂无数据' } });
+    return;
+  }
+
+  // 提取数据（假设字段为 channel_one_lp_x 等，如原有代码）
+  const times = records.map(r => new Date(r.timestamp).toLocaleTimeString());
+  const LpX = records.map(r => r.channel_one_lp_x || 0);
+  const LpY = records.map(r => r.channel_one_lp_y || 0);
+  const LpZ = records.map(r => r.channel_one_lp_z || 0);
+
+  // 自动缩放 y 轴
+  const allValues = [...LpX, ...LpY, ...LpZ];
+  const min = Math.min(...allValues);
+  const max = Math.max(...allValues);
+  const padding = (max - min) * 0.15 || 0.001;
+
+  const option = {
+    title: { text: `设备 ${entity.properties.deviceid} 地震动监测波形` },
+    tooltip: { trigger: 'axis' },
+    legend: {
+      data: ['LpX', 'LpY', 'LpZ'],
+      right: 10,
+      selected: { LpX: true, LpY: false, LpZ: false }
+    },
+    xAxis: { type: 'category', data: times, axisLabel: { show: false } },
+    yAxis: { type: 'value', min: min - padding, max: max + padding },
+    grid: { left: 60, right: 30, top: 60, bottom: 30, containLabel: true },
+    dataZoom: [
+      { type: 'slider', xAxisIndex: 0, start: 0, end: times.length > 40 ? (40 / times.length) * 100 : 100 },
+      { type: 'inside', xAxisIndex: 0 }
+    ],
+    series: [
+      { name: 'LpX', type: 'line', data: LpX, symbol: 'circle', symbolSize: 5 },
+      { name: 'LpY', type: 'line', data: LpY, symbol: 'circle', symbolSize: 5 },
+      { name: 'LpZ', type: 'line', data: LpZ, symbol: 'circle', symbolSize: 5 }
+    ]
+  };
+
+  myChart.setOption(option);
+  myChart.on('legendSelectChanged', params => {
+    const selected = params.selected;
+    const newSeries = [];
+    if (selected.LpX) newSeries.push({ name: 'LpX', type: 'line', data: LpX });
+    if (selected.LpY) newSeries.push({ name: 'LpY', type: 'line', data: LpY });
+    if (selected.LpZ) newSeries.push({ name: 'LpZ', type: 'line', data: LpZ });
+    myChart.setOption({ series: newSeries });
+  });
+};
+
+// 修改 showWaveform，标记检测点
+const showWaveform = (records, resultArray) => {
+  const chartDom = document.getElementById('chart');
+  if (!chartDom) return;
+
+  const myChart = echarts.init(chartDom);
+  const times = records.map(r => new Date(r.timestamp).toLocaleTimeString());
+  const zData = records.map(r => r.channel_one_lp_z || 0);  // 假设 Z 轴用于检测
+  const markers = resultArray.map((val, idx) => val === 1 ? zData[idx] : null);
+
+  const option = {
+    title: { text: '地震动波形与泥石流检测' },
+    tooltip: { trigger: 'axis' },
+    xAxis: { type: 'category', data: times },
+    yAxis: { type: 'value' },
+    series: [
+      { name: 'Z 轴', type: 'line', data: zData },
+      { name: '检测点', type: 'scatter', data: markers, symbolSize: 8, color: 'red' }
+    ]
+  };
+  myChart.setOption(option);
+};
+
+
+
+const calculateDebrisFlow = (data, threshold = 2.5, shortWindow = 30, longWindow = 240, segmentDuration = 10, totalDuration = 60, samplingRate = 100) => {
+  const shortWindowSamples = shortWindow * samplingRate;
+  const longWindowSamples = longWindow * samplingRate;
+  const segmentSamples = segmentDuration * samplingRate;
+  const totalSamples = totalDuration * samplingRate;
+
+  // 手动实现卷积（STA 和 LTA）
+  const convolve = (signal, kernel) => {
+    const result = [];
+    for (let i = 0; i <= signal.length - kernel.length; i++) {
+      let sum = 0;
+      for (let j = 0; j < kernel.length; j++) {
+        sum += signal[i + j] * kernel[j];
+      }
+      result.push(sum);
+    }
+    return result;
+  };
+
+  const squaredData = data.map(x => x ** 2);
+  const staKernel = new Array(shortWindowSamples).fill(1);
+  const ltaKernel = new Array(longWindowSamples).fill(1);
+
+  let sta = convolve(squaredData, staKernel).map(x => x / shortWindowSamples);
+  let lta = convolve(squaredData, ltaKernel).map(x => x / longWindowSamples);
+
+  // 填充 STA 和 LTA 到原始长度
+  sta = new Array(shortWindowSamples - 1).fill(0).concat(sta);
+  lta = new Array(longWindowSamples - 1).fill(0).concat(lta);
+
+  const result = new Array(data.length).fill(0);
+
+  for (let i = 0; i < data.length; i++) {
+    if (i < longWindowSamples || lta[i] === 0) continue;
+
+    const ratio = sta[i] / lta[i];
+    if (ratio > threshold) {
+      const longWindowValue = lta[i];
+      const segmentRatios = [];
+      for (let j = i; j < Math.min(i + totalSamples, data.length); j += segmentSamples) {
+        const segment = data.slice(j, j + segmentSamples);
+        const segmentMean = segment.reduce((sum, x) => sum + x ** 2, 0) / segment.length;
+        segmentRatios.push(segmentMean / longWindowValue || 0);
+      }
+
+      const segmentChanges = segmentRatios.slice(1).map((r, idx) => r > segmentRatios[idx]);
+      if (segmentRatios.every(r => r > threshold) && segmentChanges.filter(Boolean).length >= 3) {
+        result[i] = 1;
+      }
+    }
+  }
+
+  const detected = result.some(x => x === 1);
+  return { resultArray: result, detected };
+};
+
+const addlayer_DZDdevice = async () => {
+  try {
+    const targetIds = [41109656, 41126040, 41158808]
+
+    // ✅ 获取后端最新位置数据（这里假设接口返回所有记录）
+    const res = await axios.get('http://localhost:3001/device/all')
+    const allDevices = res.data
+
+    // 筛选目标设备的最新位置
+    const devices = targetIds.map(id => {
+      const records = allDevices.filter(d => d.deviceid === id)
+      if (records.length === 0) return null
+      // 按 timestamp 倒序排序，取最新记录
+      records.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      return records[0]
+    }).filter(Boolean)
+
+    // ✅ 移除旧数据源，避免重复加载
+    const old = viewer.value.dataSources._dataSources.find(d => d.guid === layer17_guid.value)
+    if (old) viewer.value.dataSources.remove(old)
+
+    // ✅ 新建数据源
+    layer17_guid.value = Cesium.createGuid()
+    const dataSource = new Cesium.CustomDataSource('DZDdevice')
+    dataSource.guid = layer17_guid.value
+    viewer.value.dataSources.add(dataSource)
+
+    // ✅ 添加实体点
+    devices.forEach(device => {
+      dataSource.entities.add({
+        id: `dev_${device.deviceid}`,
+        position: Cesium.Cartesian3.fromDegrees(
+          device.gps_longitude,
+          device.gps_latitude,
+          device.gps_high || 0
+        ),
+        billboard: {
           image: '/ng/position.png',
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
           width: 32,
           height: 32,
-        }
-      })
-      // viewer.value.zoomTo(dataSource) // 自动飞行到数据范围
-      viewer.value.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(
-          102.166189,
-          30.091431,
-          4321.57
-        ),
-        //相机的姿态
-        orientation: {
-          heading: Cesium.Math.toRadians(237.79), //朝向
-          pitch: Cesium.Math.toRadians(-12.97), //俯仰
-          // pitch: Cesium.Math.toRadians(-90), //俯仰
-          roll: 0.0, //滚转
         },
-      })
-
-      viewer.value.selectedEntityChanged.addEventListener(selectedEntity => {
-        if (selectedEntity) {
-          // console.log('选中实体:', selectedEntity._id)
-          // 检查 _id 是否包含 'dev'
-          if (selectedEntity._id.includes('dev')) {
-            showPopup(selectedEntity)
-          }
-          // showPopup(selectedEntity)
-        } else {
-          hidePopup()
+        properties: {
+          deviceid: device.deviceid
         }
       })
+    })
 
-      // showPopup(entity) // 调用 addEarthquakeDevices 的弹窗逻辑
+    // ✅ 飞行到设备区域
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(102.093, 30.045, 5000),
+      orientation: {
+        heading: Cesium.Math.toRadians(0),
+        pitch: Cesium.Math.toRadians(-70),
+      },
     })
-    .catch(error => {
-      // console.error('加载地震监测设备失败:', error)
-    })
+
+    viewer.value.selectedEntityChanged.addEventListener(async (entity) => {
+      if (entity && entity.id.startsWith('dev_')) {
+        const deviceId = Number(entity.properties.deviceid);
+        const res = await axios.get(`http://localhost:3001/device/latest/${deviceId}`);
+        const records = res.data.reverse();
+
+        // 提取地震动数据（假设使用 Z 轴；可改为 X/Y 或组合）
+        const seismicData = records.map(r => r.channel_one_lp_z || 0);  // 如果字段不同，调整
+
+        // 运行泥石流检测
+        const { detected, resultArray } = calculateDebrisFlow(seismicData);
+
+        // 显示弹窗，包含检测结果
+        showPopupWithDetection(entity, records, detected, resultArray);
+      } else {
+        hidePopup();
+      }
+    });
+
+
+
+    // // ✅ 点击弹窗
+    // viewer.value.selectedEntityChanged.addEventListener(async (entity) => {
+    //   if (entity && entity.id.startsWith('dev_')) {
+    //     const deviceId = Number(entity.properties.deviceid)
+    //     // 获取该设备最新 100 条数据
+    //     const res = await axios.get(`http://localhost:3001/device/latest/${deviceId}`)
+    //     const records = res.data.reverse() // 反转为正序绘图
+    //     showPopup(entity, records)
+    //   } else {
+    //     hidePopup()
+    //   }
+    // })
+
+  } catch (err) {
+    console.error('加载地震监测设备失败:', err)
+  }
 }
+
 const removeLayer_DZDdevice = () => {
   // if (!layer17_guid.value) {
   //   console.error('地震监测设备未加载.')
@@ -2273,7 +2894,7 @@ popup.style.zIndex = '1000'
 popup.style.display = 'none'
 document.body.appendChild(popup)
 
-const showPopup = entity => {
+const showPopup = async (entity) => {
   const position = entity.position.getValue(Cesium.JulianDate.now())
   const cartographic = Cesium.Cartographic.fromCartesian(position)
   const longitude = Cesium.Math.toDegrees(cartographic.longitude).toFixed(4)
@@ -2284,170 +2905,108 @@ const showPopup = entity => {
   popup.style.top = `${viewer.value.canvas.clientHeight / 2}px`
   popup.style.display = 'block'
 
-  // 更新弹出窗口内容
+  // 更新弹出窗口内容（预留图表容器）
   popup.innerHTML = `
-    <h3>Device: ${entity.id}</h3>
+    <p>经度: ${longitude} | 纬度: ${latitude}</p>
     <div id="chart" style="width: 480px; height: 360px;"></div>
   `
 
-  // 初始化 ECharts 并绘制折线图
   const chartDom = document.getElementById('chart')
   const myChart = echarts.init(chartDom)
 
-  // 获取属性数据
-  const LpX = entity.properties.ChannelOneLpX.getValue()
-  const LpY = entity.properties.ChannelOneLpY.getValue()
-  const LpZ = entity.properties.ChannelOneLpZ.getValue()
-  const times = Array.from({ length: LpX.length }, (_, i) => `Time ${i + 1}`)
+  try {
+    // ✅ 向后端请求该设备的最新 100 条记录
+    const deviceId = entity.properties.deviceid
+    const res = await axios.get(`http://localhost:3001/device/latest/${deviceId}`)
+    const records = res.data.reverse() // 最新 -> 时间正序
 
-  // 自动缩放y轴范围并加padding
-  const allValues = [...LpX]
-  const min = Math.min(...allValues)
-  const max = Math.max(...allValues)
-  const padding = (max - min) * 0.15 || 0.001
-
-  // 默认只显示 LpX 数据
-  const option = {
-    title: {
-      text: '地震动监测',
-    },
-    tooltip: {
-      trigger: 'axis',
-    },
-    legend: {
-      data: ['LpX', 'LpY', 'LpZ'],
-      selected: {
-        LpX: true,
-        LpY: false,
-        LpZ: false,
-      },
-    },
-    xAxis: {
-      type: 'category',
-      data: times,
-      minInterval: 1, // 每个刻度至少间隔1
-      axisLabel: {
-        show: false,
-      },
-      axisTick: {
-        show: true, // 隐藏刻度线
-      },
-      axisLine: {
-        show: true, // 隐藏轴线
-      },
-    },
-    yAxis: {
-      type: 'value',
-      min: min - padding,
-      max: max + padding,
-    },
-    grid: {
-      left: 60,
-      right: 30,
-      top: 60,
-      bottom: 30,
-      containLabel: true,
-      width: 800, // 横坐标轴变长，图表整体拉宽
-    },
-    dataZoom: [
-      {
-        type: 'slider',
-        yAxisIndex: 0,
-        filterMode: 'empty',
-        start: 0,
-        end: times.length > 40 ? (40 / times.length) * 100 : 100, // 默认显示40个点
-      },
-      {
-        type: 'inside',
-        xAxisIndex: 0,
-        filterMode: 'empty',
-      },
-      {
-        type: 'slider',
-        yAxisIndex: 0,
-        filterMode: 'empty',
-      },
-    ],
-    series: [
-      {
-        name: 'LpX',
-        type: 'line',
-        data: LpX,
-        symbol: 'circle', // 使用圆形点
-        symbolSize: 6, // 点的大小
-        itemStyle: {
-          color: '#ff3333', // 实心点颜色，可自定义
-        },
-        lineStyle: {
-          width: 2,
-        },
-      },
-      {
-        name: 'LpY',
-        type: 'line',
-        data: LpY,
-        symbol: 'circle', // 使用圆形点
-        symbolSize: 6, // 点的大小
-        itemStyle: {
-          color: '#ff3333', // 实心点颜色，可自定义
-        },
-        lineStyle: {
-          width: 2,
-        },
-      },
-      {
-        name: 'LpZ',
-        type: 'line',
-        data: LpZ,
-        symbol: 'circle', // 使用圆形点
-        symbolSize: 6, // 点的大小
-        itemStyle: {
-          color: '#ff3333', // 实心点颜色，可自定义
-        },
-        lineStyle: {
-          width: 2,
-        },
-      },
-    ],
-  }
-
-  myChart.setOption(option)
-
-  // 监听图例点击事件
-  myChart.on('legendSelectChanged', params => {
-    const selected = params.selected
-
-    // 更新 series 数据，只保留选中的图例数据
-    const newSeries = []
-    if (selected.LpX) {
-      newSeries.push({
-        name: 'LpX',
-        type: 'line',
-        data: LpX,
+    if (!records || records.length === 0) {
+      myChart.setOption({
+        title: { text: '暂无数据' }
       })
-    }
-    if (selected.LpY) {
-      newSeries.push({
-        name: 'LpY',
-        type: 'line',
-        data: LpY,
-      })
-    }
-    if (selected.LpZ) {
-      newSeries.push({
-        name: 'LpZ',
-        type: 'line',
-        data: LpZ,
-      })
+      return
     }
 
-    // 更新图表
-    myChart.setOption({
-      series: newSeries,
-    })
-  })
+    // ✅ 提取各通道数据
+    const times = records.map(r => new Date(r.timestamp).toLocaleTimeString())
+    const LpX = records.map(r => r.channel_one_lp_x)
+    const LpY = records.map(r => r.channel_one_lp_y)
+    const LpZ = records.map(r => r.channel_one_lp_z)
+
+    // ✅ 自动缩放 y 轴范围
+    const allValues = [...LpX, ...LpY, ...LpZ]
+    const min = Math.min(...allValues)
+    const max = Math.max(...allValues)
+    const padding = (max - min) * 0.15 || 0.001
+
+    // ✅ 配置折线图
+const option = {
+  title: {
+    text: `设备 ${deviceId} 地震动监测波形`,
+  },
+  tooltip: {
+    trigger: 'axis',
+  },
+  legend: {
+    data: ['LpX', 'LpY', 'LpZ'],
+    right: 10,
+    selected: {
+      LpX: true,
+      LpY: false,
+      LpZ: false,
+    },
+  },
+  xAxis: {
+    type: 'category',
+    data: times,
+    axisLabel: { show: false },
+  },
+  yAxis: {
+    type: 'value',
+    min: min - padding,
+    max: max + padding,
+  },
+  grid: {
+    left: 60,
+    right: 30,
+    top: 60,
+    bottom: 30,
+    containLabel: true,
+  },
+  dataZoom: [
+    {
+      type: 'slider',
+      xAxisIndex: 0,
+      start: 0,
+      end: times.length > 40 ? (40 / times.length) * 100 : 100,
+    },
+    { type: 'inside', xAxisIndex: 0 },
+  ],
+  series: [
+    { name: 'LpX', type: 'line', data: LpX, symbol: 'circle', symbolSize: 5 },
+    { name: 'LpY', type: 'line', data: LpY, symbol: 'circle', symbolSize: 5 },
+    { name: 'LpZ', type: 'line', data: LpZ, symbol: 'circle', symbolSize: 5 },
+  ],
 }
+
+// 初始化图表
+myChart.setOption(option)
+    myChart.on('legendSelectChanged', params => {
+      const selected = params.selected
+      const newSeries = []
+      if (selected.LpX) newSeries.push({ name: 'LpX', type: 'line', data: LpX })
+      if (selected.LpY) newSeries.push({ name: 'LpY', type: 'line', data: LpY })
+      if (selected.LpZ) newSeries.push({ name: 'LpZ', type: 'line', data: LpZ })
+      myChart.setOption({ series: newSeries })
+    })
+  } catch (err) {
+    console.error('获取设备数据失败:', err)
+    myChart.setOption({ title: { text: '加载失败' } })
+  }
+}
+
 // 隐藏弹出窗口
+
 const hidePopup = () => {
   popup.style.display = 'none'
 }
@@ -3619,6 +4178,50 @@ const attributesearch_qxz = () => {
 const cleanentity = () => {
   viewer.value.entities.removeAll()
 }
+
+function handleSeismicResult(payload) {
+  try {
+    const detected = payload?.detected
+    const lon = Number(payload?.lon) || 97.5
+    const lat = Number(payload?.lat) || 31.0
+    const imageUrl = detected ? '/CS/img/warning_red.png' : '/CS/img/safe.png' // 统一大小写路径
+    viewer.value.entities.add({
+      id: `seismic_${Date.now()}`,
+      position: Cesium.Cartesian3.fromDegrees(lon, lat),
+      billboard: {
+        image: imageUrl,
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        width: 48,
+        height: 48,
+      },
+      properties: {
+        raw: payload.info
+      }
+    })
+
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(lon, lat, 5000), // 高度可按需调整
+      orientation: {
+        heading: Cesium.Math.toRadians(0.0),
+        pitch: Cesium.Math.toRadians(-35.0),
+        roll: 0.0,
+      },
+      complete: () => {
+        // 飞行完成后选中实体以触发 InfoBox（若需要）
+        try { viewer.value.selectedEntity = entity } catch (e) {}
+      }
+    })
+
+    if (detected) {
+      ElMessage({ message: '检测到异常，已在地图标记', type: 'warning' })
+    } else {
+      ElMessage({ message: '未检测到异常', type: 'success' })
+    }
+  } catch (e) {
+    console.error('handleSeismicResult error', e)
+  }
+}
 </script>
 <style lang="scss" scoped>
 .flex-container {
@@ -3714,6 +4317,7 @@ const cleanentity = () => {
   top: 460px !important;
   // height: 100px !important;
 }
+
 #displacement-chart {
   width: 300px;
   height: 200px;

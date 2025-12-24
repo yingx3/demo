@@ -25,6 +25,7 @@
           />
           <!-- <img src="../assets/img/top8.png" alt="" /> -->
           <span>冰川区灾害链判识-评估-预警-断链综合防控系统</span>
+          <span>冰川区灾害链判识-评估-预警-断链综合防控系统</span>
         </div>
       </div>
       <!-- <div class="top-right6">
@@ -163,12 +164,13 @@ function formatTime(time) {
   justify-content: left;
   align-items: center;
   position: absolute;
-  left: 0;
+  left: -13%;
   top: 0;
   /* width: 573.43px; */
-  width: 100%;
-  height: 68px;
+  width: 130%;
+  height: 65px;
   opacity: 1;
+  background-size: 100% 100%;
   /* background-image: url(../assets/img/top1_1.png); */
   background-image: url(../assets/img/导航栏.png);
 
