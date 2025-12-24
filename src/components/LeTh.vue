@@ -806,10 +806,10 @@ const submit_inverseV = async () => {
   // max-height: 850px;
   top: 62px;
   left: 10px;
-  background: url('../assets/img/left_theme_2.png');
+  background: url('../assets/img/left_theme_3.png');
   background-size: cover;
   width: 400px;
-  height: 850px;
+  height: 819px;
 }
 
 .name {

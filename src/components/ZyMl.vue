@@ -610,7 +610,7 @@ const handleClick = (node, data) => {
   position: absolute;
   right: 20px;
   top: 85px;
-  height: 950px;
+  height: 790px;
   width: 320px;
   background-image: url(../assets/img/c1.png);
 

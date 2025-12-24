@@ -64,7 +64,7 @@
             ><el-form-item label="高差"
               ><el-input v-model="form.elevation"></el-input></el-form-item
             ><el-form-item label="潜在滑坡体积规模"
-              ><el-select v-model="form.scale"
+              ><el-select v-model="form.scale" teleport=".top-container"
                 ><el-option label="小型" value="small" /><el-option
                   label="中型"
                   value="middle" /><el-option
@@ -89,7 +89,9 @@
           <el-form :model="form_disastersearch">
             <el-form-item label="区划查询" style="width: 500px">
               <div class="flex-container">
-                <el-select v-model="form_disastersearch.location"
+                <el-select
+                  v-model="form_disastersearch.location"
+                  teleport=".top-container"
                   ><el-option label="林芝市" value="林芝市"> </el-option
                   ><el-option label="朗县" value="朗县"> </el-option
                   ><el-option label="察隅县" value="察隅县"> </el-option
@@ -107,7 +109,10 @@
             </el-form-item>
             <el-form-item label="属性查询" style="width: 500px">
               <div class="flex-container">
-                <el-select v-model="form_disastersearch.attribute">
+                <el-select
+                  v-model="form_disastersearch.attribute"
+                  teleport=".top-container"
+                >
                   <el-option label="地点" value="location"></el-option
                   ><el-option label="坡度" value="slope"></el-option
                   ><el-option label="规模" value="scale"></el-option></el-select
@@ -448,7 +453,16 @@ onMounted(async () => {
     animation: false, //隐藏动画控件
     timeline: false, //隐藏时间控件
     infoBox: true,
+    cesiumViewerBottom: false,
   })
+  // 初始化完成后，隐藏.cesium-viewer-bottom（延迟50ms确保DOM已生成）
+  setTimeout(() => {
+    const bottomBar = document.querySelector('.cesium-viewer-bottom')
+    if (bottomBar) {
+      bottomBar.style.display = 'none'
+      bottomBar.style.visibility = 'hidden'
+    }
+  }, 50)
   // initRightClickHandler()
   // console.log(pnames.value)
   //ScreenSpaceEventHandler是用于处理屏幕空间事件（例如鼠标点击、移动等）。该代码是将其绑定到指定的Cesiuim场景的canvas元素上。该实例监听canvas元素相关的鼠标和触摸事件。
@@ -3633,10 +3647,6 @@ const cleanentity = () => {
   height: 100vh;
   /* padding: 16px; */
   /* box-sizing: border-box; */
-}
-
-.cesium-viewer-bottom {
-  display: none;
 }
 
 /* 媒体查询设置显示比例 */
