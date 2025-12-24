@@ -1174,7 +1174,7 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
   --el-button-text-color: white; //
   --el-font-family: 'Source Han Sans', 'Trebuchet MS', 'Lucida Sans Unicode',
     'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
-  font-size: 17px;
+  font-size: 15px;
   padding: 0;
   // --el-color-primary: transparent;
 }
@@ -1214,7 +1214,7 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
 
 .left .total_theme {
   position: absolute;
-  top: 40px;
+  top: 50px;
   left: 60px;
 }
 
@@ -1222,12 +1222,12 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
   width: 300px;
   text-align: left;
   padding-left: 10px;
-  line-height: 50px;
+  line-height: 35px;
   font-weight: 500;
   letter-spacing: 1px;
   color: rgba(255, 255, 255, 1);
   font-size: 22px;
-  background: url(../assets/img/left_theme_1.png);
+  // background: url(../assets/img/left_theme_1.png);
 }
 
 #bar {
@@ -1253,7 +1253,7 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
   // color: rgba(255, 255, 255, 1);
   color: #606266;
   text-align: left;
-  font-size: 16.5px;
+  font-size: 15px;
 }
 
 .box img {
