@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
     "@stomp/stompjs": "^7.0.1",
     "buffer": "^6.0.3",
     "cesium": "^1.121.1",

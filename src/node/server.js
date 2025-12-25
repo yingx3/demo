@@ -32,9 +32,11 @@ const storage = multer.diskStorage({
 const upload = multer({ storage })
 let filePath
 // 文件保存路径
-const SAVE_PATH = 'E:/Projects/ZHLXT/算法/基于位移监测滑坡预警/PFTF_1.0.0/PFTF_1.0.0/icelake'
+const SAVE_PATH =
+  'E:/Projects/ZHLXT/算法/基于位移监测滑坡预警/PFTF_1.0.0/PFTF_1.0.0/icelake'
 // 目标R脚本路径
-const TARGET_PATH = 'E:/Projects/ZHLXT/算法/基于位移监测滑坡预警/PFTF_1.0.0/PFTF_1.0.0/PFTF-PFTF_1.0.0'
+const TARGET_PATH =
+  'E:/Projects/ZHLXT/算法/基于位移监测滑坡预警/PFTF_1.0.0/PFTF_1.0.0/PFTF-PFTF_1.0.0'
 const R_SCRIPT_PATH = path.join(TARGET_PATH, '1_1_input.R')
 const displ_file = ''
 
@@ -1562,7 +1564,7 @@ app.post('/point', async (req, res) => {
   }
 })
 // --- 新增：接收 GBM/Shapefile 上传并保存到固定目录 ---
-const GBM_SAVE_DIR = 'E:\\Projects\\ZHLXT\\backend\\hd\\data\\BCNSL'
+const GBM_SAVE_DIR = 'D:\\practice\\ZHLXT\\backend\\hd\\data\\BCNSL'
 // 确保目录存在（使用文件顶部已定义的 ensureDirectoryExists）
 ensureDirectoryExists(GBM_SAVE_DIR)
 
@@ -1573,7 +1575,7 @@ const storageGBM = multer.diskStorage({
   filename: (req, file, cb) => {
     // 保留原始文件名（如需避免覆盖可在此添加时间戳或 uuid）
     cb(null, file.originalname)
-  }
+  },
 })
 const uploadGBM = multer({ storage: storageGBM })
 
@@ -1584,9 +1586,9 @@ app.post('/node/upload_shp', uploadGBM.array('file', 10), (req, res) => {
       return res.status(400).json({ code: 400, message: '没有文件上传' })
     }
 
-      const savedFiles = req.files.map(f => ({
+    const savedFiles = req.files.map(f => ({
       originalFileName: f.originalname,
-      savedPath: path.join(GBM_SAVE_DIR, f.originalname)
+      savedPath: path.join(GBM_SAVE_DIR, f.originalname),
     }))
     console.log('GBM shapefile 保存：', savedFiles)
 
@@ -1595,54 +1597,57 @@ app.post('/node/upload_shp', uploadGBM.array('file', 10), (req, res) => {
       code: 200,
       message: '上传成功',
       files: savedFiles,
-      name: req.body.name || ''
+      name: req.body.name || '',
     })
   } catch (err) {
     console.error('处理 /node/upload_shp 失败:', err)
-    return res.status(500).json({ code: 500, message: err.message || 'server error' })
+    return res
+      .status(500)
+      .json({ code: 500, message: err.message || 'server error' })
   }
 })
 
 // 新存储目录（确保ensureDirectoryExists函数已定义，或添加一个简单mkdir）
-const SEISMIC_SAVE_DIR = 'E:\\Projects\\ZHLXT\\backend\\hd\\data\\seismic';
+const SEISMIC_SAVE_DIR = 'D:\\practice\\ZHLXT\\backend\\hd\\data\\seismic'
 if (!fs.existsSync(SEISMIC_SAVE_DIR)) {
-  fs.mkdirSync(SEISMIC_SAVE_DIR, { recursive: true });
+  fs.mkdirSync(SEISMIC_SAVE_DIR, { recursive: true })
 }
 
 const storageSeismic = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, SEISMIC_SAVE_DIR);
+    cb(null, SEISMIC_SAVE_DIR)
   },
   filename: (req, file, cb) => {
-    cb(null, file.originalname); // 保留原始文件名
-  }
-});
-const uploadSeismic = multer({ storage: storageSeismic });
+    cb(null, file.originalname) // 保留原始文件名
+  },
+})
+const uploadSeismic = multer({ storage: storageSeismic })
 
 // 新端点：只上传并保存Excel
 app.post('/node/upload_excel', uploadSeismic.single('file'), (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ code: 400, message: '没有文件上传' });
+      return res.status(400).json({ code: 400, message: '没有文件上传' })
     }
 
     const savedFile = {
       originalFileName: req.file.originalname,
-      savedPath: path.join(SEISMIC_SAVE_DIR, req.file.originalname)
-    };
-    console.log('Seismic Excel 保存：', savedFile);
+      savedPath: path.join(SEISMIC_SAVE_DIR, req.file.originalname),
+    }
+    console.log('Seismic Excel 保存：', savedFile)
 
     return res.json({
       code: 200,
       message: '上传成功',
-      file: savedFile
-    });
+      file: savedFile,
+    })
   } catch (err) {
-    console.error('处理 /node/upload_excel 失败:', err);
-    return res.status(500).json({ code: 500, message: err.message || 'server error' });
+    console.error('处理 /node/upload_excel 失败:', err)
+    return res
+      .status(500)
+      .json({ code: 500, message: err.message || 'server error' })
   }
-});
-
+})
 
 app.listen(3000, () => {
   // console.log('Server running on http://localhost:3000');

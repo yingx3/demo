@@ -2,7 +2,7 @@
   <div class="right-container" style="max-height: 820px">
     <div class="tree-content">
       <el-tree
-        style="max-width: 600px"
+        style="max-width: 600px; max-height: 750px"
         :data="treeData"
         :props="defaultProps"
         show-checkbox

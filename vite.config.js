@@ -63,7 +63,7 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: path => path.replace(/^\/ng/, ''),
       },
-      
+
       // '/ws': {
       //   target: 'http://localhost:8088',
       //   secure: false,

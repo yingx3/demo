@@ -29,6 +29,538 @@
             :close-on-click-modal="false"
             class="dialog_trigrs"
           >
+            <!-- 👇 在title旁添加帮助问号（用slot="header"自定义弹窗头部） -->
+
+            <template #header>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  width: 100%;
+                "
+              >
+                <span style="color: #ffffff; font-size: 24px"
+                  >风险源定量识别与表征模型</span
+                >
+                <!-- 问号容器：定位到关闭按钮左侧 -->
+                <div style="position: relative; right: 24px; top: -42px">
+                  <el-tooltip content="帮助" placement="top">
+                    <el-icon
+                      class="help-icon"
+                      @click="openHelpDialog_fxy = true"
+                    >
+                      <QuestionFilled />
+                    </el-icon>
+                  </el-tooltip>
+                </div>
+              </div>
+            </template>
+            <el-dialog
+              v-model="openHelpDialog_fxy"
+              width="1200px"
+              max-height="600px"
+              :close-on-click-modal="false"
+              position="absolute"
+              top="70px"
+              style="
+                background-image: url('./CS/src/assets/img/fz174.png');
+                background-size: cover; /* 让背景图铺满对话框 */
+                background-position: center; /* 背景图居中 */
+                background-color: rgba(0, 0, 130, 0.5);
+              "
+            >
+              <template #title>
+                <span
+                  style="
+                    color: white;
+                    font-size: 26px;
+                    display: block;
+                    text-align: center;
+                  "
+                  >风险源定量识别与表征模型核心信息</span
+                >
+              </template>
+              <div
+                id="trigrs-model-info"
+                style="
+                  width: 100%;
+                  max-width: 1000px;
+                  margin: 0 auto;
+                  padding: 20px;
+                  font-family: Arial, sans-serif;
+                  max-height: 600px;
+                  overflow-y: auto;
+                  -ms-overflow-style: none;
+                  scrollbar-width: none;
+                "
+              >
+                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
+                  一、模型目的
+                </h2>
+                <p
+                  style="
+                    font-size: 16px;
+                    line-height: 1.5;
+                    color: #666;
+                    margin-bottom: 15px;
+                  "
+                >
+                  通过模拟降雨入渗与区域边坡稳定性，定量计算网格尺度的稳定性系数，划分滑坡泥石流不稳定/稳定区域，为灾害风险预警、防治规划提供支撑。
+                </p>
+
+                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
+                  二、所需参数及介绍
+                </h2>
+
+                <h3 style="font-size: 18px; color: #555; margin: 15px 0 8px">
+                  （一）前置参数（TopoIndex.exe用）
+                </h3>
+                <ul
+                  style="
+                    font-size: 16px;
+                    line-height: 1.6;
+                    color: #666;
+                    margin: 8px 0 15px;
+                    padding-left: 25px;
+                  "
+                >
+                  <li style="margin-bottom: 5px">
+                    <strong>输入</strong
+                    >：数字高程模型（DEM，反映地形起伏）、流向（水流方向）、网格行列数（与DEM匹配）；
+                  </li>
+                  <li>
+                    <strong>派生参数</strong
+                    >：imax（有效网格总数）、nwf（下坡关联网格数），供后续计算调用。
+                  </li>
+                </ul>
+
+                <h3 style="font-size: 18px; color: #555; margin: 15px 0 8px">
+                  （二）核心参数（TRIGRS.exe用）
+                </h3>
+                <table
+                  style="
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 16px;
+                    color: #666;
+                    margin: 8px 0 15px;
+                  "
+                >
+                  <tbody>
+                    <tr style="background-color: transparent">
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                          font-weight: bold;
+                        "
+                      >
+                        类别
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                          font-weight: bold;
+                        "
+                      >
+                        参数
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                          font-weight: bold;
+                        "
+                      >
+                        单位
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                          font-weight: bold;
+                        "
+                      >
+                        说明
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        网格/周期
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        imax、nwf、行列数
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        -
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        取自前置环节，定网格规模
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      ></td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        nper（周期数）、time（步长）
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        -、s
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        控制降雨模拟时长与精度
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        土壤/水文
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        zmin/zmax（土厚）、depth（初始水位）
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        m
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        反映土壤与地下水位基础状态
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      ></td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        rizero（初入渗率）、K-sat（饱和渗率）
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        m/s
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        表征土壤水分入渗能力
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      ></td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        diffus（水力扩散系数）
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        m²/s
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        反映水分扩散效率
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      ></td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        uww（水容重）、uws（土容重）
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        N/m³
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        基础物理属性，通常uww取10000
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        岩土力学
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        cohesion（粘聚力）、phi（内摩擦角）
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        Pa、°
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        决定土壤抗剪强度的关键参数
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        降雨
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        cri（雨强）、capt（周期时长）
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        -、s
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        模拟降雨特征
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        基础文件
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        前置4类径流文件
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        -
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        地形相关的径流基础数据
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <p
+                  style="
+                    font-size: 16px;
+                    line-height: 1.5;
+                    color: #666;
+                    margin-bottom: 15px;
+                    font-style: italic;
+                  "
+                >
+                  注：zmin、time、zmax等9个为暴露参数，可直接调整模拟不同场景。
+                </p>
+
+                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
+                  三、生成结果
+                </h2>
+                <ol
+                  style="
+                    font-size: 16px;
+                    line-height: 1.6;
+                    color: #666;
+                    margin: 8px 0 15px;
+                    padding-left: 25px;
+                  "
+                >
+                  <li style="margin-bottom: 5px">
+                    <strong>TRfs_min_tutorial_1.txt</strong
+                    >：易发性评估文件，0-1为高风险不稳定区，1-10为稳定区（值越大越稳），可转GIS专题图；
+                  </li>
+                  <li>
+                    <strong>TRlist_z_p_fs_tutorial.txt</strong
+                    >：网格详单，含土壤深度、孔隙水压力、稳定性系数，供量化分析。
+                  </li>
+                </ol>
+              </div></el-dialog
+            >
             <p id="name_par">模型参数</p>
 
             <el-form
@@ -110,6 +642,813 @@
             :close-on-click-modal="false"
             class="dialog_lightGBM"
           >
+            <template #header>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  width: 100%;
+                "
+              >
+                <span style="color: #ffffff; font-size: 24px"
+                  >冰川泥石流易发性预测模型</span
+                >
+                <!-- 问号容器：定位到关闭按钮左侧 -->
+                <div style="position: relative; right: -4px; top: -11.5px">
+                  <el-tooltip content="帮助" placement="top">
+                    <el-icon
+                      class="help-icon"
+                      @click="openHelpDialog_gbm = true"
+                    >
+                      <QuestionFilled />
+                    </el-icon>
+                  </el-tooltip>
+                </div>
+              </div>
+            </template>
+            <el-dialog
+              v-model="openHelpDialog_gbm"
+              width="1200px"
+              max-height="600px"
+              :close-on-click-modal="false"
+              position="absolute"
+              top="70px"
+              style="
+                background-image: url('./CS/src/assets/img/fz174.png');
+                background-size: cover; /* 让背景图铺满对话框 */
+                background-position: center; /* 背景图居中 */
+                background-color: rgba(0, 0, 130, 0.5);
+              "
+            >
+              <template #title>
+                <span
+                  style="
+                    color: white;
+                    font-size: 26px;
+                    display: block;
+                    text-align: center;
+                  "
+                >
+                  冰川泥石流易发性预测模型说明文档</span
+                >
+              </template>
+              <div
+                id="glacier-hazard-chain-info"
+                style="
+                  width: 100%;
+                  max-width: 1000px;
+                  margin: 0 auto;
+                  padding: 20px;
+                  font-family: Arial, sans-serif;
+                  max-height: 600px;
+                  overflow-y: auto;
+                  -ms-overflow-style: none;
+                  scrollbar-width: none;
+                "
+              >
+                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
+                  一、脚本目的
+                </h2>
+                <p
+                  style="
+                    font-size: 16px;
+                    line-height: 1.5;
+                    color: #666;
+                    margin-bottom: 15px;
+                  "
+                >
+                  利用训练好的 LightGBM 机器学习模型，对 Shapefile
+                  格式的地理矢量数据进行预处理（列名映射、缺失值填充、标准化）后，计算冰川型灾害链易发性概率；通过
+                  Jenks 自然间断点法将概率划分为 5
+                  个易发性等级，最终输出包含分级结果的新 Shapefile
+                  文件，实现冰川型灾害链易发性预测。
+                </p>
+
+                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
+                  二、参数/配置内容
+                </h2>
+
+                <h3 style="font-size: 18px; color: #555; margin: 15px 0 8px">
+                  （一）环境依赖（第三方库）
+                </h3>
+                <ul
+                  style="
+                    font-size: 16px;
+                    line-height: 1.6;
+                    color: #666;
+                    margin: 8px 0 15px;
+                    padding-left: 25px;
+                  "
+                >
+                  <li style="margin-bottom: 4px">
+                    geopandas：处理地理空间数据
+                  </li>
+                  <li style="margin-bottom: 4px">pandas：数据处理</li>
+                  <li style="margin-bottom: 4px">numpy：数值计算</li>
+                  <li style="margin-bottom: 4px">
+                    joblib：加载模型和标准化器（Scaler）
+                  </li>
+                  <li style="margin-bottom: 4px">
+                    jenkspy：计算 Jenks 自然间断点
+                  </li>
+                  <li style="margin-bottom: 4px">
+                    scikit-learn：特征数据标准化（StandardScaler）
+                  </li>
+                  <li>lightgbm：加载推理模型</li>
+                </ul>
+
+                <h3 style="font-size: 18px; color: #555; margin: 15px 0 8px">
+                  （二）文件路径配置
+                </h3>
+                <table
+                  style="
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 16px;
+                    color: #666;
+                    margin: 8px 0 15px;
+                  "
+                >
+                  <tbody>
+                    <tr style="background-color: #f5f5f5">
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                          font-weight: bold;
+                        "
+                      >
+                        变量名
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                          font-weight: bold;
+                        "
+                      >
+                        说明
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                          font-weight: bold;
+                        "
+                      >
+                        示例路径
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        MODEL_PATH
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        预训练 LightGBM 模型文件（.pkl）
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        E:\...\LightGBM.pkl
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        SCALER_PATH
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        标准化器文件（.pkl）
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        E:\...\standard_scaler.pkl
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        INPUT_SHP_PATH
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        待预测的输入 Shapefile 文件
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        E:\...\waternet_new.shp
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        OUTPUT_SHP_PATH
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        预测结果输出路径
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                        "
+                      >
+                        E:\...\output\result.shp
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <h3 style="font-size: 18px; color: #555; margin: 15px 0 8px">
+                  （三）输入数据字段（Shapefile 属性）
+                </h3>
+                <table
+                  style="
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 16px;
+                    color: #666;
+                    margin: 8px 0 15px;
+                  "
+                >
+                  <tbody>
+                    <tr style="background-color: #f5f5f5">
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                          font-weight: bold;
+                        "
+                      >
+                        Shapefile 输入字段
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                          font-weight: bold;
+                        "
+                      >
+                        模型特征全称
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 10px;
+                          text-align: left;
+                          font-weight: bold;
+                        "
+                      >
+                        说明
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Aspect
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Aspect
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        坡向
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Curvature
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Curvature
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        曲率
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Fault dist
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Fault distance
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        断层距离
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Glacier ar
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Glacier area ratio
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        冰川面积比
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Gully grad
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Gully gradient
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        沟谷坡度
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        NDVI
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        NDVI
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        植被覆盖指数
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Precipitat
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Precipitation
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        降雨量
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Relief amp
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Relief amplitude
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        地形起伏度
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Slope
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Slope
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        坡度
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Soil thick
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Soil thickness
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        土层厚度
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        SPI
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        SPI
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        沟壑功率指数
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Stream Dis
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Stream Distance
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        河流距离
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Surface ro
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Surface roughness
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        地表粗糙度
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Temperatur
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        Temperature
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        温度
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        TWI
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        TWI
+                      </td>
+                      <td
+                        style="
+                          border: 1px solid #ddd;
+                          padding: 8px;
+                          text-align: left;
+                        "
+                      >
+                        地形湿度指数
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <p
+                  style="
+                    font-size: 16px;
+                    line-height: 1.5;
+                    color: #666;
+                    margin-bottom: 15px;
+                    font-style: italic;
+                  "
+                >
+                  补充：特征列缺失值会自动用该列均值填充；路径配置需修改代码第26-33行，脚本会自动创建输出目录，且覆盖同名旧文件。
+                </p>
+
+                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
+                  三、生成结果
+                </h2>
+                <ol
+                  style="
+                    font-size: 16px;
+                    line-height: 1.6;
+                    color: #666;
+                    margin: 8px 0 15px;
+                    padding-left: 25px;
+                  "
+                >
+                  <li style="margin-bottom: 5px">
+                    <strong>输出文件</strong>：在 OUTPUT_SHP_PATH 路径生成新的
+                    Shapefile 文件；
+                  </li>
+                  <li style="margin-bottom: 5px">
+                    <strong>文件结构</strong>：
+                    <ul style="margin: 4px 0 0 20px; padding: 0">
+                      <li>geometry：原始空间几何信息；</li>
+                      <li>
+                        susc_class：易发性等级（文本型：极低、低、中等、高、极高）；
+                      </li>
+                      <li>Id：原始数据ID（输入含Id列则保留）。</li>
+                    </ul>
+                  </li>
+                  <li>
+                    <strong>编码说明</strong>：属性表编码为 GBK，支持
+                    ArcGIS/QGIS 等软件正常显示中文字符。
+                  </li>
+                </ol>
+              </div>
+            </el-dialog>
             <p
               id="name_par_gbm"
               style="margin-left: 48px; font-size: 18px; color: #2763ca"
@@ -185,6 +1524,452 @@
             :close-on-click-modal="false"
             class="dialog_avaflow"
           >
+            <template #header>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  width: 100%;
+                "
+              >
+                <span
+                  style="
+                    color: #ffffff;
+                    font-size: 24px;
+                    display: block;
+                    text-align: center;
+                  "
+                  >山洪泥石流启动动力学模型</span
+                >
+                <!-- 问号容器：定位到关闭按钮左侧 -->
+                <div style="position: relative; right: 23px; top: -7.5px">
+                  <el-tooltip content="帮助" placement="top">
+                    <el-icon
+                      class="help-icon"
+                      @click="openHelpDialog_sh = true"
+                    >
+                      <QuestionFilled />
+                    </el-icon>
+                  </el-tooltip>
+                </div>
+                <el-dialog
+                  v-model="openHelpDialog_sh"
+                  width="1200px"
+                  max-height="600px"
+                  :close-on-click-modal="false"
+                  position="absolute"
+                  top="70px"
+                  style="
+                    background-image: url('./CS/src/assets/img/fz174.png');
+                    background-size: cover; /* 让背景图铺满对话框 */
+                    background-position: center; /* 背景图居中 */
+                    background-color: rgba(0, 0, 130, 0.5);
+                  "
+                >
+                  <template #title>
+                    <span
+                      style="
+                        color: white;
+                        font-size: 26px;
+                        display: block;
+                        text-align: center;
+                      "
+                      >山洪泥石流启动动力学模型说明文档</span
+                    >
+                  </template>
+                  <div
+                    id="r-avaflow-model-info"
+                    style="
+                      width: 100%;
+                      max-width: 1000px;
+                      margin: 0 auto;
+                      padding: 20px;
+                      font-family: Arial, sans-serif;
+                      max-height: 600px;
+                      overflow-y: auto;
+                      -ms-overflow-style: none;
+                      scrollbar-width: none;
+                    "
+                  >
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
+                      一、模型目的
+                    </h2>
+                    <p
+                      style="
+                        font-size: 16px;
+                        line-height: 1.5;
+                        color: #666;
+                        margin-bottom: 15px;
+                      "
+                    >
+                      用于模拟滑坡、泥石流等重力流灾害的运动过程，基于高程、释放高度、影响范围等地理栅格数据，结合摩擦力、时间、相数等参数量化分析灾害流动特征（如流量高度、路径）与影响范围，同时支持可视化参数配置生成灾害过程可视化结果，为重力流灾害风险评估、防治规划提供数据支撑（详细使用说明可参考官方手册：<a
+                        href="https://www.landslidemodels.org/r.avaflow/direct.php"
+                        target="_blank"
+                        style="color: #0066cc"
+                        >https://www.landslidemodels.org/r.avaflow/direct.php</a
+                      >）。
+                    </p>
+
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
+                      二、所需参数及介绍
+                    </h2>
+
+                    <h3
+                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
+                    >
+                      （一）核心输入数据（栅格格式）
+                    </h3>
+                    <ul
+                      style="
+                        font-size: 16px;
+                        line-height: 1.6;
+                        color: #666;
+                        margin: 8px 0 15px;
+                        padding-left: 25px;
+                      "
+                    >
+                      <li style="margin-bottom: 5px">
+                        <strong>高程（elevation）</strong>：单位
+                        m，栅格（raster）数据，表征研究区域地形高程基础信息；
+                      </li>
+                      <li style="margin-bottom: 5px">
+                        <strong>释放高度（hrelease1）</strong>：单位
+                        m，栅格（raster）数据，表征灾害启动的初始释放高度；
+                      </li>
+                      <li>
+                        <strong>影响范围（impactarea）</strong
+                        >：栅格（raster）数据，定义模型模拟的灾害影响范围边界。
+                      </li>
+                    </ul>
+
+                    <h3
+                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
+                    >
+                      （二）核心配置参数
+                    </h3>
+                    <table
+                      style="
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-size: 16px;
+                        color: #666;
+                        margin: 8px 0 15px;
+                      "
+                    >
+                      <tbody>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                              font-weight: bold;
+                            "
+                          >
+                            参数名
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                              font-weight: bold;
+                            "
+                          >
+                            单位/取值范围
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                              font-weight: bold;
+                            "
+                          >
+                            说明
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            prefix
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            -
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            输出文件的前缀
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            cellsize
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            -
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            可选，无则从输入数据读取，建议去掉
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            phases
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            默认 3
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            相数（默认3：固体、细固体、流体），<strong
+                              >暴露参数</strong
+                            >
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            friction
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            内摩擦[0-90]、基底摩擦[0-90]、流体摩擦&gt;0
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            单相应含3类摩擦力，<strong>暴露参数</strong>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            time
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            -
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            2个时间值：①写入文件的时间间隔 ②模拟总时长
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            profile
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            m
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            流向坐标（从顶到底），x/y依次表示点位
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            visualization
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            -
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            共18个参数，控制可视化效果（如等高线、透明度、颜色权重等）
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <h4
+                      style="font-size: 17px; color: #555; margin: 12px 0 8px"
+                    >
+                      可视化参数（visualization）细分说明
+                    </h4>
+                    <p
+                      style="
+                        font-size: 16px;
+                        line-height: 1.5;
+                        color: #666;
+                        margin-bottom: 8px;
+                      "
+                    >
+                      包含18个配置项，核心作用如下：
+                    </p>
+                    <ul
+                      style="
+                        font-size: 16px;
+                        line-height: 1.6;
+                        color: #666;
+                        margin: 8px 0 15px;
+                        padding-left: 25px;
+                        column-count: 2;
+                        column-gap: 20px;
+                      "
+                    >
+                      <li>deform：控制正射影像变形（0关闭/1有/2无）</li>
+                      <li>hflowmin：可视化最小流量高度（m）</li>
+                      <li>hflowref：可视化参考高度（小流量高度透明）</li>
+                      <li>htsunref：大流量高度显示为纯白色</li>
+                      <li>hcontmin：水流等高线最低水位（整数）</li>
+                      <li>hcontmax：水流等高线最高水位</li>
+                      <li>hcontint：水流等高线间隔（整数）</li>
+                      <li>zcontmin：高程等高线最低值</li>
+                      <li>zcontmax：高程等高线最高值</li>
+                      <li>zcontint：高程等高线间隔</li>
+                      <li>pred/pgreen/pblue：红/绿/蓝权重（多相忽略）</li>
+                      <li>pexp：流动显示透明曲线指数</li>
+                      <li>phexagg：剖面中流动高度因素</li>
+                      <li>pvpath/rscriptpath/rlibspath：各类路径配置</li>
+                    </ul>
+
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
+                      三、生成结果
+                    </h2>
+                    <p
+                      style="
+                        font-size: 16px;
+                        line-height: 1.5;
+                        color: #666;
+                        margin-bottom: 15px;
+                      "
+                    >
+                      模型输出包含两部分核心结果：<br />
+                      1.
+                      <strong>量化数据</strong
+                      >：重力流灾害的流动高度、速度、影响范围等数值模拟结果（以配置的
+                      prefix 为前缀输出）；<br />
+                      2. <strong>可视化结果</strong>：基于 visualization
+                      参数生成的灾害流动过程可视化图表（如等高线图、流动路径图、正射影像叠加图等）；<br />
+                      具体结果示例可参考官方使用手册或模型运行实测案例。
+                    </p>
+                  </div>
+                </el-dialog>
+              </div>
+            </template>
             <p id="name_par2">模型参数</p>
             <el-form
               :model="form1"
@@ -233,6 +2018,354 @@
             :close-on-click-modal="false"
             class="dialog_flood"
           >
+            <template #header>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  width: 100%;
+                "
+              >
+                <span style="color: #ffffff; font-size: 24px"
+                  >洪水泥石流启动动力学模型</span
+                >
+                <!-- 问号容器：定位到关闭按钮左侧 -->
+                <div style="position: relative; right: -3px; top: -28.5px">
+                  <el-tooltip content="帮助" placement="top">
+                    <el-icon
+                      class="help-icon"
+                      @click="openHelpDialog_flood = true"
+                    >
+                      <QuestionFilled />
+                    </el-icon>
+                  </el-tooltip>
+                </div>
+                <el-dialog
+                  v-model="openHelpDialog_flood"
+                  width="1200px"
+                  max-height="600px"
+                  :close-on-click-modal="false"
+                  position="absolute"
+                  top="70px"
+                  style="
+                    background-image: url('./CS/src/assets/img/fz174.png');
+                    background-size: cover; /* 让背景图铺满对话框 */
+                    background-position: center; /* 背景图居中 */
+                    background-color: rgba(0, 0, 130, 0.5);
+                  "
+                >
+                  <template #title>
+                    <span
+                      style="
+                        color: white;
+                        font-size: 26px;
+                        display: block;
+                        text-align: center;
+                      "
+                      >洪水泥石流启动动力学模型说明文档</span
+                    >
+                  </template>
+                  <div
+                    id="debris-flow-dynamics-model-info"
+                    style="
+                      width: 100%;
+                      max-width: 1000px;
+                      margin: 0 auto;
+                      padding: 20px;
+                      font-family: Arial, sans-serif;
+                      max-height: 600px;
+                      overflow-y: auto;
+                      -ms-overflow-style: none;
+                      scrollbar-width: none;
+                    "
+                  >
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
+                      一、模型目的
+                    </h2>
+                    <p
+                      style="
+                        font-size: 16px;
+                        line-height: 1.5;
+                        color: #666;
+                        margin-bottom: 15px;
+                      "
+                    >
+                      基于输入的灾前/灾后地形、水深分布及相关参数，数值模拟山洪泥石流启动过程，输出滑坡、堰塞湖、洪水的关键特征数据（厚度、速度、水深等），为山洪泥石流灾害的形成机制分析、风险评估提供量化支撑。
+                    </p>
+
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
+                      二、所需参数及介绍
+                    </h2>
+
+                    <h3
+                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
+                    >
+                      （一）输入数据格式与路径
+                    </h3>
+                    <p
+                      style="
+                        font-size: 16px;
+                        line-height: 1.5;
+                        color: #666;
+                        margin-bottom: 10px;
+                      "
+                    >
+                      所有输入数据均以
+                      <strong>txt格式</strong>
+                      读取。
+                    </p>
+                    <table
+                      style="
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-size: 16px;
+                        color: #666;
+                        margin: 8px 0 15px;
+                      "
+                    >
+                      <tbody>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                              font-weight: bold;
+                            "
+                          >
+                            变量/文件标识
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                              font-weight: bold;
+                            "
+                          >
+                            文件名称示例
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                              font-weight: bold;
+                            "
+                          >
+                            说明
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            zB
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            [basePath]\sufB.txt
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            灾前地形数据
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            zL
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            [basePath]\sufL.txt
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            灾后地形数据
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            hW
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            [basePath]\sufW.txt
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            水深分布数据
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            Par
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            [basePath]\sufP.txt
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            模型计算所需参数
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <p
+                      style="
+                        font-size: 16px;
+                        line-height: 1.5;
+                        color: #666;
+                        margin-bottom: 15px;
+                      "
+                    >
+                      <strong>路径说明</strong>：basePath 由
+                      userName（用户目录）、taskName（任务目录）拼接而成，文件路径拼接逻辑为：<br />
+                      <code
+                        style="
+                          background: #f0f0f0;
+                          padding: 2px 4px;
+                          border-radius: 2px;
+                        "
+                        >basePath = [userName, filesep, taskName,
+                        filesep];</code
+                      >
+                    </p>
+
+                    <h3
+                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
+                    >
+                      （二）核心输入数据类别
+                    </h3>
+                    <ul
+                      style="
+                        font-size: 16px;
+                        line-height: 1.6;
+                        color: #666;
+                        margin: 8px 0 15px;
+                        padding-left: 25px;
+                      "
+                    >
+                      <li style="margin-bottom: 5px">
+                        <strong>灾前地形（zB）</strong
+                        >：泥石流发生前的区域地形基础数据；
+                      </li>
+                      <li style="margin-bottom: 5px">
+                        <strong>灾后地形（zL）</strong
+                        >：泥石流发生后的区域地形变化数据；
+                      </li>
+                      <li style="margin-bottom: 5px">
+                        <strong>水深分布（hW）</strong
+                        >：研究区域内的水体深度空间分布数据；
+                      </li>
+                      <li>
+                        <strong>模型参数（Par）</strong
+                        >：支撑动力学模拟的核心参数（如物理力学参数、计算参数等）。
+                      </li>
+                    </ul>
+
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
+                      三、生成结果
+                    </h2>
+                    <ol
+                      style="
+                        font-size: 16px;
+                        line-height: 1.6;
+                        color: #666;
+                        margin: 8px 0 15px;
+                        padding-left: 25px;
+                      "
+                    >
+                      <li style="margin-bottom: 5px">
+                        <strong>输出格式</strong>：所有模拟结果均以
+                        <strong>txt 格式</strong> 输出；
+                      </li>
+                      <li style="margin-bottom: 5px">
+                        <strong>滑坡特征数据</strong
+                        >：厚度分布（hS）、速度分布（uS）；
+                      </li>
+                      <li style="margin-bottom: 5px">
+                        <strong>堰塞湖特征数据</strong>：水深（hW）；
+                      </li>
+                      <li>
+                        <strong>洪水特征数据</strong
+                        >：水深（hW）、速度分布（uW）。
+                      </li>
+                    </ol>
+                  </div>
+                </el-dialog>
+              </div>
+            </template>
             <p id="name_par3">模型参数</p>
             <el-form
               :model="form2"
@@ -333,6 +2466,344 @@
             :close-on-click-modal="false"
             class="dialog_inverseV"
           >
+            <template #header>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  width: 100%;
+                "
+              >
+                <span style="color: #ffffff; font-size: 24px"
+                  >基于位移监测滑坡预警</span
+                >
+                <!-- 问号容器：定位到关闭按钮左侧 -->
+                <div style="position: relative; right: -4px; top: -11.5px">
+                  <el-tooltip content="帮助" placement="top">
+                    <el-icon
+                      class="help-icon"
+                      @click="openHelpDialog_inverseV = true"
+                    >
+                      <QuestionFilled />
+                    </el-icon>
+                  </el-tooltip>
+                </div>
+                <el-dialog
+                  v-model="openHelpDialog_inverseV"
+                  width="1200px"
+                  max-height="600px"
+                  :close-on-click-modal="false"
+                  position="absolute"
+                  top="70px"
+                  style="
+                    background-image: url('./CS/src/assets/img/fz174.png');
+                    background-size: cover; /* 让背景图铺满对话框 */
+                    background-position: center; /* 背景图居中 */
+                    background-color: rgba(0, 0, 130, 0.5);
+                  "
+                >
+                  <template #title>
+                    <span
+                      style="
+                        color: white;
+                        font-size: 26px;
+                        display: block;
+                        text-align: center;
+                      "
+                      >风险源定量识别与表征模型核心信息</span
+                    >
+                  </template>
+                  <div
+                    id="landslide-warning-model-info"
+                    style="
+                      width: 100%;
+                      max-width: 1000px;
+                      margin: 0 auto;
+                      padding: 20px;
+                      font-family: Arial, sans-serif;
+                      max-height: 600px;
+                      overflow-y: auto;
+                      -ms-overflow-style: none;
+                      scrollbar-width: none;
+                    "
+                  >
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
+                      一、模型目的
+                    </h2>
+                    <p
+                      style="
+                        font-size: 16px;
+                        line-height: 1.5;
+                        color: #666;
+                        margin-bottom: 15px;
+                      "
+                    >
+                      基于位移传感器监测的时序数据，通过<strong>速度倒数法</strong>预测滑坡发生时间：将滑坡过程划分为恒速移动、变速移动、滑坡三阶段，检测变速起始点（OOA）到速度倒数为零的距离，判断滑坡发生时机，实现滑坡预警。
+                    </p>
+
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
+                      二、所需数据/核心模块
+                    </h2>
+
+                    <h3
+                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
+                    >
+                      （一）核心输入数据
+                    </h3>
+                    <p
+                      style="
+                        font-size: 16px;
+                        line-height: 1.5;
+                        color: #666;
+                        margin-bottom: 8px;
+                      "
+                    >
+                      时序位移监测数据，包含两类字段：
+                    </p>
+                    <ul
+                      style="
+                        font-size: 16px;
+                        line-height: 1.6;
+                        color: #666;
+                        margin: 8px 0 15px;
+                        padding-left: 25px;
+                      "
+                    >
+                      <li style="margin-bottom: 5px">
+                        <strong>timestamp</strong>：时间戳（如 2022-01-01
+                        00:00:00）；
+                      </li>
+                      <li>
+                        <strong>displ</strong>：传感器检测到的位移值（数值型）。
+                      </li>
+                    </ul>
+
+                    <h3
+                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
+                    >
+                      （二）R语言核心脚本模块
+                    </h3>
+                    <table
+                      style="
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-size: 16px;
+                        color: #666;
+                        margin: 8px 0 15px;
+                      "
+                    >
+                      <tbody>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                              font-weight: bold;
+                            "
+                          >
+                            脚本文件
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                              font-weight: bold;
+                            "
+                          >
+                            功能
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            1_1_input.R
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            主配置文件（参数入口）
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            2_data-input.R
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            数据读取与预处理
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            4_calculate_v-iv.R
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            计算速度/逆速度
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            6_OOA-detection_auto_2.R
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            自动检测加速起始点（OOA）
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            7_calculate_tof.R
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            计算破坏时间（滑坡发生时间）
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            plot7_combi.R
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            生成综合预测图表
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            99_1_new-iteration_run.R
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            增量更新预测（新数据到来时）
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
+                      三、生成结果
+                    </h2>
+                    <ol
+                      style="
+                        font-size: 16px;
+                        line-height: 1.6;
+                        color: #666;
+                        margin: 8px 0 15px;
+                        padding-left: 25px;
+                      "
+                    >
+                      <li style="margin-bottom: 5px">
+                        <strong>量化结果</strong
+                        >：滑坡破坏时间（失效时间）预测值、预测不确定性区间、速度/逆速度计算结果、OOA检测结果；
+                      </li>
+                      <li style="margin-bottom: 5px">
+                        <strong>可视化结果</strong>：
+                        <ul style="margin: 4px 0 0 20px; padding: 0">
+                          <li>
+                            综合预测图表：位移-时间曲线、逆速度曲线、OOA检测标记；
+                          </li>
+                          <li>
+                            统计图表：失效时间分布箱线图、预期寿命图表、速度区间可视化图；
+                          </li>
+                          <li>
+                            案例专项图：PFTF结果图（含失效窗口、速度区间、四分位距等）。
+                          </li>
+                        </ul>
+                      </li>
+                      <li>
+                        <strong>功能扩展</strong
+                        >：支持新数据增量更新预测，输出实时预警相关的时间轴、不确定性分析结果。
+                      </li>
+                    </ol>
+                  </div>
+                </el-dialog>
+              </div>
+            </template>
             <el-form
               :model="form_inverseV"
               label-width="auto"
@@ -421,6 +2892,424 @@
             :close-on-click-modal="false"
             class="dialog_seismic"
           >
+            <template #header>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  width: 100%;
+                "
+              >
+                <span style="color: #ffffff; font-size: 24px"
+                  >冰川泥石流监测预警模型</span
+                >
+                <!-- 问号容器：定位到关闭按钮左侧 -->
+                <div style="position: relative; right: -8px; top: -12px">
+                  <el-tooltip content="帮助" placement="top">
+                    <el-icon
+                      class="help-icon"
+                      @click="openHelpDialog_seismic = true"
+                    >
+                      <QuestionFilled />
+                    </el-icon>
+                  </el-tooltip>
+                </div>
+                <el-dialog
+                  v-model="openHelpDialog_seismic"
+                  width="1200px"
+                  max-height="600px"
+                  :close-on-click-modal="false"
+                  position="absolute"
+                  top="70px"
+                  style="
+                    background-image: url('./CS/src/assets/img/fz174.png');
+                    background-size: cover; /* 让背景图铺满对话框 */
+                    background-position: center; /* 背景图居中 */
+                    background-color: rgba(0, 0, 130, 0.5);
+                  "
+                >
+                  <template #title>
+                    <span
+                      style="
+                        color: white;
+                        font-size: 26px;
+                        display: block;
+                        text-align: center;
+                      "
+                      >风险源定量识别与表征模型核心信息</span
+                    >
+                  </template>
+                  <div
+                    id="debris-flow-signal-detection-info"
+                    style="
+                      width: 100%;
+                      max-width: 1000px;
+                      margin: 0 auto;
+                      padding: 20px;
+                      font-family: Arial, sans-serif;
+                      max-height: 600px;
+                      overflow-y: auto;
+                      -ms-overflow-style: none;
+                      scrollbar-width: none;
+                    "
+                  >
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
+                      一、脚本目的
+                    </h2>
+                    <p
+                      style="
+                        font-size: 16px;
+                        line-height: 1.5;
+                        color: #666;
+                        margin-bottom: 15px;
+                      "
+                    >
+                      处理传感器采集的地震波/地声/振动等时序信号，基于<strong>改进的STA/LTA（短长时窗平均比）算法</strong>自动识别泥石流事件；通过二次校验（分段趋势分析）排除误报，输出检测结果并可视化波形与检测状态。
+                    </p>
+
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
+                      二、参数/环境/输入要求
+                    </h2>
+
+                    <h3
+                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
+                    >
+                      （一）环境依赖
+                    </h3>
+
+                    <ul
+                      style="
+                        font-size: 16px;
+                        line-height: 1.6;
+                        color: #666;
+                        margin: 8px 0 15px;
+                        padding-left: 25px;
+                      "
+                    >
+                      <li style="margin-bottom: 4px">
+                        numpy：高性能数值计算与数组操作
+                      </li>
+                      <li style="margin-bottom: 4px">
+                        pandas：读取Excel/CSV格式数据
+                      </li>
+                      <li style="margin-bottom: 4px">
+                        matplotlib：绘制波形与检测状态可视化图表
+                      </li>
+                      <li>openpyxl：pandas读取.xlsx文件的引擎</li>
+                    </ul>
+
+                    <h3
+                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
+                    >
+                      （二）关键参数（代码第39-45行）
+                    </h3>
+                    <table
+                      style="
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-size: 16px;
+                        color: #666;
+                        margin: 8px 0 15px;
+                      "
+                    >
+                      <tbody>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                              font-weight: bold;
+                            "
+                          >
+                            参数名
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                              font-weight: bold;
+                            "
+                          >
+                            默认值
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                              font-weight: bold;
+                            "
+                          >
+                            说明
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            threshold
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            2.5
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            触发阈值，STA/LTA比值超此值启动二次校验
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            short_window
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            30秒
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            短时窗，计算瞬时能量变化（反应灵敏）
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            long_window
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            240秒
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            长时窗，计算背景噪声水平（反应迟钝）
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            segment_duration
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            10秒
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            校验分段时长，触发后切分后续时间窗
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            total_duration
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            60秒
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            校验总时长，触发后向后检查的总时间
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            sampling_rate
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            100Hz
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            采样率，需与硬件采集参数一致
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <h3
+                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
+                    >
+                      （三）输入数据要求
+                    </h3>
+                    <ul
+                      style="
+                        font-size: 16px;
+                        line-height: 1.6;
+                        color: #666;
+                        margin: 8px 0 15px;
+                        padding-left: 25px;
+                      "
+                    >
+                      <li style="margin-bottom: 5px">
+                        文件格式：Excel（.xlsx）格式的传感器波形数据；
+                      </li>
+                      <li style="margin-bottom: 5px">
+                        数据结构：默认跳过第一行表头，读取第1列作为信号数值；若第一列为时间戳，需修改代码列索引；
+                      </li>
+                      <li>
+                        使用前需修改代码第30行的
+                        <code>filepath</code>
+                        为实际数据文件路径。
+                      </li>
+                    </ul>
+
+                    <h3
+                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
+                    >
+                      （四）核心判定逻辑
+                    </h3>
+                    <ol
+                      style="
+                        font-size: 16px;
+                        line-height: 1.6;
+                        color: #666;
+                        margin: 8px 0 15px;
+                        padding-left: 25px;
+                      "
+                    >
+                      <li style="margin-bottom: 4px">
+                        能量计算：原始数据平方后，计算STA（短时平均能量）、LTA（长时平均能量）；
+                      </li>
+                      <li style="margin-bottom: 4px">
+                        初筛：Ratio=STA/LTA > threshold 时，进入二次校验；
+                      </li>
+                      <li style="margin-bottom: 4px">
+                        二次校验：锁定LTA背景值，截取后续60秒数据并切分为10秒片段，计算各片段均值与锁定LTA的比值；
+                      </li>
+                      <li>
+                        最终判定：所有片段比值>threshold
+                        <strong>且</strong> 片段能量增长趋势次数≥3次。
+                      </li>
+                    </ol>
+
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
+                      三、生成结果
+                    </h2>
+                    <ol
+                      style="
+                        font-size: 16px;
+                        line-height: 1.6;
+                        color: #666;
+                        margin: 8px 0 15px;
+                        padding-left: 25px;
+                      "
+                    >
+                      <li style="margin-bottom: 5px">
+                        <strong>控制台输出</strong
+                        >：是否检测到泥石流、检测到的信号数据点索引；
+                      </li>
+                      <li>
+                        <strong>可视化结果</strong
+                        >：弹出波形与检测状态图表，其中灰色曲线为原始信号波形，红色脉冲为判定的泥石流时间段（值为1）。
+                      </li>
+                    </ol>
+                  </div>
+                </el-dialog>
+              </div>
+            </template>
             <p
               id="name_par_seismic"
               style="margin-left: 48px; font-size: 18px; color: #2763ca"
@@ -549,6 +3438,7 @@
   </div>
 </template>
 <script setup>
+import { QuestionFilled } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
 // import { UploadInstance } from 'element-plus'
 import { ElMessage } from 'element-plus'
@@ -561,6 +3451,12 @@ const dialogVisible1 = ref(false)
 const dialogVisibleGBM = ref(false)
 const dialogVisible2 = ref(false)
 const dialog_inverseV = ref(false)
+const openHelpDialog_fxy = ref(false)
+const openHelpDialog_sh = ref(false)
+const openHelpDialog_flood = ref(false)
+const openHelpDialog_inverseV = ref(false)
+const openHelpDialog_gbm = ref(false)
+const openHelpDialog_seismic = ref(false)
 const uploadRef = ref(null)
 const fileName_inverseV = ref('')
 // --- GBM 上传相关 ---
@@ -1373,6 +4269,7 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
 
 :deep(.el-dialog.dialog_lightGBM) {
   --el-dialog-bg-color: transparent;
+  margin-top: 15%;
   width: 450px;
   height: 300px;
   background-image: url('../assets/img/fz173.png');
@@ -1381,6 +4278,7 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
 
 :deep(.el-dialog.dialog_seismic) {
   --el-dialog-bg-color: transparent;
+  margin-top: 15%;
   width: 450px;
   height: 300px;
   background-image: url('../assets/img/fz173.png');
@@ -1389,6 +4287,7 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
 
 :deep(.el-dialog.dialog_avaflow) {
   --el-dialog-bg-color: transparent;
+  margin-top: 15%;
   width: 450px;
   height: 300px;
   background-image: url('../assets/img/fz173.png');
@@ -1397,6 +4296,7 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
 
 :deep(.el-dialog.dialog_flood) {
   --el-dialog-bg-color: transparent;
+  margin-top: 10%;
   width: 450px;
   height: 420px;
   background-image: url('../assets/img/fz173.png');
