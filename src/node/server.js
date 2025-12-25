@@ -32,11 +32,13 @@ const storage = multer.diskStorage({
 const upload = multer({ storage })
 let filePath
 // 文件保存路径
-const SAVE_PATH =
-  'E:/Projects/ZHLXT/算法/基于位移监测滑坡预警/PFTF_1.0.0/PFTF_1.0.0/icelake'
+// const SAVE_PATH =
+//   'E:/Projects/ZHLXT/算法/基于位移监测滑坡预警/PFTF_1.0.0/PFTF_1.0.0/icelake'
+const SAVE_PATH = 'D:/practice/PFTF/icelake'
 // 目标R脚本路径
-const TARGET_PATH =
-  'E:/Projects/ZHLXT/算法/基于位移监测滑坡预警/PFTF_1.0.0/PFTF_1.0.0/PFTF-PFTF_1.0.0'
+// const TARGET_PATH =
+//   'E:/Projects/ZHLXT/算法/基于位移监测滑坡预警/PFTF_1.0.0/PFTF_1.0.0/PFTF-PFTF_1.0.0'
+const TARGET_PATH = 'D:/practice/PFTF/PFTF_1.0.0/PFTF-PFTF_1.0.0'
 const R_SCRIPT_PATH = path.join(TARGET_PATH, '1_1_input.R')
 const displ_file = ''
 
@@ -49,9 +51,16 @@ const dbConfig = {
   // port: 54321,
   // connectionTimeoutMillis: 10000,
   // idleTimeoutMillis: 30000,
+  //@王茂
+  // user: 'postgres',
+  // host: 'localhost',
+  // database: 'postgres',
+  // password: '123456',
+  // port: 5432,
+  //syl
   user: 'postgres',
   host: 'localhost',
-  database: 'postgres',
+  database: 'postgis',
   password: '123456',
   port: 5432,
 }
@@ -148,7 +157,8 @@ function formatUTCTimestamp(date) {
 //   return moment(date).format('YYYY-MM-DDTHH:mm:ss.SSSZ');
 // }
 function readExcelData(filePath) {
-  // console.log(filePath)
+  // console.log('1111')
+  console.log(filePath)
   try {
     const workbook = XLSX.readFile(filePath)
     const sheetName = workbook.SheetNames[0]
@@ -323,7 +333,8 @@ cat("时区: UTC\\n")
       fs.writeFileSync(rScriptPath, rScriptContent, 'utf8')
 
       // 执行R脚本
-      const Rscript = '"D:/application/r/baseR/bin/Rscript.exe"'
+      // const Rscript = '"D:/application/r/baseR/bin/Rscript.exe"'
+      const Rscript = '"C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe"'
       const command = `cd /d "${SAVE_PATH}" && ${Rscript} "${rScriptPath}"`
 
       console.log('正在转换为RDA格式...')
@@ -574,7 +585,8 @@ function restoreRScript(rScriptPath) {
 function executeRScript(rScriptPath) {
   return new Promise((resolve, reject) => {
     try {
-      const Rscript = '"D:/application/r/baseR/bin/Rscript.exe"'
+      // const Rscript = '"D:/application/r/baseR/bin/Rscript.exe"'
+      const Rscript = '"C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe"'
       const command = `cd /d "${path.dirname(
         rScriptPath
       )}" && ${Rscript} "${rScriptPath}"`
@@ -1648,7 +1660,19 @@ app.post('/node/upload_excel', uploadSeismic.single('file'), (req, res) => {
       .json({ code: 500, message: err.message || 'server error' })
   }
 })
-
+app.post('/displ', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ code: 400, message: '没有文件上传' })
+  }
+  // 这里 req.file.originalname 才是上传时的真实文件名
+  filePath = path.join(__dirname, 'uploads', req.file.originalname)
+  console.log('保存路径：', filePath)
+  res.json({
+    code: 200,
+    fileName: req.file.originalname, // 上传时的文件名
+    savedPath: filePath, // 保存到服务器的路径 (uploads/xxxx)
+  })
+})
 app.listen(3000, () => {
   // console.log('Server running on http://localhost:3000');
   // console.log('💾 文件保存路径:', SAVE_PATH);
