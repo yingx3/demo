@@ -305,7 +305,7 @@
       </div>
 
       <div class="chart-body">
-        <div id="displacement-chart"></div>
+        <div id="displacement-chart" style="height: 659px; width: 1159px"></div>
       </div>
     </div>
   </div>
@@ -1939,7 +1939,7 @@ const renderDisplacementChart = chartData => {
       text: '位移变化趋势图',
       left: 'center',
       textStyle: {
-        fontSize: 18, // 【修改】标题字号从14→18，更大更醒目
+        fontSize: 20,
         fontWeight: 'bold',
       },
       right: 10,
@@ -1978,6 +1978,7 @@ const renderDisplacementChart = chartData => {
       name: '时间',
       nameLocation: 'middle',
       nameGap: 30,
+      namePadding: [20, 0, 0, 0], // [上, 右, 下, 左]，数值越大偏移越多
       nameTextStyle: {
         fontSize: 16, // 【修改】坐标轴名称字号从12→16
       },
@@ -2066,22 +2067,22 @@ const renderDisplacementChart = chartData => {
         },
       },
     ],
-    // 【新增】强制图表适配容器尺寸（确保占满displacement-chart div）
-    responsive: true,
-    maintainAspectRatio: false,
+    // // 【新增】强制图表适配容器尺寸（确保占满displacement-chart div）
+    // responsive: true,
+    // maintainAspectRatio: false,
   }
-  watch(
-    () => chartVisible,
-    val => {
-      if (val) {
-        nextTick(() => {
-          chart.resize()
-        })
-      }
-    }
-  )
+  // watch(
+  //   () => chartVisible,
+  //   val => {
+  //     if (val) {
+  //       nextTick(() => {
+  //         chart.resize()
+  //       })
+  //     }
+  //   }
+  // )
   // 应用配置项并渲染图表
-  // myChart.setOption(option)
+  myChart.setOption(option)
 
   // 响应式调整
   // window.addEventListener('resize', function () {
@@ -4850,15 +4851,15 @@ function handleSeismicResult(payload) {
 .chart-container {
   position: fixed;
   top: 50%;
-  left: 50%;
+  left: 52%;
   transform: translate(-50%, -50%);
-  width: 80%;
-  max-width: 1200px;
+  width: 1180px;
+  // max-width: 1200px;
   height: 700px;
   background: #f5f7fa;
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  padding: 20px;
+  // box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 0px;
   box-sizing: border-box;
   z-index: 100;
 }
