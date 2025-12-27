@@ -559,6 +559,34 @@
                     >：网格详单，含土壤深度、孔隙水压力、稳定性系数，供量化分析。
                   </li>
                 </ol>
+                                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
+                  四、运行结果示例
+                </h2>
+                <p
+                  style="
+                    font-size: 16px;
+                    line-height: 1.5;
+                    color: #666;
+                    margin-bottom: 15px;
+                  "
+                >
+                  以下是模型运行后的示例输出结果：
+                </p>
+                <img
+                  src="/img/TRIGRS.png"
+                  alt="运行结果示例"
+                  style="
+                    width: 80%;
+                    height: auto;
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    margin: 10px 0;
+                    display: block;
+                    margin-left: auto;
+                    margin-right: auto;
+                    filter: none;
+                  "
+                />
               </div></el-dialog
             >
             <p id="name_par">模型参数</p>
@@ -1447,6 +1475,34 @@
                     ArcGIS/QGIS 等软件正常显示中文字符。
                   </li>
                 </ol>
+                                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
+                  四、运行结果示例
+                </h2>
+                <p
+                  style="
+                    font-size: 16px;
+                    line-height: 1.5;
+                    color: #666;
+                    margin-bottom: 15px;
+                  "
+                >
+                  以下是模型运行后的示例输出结果：
+                </p>
+                <img
+                  src="/img/BCNSL_YC.png"
+                  alt="运行结果示例"
+                  style="
+                    width: 80%;
+                    height: auto;
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    margin: 10px 0;
+                    display: block;
+                    margin-left: auto;
+                    margin-right: auto;
+                    filter: none;
+                  "
+                />
               </div>
             </el-dialog>
             <p
@@ -2511,7 +2567,7 @@
                         display: block;
                         text-align: center;
                       "
-                      >风险源定量识别与表征模型核心信息</span
+                      >基于位移监测滑坡预警说明文档</span
                     >
                   </template>
                   <div
@@ -2800,6 +2856,34 @@
                         >：支持新数据增量更新预测，输出实时预警相关的时间轴、不确定性分析结果。
                       </li>
                     </ol>
+                    <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
+                      四、运行结果示例
+                    </h2>
+                    <p
+                      style="
+                        font-size: 16px;
+                        line-height: 1.5;
+                        color: #666;
+                        margin-bottom: 15px;
+                      "
+                    >
+                      以下是模型运行后的示例输出结果：
+                    </p>
+                    <img
+                      src="/img/pftf.png"
+                      alt="运行结果示例"
+                      style="
+                        width: 80%;
+                        height: auto;
+                        border: 1px solid #ddd;
+                        border-radius: 8px;
+                        margin: 10px 0;
+                        display: block;
+                        margin-left: auto;
+                        margin-right: auto;
+                        filter: none;
+                      "
+                    />
                   </div>
                 </el-dialog>
               </div>
@@ -2937,7 +3021,7 @@
                         display: block;
                         text-align: center;
                       "
-                      >风险源定量识别与表征模型核心信息</span
+                      >冰川泥石流监测预警模型说明文档</span
                     >
                   </template>
                   <div
