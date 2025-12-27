@@ -296,8 +296,17 @@
       </div>
     </div>
 
-    <div class="chart-container" :class="{ show_displ: isChartVisible }">
-      <div id="displacement-chart"></div>
+    <div
+      class="chart-container"
+      :class="{ 'show-chart': chartVisible, 'hide-chart': !chartVisible }"
+    >
+      <div class="chart-close-btn" @click="chartVisible = false">
+        <el-icon><Close /></el-icon>
+      </div>
+
+      <div class="chart-body">
+        <div id="displacement-chart"></div>
+      </div>
     </div>
   </div>
   <el-dialog
@@ -326,7 +335,15 @@
 import * as Cesium from 'cesium'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
-import { nextTick, ref, onMounted, onUpdated, onBeforeUnmount } from 'vue'
+import { Close } from '@element-plus/icons-vue'
+import {
+  watch,
+  nextTick,
+  ref,
+  onMounted,
+  onUpdated,
+  onBeforeUnmount,
+} from 'vue'
 import { reactive } from 'vue'
 import { getGeojson } from './common/api/api.js'
 import Dialog from './js/dialog.js'
@@ -345,7 +362,8 @@ import MeasureArea from './js/MeasureArea.js'
 import MeasureManager from './js/MeasureManager.js'
 import RainEffectManager from './js/RainEffectManager.js'
 import { KrigingInstance } from './js/krigingInstance.js'
-import turf from 'turf'
+import turf, { point } from 'turf'
+
 // import type { TableColumnCtx } from 'element-plus'
 // import * as WKB from 'wkb'
 // import * as wkx from 'wkx'
@@ -392,6 +410,9 @@ const dialogVisible_disaster = ref(false)
 const dialogVisible_searchdisaster = ref(false)
 const dialogVisible_checkattribute = ref(false)
 const dialogVisible_checkqxz = ref(false)
+
+const chartVisible = ref(false) // 控制趋势图显示隐藏
+const currentPointId = ref(null) // 记录当前点击的点ID
 const form = reactive({
   name: '111',
   dcmd: '222',
@@ -1543,6 +1564,7 @@ const foreCast = params => {
 
       const entity = viewer.value.entities.add({
         id: 'pointId',
+        pointId: pointId, // 添加 pointId 属性
         name: '预警信息',
         position: Cesium.Cartesian3.fromDegrees(95.137369, 30.038497, 10556),
         billboard: {
@@ -1565,160 +1587,527 @@ const foreCast = params => {
       )
       handler.setInputAction(movement => {
         const picked = viewer.value.scene.pick(movement.position)
-        console.log(picked) // 调试输出
-        if (Cesium.defined(picked) && picked.id === entity) {
+        // console.log(picked) // 调试输出
+        // console.log('11212') // 调试输出
+        if (Cesium.defined(picked) && picked.id) {
+          const entity = picked.id
           viewer.value.selectedEntity = entity // 使用 Cesium 内置 InfoBox 弹窗
+          // 记录当前点ID
+          currentPointId.value = entity.pointId // 假设实体有pointId属性
+          // 点击实体时显示图表
+          console.log('点击了实体，点ID为:', entity.pointId)
+          fetchDisplacementData(entity.pointId)
         }
-        axios
-          .get('node/search_displ', {
-            params: {
-              pointId: pointId, // 确保 pointId 有值
-            },
-          })
-          .then(response => {
-            const data = response.data
-            isChartVisible.value = false // 显示图表
-            if (data.success) {
-              // 数据处理成功
-              console.log('获取到的位移数据:', data.data)
-              // 这里可以处理返回的数据，比如绘制图表等
-              // data.data 是一个数组，包含 { record_time: '2023-01-01 08:00:00', displacement: 10.2 } 这样的对象
-              // 准备图表数据
-              const chartData = data.data
+        // axios
+        //   .get('node/search_displ', {
+        //     params: {
+        //       pointId: pointId, // 确保 pointId 有值
+        //     },
+        //   })
+        //   .then(response => {
+        //     const data = response.data
+        //     isChartVisible.value = false // 显示图表
+        //     if (data.success) {
+        //       // 数据处理成功
+        //       console.log('获取到的位移数据:', data.data)
+        //       // 这里可以处理返回的数据，比如绘制图表等
+        //       // data.data 是一个数组，包含 { record_time: '2023-01-01 08:00:00', displacement: 10.2 } 这样的对象
+        //       // 准备图表数据
+        //       const chartData = data.data
 
-              // 分离时间和位移数据
-              const times = chartData.map(item => item.record_time)
-              const displacements = chartData.map(item => item.displacement)
+        //       // 分离时间和位移数据
+        //       const times = chartData.map(item => item.record_time)
+        //       const displacements = chartData.map(item => item.displacement)
 
-              // 初始化ECharts实例
-              const chartDom = document.getElementById('displacement-chart')
-              const myChart = echarts.init(chartDom)
+        //       // 初始化ECharts实例
+        //       const chartDom = document.getElementById('displacement-chart')
+        //       const myChart = echarts.init(chartDom)
 
-              // 配置图表选项
-              const option = {
-                title: {
-                  text: '位移变化趋势图',
-                  left: 'center',
-                  textStyle: {
-                    fontSize: 8,
-                    fontWeight: 'regular',
-                  },
-                },
-                tooltip: {
-                  trigger: 'axis',
-                  formatter: function (params) {
-                    const date = new Date(params[0].data[0])
-                    const formattedDate = date.toLocaleString('zh-CN', {
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit',
-                    })
-                    return `时间: ${formattedDate}<br/>位移: ${params[0].data[1]} mm`
-                  },
-                },
-                grid: {
-                  left: '3%',
-                  right: '4%',
-                  bottom: '3%',
-                  containLabel: true,
-                },
-                xAxis: {
-                  type: 'time',
-                  name: '时间',
-                  nameLocation: 'middle',
-                  nameGap: 30,
-                  axisLabel: {
-                    formatter: function (value) {
-                      return new Date(value).toLocaleDateString('zh-CN', {
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                    },
-                  },
-                },
-                yAxis: {
-                  type: 'value',
-                  name: '位移 (mm)',
-                  nameGap: 30,
-                  axisLabel: {
-                    formatter: '{value} mm',
-                  },
-                },
-                dataZoom: [
-                  {
-                    type: 'inside',
-                    start: 0,
-                    end: 100,
-                  },
-                  {
-                    type: 'slider',
-                    start: 0,
-                    end: 100,
-                  },
-                ],
-                series: [
-                  {
-                    name: '位移',
-                    type: 'line',
-                    data: chartData.map(item => [
-                      item.record_time,
-                      item.displacement,
-                    ]),
-                    smooth: true,
-                    symbol: 'circle',
-                    symbolSize: 6,
-                    itemStyle: {
-                      color: '#5470c6',
-                    },
-                    lineStyle: {
-                      width: 2,
-                    },
-                    areaStyle: {
-                      color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                        { offset: 0, color: 'rgba(84, 112, 198, 0.6)' },
-                        { offset: 1, color: 'rgba(84, 112, 198, 0.1)' },
-                      ]),
-                    },
-                  },
-                ],
-                width: '280px',
-                height: '180px',
-              }
+        //       // 配置图表选项
+        //       const option = {
+        //         title: {
+        //           text: '位移变化趋势图',
+        //           left: 'center',
+        //           textStyle: {
+        //             fontSize: 8,
+        //             fontWeight: 'regular',
+        //           },
+        //         },
+        //         tooltip: {
+        //           trigger: 'axis',
+        //           formatter: function (params) {
+        //             const date = new Date(params[0].data[0])
+        //             const formattedDate = date.toLocaleString('zh-CN', {
+        //               year: 'numeric',
+        //               month: '2-digit',
+        //               day: '2-digit',
+        //               hour: '2-digit',
+        //               minute: '2-digit',
+        //               second: '2-digit',
+        //             })
+        //             return `时间: ${formattedDate}<br/>位移: ${params[0].data[1]} mm`
+        //           },
+        //         },
+        //         grid: {
+        //           left: '3%',
+        //           right: '4%',
+        //           bottom: '3%',
+        //           containLabel: true,
+        //         },
+        //         xAxis: {
+        //           type: 'time',
+        //           name: '时间',
+        //           nameLocation: 'middle',
+        //           nameGap: 30,
+        //           axisLabel: {
+        //             formatter: function (value) {
+        //               return new Date(value).toLocaleDateString('zh-CN', {
+        //                 month: '2-digit',
+        //                 day: '2-digit',
+        //                 hour: '2-digit',
+        //                 minute: '2-digit',
+        //               })
+        //             },
+        //           },
+        //         },
+        //         yAxis: {
+        //           type: 'value',
+        //           name: '位移 (mm)',
+        //           nameGap: 30,
+        //           axisLabel: {
+        //             formatter: '{value} mm',
+        //           },
+        //         },
+        //         dataZoom: [
+        //           {
+        //             type: 'inside',
+        //             start: 0,
+        //             end: 100,
+        //           },
+        //           {
+        //             type: 'slider',
+        //             start: 0,
+        //             end: 100,
+        //           },
+        //         ],
+        //         series: [
+        //           {
+        //             name: '位移',
+        //             type: 'line',
+        //             data: chartData.map(item => [
+        //               item.record_time,
+        //               item.displacement,
+        //             ]),
+        //             smooth: true,
+        //             symbol: 'circle',
+        //             symbolSize: 6,
+        //             itemStyle: {
+        //               color: '#5470c6',
+        //             },
+        //             lineStyle: {
+        //               width: 2,
+        //             },
+        //             areaStyle: {
+        //               color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+        //                 { offset: 0, color: 'rgba(84, 112, 198, 0.6)' },
+        //                 { offset: 1, color: 'rgba(84, 112, 198, 0.1)' },
+        //               ]),
+        //             },
+        //           },
+        //         ],
+        //         width: '280px',
+        //         height: '180px',
+        //       }
 
-              // 应用配置项并渲染图表
-              myChart.setOption(option)
+        //       // 应用配置项并渲染图表
+        //       myChart.setOption(option)
 
-              // 响应式调整
-              window.addEventListener('resize', function () {
-                myChart.resize()
-              })
-              ElMessage({
-                message: data.message,
-                type: 'success',
-              })
-            } else {
-              // 后端返回了错误信息
-              ElMessage({
-                message: data.message,
-                type: data.type || 'warning',
-              })
-            }
-          })
-          .catch(error => {
-            console.error('请求失败:', error)
-            ElMessage({
-              message: '请求数据失败',
-              type: 'error',
-            })
-          })
+        //       // 响应式调整
+        //       window.addEventListener('resize', function () {
+        //         myChart.resize()
+        //       })
+        //       ElMessage({
+        //         message: data.message,
+        //         type: 'success',
+        //       })
+        //     } else {
+        //       // 后端返回了错误信息
+        //       ElMessage({
+        //         message: data.message,
+        //         type: data.type || 'warning',
+        //       })
+        //     }
+        //   })
+        //   .catch(error => {
+        //     console.error('请求失败:', error)
+        //     ElMessage({
+        //       message: '请求数据失败',
+        //       type: 'error',
+        //     })
+        //   })
       }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
     },
   })
+}
+// 提取数据获取和图表渲染为单独函数
+const fetchDisplacementData = pointId => {
+  if (!pointId) {
+    console.log('fetchDisplacementData: pointId is empty')
+    return
+  }
+
+  axios
+    .get('node/search_displ', {
+      params: { pointId },
+    })
+    .then(response => {
+      const data = response.data
+      if (data.success) {
+        console.log('获取到的位移数据:', data.data)
+        renderDisplacementChart(data.data)
+        chartVisible.value = true // 显示图表
+        console.log('图表已显示')
+        ElMessage({
+          message: data.message,
+          type: 'success',
+        })
+      } else {
+        ElMessage({
+          message: data.message,
+          type: data.type || 'warning',
+        })
+      }
+    })
+    .catch(error => {
+      console.error('请求失败:', error)
+      ElMessage({
+        message: '请求数据失败',
+        type: 'error',
+      })
+    })
+}
+// 图表渲染函数
+const renderDisplacementChart = chartData => {
+  // 分离时间和位移数据
+  const times = chartData.map(item => item.record_time)
+  const displacements = chartData.map(item => item.displacement)
+
+  // 初始化ECharts实例
+  const chartDom = document.getElementById('displacement-chart')
+  const myChart = echarts.init(chartDom)
+
+  // 清空之前的图表
+  myChart.clear()
+
+  // 配置图表选项 - 优化尺寸和样式
+  // const option = {
+  //   title: {
+  //     text: '位移变化趋势图',
+  //     left: 'center',
+  //     textStyle: {
+  //       fontSize: 14,
+  //       fontWeight: 'bold',
+  //     },
+  //     // 右上角关闭按钮
+  //     right: 10,
+  //     buttonGap: 10,
+  //     itemGap: 15,
+  //     textStyle: {
+  //       fontSize: 14,
+  //     },
+  //   },
+  //   tooltip: {
+  //     trigger: 'axis',
+  //     formatter: function (params) {
+  //       const date = new Date(params[0].data[0])
+  //       const formattedDate = date.toLocaleString('zh-CN', {
+  //         year: 'numeric',
+  //         month: '2-digit',
+  //         day: '2-digit',
+  //         hour: '2-digit',
+  //         minute: '2-digit',
+  //         second: '2-digit',
+  //       })
+  //       return `时间: ${formattedDate}<br/>位移: ${params[0].data[1]} mm`
+  //     },
+  //     backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  //     borderColor: '#ddd',
+  //     borderWidth: 1,
+  //     textStyle: { color: '#333' },
+  //     padding: 10,
+  //   },
+  //   grid: {
+  //     left: '5%',
+  //     right: '5%',
+  //     bottom: '10%',
+  //     top: '15%',
+  //     containLabel: true,
+  //   },
+  //   xAxis: {
+  //     type: 'time',
+  //     name: '时间',
+  //     nameLocation: 'middle',
+  //     nameGap: 30,
+  //     nameTextStyle: {
+  //       fontSize: 12,
+  //     },
+  //     axisLabel: {
+  //       formatter: function (value) {
+  //         return new Date(value).toLocaleDateString('zh-CN', {
+  //           month: '2-digit',
+  //           day: '2-digit',
+  //           hour: '2-digit',
+  //           minute: '2-digit',
+  //         })
+  //       },
+  //       rotate: 30, // 旋转避免文字重叠
+  //       fontSize: 10,
+  //     },
+  //     axisLine: {
+  //       lineStyle: {
+  //         color: '#ccc',
+  //       },
+  //     },
+  //   },
+  //   yAxis: {
+  //     type: 'value',
+  //     name: '位移 (mm)',
+  //     nameGap: 30,
+  //     nameTextStyle: {
+  //       fontSize: 12,
+  //     },
+  //     axisLabel: {
+  //       formatter: '{value} mm',
+  //       fontSize: 10,
+  //     },
+  //     axisLine: {
+  //       lineStyle: {
+  //         color: '#ccc',
+  //       },
+  //     },
+  //     splitLine: {
+  //       lineStyle: {
+  //         color: '#f0f0f0',
+  //       },
+  //     },
+  //   },
+  //   dataZoom: [
+  //     {
+  //       type: 'inside',
+  //       start: 0,
+  //       end: 100,
+  //       zoomLock: false,
+  //     },
+  //     {
+  //       type: 'slider',
+  //       start: 0,
+  //       end: 100,
+  //       height: 8,
+  //       bottom: 5,
+  //     },
+  //   ],
+  //   series: [
+  //     {
+  //       name: '位移',
+  //       type: 'line',
+  //       data: chartData.map(item => [item.record_time, item.displacement]),
+  //       smooth: true,
+  //       symbol: 'circle',
+  //       symbolSize: 6,
+  //       showSymbol: false, // 鼠标 hover 时才显示点
+  //       emphasis: {
+  //         showSymbol: true,
+  //         symbolSize: 8,
+  //       },
+  //       itemStyle: {
+  //         color: '#5470c6',
+  //       },
+  //       lineStyle: {
+  //         width: 2,
+  //       },
+  //       areaStyle: {
+  //         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+  //           { offset: 0, color: 'rgba(84, 112, 198, 0.6)' },
+  //           { offset: 1, color: 'rgba(84, 112, 198, 0.1)' },
+  //         ]),
+  //       },
+  //     },
+  //   ],
+  // }
+  const option = {
+    title: {
+      text: '位移变化趋势图',
+      left: 'center',
+      textStyle: {
+        fontSize: 18, // 【修改】标题字号从14→18，更大更醒目
+        fontWeight: 'bold',
+      },
+      right: 10,
+      buttonGap: 10,
+      itemGap: 15,
+    },
+    tooltip: {
+      trigger: 'axis',
+      formatter: function (params) {
+        const date = new Date(params[0].data[0])
+        const formattedDate = date.toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        })
+        return `时间: ${formattedDate}<br/>位移: ${params[0].data[1]} mm`
+      },
+      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+      borderColor: '#ddd',
+      borderWidth: 1,
+      textStyle: { color: '#333', fontSize: 14 }, // 【新增】tooltip文字放大
+      padding: 12, // 【修改】内边距从10→12，tooltip更饱满
+    },
+    grid: {
+      left: '3%', // 【修改】左边距从5%→3%，缩小边距扩大图表区域
+      right: '3%', // 【修改】右边距从5%→3%
+      bottom: '8%', // 【修改】下边距从10%→8%
+      top: '10%', // 【修改】上边距从15%→10%
+      containLabel: true,
+    },
+    xAxis: {
+      type: 'time',
+      name: '时间',
+      nameLocation: 'middle',
+      nameGap: 30,
+      nameTextStyle: {
+        fontSize: 16, // 【修改】坐标轴名称字号从12→16
+      },
+      axisLabel: {
+        formatter: function (value) {
+          return new Date(value).toLocaleDateString('zh-CN', {
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        },
+        rotate: 30,
+        fontSize: 14, // 【修改】坐标轴标签字号从10→14
+      },
+      axisLine: {
+        lineStyle: {
+          color: '#ccc',
+          width: 1.5, // 【新增】坐标轴线条加宽
+        },
+      },
+    },
+    yAxis: {
+      type: 'value',
+      name: '位移 (mm)',
+      nameGap: 30,
+      nameTextStyle: {
+        fontSize: 16, // 【修改】坐标轴名称字号从12→16
+      },
+      axisLabel: {
+        formatter: '{value} mm',
+        fontSize: 14, // 【修改】坐标轴标签字号从10→14
+      },
+      axisLine: {
+        lineStyle: {
+          color: '#ccc',
+          width: 1.5, // 【新增】坐标轴线条加宽
+        },
+      },
+      splitLine: {
+        lineStyle: {
+          color: '#f0f0f0',
+          width: 1.2, // 【新增】网格线加宽
+        },
+      },
+    },
+    dataZoom: [
+      {
+        type: 'inside',
+        start: 0,
+        end: 100,
+        zoomLock: false,
+      },
+      {
+        type: 'slider',
+        start: 0,
+        end: 100,
+        height: 12, // 【修改】滑块高度从8→12，更易操作
+        bottom: 5,
+      },
+    ],
+    series: [
+      {
+        name: '位移',
+        type: 'line',
+        data: chartData.map(item => [item.record_time, item.displacement]),
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 8, // 【修改】标记点尺寸从6→8
+        showSymbol: false,
+        emphasis: {
+          showSymbol: true,
+          symbolSize: 12, // 【修改】hover时标记点从8→12
+        },
+        itemStyle: {
+          color: '#5470c6',
+        },
+        lineStyle: {
+          width: 3, // 【修改】趋势线宽度从2→3，更粗更显眼
+        },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(84, 112, 198, 0.6)' },
+            { offset: 1, color: 'rgba(84, 112, 198, 0.1)' },
+          ]),
+        },
+      },
+    ],
+    // 【新增】强制图表适配容器尺寸（确保占满displacement-chart div）
+    responsive: true,
+    maintainAspectRatio: false,
+  }
+  watch(
+    () => chartVisible,
+    val => {
+      if (val) {
+        nextTick(() => {
+          chart.resize()
+        })
+      }
+    }
+  )
+  // 应用配置项并渲染图表
+  // myChart.setOption(option)
+
+  // 响应式调整
+  // window.addEventListener('resize', function () {
+  //   myChart.resize()
+  // })
+
+  // 添加点击空白处关闭图表的功能
+  chartDom.onclick = function (e) {
+    // 检查点击位置是否是关闭按钮区域
+    const boundingRect = chartDom.getBoundingClientRect()
+    const closeBtnArea = {
+      x1: boundingRect.right - 30,
+      x2: boundingRect.right,
+      y1: boundingRect.top,
+      y2: boundingRect.top + 30,
+    }
+
+    if (
+      e.clientX >= closeBtnArea.x1 &&
+      e.clientX <= closeBtnArea.x2 &&
+      e.clientY >= closeBtnArea.y1 &&
+      e.clientY <= closeBtnArea.y2
+    ) {
+      chartVisible.value = false
+    }
+  }
 }
 //获取数据
 const addLayer1 = () => {
@@ -4458,22 +4847,39 @@ function handleSeismicResult(payload) {
   // height: 100px !important;
 }
 
-#displacement-chart {
-  width: 300px;
-  height: 200px;
-  margin: 2px 0;
-}
 .chart-container {
-  position: absolute;
-  top: 445px;
-  right: 630px;
-  height: 200px;
-  width: 300px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  max-width: 1200px;
+  height: 700px;
+  background: #f5f7fa;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 20px;
+  box-sizing: border-box;
+  z-index: 100;
+}
+
+.show-chart {
+  display: block;
+}
+
+.hide-chart {
+  display: none;
 }
 .show_displ {
   display: none;
+}
+
+.chart-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 10;
 }
 </style>
