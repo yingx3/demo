@@ -32,13 +32,13 @@ const storage = multer.diskStorage({
 const upload = multer({ storage })
 let filePath
 // 文件保存路径
-// const SAVE_PATH =
-//   'E:/Projects/ZHLXT/算法/基于位移监测滑坡预警/PFTF_1.0.0/PFTF_1.0.0/icelake'
-const SAVE_PATH = 'D:/practice/PFTF/icelake'
+const SAVE_PATH =
+  'E:/Projects/ZHLXT/算法/基于位移监测滑坡预警/PFTF_1.0.0/PFTF_1.0.0/icelake'
+// const SAVE_PATH = 'D:/practice/PFTF/icelake'
 // 目标R脚本路径
-// const TARGET_PATH =
-//   'E:/Projects/ZHLXT/算法/基于位移监测滑坡预警/PFTF_1.0.0/PFTF_1.0.0/PFTF-PFTF_1.0.0'
-const TARGET_PATH = 'D:/practice/PFTF/PFTF_1.0.0/PFTF-PFTF_1.0.0'
+const TARGET_PATH =
+  'E:/Projects/ZHLXT/算法/基于位移监测滑坡预警/PFTF_1.0.0/PFTF_1.0.0/PFTF-PFTF_1.0.0'
+// const TARGET_PATH = 'D:/practice/PFTF/PFTF_1.0.0/PFTF-PFTF_1.0.0'
 const R_SCRIPT_PATH = path.join(TARGET_PATH, '1_1_input.R')
 const displ_file = ''
 
@@ -1576,7 +1576,7 @@ app.post('/point', async (req, res) => {
   }
 })
 // --- 新增：接收 GBM/Shapefile 上传并保存到固定目录 ---
-const GBM_SAVE_DIR = 'D:\\practice\\ZHLXT\\backend\\hd\\data\\BCNSL'
+const GBM_SAVE_DIR = 'E:\\Projects\\ZHLXT\\backend\\hd\\data\\BCNSL'
 // 确保目录存在（使用文件顶部已定义的 ensureDirectoryExists）
 ensureDirectoryExists(GBM_SAVE_DIR)
 
@@ -1620,7 +1620,7 @@ app.post('/node/upload_shp', uploadGBM.array('file', 10), (req, res) => {
 })
 
 // 新存储目录（确保ensureDirectoryExists函数已定义，或添加一个简单mkdir）
-const SEISMIC_SAVE_DIR = 'D:\\practice\\ZHLXT\\backend\\hd\\data\\seismic'
+const SEISMIC_SAVE_DIR = 'E:\\Projects\\ZHLXT\\backend\\hd\\data\\seismic'
 if (!fs.existsSync(SEISMIC_SAVE_DIR)) {
   fs.mkdirSync(SEISMIC_SAVE_DIR, { recursive: true })
 }
