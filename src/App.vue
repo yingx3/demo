@@ -500,7 +500,7 @@ onMounted(async () => {
     fullscreenButton: false, //隐藏全屏按钮
     animation: false, //隐藏动画控件
     timeline: false, //隐藏时间控件
-    infoBox: true, //显示信息框
+    infoBox: false, //显示信息框
   })
 
   viewer.value.cesiumWidget.creditContainer.style.display = 'none'
@@ -4132,222 +4132,222 @@ function stopHeatmapCycle() {
 // console.log(viewer.value)
 
 //框选放大
-const magnify = () => {
-  //   setTimeout(() => {
-  //     enableBoxZoom(viewer.value).activate()
-  //   }, 5000)
+// const magnify = () => {
+//   //   setTimeout(() => {
+//   //     enableBoxZoom(viewer.value).activate()
+//   //   }, 5000)
 
-  // isDrawing.value = true
-  const handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
+//   // isDrawing.value = true
+//   const handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
 
-  // 第一阶段：等待第一次点击
-  handler.setInputAction(firstClick => {
-    const startPosition = firstClick.position
+//   // 第一阶段：等待第一次点击
+//   handler.setInputAction(firstClick => {
+//     const startPosition = firstClick.position
 
-    // 移除第一次点击监听
-    handler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK)
+//     // 移除第一次点击监听
+//     handler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK)
 
-    // 实时更新框选区域
-    const moveHandler = movement => {
-      updateBoxStyle(startPosition, movement.endPosition)
-    }
+//     // 实时更新框选区域
+//     const moveHandler = movement => {
+//       updateBoxStyle(startPosition, movement.endPosition)
+//     }
 
-    // 第二阶段：处理确认点击
-    const confirmHandler = secondClick => {
-      // isDrawing.value = false
-      handler.destroy()
+//     // 第二阶段：处理确认点击
+//     const confirmHandler = secondClick => {
+//       // isDrawing.value = false
+//       handler.destroy()
 
-      // 计算目标区域
-      const endPosition = secondClick.position
-      const rectangle = calculateRectangle(startPosition, endPosition)
+//       // 计算目标区域
+//       const endPosition = secondClick.position
+//       const rectangle = calculateRectangle(startPosition, endPosition)
 
-      // 执行视角切换
-      flyToRectangle(rectangle)
-    }
+//       // 执行视角切换
+//       flyToRectangle(rectangle)
+//     }
 
-    handler.setInputAction(moveHandler, Cesium.ScreenSpaceEventType.MOUSE_MOVE)
-    handler.setInputAction(
-      confirmHandler,
-      Cesium.ScreenSpaceEventType.LEFT_CLICK
-    )
-  }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+//     handler.setInputAction(moveHandler, Cesium.ScreenSpaceEventType.MOUSE_MOVE)
+//     handler.setInputAction(
+//       confirmHandler,
+//       Cesium.ScreenSpaceEventType.LEFT_CLICK
+//     )
+//   }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
 
-  const calculateRectangle = (start, end) => {
-    const [startCart, endCart] = [start, end].map(pos =>
-      viewer.value.scene.camera.pickEllipsoid(
-        pos,
-        viewer.value.scene.globe.ellipsoid
-      )
-    )
+//   const calculateRectangle = (start, end) => {
+//     const [startCart, endCart] = [start, end].map(pos =>
+//       viewer.value.scene.camera.pickEllipsoid(
+//         pos,
+//         viewer.value.scene.globe.ellipsoid
+//       )
+//     )
 
-    if (!startCart || !endCart) return null
+//     if (!startCart || !endCart) return null
 
-    const startCarto = Cesium.Cartographic.fromCartesian(startCart)
-    const endCarto = Cesium.Cartographic.fromCartesian(endCart)
-    return Cesium.Rectangle.fromRadians(
-      Math.min(startCarto.longitude, endCarto.longitude),
-      Math.min(startCarto.latitude, endCarto.latitude),
-      Math.max(startCarto.longitude, endCarto.longitude),
-      Math.max(startCarto.latitude, endCarto.latitude)
-    )
-  }
+//     const startCarto = Cesium.Cartographic.fromCartesian(startCart)
+//     const endCarto = Cesium.Cartographic.fromCartesian(endCart)
+//     return Cesium.Rectangle.fromRadians(
+//       Math.min(startCarto.longitude, endCarto.longitude),
+//       Math.min(startCarto.latitude, endCarto.latitude),
+//       Math.max(startCarto.longitude, endCarto.longitude),
+//       Math.max(startCarto.latitude, endCarto.latitude)
+//     )
+//   }
 
-  const flyToRectangle = rectangle => {
-    viewer.value.camera.flyTo({
-      destination: rectangle,
-      orientation: {
-        heading: viewer.value.camera.heading,
-        pitch: viewer.value.camera.pitch,
-        roll: viewer.value.camera.roll,
-      },
-      duration: 1,
-    })
-  }
+//   const flyToRectangle = rectangle => {
+//     viewer.value.camera.flyTo({
+//       destination: rectangle,
+//       orientation: {
+//         heading: viewer.value.camera.heading,
+//         pitch: viewer.value.camera.pitch,
+//         roll: viewer.value.camera.roll,
+//       },
+//       duration: 1,
+//     })
+//   }
 
-  const updateBoxStyle = (start, end) => {
-    const canvas = viewer.value.scene.canvas
-    const rect = canvas.getBoundingClientRect()
+//   const updateBoxStyle = (start, end) => {
+//     const canvas = viewer.value.scene.canvas
+//     const rect = canvas.getBoundingClientRect()
 
-    const normalize = pos => ({
-      x: pos.x - rect.left,
-      y: pos.y - rect.top,
-    })
+//     const normalize = pos => ({
+//       x: pos.x - rect.left,
+//       y: pos.y - rect.top,
+//     })
 
-    const s = normalize(start)
-    const e = normalize(end)
+//     const s = normalize(start)
+//     const e = normalize(end)
 
-    boxStyle.value = {
-      left: `${Math.min(s.x, e.x)}px`,
-      top: `${Math.min(s.y, e.y)}px`,
-      width: `${Math.abs(e.x - s.x)}px`,
-      height: `${Math.abs(e.y - s.y)}px`,
-      display: 'block',
-      position: 'absolute',
-      border: '2px solid red',
-      backgroundColor: 'rgba(255,0,0,0.2)',
-      pointerEvents: 'none',
-    }
-  }
+//     boxStyle.value = {
+//       left: `${Math.min(s.x, e.x)}px`,
+//       top: `${Math.min(s.y, e.y)}px`,
+//       width: `${Math.abs(e.x - s.x)}px`,
+//       height: `${Math.abs(e.y - s.y)}px`,
+//       display: 'block',
+//       position: 'absolute',
+//       border: '2px solid red',
+//       backgroundColor: 'rgba(255,0,0,0.2)',
+//       pointerEvents: 'none',
+//     }
+//   }
 
-  return {
-    //   isDrawing,
-    boxStyle,
-    //   startBoxSelect,
-  }
-}
+//   return {
+//     //   isDrawing,
+//     boxStyle,
+//     //   startBoxSelect,
+//   }
+// }
 //框选缩小
-const shrink = () => {
-  const handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
-  // isDrawing.value = true // 启用绘制状态
+// const shrink = () => {
+//   const handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
+//   // isDrawing.value = true // 启用绘制状态
 
-  handler.setInputAction(firstClick => {
-    const startPosition = firstClick.position
-    handler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK)
+//   handler.setInputAction(firstClick => {
+//     const startPosition = firstClick.position
+//     handler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK)
 
-    // 移动监听（实时更新选框）
-    const moveHandler = movement => {
-      updateBoxStyle(startPosition, movement.endPosition)
-    }
-    const updateBoxStyle = (start, end) => {
-      const canvas = viewer.value.scene.canvas
-      const rect = canvas.getBoundingClientRect()
+//     // 移动监听（实时更新选框）
+//     const moveHandler = movement => {
+//       updateBoxStyle(startPosition, movement.endPosition)
+//     }
+//     const updateBoxStyle = (start, end) => {
+//       const canvas = viewer.value.scene.canvas
+//       const rect = canvas.getBoundingClientRect()
 
-      const normalize = pos => ({
-        x: pos.x - rect.left,
-        y: pos.y - rect.top,
-      })
+//       const normalize = pos => ({
+//         x: pos.x - rect.left,
+//         y: pos.y - rect.top,
+//       })
 
-      const s = normalize(start)
-      const e = normalize(end)
+//       const s = normalize(start)
+//       const e = normalize(end)
 
-      boxStyle.value = {
-        left: `${Math.min(s.x, e.x)}px`,
-        top: `${Math.min(s.y, e.y)}px`,
-        width: `${Math.abs(e.x - s.x)}px`,
-        height: `${Math.abs(e.y - s.y)}px`,
-        display: 'block',
-        position: 'absolute',
-        border: '2px solid red',
-        backgroundColor: 'rgba(255,0,0,0.2)',
-        pointerEvents: 'none',
-      }
-    }
-    // 确认点击处理
-    const confirmHandler = secondClick => {
-      // isDrawing.value = false
-      handler.destroy()
+//       boxStyle.value = {
+//         left: `${Math.min(s.x, e.x)}px`,
+//         top: `${Math.min(s.y, e.y)}px`,
+//         width: `${Math.abs(e.x - s.x)}px`,
+//         height: `${Math.abs(e.y - s.y)}px`,
+//         display: 'block',
+//         position: 'absolute',
+//         border: '2px solid red',
+//         backgroundColor: 'rgba(255,0,0,0.2)',
+//         pointerEvents: 'none',
+//       }
+//     }
+//     // 确认点击处理
+//     const confirmHandler = secondClick => {
+//       // isDrawing.value = false
+//       handler.destroy()
 
-      const rectangle = calculateShrinkArea(startPosition, secondClick.position)
+//       const rectangle = calculateShrinkArea(startPosition, secondClick.position)
 
-      if (rectangle) {
-        flyToShrinkView(rectangle)
-      }
-    }
+//       if (rectangle) {
+//         flyToShrinkView(rectangle)
+//       }
+//     }
 
-    handler.setInputAction(moveHandler, Cesium.ScreenSpaceEventType.MOUSE_MOVE)
-    handler.setInputAction(
-      confirmHandler,
-      Cesium.ScreenSpaceEventType.LEFT_CLICK
-    )
-  }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
-}
+//     handler.setInputAction(moveHandler, Cesium.ScreenSpaceEventType.MOUSE_MOVE)
+//     handler.setInputAction(
+//       confirmHandler,
+//       Cesium.ScreenSpaceEventType.LEFT_CLICK
+//     )
+//   }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+// }
 
 // 专用缩小版计算函数
 // 缩小专用区域计算
-const calculateShrinkArea = (startPos, endPos) => {
-  const [startCart, endCart] = [startPos, endPos].map(pos =>
-    viewer.value.scene.camera.pickEllipsoid(
-      pos,
-      viewer.value.scene.globe.ellipsoid
-    )
-  )
+// const calculateShrinkArea = (startPos, endPos) => {
+//   const [startCart, endCart] = [startPos, endPos].map(pos =>
+//     viewer.value.scene.camera.pickEllipsoid(
+//       pos,
+//       viewer.value.scene.globe.ellipsoid
+//     )
+//   )
 
-  if (!startCart || !endCart) return null
+//   if (!startCart || !endCart) return null
 
-  // 获取地理坐标
-  const toCartographic = cartesian =>
-    Cesium.Cartographic.fromCartesian(cartesian)
-  const [startCarto, endCarto] = [startCart, endCart].map(toCartographic)
+//   // 获取地理坐标
+//   const toCartographic = cartesian =>
+//     Cesium.Cartographic.fromCartesian(cartesian)
+//   const [startCarto, endCarto] = [startCart, endCart].map(toCartographic)
 
-  // 计算原始边界
-  const west = Math.min(startCarto.longitude, endCarto.longitude)
-  const east = Math.max(startCarto.longitude, endCarto.longitude)
-  const south = Math.min(startCarto.latitude, endCarto.latitude)
-  const north = Math.max(startCarto.latitude, endCarto.latitude)
+//   // 计算原始边界
+//   const west = Math.min(startCarto.longitude, endCarto.longitude)
+//   const east = Math.max(startCarto.longitude, endCarto.longitude)
+//   const south = Math.min(startCarto.latitude, endCarto.latitude)
+//   const north = Math.max(startCarto.latitude, endCarto.latitude)
 
-  // 扩展区域（实现缩小效果）
-  const EXPAND_FACTOR = 1.5 // 扩展系数，值越大缩小越明显
-  const centerLon = (west + east) / 2
-  const centerLat = (south + north) / 2
-  const newWidth = (east - west) * EXPAND_FACTOR
-  const newHeight = (north - south) * EXPAND_FACTOR
+//   // 扩展区域（实现缩小效果）
+//   const EXPAND_FACTOR = 1.5 // 扩展系数，值越大缩小越明显
+//   const centerLon = (west + east) / 2
+//   const centerLat = (south + north) / 2
+//   const newWidth = (east - west) * EXPAND_FACTOR
+//   const newHeight = (north - south) * EXPAND_FACTOR
 
-  // 创建安全矩形（防止越界）
-  return Cesium.Rectangle.fromRadians(
-    Math.max(centerLon - newWidth / 2, -Math.PI),
-    Math.max(centerLat - newHeight / 2, -Cesium.Math.PI_OVER_TWO),
-    Math.min(centerLon + newWidth / 2, Math.PI),
-    Math.min(centerLat + newHeight / 2, Cesium.Math.PI_OVER_TWO)
-  )
-}
+//   // 创建安全矩形（防止越界）
+//   return Cesium.Rectangle.fromRadians(
+//     Math.max(centerLon - newWidth / 2, -Math.PI),
+//     Math.max(centerLat - newHeight / 2, -Cesium.Math.PI_OVER_TWO),
+//     Math.min(centerLon + newWidth / 2, Math.PI),
+//     Math.min(centerLat + newHeight / 2, Cesium.Math.PI_OVER_TWO)
+//   )
+// }
 
 // 专用缩小飞行逻辑
-const flyToShrinkView = rectangle => {
-  const camera = viewer.value.camera
-  const currentHeight = camera.positionCartographic.height
+// const flyToShrinkView = rectangle => {
+//   const camera = viewer.value.camera
+//   const currentHeight = camera.positionCartographic.height
 
-  viewer.value.camera.flyTo({
-    destination: rectangle,
-    orientation: {
-      heading: camera.heading,
-      pitch: -Math.atan(currentHeight / Cesium.Ellipsoid.WGS84.maximumRadius),
-      roll: camera.roll,
-    },
-    duration: 2,
-    easingFunction: Cesium.EasingFunction.CUBIC_OUT,
-    pitchAdjustHeight: currentHeight * 2, // 提升视角高度
-  })
-}
+//   viewer.value.camera.flyTo({
+//     destination: rectangle,
+//     orientation: {
+//       heading: camera.heading,
+//       pitch: -Math.atan(currentHeight / Cesium.Ellipsoid.WGS84.maximumRadius),
+//       roll: camera.roll,
+//     },
+//     duration: 2,
+//     easingFunction: Cesium.EasingFunction.CUBIC_OUT,
+//     pitchAdjustHeight: currentHeight * 2, // 提升视角高度
+//   })
+// }
 
 const measure = () => {
   // new MeasureDistance(viewer.value).activate()
@@ -4362,50 +4362,50 @@ const polygon = () => {
   measureManager.measurePolygon()
 }
 
-const position = () => {
-  let handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
-  handler.setInputAction(function (event) {
-    let ray = viewer.value.camera.getPickRay(event.position)
-    let cartesian = viewer.value.scene.globe.pick(ray, viewer.value.scene)
-    let cartographic = Cesium.Cartographic.fromCartesian(cartesian)
-    let lng = Cesium.Math.toDegrees(cartographic.longitude) // 经度
-    let lat = Cesium.Math.toDegrees(cartographic.latitude) // 纬度
-    let alt = cartographic.height // 高度
-    let coordinate = {
-      longitude: Number(lng.toFixed(6)),
-      latitude: Number(lat.toFixed(6)),
-      altitude: Number(alt.toFixed(2)),
-    }
-    console.log(coordinate)
-    viewer.value.entities.add({
-      position: Cesium.Cartesian3.fromDegrees(
-        Number(lng.toFixed(6)),
-        Number(lat.toFixed(6))
-      ),
-      label: {
-        text:
-          '坐标：' +
-          lng.toFixed(6) +
-          ',' +
-          lat.toFixed(6) +
-          ',' +
-          alt.toFixed(6), // 显示坐标
-        font: '20px Helvetica',
-        fillColor: Cesium.Color.WHITE,
-        outlineColor: Cesium.Color.WHITE,
-        outlineWidth: 2,
-        pixelOffset: new Cesium.Cartesian2(0, -0.5),
-      },
-      billboard: {
-        image: '/ng/position.png',
-        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-        disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
-        width: 48,
-        height: 48,
-      },
-    })
-  }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
-}
+// const position = () => {
+//   let handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
+//   handler.setInputAction(function (event) {
+//     let ray = viewer.value.camera.getPickRay(event.position)
+//     let cartesian = viewer.value.scene.globe.pick(ray, viewer.value.scene)
+//     let cartographic = Cesium.Cartographic.fromCartesian(cartesian)
+//     let lng = Cesium.Math.toDegrees(cartographic.longitude) // 经度
+//     let lat = Cesium.Math.toDegrees(cartographic.latitude) // 纬度
+//     let alt = cartographic.height // 高度
+//     let coordinate = {
+//       longitude: Number(lng.toFixed(6)),
+//       latitude: Number(lat.toFixed(6)),
+//       altitude: Number(alt.toFixed(2)),
+//     }
+//     console.log(coordinate)
+//     viewer.value.entities.add({
+//       position: Cesium.Cartesian3.fromDegrees(
+//         Number(lng.toFixed(6)),
+//         Number(lat.toFixed(6))
+//       ),
+//       label: {
+//         text:
+//           '坐标：' +
+//           lng.toFixed(6) +
+//           ',' +
+//           lat.toFixed(6) +
+//           ',' +
+//           alt.toFixed(6), // 显示坐标
+//         font: '20px Helvetica',
+//         fillColor: Cesium.Color.WHITE,
+//         outlineColor: Cesium.Color.WHITE,
+//         outlineWidth: 2,
+//         pixelOffset: new Cesium.Cartesian2(0, -0.5),
+//       },
+//       billboard: {
+//         image: '/ng/position.png',
+//         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+//         disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
+//         width: 48,
+//         height: 48,
+//       },
+//     })
+//   }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+// }
 
 const position_point = ref(null)
 

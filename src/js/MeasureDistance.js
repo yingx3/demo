@@ -24,8 +24,8 @@ export default class MeasureDistance {
     this.deactivate()
     this.registerEvents() //注册鼠标事件
     //设置鼠标状态
-    this.viewer.enableCursorStyle = false
-    this.viewer._element.style.cursor = 'default'
+    this.viewer.enableCursorStyle = false //禁用鼠标样式
+    this.viewer._element.style.cursor = 'default' //设置鼠标样式为默认样式
     this.isMeasure = true
     this.measureDistance = 0
   }
@@ -63,11 +63,13 @@ export default class MeasureDistance {
   createLineEntity() {
     this.lineEntity = this.viewer.entities.add({
       polyline: {
+        //false表示不循环绘制，true表示循环绘制
         positions: new Cesium.CallbackProperty(e => {
           return this.tempPositions
         }, false),
         width: 2,
         material: Cesium.Color.YELLOW,
+        // 深度测试失败时的材质
         depthFailMaterial: Cesium.Color.YELLOW,
       },
     })
@@ -76,21 +78,27 @@ export default class MeasureDistance {
   //计算距离
   spaceDistance(value) {
     if (!value) return 0
+    //ellipsoidGeodesic类用于计算椭球体上的距离
     let geodesic = new Cesium.EllipsoidGeodesic()
-    for (let i = 0; i < value.length - 1; i++) {
+
       // 笛卡尔坐标系转WGS84坐标系
-      let cartographic = Cesium.Cartographic.fromCartesian(value[i])
-      let cartographic1 = Cesium.Cartographic.fromCartesian(value[i + 1])
+      let cartographic = Cesium.Cartographic.fromCartesian(value[0])
+      let cartographic1 = Cesium.Cartographic.fromCartesian(value[1])
       geodesic.setEndPoints(cartographic, cartographic1)
+      //surfaceDistance属性用于获取椭球体上的距离，单位为米
+      //round方法用于四舍五入
       let part = Math.round(geodesic.surfaceDistance)
+      
       this.measureDistance += part
-    }
+      console.log("value:",value,part, this.measureDistance)
+    
     return this.measureDistance
   }
 
   //创建线节点
   createVertex() {
     let vertexEntity = this.viewer.entities.add({
+      //下标为positions.length - 1的节点为最后一个节点，即终点节点
       position: this.positions[this.positions.length - 1],
       id: 'MeasureDistanceVertex' + this.positions[this.positions.length - 1],
       type: 'MeasureDistanceVertex',
@@ -98,7 +106,9 @@ export default class MeasureDistance {
         text: this.spaceDistance(this.positions) + '米',
         scale: 0.5,
         font: 'normal 24px MicroSoft YaHei',
+        //5000米内可见，超出5000米不可见
         distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 5000),
+        //设置随图缩放距离和比例
         scaleByDistance: new Cesium.NearFarScalar(1000, 1, 3000, 0.4),
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
         style: Cesium.LabelStyle.FILL_AND_OUTLINE,
@@ -109,6 +119,7 @@ export default class MeasureDistance {
       point: {
         color: Cesium.Color.FUCHSIA,
         pixelSize: 8,
+        //disableDepthTestDistance属性用于禁用深度测试，即在距离小于该值时，点不会被遮挡,遮挡时，点会显示在其他点的后面
         disableDepthTestDistance: 500,
       },
     })
@@ -121,6 +132,7 @@ export default class MeasureDistance {
       position: this.positions[0],
       type: 'MeasureDistanceVertex',
       billboard: {
+        //ng/start.png为起点图标路径
         image: '/ng/start.png',
         scaleByDistance: new Cesium.NearFarScalar(300, 1, 1200, 0.4), //设置随图缩放距离和比例
         distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 10000), //设置可见距离 10000米可见
@@ -147,7 +159,7 @@ export default class MeasureDistance {
       position: this.positions[this.positions.length - 1],
       type: 'MeasureDistanceVertex',
       label: {
-        text: '总距离：' + this.spaceDistance(this.positions) + '米',
+        text: '总距离：' + this.measureDistance + '米',
         scale: 1,
         font: 'normal 26px MicroSoft YaHei',
         distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 5000),
@@ -178,9 +190,11 @@ export default class MeasureDistance {
     //单击鼠标左键画点点击事件
     this.handler.setInputAction(e => {
       this.viewer._element.style.cursor = 'default'
+      //pickPosition方法用于获取鼠标点击位置的坐标
       let position = this.viewer.scene.pickPosition(e.position)
       if (!position) {
         const ellipsoid = this.viewer.scene.globe.ellipsoid
+        //pickEllipsoid方法用于获取鼠标点击位置的椭球体坐标
         position = this.viewer.scene.camera.pickEllipsoid(e.position, ellipsoid)
       }
       if (!position) return
@@ -240,6 +254,7 @@ export default class MeasureDistance {
   //测量结束
   measureEnd() {
     this.deactivate()
+    //raiseEvent方法用于触发事件,MeasureEndEvent为结束事件,measureDistance为测量结果参数
     this.MeasureEndEvent.raiseEvent(this.measureDistance) //触发结束事件 传入结果
   }
 
