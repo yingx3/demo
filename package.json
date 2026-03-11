@@ -11,6 +11,8 @@
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
     "@stomp/stompjs": "^7.0.1",
+    "ant-design": "^1.0.0",
+    "ant-design-vue": "^4.2.6",
     "buffer": "^6.0.3",
     "cesium": "^1.121.1",
     "cesium-heatmap": "^0.0.4",

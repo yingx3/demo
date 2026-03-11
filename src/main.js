@@ -2,6 +2,8 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia' // Import Pinia
 import App from './App.vue'
 import ElementPlus from 'element-plus'
+import Antd from 'ant-design-vue'
+import 'ant-design-vue/dist/reset.css'
 import 'element-plus/dist/index.css'
 import './assets/iconfont/import_file/iconfont.css'
 // import { Buffer } from 'buffer'
@@ -38,6 +40,7 @@ if (typeof global === 'undefined') {
 // 使用插件
 // app.use(router).mount('#app')
 app.use(ElementPlus)
+app.use(Antd)
 
 app.use(createPinia()) // Add Pinia to the app
 // 挂载应用
