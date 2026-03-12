@@ -77,14 +77,13 @@ export default class MeasureDistance {
   spaceDistance(value) {
     if (!value) return 0
     let geodesic = new Cesium.EllipsoidGeodesic()
-    for (let i = 0; i < value.length - 1; i++) {
-      // 笛卡尔坐标系转WGS84坐标系
-      let cartographic = Cesium.Cartographic.fromCartesian(value[i])
-      let cartographic1 = Cesium.Cartographic.fromCartesian(value[i + 1])
-      geodesic.setEndPoints(cartographic, cartographic1)
-      let part = Math.round(geodesic.surfaceDistance)
-      this.measureDistance += part
-    }
+
+    // 笛卡尔坐标系转WGS84坐标系
+    let cartographic = Cesium.Cartographic.fromCartesian(value[0])
+    let cartographic1 = Cesium.Cartographic.fromCartesian(value[1])
+    geodesic.setEndPoints(cartographic, cartographic1)
+    let part = Math.round(geodesic.surfaceDistance)
+    this.measureDistance += part
     return this.measureDistance
   }
 
@@ -138,7 +137,7 @@ export default class MeasureDistance {
   createEndEntity() {
     //结束时删除最后一个节点的距离标识
     let lastLabel = this.viewer.entities.getById(
-      'MeasureDistanceVertex' + this.positions[this.positions.length - 1]
+      'MeasureDistanceVertex' + this.positions[this.positions.length - 1],
     )
     this.viewer.entities.remove(lastLabel)
     this.viewer.entities.remove(this.moveVertexEntity)
@@ -147,7 +146,7 @@ export default class MeasureDistance {
       position: this.positions[this.positions.length - 1],
       type: 'MeasureDistanceVertex',
       label: {
-        text: '总距离：' + this.spaceDistance(this.positions) + '米',
+        text: '总距离：' + this.measureDistance + '米',
         scale: 1,
         font: 'normal 26px MicroSoft YaHei',
         distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 5000),
@@ -204,7 +203,7 @@ export default class MeasureDistance {
       if (!position) {
         position = this.viewer.scene.camera.pickEllipsoid(
           e.startPosition,
-          this.viewer.scene.globe.ellipsoid
+          this.viewer.scene.globe.ellipsoid,
         )
       }
       if (!position) return
