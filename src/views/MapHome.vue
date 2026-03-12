@@ -16,7 +16,7 @@
     ></zy-ml>
     <div class="control">
       <div class="control_specific">
-        <a href="#" @click="magnify"
+        <!-- <a href="#" @click="magnify"
           ><img src="../assets/img/magnify.png" alt=""
         /></a>
         <a href="#" @click="shrink"
@@ -24,26 +24,131 @@
         /></a>
         <a href="#" @click="move"
           ><img src="../assets/img/move.png" alt=""
-        /></a>
-        <a href="#" @click="measure"
-          ><img src="../assets/img/measure.png" alt=""
-        /></a>
-        <a href="#" @click="polygon"
-          ><img src="../assets/img/polygon.png" alt=""
-        /></a>
-        <a href="#" @click="position">
-          <img src="../assets/img/position.png" alt=""
-        /></a>
-        <a href="#" @click="addattribute">
-          <img src="../assets/img/flag.png" alt=""
-        /></a>
-        <a href="#" @click="searchdisaster">
-          <img src="../assets/img/table.png" alt=""
-        /></a>
-        <a href="#" @click="cleanentity">
-          <img src="../assets/img/clean.png" alt=""
-        /></a>
-        <a href="#"> <img src="../assets/img/roll.png" alt="" /></a>
+        /></a> -->
+        <!-- 测量距离 -->
+        <a-popover
+          placement="left"
+          trigger="hover"
+          :open="popoverStatus_hover['popover_measure']"
+          @openChange="open => handleHoverChange('popover_measure', open)"
+          color="rgba(255,255,255,0.4)"
+        >
+          <template #content>
+            <div>测量距离</div>
+          </template>
+          <a href="#" @click="measure"
+            ><img src="../assets/img/measure.png" alt="" /></a
+        ></a-popover>
+        <!-- 测量面积 -->
+        <a-popover
+          placement="left"
+          trigger="hover"
+          :open="popoverStatus_hover['popover_polygon']"
+          @openChange="open => handleHoverChange('popover_polygon', open)"
+          color="rgba(255, 255, 255, 0.4)"
+        >
+          <template #content> <div>测量面积</div> </template
+          ><a href="#" @click="polygon"
+            ><img src="../assets/img/polygon.png" alt="" /></a
+        ></a-popover>
+
+        <!-- 设置位置 -->
+        <a-popover
+          placement="left"
+          style="width: 500px"
+          trigger="hover"
+          :open="popoverStatus_hover['popover_setPosition']"
+          color="rgba(255, 255, 255, 0.4)"
+          @openChange="open => handleHoverChange('popover_setPosition', open)"
+          overlayClassName="setPositionPopover"
+        >
+          <template #content>
+            <div>设置位置</div>
+          </template>
+          <a-popover
+            placement="left"
+            trigger="click"
+            :open="popoverStatus_click['popover_setPosition']"
+            @openChange="open => handleClickChange('popover_setPosition', open)"
+          >
+            <template #content>
+              <div>
+                <el-form :model="form_setPosition">
+                  <el-form-item label="经度" style="margin-bottom: 5px"
+                    ><el-input
+                      v-model.number="form_setPosition.longitude"
+                    ></el-input></el-form-item
+                  ><el-form-item label="纬度" style="margin-bottom: 5px"
+                    ><el-input
+                      v-model.number="form_setPosition.latitude"
+                    ></el-input></el-form-item
+                  ><el-form-item></el-form-item
+                  ><el-form-item style="margin-top: 10px">
+                    <el-button type="primary" @click="submit_setPosition"
+                      >确认</el-button
+                    >
+                    <el-button
+                      type="primary"
+                      @click="
+                        () => handleClickChange('popover_setPosition', false)
+                      "
+                      >取消</el-button
+                    >
+                  </el-form-item>
+                </el-form>
+              </div>
+            </template>
+            <a href="#"> <img src="../assets/img/position.png" alt="" /></a>
+          </a-popover>
+        </a-popover>
+
+        <!-- 添加属性 -->
+        <a-popover
+          placement="left"
+          trigger="hover"
+          :open="popoverStatus_hover['popover_attribute']"
+          @openChange="open => handleHoverChange('popover_attribute', open)"
+          color="rgba(255, 255, 255, 0.4)"
+        >
+          <template #content>
+            <div>添加属性</div>
+          </template>
+          <a href="#" @click="addattribute">
+            <img src="../assets/img/flag.png" alt="" /></a
+        ></a-popover>
+
+        <!-- 查询属性 -->
+        <a-popover
+          placement="left"
+          trigger="hover"
+          :open="popoverStatus_hover['popover_searchattribute']"
+          @openChange="
+            open => handleHoverChange('popover_searchattribute', open)
+          "
+          color="rgba(255, 255, 255, 0.4)"
+        >
+          <template #content>
+            <div>查询属性</div>
+          </template>
+          <a href="#" @click="searchdisaster">
+            <img src="../assets/img/table.png" alt="" /></a
+        ></a-popover>
+        <!-- 清除实体 -->
+        <a-popover
+          placement="left"
+          trigger="hover"
+          :open="popoverStatus_hover['popover_cleanentity']"
+          @openChange="open => handleHoverChange('popover_cleanentity', open)"
+          color="rgba(255, 255, 255, 0.4)"
+        >
+          <template #content>
+            <div>清除实体</div>
+          </template>
+          <a href="#" @click="cleanentity">
+            <img src="../assets/img/clean.png" alt="" /></a
+        ></a-popover>
+        <!-- 重置 -->
+        <!-- <a href="#"> <img src="./assets/img/roll.png" alt="" /></a> -->
 
         <el-dialog
           v-model="dialogVisible_disaster"
@@ -363,10 +468,26 @@ import MeasureManager from '../js/MeasureManager.js'
 import RainEffectManager from '../js/RainEffectManager.js'
 import { KrigingInstance } from '../js/krigingInstance.js'
 import turf, { point } from 'turf'
-import { parseWKB, parseWKBMultiLineString, parseWKBMultiPolygon, parseLineStringWKB } from '../utils/wkb.js'
+import {
+  parseWKB,
+  parseWKBMultiLineString,
+  parseWKBMultiPolygon,
+  parseLineStringWKB,
+} from '../utils/wkb.js'
 import { createFloodLayer, updateTexture } from '../services/textureService.js'
-import { loadHeatmap as svcLoadHeatmap, loadHeatmapFlood as svcLoadHeatmapFlood } from '../services/heatmapService.js'
-import { fetchAllDevices, fetchLatestRecords, getLatestDevicesByIds, calculateDebrisFlow, addLayerDZDdevice, removeLayerDZDdevice } from '../services/deviceService.js'
+import {
+  loadHeatmap as svcLoadHeatmap,
+  loadHeatmapFlood as svcLoadHeatmapFlood,
+} from '../services/heatmapService.js'
+import {
+  fetchAllDevices,
+  fetchLatestRecords,
+  getLatestDevicesByIds,
+  calculateDebrisFlow,
+  addLayerDZDdevice,
+  removeLayerDZDdevice,
+} from '../services/deviceService.js'
+// import { Popover } from 'ant-design-vue'
 
 // import type { TableColumnCtx } from 'element-plus'
 // import * as WKB from 'wkb'
@@ -461,6 +582,12 @@ const tableData_qxz = ref([
     wind: '',
   },
 ])
+//设置相机位置
+const form_setPosition = reactive({
+  longitude: 94.65348,
+  latitude: 29.833531,
+  height: 29515,
+})
 const loading = ref(false)
 const errorMessage = ref('')
 const searchKeyword = ref('')
@@ -490,6 +617,67 @@ const boxStyle = ref({
 
 const md = ref(null)
 // const id =ref(null)
+const popoverStatus_hover = ref({
+  popover_measure: false,
+  popover_polygon: false,
+  popover_setPosition: false,
+  popover_attribute: false,
+  popover_searchattribute: false,
+  popover_cleanentity: false,
+})
+const popoverStatus_click = ref({
+  popover_measure: false,
+  popover_polygon: false,
+  popover_setPosition: false,
+})
+const clicked = ref(false)
+const hovered = ref(false)
+const hide = () => {
+  clicked.value = false
+  hovered.value = false
+}
+const handleHoverChange = (popoverKey, visible) => {
+  // 步骤1：遍历对象，把所有 Popover 状态设为 false（关闭所有）
+  Object.keys(popoverStatus_hover.value).forEach(key => {
+    popoverStatus_hover.value[key] = false
+  })
+  // this.popoverKey = popoverKey
+  // 步骤2：只把当前触发的 Popover 设为 visible（显示/隐藏当前）
+  // console.log(popoverKey,visible)
+  popoverStatus_hover.value[popoverKey] = visible
+}
+const handleClickChange = (popoverKey, visible) => {
+  Object.keys(popoverStatus_click.value).forEach(key => {
+    popoverStatus_click.value[key] = false
+  })
+  popoverStatus_click.value[popoverKey] = visible
+}
+const submit_setPosition = () => {
+  if (!form_setPosition.longitude || !form_setPosition.latitude) {
+    ElMessage.error('请输入完整信息')
+    return
+  }
+  handleClickChange('popover_setPosition', false)
+
+  // 2. 正确设置相机位置 + 姿态（替换直接赋值的代码）
+  viewer.value.camera.setView({
+    // 位置：经纬度转笛卡尔坐标
+    destination: Cesium.Cartesian3.fromDegrees(
+      form_setPosition.longitude,
+      form_setPosition.latitude,
+      form_setPosition.height,
+    ),
+    // 姿态：heading/pitch/roll（弧度值）
+    orientation: {
+      heading: Cesium.Math.toRadians(2.02), // 航向角
+      pitch: Cesium.Math.toRadians(-48.92), // 俯仰角
+      roll: Cesium.Math.toRadians(360.0), // 翻滚角
+    },
+  })
+  //关闭弹窗
+
+  // dialogVisible_setPosition.value = false
+}
 onMounted(() => {
   // viewer 由 MapLayout 初始化并通过 provide/inject 注入，此处无需再初始化 Cesium
 })
@@ -608,7 +796,7 @@ const checkedLayers = (ps, node) => {
                 leftlong.value,
                 leftlat.value,
                 rightlong.value,
-                rightlat.value
+                rightlat.value,
               ),
               material: new Cesium.ImageMaterialProperty({
                 image: imgUrl,
@@ -633,7 +821,7 @@ const checkedLayers = (ps, node) => {
                 leftlong.value,
                 leftlat.value,
                 rightlong.value,
-                rightlat.value
+                rightlat.value,
               ),
               material: new Cesium.ImageMaterialProperty({
                 image: imgUrl132,
@@ -678,7 +866,7 @@ const checkedLayers = (ps, node) => {
                         leftlong.value,
                         leftlat.value,
                         rightlong.value,
-                        rightlat.value
+                        rightlat.value,
                       ),
                       material: new Cesium.ImageMaterialProperty({
                         image: imgUrl137,
@@ -691,7 +879,7 @@ const checkedLayers = (ps, node) => {
                   flyToWithRangeCheck(
                     viewer.value,
                     leftlong.value,
-                    leftlat.value - 0.4
+                    leftlat.value - 0.4,
                   )
 
                   // 更新 entityId 和索引
@@ -753,7 +941,7 @@ const checkedLayers = (ps, node) => {
               leftlong.value,
               leftlat.value,
               rightlong.value,
-              rightlat.value
+              rightlat.value,
             ),
             material: new Cesium.ImageMaterialProperty({
               image: imgUrl,
@@ -782,7 +970,7 @@ const checkedLayers = (ps, node) => {
               leftlong.value,
               leftlat.value,
               rightlong.value,
-              rightlat.value
+              rightlat.value,
             ),
             material: new Cesium.ImageMaterialProperty({
               image: imgUrl,
@@ -811,7 +999,7 @@ const checkedLayers = (ps, node) => {
               leftlong.value,
               leftlat.value,
               rightlong.value,
-              rightlat.value
+              rightlat.value,
             ),
             material: new Cesium.ImageMaterialProperty({
               image: imgUrl,
@@ -840,7 +1028,7 @@ const checkedLayers = (ps, node) => {
               leftlong.value,
               leftlat.value,
               rightlong.value,
-              rightlat.value
+              rightlat.value,
             ),
             material: new Cesium.ImageMaterialProperty({
               image: imgUrl,
@@ -874,7 +1062,7 @@ function flyToWithRangeCheck(
   viewer,
   targetLongitude,
   targetLatitude,
-  rangeThreshold = 1
+  rangeThreshold = 1,
 ) {
   // 获取当前相机中心的经纬度坐标
   // console.log(viewer)
@@ -900,7 +1088,7 @@ function flyToWithRangeCheck(
     destination: Cesium.Cartesian3.fromDegrees(
       targetLongitude,
       targetLatitude,
-      50000
+      50000,
     ),
     orientation: {
       heading: Cesium.Math.toRadians(0.0), //朝向
@@ -923,7 +1111,7 @@ async function loadShpFromBackend({
     const resp = await axios.post(
       endpoint,
       { filename, folder },
-      { timeout: 120000 }
+      { timeout: 120000 },
     )
     ElMessage.closeAll()
 
@@ -934,7 +1122,7 @@ async function loadShpFromBackend({
 
     if (resp.data.status && resp.data.status !== 'ok') {
       ElMessage.error(
-        '后端处理失败：' + (resp.data.message || resp.data.status)
+        '后端处理失败：' + (resp.data.message || resp.data.status),
       )
       return null
     }
@@ -978,7 +1166,7 @@ function applySuscSymbology(dataSource) {
   console.log(
     'applySuscSymbology: called',
     !!dataSource,
-    dataSource?.entities?.values?.length ?? 0
+    dataSource?.entities?.values?.length ?? 0,
   )
 
   if (!dataSource?.entities) {
@@ -1079,7 +1267,7 @@ function applySuscSymbology(dataSource) {
       }
 
       const color = Cesium.Color.fromCssColorString(style.color).withAlpha(
-        style.alpha
+        style.alpha,
       )
 
       if (e.polygon) {
@@ -1096,7 +1284,7 @@ function applySuscSymbology(dataSource) {
         e.polygon.fill = true
         try {
           e.polygon.outlineColor = new Cesium.ConstantProperty(
-            Cesium.Color.BLACK
+            Cesium.Color.BLACK,
           )
         } catch (err) {
           try {
@@ -1124,7 +1312,7 @@ function applySuscSymbology(dataSource) {
   }
 
   console.log(
-    `applySuscSymbology: success, applied ${applied} / ${entities.length}`
+    `applySuscSymbology: success, applied ${applied} / ${entities.length}`,
   )
   return applied
 }
@@ -1173,7 +1361,7 @@ function debugPrintDataSourceEntities(dataSource, sampleCount = 5) {
 
   if (entities.length > max) {
     console.log(
-      `（已省略 ${entities.length - max} 个实体，增加 sampleCount 可查看更多）`
+      `（已省略 ${entities.length - max} 个实体，增加 sampleCount 可查看更多）`,
     )
   }
 }
@@ -1220,8 +1408,8 @@ const openLayers = async params => {
       Array.isArray(pnames) && pnames.length > 0
         ? pnames[0]
         : typeof pnames === 'string'
-        ? pnames
-        : pname.value[0] || null
+          ? pnames
+          : pname.value[0] || null
 
     if (firstPname) {
       const match =
@@ -1247,7 +1435,7 @@ const openLayers = async params => {
     } else {
       // 若坐标或 pname 不完整，仍保留原行为但不调用会导致错误的代码
       console.warn(
-        'openLayers: incomplete coordinates or pname, skipped addLayer3'
+        'openLayers: incomplete coordinates or pname, skipped addLayer3',
       )
     }
   } catch (err) {
@@ -1298,12 +1486,12 @@ const openLayers = async params => {
 
           // ← 插入：对新加载的数据调用符号化并打印结果
           console.log(
-            'openLayers: applying susc symbology for processResp GeoJSON'
+            'openLayers: applying susc symbology for processResp GeoJSON',
           )
           try {
             const applied = applySuscSymbology(dataSource)
             console.log(
-              `openLayers: applySuscSymbology applied ${applied} / ${dataSource.entities.values.length}`
+              `openLayers: applySuscSymbology applied ${applied} / ${dataSource.entities.values.length}`,
             )
           } catch (err) {
             console.warn('openLayers: applySuscSymbology failed', err)
@@ -1332,7 +1520,7 @@ const openLayers = async params => {
       console.log(
         'openLayers: fallback to loadShpFromBackend with filename',
         filename,
-        folder
+        folder,
       )
       await loadShpFromBackend({ filename, folder, endpoint: '/testapi/GBM' })
       return
@@ -1357,7 +1545,9 @@ const yjLayers = payload => {
   const result = typeof payload === 'object' ? payload?.result : null
   area_avaflow.value = area
   if (result?.outputBase) avaflowOutputBase.value = result.outputBase
-  else avaflowOutputBase.value = area === '波密县' ? '/ng/avaflow_bomi' : '/ng/avaflow'
+  else
+    avaflowOutputBase.value =
+      area === '波密县' ? '/ng/avaflow_bomi' : '/ng/avaflow'
   if (result?.frameCount) avaflowFrameCount.value = result.frameCount
   else avaflowFrameCount.value = 21
   if (area_avaflow.value == '巴宜区') {
@@ -1505,7 +1695,7 @@ const foreCast = params => {
 
       // 点击 billboard 时弹出信息框
       const handler = new Cesium.ScreenSpaceEventHandler(
-        viewer.value.scene.canvas
+        viewer.value.scene.canvas,
       )
       handler.setInputAction(movement => {
         const picked = viewer.value.scene.pick(movement.position)
@@ -2000,7 +2190,7 @@ const renderDisplacementChart = chartData => {
           chart.resize()
         })
       }
-    }
+    },
   )
   // 应用配置项并渲染图表
   // myChart.setOption(option)
@@ -2049,7 +2239,7 @@ const addLayer1 = () => {
       94.730835,
       29.606009, // 西南经度, 西南纬度
       95.417971,
-      29.959721 // 东北经度, 东北纬度
+      29.959721, // 东北经度, 东北纬度
     ),
   })
   const layers = viewer.value.scene.imageryLayers
@@ -2101,7 +2291,7 @@ const addLayer2 = () => {
       94.730835,
       29.606009, // 西南经度, 西南纬度
       95.417971,
-      29.959721 // 东北经度, 东北纬度
+      29.959721, // 东北经度, 东北纬度
     ),
   })
   // console.log(viewer.value)
@@ -2153,7 +2343,7 @@ const addLayer_dem = () => {
       94.730835,
       29.606009, // 西南经度, 西南纬度
       95.417971,
-      29.959721 // 东北经度, 东北纬度
+      29.959721, // 东北经度, 东北纬度
     ),
   })
   const layers = viewer.value.scene.imageryLayers
@@ -2200,7 +2390,7 @@ const addLayer_slope = () => {
       94.730835,
       29.606009, // 西南经度, 西南纬度
       95.417971,
-      29.959721 // 东北经度, 东北纬度
+      29.959721, // 东北经度, 东北纬度
     ),
   })
   const layers = viewer.value.scene.imageryLayers
@@ -2249,7 +2439,7 @@ const addLayer_aspect = () => {
       94.730835,
       29.606009, // 西南经度, 西南纬度
       95.417971,
-      29.959721 // 东北经度, 东北纬度
+      29.959721, // 东北经度, 东北纬度
     ),
   })
   const layers = viewer.value.scene.imageryLayers
@@ -2298,7 +2488,7 @@ const addLayer_relief = () => {
       94.730835,
       29.606009, // 西南经度, 西南纬度
       95.417971,
-      29.959721 // 东北经度, 东北纬度
+      29.959721, // 东北经度, 东北纬度
     ),
   })
   const layers = viewer.value.scene.imageryLayers
@@ -2419,7 +2609,7 @@ function addRiverToCesium(riverData) {
 
     geoJSON.coordinates.forEach(line => {
       const positions = line.map(point =>
-        Cesium.Cartesian3.fromDegrees(point[0], point[1], point[2] || 0)
+        Cesium.Cartesian3.fromDegrees(point[0], point[1], point[2] || 0),
       )
       const style = getRiverStyle(riverData.fclass)
       const entity = viewer.value.entities.add({
@@ -2461,7 +2651,6 @@ function getRiverStyle(fclass) {
   return styles[fclass] || styles.river
 }
 
-
 //移除河流
 const removeLayer_river = () => {
   const entities = viewer.value.entities.values
@@ -2486,8 +2675,8 @@ const addLayer_glacier = () => {
           // polygon 是二维数组，外环 + 若干内环
           const hierarchy = polygon.map(ring =>
             ring.map(point =>
-              Cesium.Cartesian3.fromDegrees(point[0], point[1], point[2] || 0)
-            )
+              Cesium.Cartesian3.fromDegrees(point[0], point[1], point[2] || 0),
+            ),
           )
 
           const entity = viewer.value.entities.add({
@@ -2591,7 +2780,7 @@ const addLayer_weatherstation = () => {
       destination: Cesium.Cartesian3.fromDegrees(
         109.543752,
         32.898714,
-        10000000
+        10000000,
       ),
       //相机的姿态
       orientation: {
@@ -2605,7 +2794,7 @@ const addLayer_weatherstation = () => {
 
   // 3. 添加点击事件
   const layerwsClickHandler = new Cesium.ScreenSpaceEventHandler(
-    viewer.value.scene.canvas
+    viewer.value.scene.canvas,
   )
   layerwsClickHandler
     .setInputAction(handleLayerwsClick, Cesium.ScreenSpaceEventType.LEFT_CLICK)
@@ -2683,7 +2872,7 @@ const rightClickHandler = ref(null)
 // 初始化右键事件处理器
 const initRightClickHandler = () => {
   rightClickHandler.value = new Cesium.ScreenSpaceEventHandler(
-    viewer.value.scene.canvas
+    viewer.value.scene.canvas,
   )
 
   // 右键点击事件
@@ -2761,7 +2950,7 @@ const showPopupWithDetection = async (
   entity,
   records,
   detected,
-  resultArray
+  resultArray,
 ) => {
   const position = entity.position.getValue(Cesium.JulianDate.now())
   const cartographic = Cesium.Cartographic.fromCartesian(position)
@@ -2898,7 +3087,7 @@ const addlayer_DZDdevice = async () => {
 
     // ✅ 移除旧数据源，避免重复加载
     const old = viewer.value.dataSources._dataSources.find(
-      d => d.guid === layer17_guid.value
+      d => d.guid === layer17_guid.value,
     )
     if (old) viewer.value.dataSources.remove(old)
 
@@ -2915,7 +3104,7 @@ const addlayer_DZDdevice = async () => {
         position: Cesium.Cartesian3.fromDegrees(
           device.gps_longitude,
           device.gps_latitude,
-          device.gps_high || 0
+          device.gps_high || 0,
         ),
         billboard: {
           image: '/ng/position.png',
@@ -3011,7 +3200,7 @@ const showPopup = async entity => {
     // ✅ 向后端请求该设备的最新 100 条记录
     const deviceId = entity.properties.deviceid
     const res = await axios.get(
-      `http://localhost:3001/device/latest/${deviceId}`
+      `http://localhost:3001/device/latest/${deviceId}`,
     )
     const records = res.data.reverse() // 最新 -> 时间正序
 
@@ -3273,11 +3462,11 @@ const addLayer4 = () => {
 
       // 设置点击事件处理器
       const layer4ClickHandler = new Cesium.ScreenSpaceEventHandler(
-        viewer.value.scene.canvas
+        viewer.value.scene.canvas,
       )
       layer4ClickHandler.setInputAction(
         handleLayer4Click,
-        Cesium.ScreenSpaceEventType.RIGHT_CLICK
+        Cesium.ScreenSpaceEventType.RIGHT_CLICK,
       )
     })
     .catch(error => {
@@ -3333,7 +3522,7 @@ const removeLayer4 = () => {
   // console.log(dataSources)
 
   const dataSourceToRemove = dataSources.find(
-    data => data.guid == layer4_guid.value
+    data => data.guid == layer4_guid.value,
   )
   // console.log(dataSourceToRemove)
   if (dataSourceToRemove) {
@@ -3345,30 +3534,31 @@ const removeLayer4 = () => {
 }
 // 加载古滑坡灾害链
 const addLayer5 = () => {
-  Cesium.GeoJsonDataSource.load('/ng/ghpzhl.geojson').then(function (
-    dataSource
-  ) {
-    layer5_guid.value = Cesium.createGuid()
-    dataSource.guid = layer5_guid.value
-    viewer.value.dataSources.add(dataSource)
-    const entities = dataSource.entities.values
-    for (var i = 0; i < entities.length; i++) {
-      const entity = entities[i]
+  Cesium.GeoJsonDataSource.load('/ng/ghpzhl.geojson').then(
+    function (dataSource) {
+      layer5_guid.value = Cesium.createGuid()
+      dataSource.guid = layer5_guid.value
+      viewer.value.dataSources.add(dataSource)
+      const entities = dataSource.entities.values
+      for (var i = 0; i < entities.length; i++) {
+        const entity = entities[i]
 
-      const name = entity.name
-      entity.billboard.heightReference = Cesium.HeightReference.CLAMP_TO_GROUND
-      entity.billboard.image = '/ng/position.png'
-    }
-    viewer.value.zoomTo(dataSource)
-    // 设置点击事件处理器
-    const layer5ClickHandler = new Cesium.ScreenSpaceEventHandler(
-      viewer.value.scene.canvas
-    )
-    layer5ClickHandler.setInputAction(
-      handleLayer5Click,
-      Cesium.ScreenSpaceEventType.RIGHT_CLICK
-    )
-  })
+        const name = entity.name
+        entity.billboard.heightReference =
+          Cesium.HeightReference.CLAMP_TO_GROUND
+        entity.billboard.image = '/ng/position.png'
+      }
+      viewer.value.zoomTo(dataSource)
+      // 设置点击事件处理器
+      const layer5ClickHandler = new Cesium.ScreenSpaceEventHandler(
+        viewer.value.scene.canvas,
+      )
+      layer5ClickHandler.setInputAction(
+        handleLayer5Click,
+        Cesium.ScreenSpaceEventType.RIGHT_CLICK,
+      )
+    },
+  )
 }
 const handleLayer5Click = movement => {
   const pickedFeature = viewer.value.scene.pick(movement.position)
@@ -3419,7 +3609,7 @@ const removeLayer5 = () => {
   // console.log(dataSources)
 
   const dataSourceToRemove = dataSources.find(
-    data => data.guid == layer5_guid.value
+    data => data.guid == layer5_guid.value,
   )
   if (dataSourceToRemove) {
     viewer.value.dataSources.remove(dataSourceToRemove)
@@ -3470,10 +3660,14 @@ let intervalId = null // 定时器ID
 async function loadHeatmap(index) {
   try {
     if (heatmapPrimitive) {
-      try { heatmapPrimitive.destroy() } catch (e) {}
+      try {
+        heatmapPrimitive.destroy()
+      } catch (e) {}
       heatmapPrimitive = null
     }
-    const base = avaflowOutputBase.value || (area_avaflow.value === '波密县' ? '/ng/avaflow_bomi' : '/ng/avaflow')
+    const base =
+      avaflowOutputBase.value ||
+      (area_avaflow.value === '波密县' ? '/ng/avaflow_bomi' : '/ng/avaflow')
     heatmapPrimitive = await svcLoadHeatmap(viewer.value, index, base)
   } catch (error) {
     console.error(`加载output${index}.geojson失败:`, error)
@@ -3483,7 +3677,9 @@ async function loadHeatmap(index) {
 async function loadHeatmap_flood(index) {
   try {
     if (heatmapPrimitive) {
-      try { heatmapPrimitive.destroy() } catch (e) {}
+      try {
+        heatmapPrimitive.destroy()
+      } catch (e) {}
       heatmapPrimitive = null
     }
     heatmapPrimitive = await svcLoadHeatmapFlood(viewer.value, index)
@@ -3590,7 +3786,7 @@ const magnify = () => {
     handler.setInputAction(moveHandler, Cesium.ScreenSpaceEventType.MOUSE_MOVE)
     handler.setInputAction(
       confirmHandler,
-      Cesium.ScreenSpaceEventType.LEFT_CLICK
+      Cesium.ScreenSpaceEventType.LEFT_CLICK,
     )
   }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
 
@@ -3598,8 +3794,8 @@ const magnify = () => {
     const [startCart, endCart] = [start, end].map(pos =>
       viewer.value.scene.camera.pickEllipsoid(
         pos,
-        viewer.value.scene.globe.ellipsoid
-      )
+        viewer.value.scene.globe.ellipsoid,
+      ),
     )
 
     if (!startCart || !endCart) return null
@@ -3610,7 +3806,7 @@ const magnify = () => {
       Math.min(startCarto.longitude, endCarto.longitude),
       Math.min(startCarto.latitude, endCarto.latitude),
       Math.max(startCarto.longitude, endCarto.longitude),
-      Math.max(startCarto.latitude, endCarto.latitude)
+      Math.max(startCarto.latitude, endCarto.latitude),
     )
   }
 
@@ -3709,7 +3905,7 @@ const shrink = () => {
     handler.setInputAction(moveHandler, Cesium.ScreenSpaceEventType.MOUSE_MOVE)
     handler.setInputAction(
       confirmHandler,
-      Cesium.ScreenSpaceEventType.LEFT_CLICK
+      Cesium.ScreenSpaceEventType.LEFT_CLICK,
     )
   }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
 }
@@ -3720,8 +3916,8 @@ const calculateShrinkArea = (startPos, endPos) => {
   const [startCart, endCart] = [startPos, endPos].map(pos =>
     viewer.value.scene.camera.pickEllipsoid(
       pos,
-      viewer.value.scene.globe.ellipsoid
-    )
+      viewer.value.scene.globe.ellipsoid,
+    ),
   )
 
   if (!startCart || !endCart) return null
@@ -3749,7 +3945,7 @@ const calculateShrinkArea = (startPos, endPos) => {
     Math.max(centerLon - newWidth / 2, -Math.PI),
     Math.max(centerLat - newHeight / 2, -Cesium.Math.PI_OVER_TWO),
     Math.min(centerLon + newWidth / 2, Math.PI),
-    Math.min(centerLat + newHeight / 2, Cesium.Math.PI_OVER_TWO)
+    Math.min(centerLat + newHeight / 2, Cesium.Math.PI_OVER_TWO),
   )
 }
 
@@ -3802,7 +3998,7 @@ const position = () => {
     viewer.value.entities.add({
       position: Cesium.Cartesian3.fromDegrees(
         Number(lng.toFixed(6)),
-        Number(lat.toFixed(6))
+        Number(lat.toFixed(6)),
       ),
       label: {
         text:
@@ -3849,9 +4045,9 @@ const addattribute = () => {
 
     // console.log(cartographic)
     position_point.value = position
-    ;(dialogVisible_disaster.value = true),
+    ;((dialogVisible_disaster.value = true),
       // 自动移除事件监听（单次点击模式）
-      handler.destroy()
+      handler.destroy())
   }, Cesium.ScreenSpaceEventType.LEFT_DOWN)
 }
 const submit_disaster = () => {
@@ -3945,7 +4141,7 @@ const locationsearch = () => {
         destination: Cesium.Cartesian3.fromDegrees(
           data[0].lng,
           data[0].lat,
-          50000
+          50000,
         ),
       })
     })
@@ -3997,7 +4193,7 @@ const locationsearchqxz = () => {
         destination: Cesium.Cartesian3.fromDegrees(
           data[0].lng,
           data[0].lat,
-          50000
+          50000,
         ),
       })
     })
@@ -4058,7 +4254,7 @@ const attributesearch_disaster = () => {
         destination: Cesium.Cartesian3.fromDegrees(
           data[0].lng,
           data[0].lat,
-          50000
+          50000,
         ),
       })
     })
@@ -4113,7 +4309,7 @@ const attributesearch_qxz = () => {
         destination: Cesium.Cartesian3.fromDegrees(
           data[0].lng,
           data[0].lat,
-          50000
+          50000,
         ),
       })
     })
@@ -4226,8 +4422,9 @@ function handleSeismicResult(payload) {
 
 .map-home-overlay .control {
   position: relative;
-  font-family: 'Source Han Sans', 'Trebuchet MS', 'Lucida Sans Unicode',
-    'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+  font-family:
+    'Source Han Sans', 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande',
+    'Lucida Sans', Arial, sans-serif;
 }
 
 #cesiumContainer {
