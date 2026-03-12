@@ -55,6 +55,11 @@ const treeData = ref([
         id: 12,
         name: '路网数据',
       },
+
+      {
+        id: 14,
+        name: '建筑数据',
+      }
       // {
       //   id: 13,
       //   name: '灾害危险区划',

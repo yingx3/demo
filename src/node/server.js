@@ -52,17 +52,17 @@ const dbConfig = {
   // connectionTimeoutMillis: 10000,
   // idleTimeoutMillis: 30000,
   //@王茂
-  // user: 'postgres',
-  // host: 'localhost',
-  // database: 'postgres',
-  // password: '123456',
-  // port: 5432,
-  //syl
   user: 'postgres',
   host: 'localhost',
-  database: 'postgis',
+  database: 'postgres',
   password: '123456',
   port: 5432,
+  //syl
+  // user: 'postgres',
+  // host: 'localhost',
+  // database: 'postgis',
+  // password: '123456',
+  // port: 5432,
 }
 
 // 创建数据库连接池
@@ -333,8 +333,8 @@ cat("时区: UTC\\n")
       fs.writeFileSync(rScriptPath, rScriptContent, 'utf8')
 
       // 执行R脚本
-      // const Rscript = '"D:/application/r/baseR/bin/Rscript.exe"'
-      const Rscript = '"C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe"'
+      const Rscript = '"D:/application/r/baseR/bin/Rscript.exe"'
+      // const Rscript = '"C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe"'
       const command = `cd /d "${SAVE_PATH}" && ${Rscript} "${rScriptPath}"`
 
       console.log('正在转换为RDA格式...')
@@ -585,8 +585,8 @@ function restoreRScript(rScriptPath) {
 function executeRScript(rScriptPath) {
   return new Promise((resolve, reject) => {
     try {
-      // const Rscript = '"D:/application/r/baseR/bin/Rscript.exe"'
-      const Rscript = '"C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe"'
+      const Rscript = '"D:/application/r/baseR/bin/Rscript.exe"'
+      // const Rscript = '"C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe"'
       const command = `cd /d "${path.dirname(
         rScriptPath
       )}" && ${Rscript} "${rScriptPath}"`

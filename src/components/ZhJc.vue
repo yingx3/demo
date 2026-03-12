@@ -183,21 +183,30 @@ function formatTime(time) {
 }
 .top .top-left .theme {
   position: absolute;
-  left: 572px;
+  left: 50%;
   top: 0;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 26px;
   font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande',
     'Lucida Sans', Arial, sans-serif;
   font-weight: 700;
   letter-spacing: 6px;
   color: rgba(255, 255, 255, 1);
-  text-align: left;
+  text-align: center;
   text-shadow: 0px 2px 4px;
+  height: 65px;
+  max-width: calc(100% - 40px);
+  padding: 0 20px;
+  box-sizing: border-box;
+  white-space: nowrap;
 }
 .top .top-left .theme img {
   position: relative;
   left: 0;
-  top: 16px;
+  top: 0;
   width: 50px;
 }
 
