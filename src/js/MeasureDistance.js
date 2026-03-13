@@ -172,7 +172,6 @@ export default class MeasureDistance {
     this.vertexEntities.push(vertexEntity)
   }
 
-  //左键点击事件
   leftClickEvent() {
     //单击鼠标左键画点点击事件
     this.handler.setInputAction(e => {
