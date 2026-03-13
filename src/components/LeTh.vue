@@ -2,6 +2,7 @@
   <div class="left">
     <div class="name">数值计算模型集</div>
     <div class="total_theme">
+      <!-- 发育规律与风险源判识 -->
       <div class="theme">
         <div class="title">发育规律与风险源判识</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
@@ -559,7 +560,7 @@
                     >：网格详单，含土壤深度、孔隙水压力、稳定性系数，供量化分析。
                   </li>
                 </ol>
-                                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
+                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
                   四、运行结果示例
                 </h2>
                 <p
@@ -586,9 +587,8 @@
                     margin-right: auto;
                     filter: none;
                   "
-                />
-              </div></el-dialog
-            >
+                /></div
+            ></el-dialog>
             <p id="name_par">模型参数</p>
 
             <el-form
@@ -1475,7 +1475,7 @@
                     ArcGIS/QGIS 等软件正常显示中文字符。
                   </li>
                 </ol>
-                                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
+                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
                   四、运行结果示例
                 </h2>
                 <p
@@ -1565,6 +1565,7 @@
           </el-dialog>
         </div>
       </div>
+      <!-- 突发性灾害监测预警 -->
       <div class="theme">
         <div class="title">突发性灾害监测预警</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
@@ -1914,7 +1915,9 @@
                         >：支持新数据增量更新预测，输出实时预警相关的时间轴、不确定性分析结果。
                       </li>
                     </ol>
-                    <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
                       四、运行结果示例
                     </h2>
                     <p
@@ -2003,7 +2006,7 @@
             </el-form>
             <el-button
               type="primary"
-              @click="submit_inverseV(), (dialog_inverseV = false)"
+              @click="(submit_inverseV(), (dialog_inverseV = false))"
               style="margin-left: 280px; margin-top: 20px"
               >运行</el-button
             >
@@ -2519,6 +2522,7 @@
           <span>基于地震动数据的灾害识别模型</span>
         </div> -->
       </div>
+      <!-- 动力学过程模型模拟 -->
       <div class="theme">
         <div class="title">动力学过程模型模拟</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
@@ -2988,8 +2992,20 @@
               class="form_avaflow"
             >
               <el-form-item label="输入栅格文件" class="form_files_avaflow">
-                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-                  <el-input v-model="fileNameElev" placeholder="高程 (elev.tif)" readonly style="width:180px">
+                <div
+                  style="
+                    display: flex;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                    align-items: center;
+                  "
+                >
+                  <el-input
+                    v-model="fileNameElev"
+                    placeholder="高程 (elev.tif)"
+                    readonly
+                    style="width: 180px"
+                  >
                     <template #append>
                       <el-upload
                         ref="uploadElevRef"
@@ -2998,12 +3014,26 @@
                         accept=".tif,.tiff"
                         @change="handleFileChangeElev"
                       >
-                        <el-button @click.stop="triggerUploadElev" style="border:none;color:white;padding:0;margin-left:8px"><i class="iconfont icon-daoru"></i></el-button>
+                        <el-button
+                          @click.stop="triggerUploadElev"
+                          style="
+                            border: none;
+                            color: white;
+                            padding: 0;
+                            margin-left: 8px;
+                          "
+                          ><i class="iconfont icon-daoru"></i
+                        ></el-button>
                       </el-upload>
                     </template>
                   </el-input>
 
-                  <el-input v-model="fileNameDebris" placeholder="启动堆积 (debris.tif)" readonly style="width:200px">
+                  <el-input
+                    v-model="fileNameDebris"
+                    placeholder="启动堆积 (debris.tif)"
+                    readonly
+                    style="width: 200px"
+                  >
                     <template #append>
                       <el-upload
                         ref="uploadDebrisRef"
@@ -3012,12 +3042,26 @@
                         accept=".tif,.tiff"
                         @change="handleFileChangeDebris"
                       >
-                        <el-button @click.stop="triggerUploadDebris" style="border:none;color:white;padding:0;margin-left:8px"><i class="iconfont icon-daoru"></i></el-button>
+                        <el-button
+                          @click.stop="triggerUploadDebris"
+                          style="
+                            border: none;
+                            color: white;
+                            padding: 0;
+                            margin-left: 8px;
+                          "
+                          ><i class="iconfont icon-daoru"></i
+                        ></el-button>
                       </el-upload>
                     </template>
                   </el-input>
 
-                  <el-input v-model="fileNameImpact" placeholder="影响范围 (impact_area.tif)" readonly style="width:220px">
+                  <el-input
+                    v-model="fileNameImpact"
+                    placeholder="影响范围 (impact_area.tif)"
+                    readonly
+                    style="width: 220px"
+                  >
                     <template #append>
                       <el-upload
                         ref="uploadImpactRef"
@@ -3026,7 +3070,16 @@
                         accept=".tif,.tiff"
                         @change="handleFileChangeImpact"
                       >
-                        <el-button @click.stop="triggerUploadImpact" style="border:none;color:white;padding:0;margin-left:8px"><i class="iconfont icon-daoru"></i></el-button>
+                        <el-button
+                          @click.stop="triggerUploadImpact"
+                          style="
+                            border: none;
+                            color: white;
+                            padding: 0;
+                            margin-left: 8px;
+                          "
+                          ><i class="iconfont icon-daoru"></i
+                        ></el-button>
                       </el-upload>
                     </template>
                   </el-input>
@@ -3480,39 +3533,15 @@
           <span>冰川泥石流动力学模型</span>
         </div>         -->
       </div>
-      <!-- <div class="theme">
-        <div class="title">定量风险评估</div>
+      <!-- 脆弱性分析 -->
+      <div class="theme">
+        <div class="title">脆弱性分析</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
         <div class="box">
           <img src="../assets/img/云反射率.png" alt="" />
-          <span>全域风险评估参数模型</span>
+          <span>全域风险脆弱性分析</span>
         </div>
-        <div class="box">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <span>冰川流速估算模型</span>
-        </div>
-        <div class="box">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <span>区域灾点尺度危险性评估模型</span>
-        </div>
-        <div class="box">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <span>溃决洪水灾害链风险评估模型</span>
-        </div>
-        <div class="box">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <span>承载体识别深度学习模型</span>
-        </div>
-        <div class="box">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <span>承载体脆弱性评估参数模拟</span>
-        </div>
-        <div class="box p_bottom">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <span>致灾危险性评估参数模型</span>
-        </div>
-      </div> -->
-
+      </div>
 
       <div class="theme">
         <div class="title">调控技术与防控体系</div>
@@ -3674,9 +3703,15 @@ const fileNameElev = ref('')
 const fileNameDebris = ref('')
 const fileNameImpact = ref('')
 
-const triggerUploadElev = () => { uploadElevRef.value?.$el.querySelector('input[type=file]').click() }
-const triggerUploadDebris = () => { uploadDebrisRef.value?.$el.querySelector('input[type=file]').click() }
-const triggerUploadImpact = () => { uploadImpactRef.value?.$el.querySelector('input[type=file]').click() }
+const triggerUploadElev = () => {
+  uploadElevRef.value?.$el.querySelector('input[type=file]').click()
+}
+const triggerUploadDebris = () => {
+  uploadDebrisRef.value?.$el.querySelector('input[type=file]').click()
+}
+const triggerUploadImpact = () => {
+  uploadImpactRef.value?.$el.querySelector('input[type=file]').click()
+}
 
 const handleFileChangeElev = (uploadFile, uploadFiles) => {
   const f = (uploadFiles && uploadFiles[0]?.raw) || uploadFile.raw || uploadFile
@@ -3720,7 +3755,7 @@ function onSubmit() {
   // for (let t of form.time) {
   //   console.log(t) //打印每个选中的时间（秒数）
   // }
-  // if (form.color == 'dangerLevel') { 
+  // if (form.color == 'dangerLevel') {
   //   // squareStore.openSquare()
   //   console.log('111')
   //   // console.log(squareStore.showSquare)
@@ -3745,7 +3780,7 @@ const subitForm = () => {
       // 动态构建完整的正则表达式
       const regex = new RegExp(
         `左下经度:([\\d.]+),左下纬度:([\\d.]+),右上经度:([\\d.]+),右上纬度:([\\d.]+)` +
-          imageNameRegex
+          imageNameRegex,
       )
 
       // 使用构建的正则表达式进行匹配
@@ -3799,15 +3834,21 @@ const subitForm1 = async () => {
       const formData = new FormData()
       // append renamed files if present
       if (fileElev.value) {
-        const f = new File([fileElev.value], 'elev.tif', { type: fileElev.value.type || 'application/octet-stream' })
+        const f = new File([fileElev.value], 'elev.tif', {
+          type: fileElev.value.type || 'application/octet-stream',
+        })
         formData.append('files', f)
       }
       if (fileDebris.value) {
-        const f = new File([fileDebris.value], 'debris.tif', { type: fileDebris.value.type || 'application/octet-stream' })
+        const f = new File([fileDebris.value], 'debris.tif', {
+          type: fileDebris.value.type || 'application/octet-stream',
+        })
         formData.append('files', f)
       }
       if (fileImpact.value) {
-        const f = new File([fileImpact.value], 'impact_area.tif', { type: fileImpact.value.type || 'application/octet-stream' })
+        const f = new File([fileImpact.value], 'impact_area.tif', {
+          type: fileImpact.value.type || 'application/octet-stream',
+        })
         formData.append('files', f)
       }
 
@@ -3818,13 +3859,18 @@ const subitForm1 = async () => {
         ElMessage({ message: upResp?.message || '文件上传失败', type: 'error' })
         return
       }
-      ElMessage({ message: '文件上传成功，开始启动模拟', type: 'success', duration: 1500 })
+      ElMessage({
+        message: '文件上传成功，开始启动模拟',
+        type: 'success',
+        duration: 1500,
+      })
     }
 
     const data = await modelService.runAvaflow(form1)
     if (data && data.status === 'ok') {
       ElMessage({
-        message: data?.message || '山洪泥石流模拟已启动（按 start1.sh 默认参数执行）',
+        message:
+          data?.message || '山洪泥石流模拟已启动（按 start1.sh 默认参数执行）',
         type: 'success',
         duration: 2500,
       })
@@ -3835,7 +3881,10 @@ const subitForm1 = async () => {
   } catch (error) {
     console.error('山洪泥石流模拟请求失败:', error)
     ElMessage({
-      message: error?.response?.data?.message || error?.message || '请求失败，请检查后端服务',
+      message:
+        error?.response?.data?.message ||
+        error?.message ||
+        '请求失败，请检查后端服务',
       type: 'error',
     })
     $emit('yjLayers', { area: form1.area, result: null })
@@ -4260,8 +4309,9 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
   --el-border-color: transparent;
   --el-button-hover-border-color: transparent;
   --el-button-text-color: white; //
-  --el-font-family: 'Source Han Sans', 'Trebuchet MS', 'Lucida Sans Unicode',
-    'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+  --el-font-family:
+    'Source Han Sans', 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande',
+    'Lucida Sans', Arial, sans-serif;
   font-size: 15px;
   padding: 0;
   // --el-color-primary: transparent;
@@ -4384,7 +4434,9 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
   z-index: 1000;
   opacity: 0;
   transform: scale(0);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
   /* 默认过渡样式 */
 }
 
@@ -4440,7 +4492,9 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
 /* 为 transition 设置过渡效果 */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 
 .fade-enter,
@@ -4579,11 +4633,11 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
 }
 
 :deep(
-    .el-input-group__append .el-button,
-    .el-input-group__append .el-select,
-    .el-input-group__prepend .el-button,
-    .el-input-group__prepend .el-select
-  ) {
+  .el-input-group__append .el-button,
+  .el-input-group__append .el-select,
+  .el-input-group__prepend .el-button,
+  .el-input-group__prepend .el-select
+) {
   margin: 0px;
 }
 
