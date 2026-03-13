@@ -1,17 +1,12 @@
 import express from 'express'
 import multer from 'multer'
 import cors from 'cors'
-import { Client } from 'pg'
 import { exec } from 'child_process'
 import dotenv from 'dotenv'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import XLSX from 'xlsx'
-import moment from 'moment'
-import { point } from 'turf'
-import { da } from 'element-plus/es/locale/index.mjs'
-
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 // 加载环境变量
@@ -83,79 +78,13 @@ function ensureDirectoryExists(dirPath) {
   }
 }
 
-// 格式化时间为 YYYY-MM-DD HH:MM 格式
-// function formatUTCTimestamp(date) {
-//   const pad = (n) => n.toString().padStart(2, '0');
-//   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-// }
 function formatUTCTimestamp(date) {
   const pad = n => n.toString().padStart(2, '0')
   return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(
-    date.getUTCDate()
+    date.getUTCDate(),
   )} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`
 }
 
-// // 处理时间数据并转换为整点
-// function processHourlyData(data) {
-//   console.log('🔄 正在处理时间数据（转换为整点）...');
-
-//   // 按小时分组
-//   const hourlyGroups = {};
-//   console.log(data)
-//   data.forEach(row => {
-//     const timestamp = new Date(row.update_time);
-//     const hourKey = new Date(timestamp);
-//     hourKey.setMinutes(0, 0, 0); // 设置为整点
-
-//     const hourKeyStr = hourKey.toISOString();
-
-//     if (!hourlyGroups[hourKeyStr]) {
-//       hourlyGroups[hourKeyStr] = [];
-//     }
-
-//     hourlyGroups[hourKeyStr].push({
-//       timestamp: timestamp,
-//       displ: row.lf
-//     });
-//   });
-
-//   // 对每小时的数据进行处理
-//   const processedData = [];
-
-//   Object.keys(hourlyGroups).sort().forEach(hourKey => {
-//     const hourData = hourlyGroups[hourKey];
-//     const hourDate = new Date(hourKey);
-
-//     // 检查是否有整点数据
-//     const exactHourData = hourData.find(item =>
-//       item.timestamp.getTime() === hourDate.getTime()
-//     );
-
-//     if (exactHourData) {
-//       // 如果有整点数据，使用第一个整点数据
-//       processedData.push({
-//         timestamp: formatTimestamp(exactHourData.timestamp),
-//         displ: exactHourData.displ
-//       });
-//     } else {
-//       // 如果没有整点数据，使用该小时第一个数据，时间调整为整点
-//       processedData.push({
-//         timestamp: formatTimestamp(hourDate),
-//         displ: hourData[0].displ
-//       });
-//     }
-//   });
-
-//   console.log(`📊 处理前: ${data.length} 条, 处理后: ${processedData.length} 条`);
-//   return processedData;
-// }
-
-// function formatTimestamp(date) {
-//   return moment(date).format('YYYY-MM-DDTHH:mm:ss.SSSZ');
-// }
-// function formatTimestamp(date) {
-//   return moment(date).format('YYYY-MM-DDTHH:mm:ss.SSSZ');
-// }
 function readExcelData(filePath) {
   // console.log('1111')
   console.log(filePath)
@@ -359,7 +288,7 @@ cat("时区: UTC\\n")
         }
 
         const recordCount = parseInt(
-          stdout.match(/成功转换 (\d+) 条记录/)?.[1] || '0'
+          stdout.match(/成功转换 (\d+) 条记录/)?.[1] || '0',
         )
 
         resolve({
@@ -443,7 +372,7 @@ function getFiveDaysBeforeLast(lastTimestamp) {
   // 格式化为 YYYY-MM-DD HH:00:00
   const pad = n => n.toString().padStart(2, '0')
   return `${fiveDaysBefore.getFullYear()}-${pad(
-    fiveDaysBefore.getMonth() + 1
+    fiveDaysBefore.getMonth() + 1,
   )}-${pad(fiveDaysBefore.getDate())} ${pad(fiveDaysBefore.getHours())}:00:00`
 }
 
@@ -463,13 +392,13 @@ function modifyRScript(rScriptPath, startTime, endTime) {
     // 修改第16行的开始时间
     content = content.replace(
       /start_of_calc <- as\.POSIXct\(".*?", tz="UTC"\)/,
-      `start_of_calc <- as.POSIXct("${startTime}", tz="UTC")`
+      `start_of_calc <- as.POSIXct("${startTime}", tz="UTC")`,
     )
 
     // 修改第21行的结束时间（最后一天的前5天）
     content = content.replace(
       /start_of_sim <- as\.POSIXct\(".*?", tz="UTC"\)/,
-      `start_of_sim <- as.POSIXct("${endTime}", tz="UTC")`
+      `start_of_sim <- as.POSIXct("${endTime}", tz="UTC")`,
     )
 
     // 写入修改后的内容
@@ -499,96 +428,13 @@ function restoreRScript(rScriptPath) {
   }
 }
 
-// 执行R脚本
-
-// function executeRScript(rScriptPath) {
-//   return new Promise((resolve, reject) => {
-//     try {
-//       const Rscript = '"C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe"';
-//       const command = `cd /d "${path.dirname(rScriptPath)}" && ${Rscript} "${rScriptPath}"`;
-
-//       console.log('🚀 正在执行R脚本...');
-//       console.log('执行命令:', command);
-
-//       exec(command, (error, stdout, stderr) => {
-//         console.log('输出:', stdout);
-//         if (error) {
-//           console.error('❌ R脚本执行失败:', error.message);
-//           if (stderr) console.error('R脚本错误:', stderr);
-//           reject(error);
-//           return;
-//         }
-
-//         console.log('✅ R脚本执行成功');
-//         // console.log('输出:', stdout);
-//         if (stderr) {
-//           console.warn('警告:', stderr);
-//         }
-
-//         resolve(stdout);
-//       });
-//     } catch (error) {
-//       reject(error);
-//     }
-//   });
-// }
-// function executeRScript(rScriptPath) {
-//   return new Promise((resolve, reject) => {
-//     try {
-//       const Rscript = '"C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe"';
-//       const command = `cd /d "${path.dirname(rScriptPath)}" && ${Rscript} "${rScriptPath}"`;
-
-//       console.log('🚀 正在执行R脚本...');
-//       console.log('执行命令:', command);
-
-//       const child = exec(command, { cwd: path.dirname(rScriptPath) });
-
-//       let stdoutData = '';
-//       let stderrData = '';
-
-//       // 实时输出stdout
-//       child.stdout.on('data', (data) => {
-//         process.stdout.write(data); // 实时输出
-//         stdoutData += data;
-//       });
-
-//       // 实时输出stderr
-//       child.stderr.on('data', (data) => {
-//         process.stderr.write(data); // 实时输出
-//         stderrData += data;
-//       });
-
-//       child.on('close', (code) => {
-//         console.log('\n✅ R脚本执行完成，退出码:', code);
-
-//         if (code === 0) {
-//           resolve(stdoutData);
-//         } else {
-//           const error = new Error(`R脚本执行失败，退出码: ${code}`);
-//           error.stdout = stdoutData;
-//           error.stderr = stderrData;
-//           reject(error);
-//         }
-//       });
-
-//       child.on('error', (error) => {
-//         console.error('❌ 启动R脚本失败:', error.message);
-//         reject(error);
-//       });
-
-//     } catch (error) {
-//       reject(error);
-//     }
-//   });
-// }
-
 function executeRScript(rScriptPath) {
   return new Promise((resolve, reject) => {
     try {
       const Rscript = '"D:/application/r/baseR/bin/Rscript.exe"'
       // const Rscript = '"C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe"'
       const command = `cd /d "${path.dirname(
-        rScriptPath
+        rScriptPath,
       )}" && ${Rscript} "${rScriptPath}"`
 
       console.log('🚀 正在执行R脚本...')
@@ -633,40 +479,6 @@ function executeRScript(rScriptPath) {
     }
   })
 }
-// 检测日志文件中是否存在"OOA detected"
-// function checkOOADetected() {
-//   try {
-//     const logFilePath = path.join(TARGET_PATH, 'plots', 'main', '24_log.txt');
-
-//     if (!fs.existsSync(logFilePath)) {
-//       console.log('❌ 日志文件不存在:', logFilePath);
-//       return false;
-//     }
-
-//     // 读取日志文件内容
-//     const logContent = fs.readFileSync(logFilePath, 'utf8');
-//     const lines = logContent.trim().split('\n');
-
-//     if (lines.length < 2) {
-//       console.log('❌ 日志文件内容不足');
-//       return false;
-//     }
-
-//     // 获取倒数第二行
-//     const secondLastLine = lines[lines.length - 2].trim();
-//     console.log('📋 倒数第二行内容:', secondLastLine);
-
-//     // 检查是否包含"OOA detected"
-//     const hasOOADetected = secondLastLine.includes('OOA detected');
-//     console.log('🔍 OOA detected:', hasOOADetected);
-
-//     return hasOOADetected;
-//   } catch (error) {
-//     console.error('❌ 检测OOA失败:', error.message);
-//     return false;
-//   }
-// }
-
 // 现有的文件上传路由
 app.post('/displ', upload.single('file'), (req, res) => {
   if (!req.file) {
@@ -682,333 +494,6 @@ app.post('/displ', upload.single('file'), (req, res) => {
     savedPath: filePath, // 保存到服务器的路径 (uploads/xxxx)
   })
 })
-
-// 现有的 R 脚本执行路由
-
-// app.post('/rscript', (req, res) => {
-//   const { path: scriptPath, script } = req.body;
-
-//   if (!scriptPath || !script) {
-//     return res.status(400).json({ error: '缺少 path 或 script 参数' });
-//   }
-
-//   const Rscript = '"C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe"';
-//   const command = `start cmd.exe /k "cd /d "${scriptPath}" && ${Rscript} "${script}""`;
-//   console.log('执行命令:', command);
-//   exec(command, (error) => {
-//     if (error) {
-//       console.error('执行失败:', error.message);
-//       return res.status(500).json({
-//         error: '执行失败',
-//         details: error.message,
-//         command: command
-//       });
-//     }
-//     res.json({
-//       success: true,
-//       message: `CMD 已在 ${scriptPath} 目录下启动并执行 ${script}`
-//     });
-//   });
-// });
-
-//使用用户上传文件预测滑坡时间
-// app.get('/displ_file', async (req, res) => {
-//   // console.log(req.query)
-//   const longitude = req.query['form_inverseV[longitude]'] // '109'
-//   const latitude = req.query['form_inverseV[latitude]'] // '110'
-//   const Name = req.query['form_inverseV[Name]'] // '测试点'
-//   // console.log(`经度: ${longitude}, 纬度: ${latitude}`)
-//   // if (!fs.existsSync(filePath)) {
-//   //   return res.status(400).json({ error: '请先上传文件' })
-//   // }
-//   // const processedData = processHourlyData(filePath)
-//   // 移除可能的表头行（如果Excel有表头）
-//   const timeSeriesData = processHourlyData(filePath)
-//   // const timeSeriesData = data.filter(
-//   //   row => row.timestamp && row.displ && typeof row.timestamp !== 'string'
-//   // )
-//   // console.log(`从Excel读取到 ${timeSeriesData.length} 条数据`)
-
-//   // 3. 数据库操作 - 查找或创建监测点
-//   const client = await pool.connect()
-//   try {
-//     await client.query('BEGIN') // 开始事务
-
-//     // 查找是否已存在该坐标的监测点（在一定容差范围内）
-//     const findPointQuery = `
-//         SELECT point_id FROM monitoring_points
-//         WHERE ST_DWithin(geom, ST_SetSRID(ST_MakePoint($1, $2), 4326), 0.001)
-//         LIMIT 1
-//       `
-//     const pointResult = await client.query(findPointQuery, [
-//       longitude,
-//       latitude,
-//     ])
-//     // console.log(pointResult)
-//     let pointId
-
-//     if (pointResult.rows.length > 0) {
-//       // 点已存在，使用现有point_id
-//       pointId = pointResult.rows[0].point_id
-//       console.log(`找到现有监测点，ID: ${pointId}`)
-//     } else {
-//       // 点不存在，创建新监测点
-//       const insertPointQuery = `
-//           INSERT INTO monitoring_points (point_name, geom, description)
-//           VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $2 || ',' || $3 || '的监测点')
-//           RETURNING point_id
-//         `
-//       const pointName = `${Name}`
-//       const newPointResult = await client.query(insertPointQuery, [
-//         pointName,
-//         longitude,
-//         latitude,
-//       ])
-//       pointId = newPointResult.rows[0].point_id
-//       console.log(`创建新监测点，ID: ${pointId}`)
-//     }
-
-//     // 4. 插入时间序列数据
-//     const insertDataQuery = `
-//         INSERT INTO displacement_data (point_id, record_time, displacement)
-//         VALUES ($1, $2, $3)
-//         ON CONFLICT (point_id,record_time) DO UPDATE
-//         SET displacement = EXCLUDED.displacement
-//       `
-
-//     let insertedCount = 0
-//     for (const row of timeSeriesData) {
-//       // 处理Excel日期格式（可能是数字或日期对象）
-//       let recordTime
-//       if (typeof row.timestamp === 'number') {
-//         // Excel日期数字转JS日期
-//         recordTime = XLSX.SSF.parse_date_code(row.timestamp)
-//       } else if (row.timestamp instanceof Date) {
-//         recordTime = row.timestamp
-//       } else if (typeof row.timestamp === 'string') {
-//         try {
-//           // 将字符串转换为Date对象
-//           recordTime = new Date(row.timestamp)
-
-//           // 验证日期是否有效
-//           if (isNaN(recordTime.getTime())) {
-//             console.warn('无效的时间戳字符串，跳过:', row.timestamp)
-//             continue
-//           }
-
-//           // console.log(
-//           //   `解析时间字符串: ${row.timestamp} -> ${recordTime.toISOString()}`
-//           // )
-//         } catch (error) {
-//           console.warn('解析时间字符串时出错，跳过:', row.timestamp, error)
-//           continue
-//         }
-//       } else {
-//         console.warn('跳过无法解析的时间戳:', row.timestamp)
-//         continue
-//       }
-
-//       await client.query(insertDataQuery, [
-//         pointId,
-//         recordTime,
-//         parseFloat(row.displ),
-//       ])
-//       insertedCount++
-//     }
-
-//     await client.query('COMMIT') // 提交事务
-
-//     // 5. 返回成功响应
-//     res.json({
-//       success: true,
-//       message: `数据上传成功`,
-//       pointId: pointId,
-//       recordsInserted: insertedCount,
-//       coordinates: { longitude, latitude },
-//     })
-//   } catch (dbError) {
-//     await client.query('ROLLBACK') // 回滚事务
-//     throw dbError
-//   } finally {
-//     client.release() // 释放数据库连接
-//   }
-
-// })
-
-// app.get('/displ_file', async (req, res) => {
-//   try {
-//     // 处理时间数据（转换为整点）
-//     // console.log(req)
-//     const processedData = processHourlyData(filePath)
-
-//     // 保存处理后的CSV文件
-//     const csvInfo = saveProcessedCSV(processedData)
-
-//     // 转换为RDA文件
-//     const rdaInfo = await convertToRDA(csvInfo.filepath)
-
-//     // 复制RDA文件到目标路径
-//     const targetRdaPath = path.join(TARGET_PATH, 'displ_data.rda')
-//     await copyFile(rdaInfo.filepath, targetRdaPath)
-
-//     // 读取CSV文件的时间范围
-//     const timeRange = getCSVTimeRange(csvInfo.filepath)
-
-//     // 计算最后一天的时间
-//     const fiveDaysBeforeLast = getFiveDaysBeforeLast(timeRange.lastTimestamp)
-
-//     // 修改R脚本
-//     await modifyRScript(
-//       R_SCRIPT_PATH,
-//       timeRange.firstTimestamp,
-//       fiveDaysBeforeLast
-//     )
-
-//     // 执行R脚本
-//     const rScriptResult = await executeRScript(R_SCRIPT_PATH)
-//     console.log('R脚本执行完毕！')
-
-//     // 恢复R脚本到原始状态
-//     // await restoreRScript(R_SCRIPT_PATH);
-//     const rt_json = path.join(TARGET_PATH, 'rt_data.json')
-//     const data = await fs.promises.readFile(rt_json, 'utf8')
-//     res.json({
-//       success: true,
-//       processedCount: rdaInfo.recordCount,
-//       timeRange: {
-//         start: timeRange.firstTimestamp,
-//         end: timeRange.lastTimestamp,
-//         simulationStart: fiveDaysBeforeLast,
-//       },
-//       rdaFile: targetRdaPath,
-//       rScriptExecuted: true,
-//       rt_json: JSON.parse(data),
-//     })
-//   } catch (error) {
-//     console.error('处理失败:', error)
-
-//     // 尝试恢复R脚本（如果修改过）
-//     // try {
-//     //   await restoreRScript(R_SCRIPT_PATH);
-//     // } catch (restoreError) {
-//     //   console.error('恢复R脚本失败:', restoreError.message);
-//     // }
-
-//     // res.status(500).json({
-//     //   success: false,
-//     //   message: '处理失败',
-//     //   error: error.message,
-//     //   ooaDetected: false,
-//     // })
-//   }
-//   const longitude = req.query['form_inverseV[longitude]'] // '109'
-//   const latitude = req.query['form_inverseV[latitude]'] // '110'
-//   const Name = req.query['form_inverseV[Name]'] // '测试点'
-//   const timeSeriesData = processHourlyData(filePath)
-//   // console.log(`从Excel读取到 ${timeSeriesData.length} 条数据`)
-//   // 3. 数据库操作 - 查找或创建监测点
-//   const client = await pool.connect()
-//   try {
-//     await client.query('BEGIN') // 开始事务
-
-//     // 查找是否已存在该坐标的监测点（在一定容差范围内）
-//     const findPointQuery = `
-//         SELECT point_id FROM monitoring_points
-//         WHERE ST_DWithin(geom, ST_SetSRID(ST_MakePoint($1, $2), 4326), 0.001)
-//         LIMIT 1
-//       `
-//     const pointResult = await client.query(findPointQuery, [
-//       longitude,
-//       latitude,
-//     ])
-//     let pointId
-//     if (pointResult.rows.length > 0) {
-//       // 点已存在，使用现有point_id
-//       pointId = pointResult.rows[0].point_id
-//       console.log(`找到现有监测点，ID: ${pointId}`)
-//     } else {
-//       // 点不存在，创建新监测点
-//       const insertPointQuery = `
-//           INSERT INTO monitoring_points (point_name, geom, description)
-//           VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $2 || ',' || $3 || '的监测点')
-//           RETURNING point_id
-//         `
-//       const pointName = `${Name}`
-//       const newPointResult = await client.query(insertPointQuery, [
-//         pointName,
-//         longitude,
-//         latitude,
-//       ])
-//       pointId = newPointResult.rows[0].point_id
-//       console.log(`创建新监测点，ID: ${pointId}`)
-//     }
-
-//     // 4. 插入时间序列数据
-//     const insertDataQuery = `
-//         INSERT INTO displacement_data (point_id, record_time, displacement)
-//         VALUES ($1, $2, $3)
-//         ON CONFLICT (point_id,record_time) DO UPDATE
-//         SET displacement = EXCLUDED.displacement
-//       `
-
-//     let insertedCount = 0
-//     for (const row of timeSeriesData) {
-//       // 处理Excel日期格式（可能是数字或日期对象）
-//       let recordTime
-//       if (typeof row.timestamp === 'number') {
-//         // Excel日期数字转JS日期
-//         recordTime = XLSX.SSF.parse_date_code(row.timestamp)
-//       } else if (row.timestamp instanceof Date) {
-//         recordTime = row.timestamp
-//       } else if (typeof row.timestamp === 'string') {
-//         try {
-//           // 将字符串转换为Date对象
-//           recordTime = new Date(row.timestamp)
-
-//           // 验证日期是否有效
-//           if (isNaN(recordTime.getTime())) {
-//             console.warn('无效的时间戳字符串，跳过:', row.timestamp)
-//             continue
-//           }
-
-//           // console.log(
-//           //   `解析时间字符串: ${row.timestamp} -> ${recordTime.toISOString()}`
-//           // )
-//         } catch (error) {
-//           console.warn('解析时间字符串时出错，跳过:', row.timestamp, error)
-//           continue
-//         }
-//       } else {
-//         console.warn('跳过无法解析的时间戳:', row.timestamp)
-//         continue
-//       }
-
-//       await client.query(insertDataQuery, [
-//         pointId,
-//         recordTime,
-//         parseFloat(row.displ),
-//       ])
-//       insertedCount++
-//     }
-
-//     await client.query('COMMIT') // 提交事务
-
-//     // 5. 返回成功响应
-//     res.json({
-//       success: true,
-//       message: `数据上传成功`,
-//       pointId: pointId,
-//       recordsInserted: insertedCount,
-//       coordinates: { longitude, latitude },
-//     })
-//   } catch (dbError) {
-//     await client.query('ROLLBACK') // 回滚事务
-//     throw dbError
-//   } finally {
-//     client.release() // 释放数据库连接
-//   }
-// })
-// 根据设备ID查询crack数据并处理为RDA
 
 app.get('/displ_file', async (req, res) => {
   try {
@@ -1033,7 +518,7 @@ app.get('/displ_file', async (req, res) => {
     await modifyRScript(
       R_SCRIPT_PATH,
       timeRange.firstTimestamp,
-      fiveDaysBeforeLast
+      fiveDaysBeforeLast,
     )
 
     // 执行R脚本
@@ -1263,7 +748,7 @@ app.get('/api/crack/:deviceId', async (req, res) => {
       ORDER BY 
         update_time
     `,
-      [deviceId]
+      [deviceId],
     )
 
     console.log(`📊 查询到 ${result.rowCount} 条记录`)
@@ -1300,7 +785,7 @@ app.get('/api/crack/:deviceId', async (req, res) => {
     await modifyRScript(
       R_SCRIPT_PATH,
       timeRange.firstTimestamp,
-      fiveDaysBeforeLast
+      fiveDaysBeforeLast,
     )
 
     // 执行R脚本
@@ -1366,7 +851,7 @@ app.get('/point', async (req, res) => {
     // 使用参数化查询防止 SQL 注入
     const { rows } = await pool.query(
       `SELECT name, dcmd, lssl, slope, hlxqsl, pthhsmj, elevation, scale, ST_X(geom) AS lng,ST_Y(geom) AS lat FROM point2 WHERE name = $1`,
-      [name]
+      [name],
     )
 
     // 处理查询结果
@@ -1423,7 +908,7 @@ app.get('/point/attribute', async (req, res) => {
        FROM point2 
        WHERE ${dbField} = $1
        LIMIT 100`, // 添加分页限制防止过量查询
-      [attribute_value]
+      [attribute_value],
     )
 
     if (rows.length === 0) {
@@ -1478,7 +963,7 @@ app.get('/point/attribute_qxz', async (req, res) => {
       z_name, jyl, wind, ST_X(geom) AS lng,ST_Y(geom) AS lat 
       FROM point_qxz WHERE ${dbField} = $1 
       LIMIT 100`, // 添加分页限制防止过量查询
-      [attribute_value]
+      [attribute_value],
     )
 
     if (rows.length === 0) {
@@ -1512,7 +997,7 @@ app.get('/point_qxz', async (req, res) => {
     // 使用参数化查询防止 SQL 注入
     const { rows } = await pool.query(
       `SELECT z_name, jyl, wind, ST_X(geom) AS lng,ST_Y(geom) AS lat FROM point_qxz WHERE z_name = $1`,
-      [z_name]
+      [z_name],
     )
 
     // 处理查询结果
@@ -1540,11 +1025,6 @@ app.get('/glacier', async (req, res) => {
   const { rows } = await pool.query('SELECT * FROM glacier')
   res.send(rows)
 })
-//ceshi
-app.post('/test', async (req, res) => {
-  console.log(req.body)
-  res.send(req.body)
-})
 
 //创建要素（create）
 app.post('/point', async (req, res) => {
@@ -1567,7 +1047,7 @@ app.post('/point', async (req, res) => {
         elevation,
         scale,
         JSON.stringify(geom),
-      ]
+      ],
     )
     res.status(201).send(result.rows[0])
   } catch (error) {
@@ -1578,7 +1058,7 @@ app.post('/point', async (req, res) => {
 // --- 新增：接收 GBM/Shapefile 上传并保存到固定目录 ---
 const GBM_SAVE_DIR = 'E:\\Projects\\ZHLXT\\backend\\hd\\data\\BCNSL'
 // 确保目录存在（使用文件顶部已定义的 ensureDirectoryExists）
-ensureDirectoryExists(GBM_SAVE_DIR)
+// ensureDirectoryExists(GBM_SAVE_DIR)
 
 const storageGBM = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -1620,10 +1100,10 @@ app.post('/node/upload_shp', uploadGBM.array('file', 10), (req, res) => {
 })
 
 // 新存储目录（确保ensureDirectoryExists函数已定义，或添加一个简单mkdir）
-const SEISMIC_SAVE_DIR = 'E:\\Projects\\ZHLXT\\backend\\hd\\data\\seismic'
-if (!fs.existsSync(SEISMIC_SAVE_DIR)) {
-  fs.mkdirSync(SEISMIC_SAVE_DIR, { recursive: true })
-}
+// const SEISMIC_SAVE_DIR = 'E:\\Projects\\ZHLXT\\backend\\hd\\data\\seismic'
+// if (!fs.existsSync(SEISMIC_SAVE_DIR)) {
+//   fs.mkdirSync(SEISMIC_SAVE_DIR, { recursive: true })
+// }
 
 const storageSeismic = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -1674,9 +1154,5 @@ app.post('/displ', upload.single('file'), (req, res) => {
   })
 })
 app.listen(3000, () => {
-  // console.log('Server running on http://localhost:3000');
-  // console.log('💾 文件保存路径:', SAVE_PATH);
-  // console.log('🎯 目标路径:', TARGET_PATH);
-  // console.log('📝 R脚本路径:', R_SCRIPT_PATH);
-  // console.log('🚀 可用接口: GET /api/crack/:deviceId');
+  console.log('Server running on http://localhost:3000')
 })
