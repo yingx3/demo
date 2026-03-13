@@ -25,13 +25,11 @@
           >
           <el-dialog
             v-model="dialogVisible"
-            title="风险源定量识别与表征模型"
             width="500"
             :close-on-click-modal="false"
             class="dialog_trigrs"
           >
-            <!-- 👇 在title旁添加帮助问号（用slot="header"自定义弹窗头部） -->
-
+            <!--在title旁添加帮助问号（用slot="header"自定义弹窗头部） -->
             <template #header>
               <div
                 style="
@@ -2534,7 +2532,7 @@
           <el-dialog
             v-model="dialogVisible1"
             title="山洪泥石流启动动力学模型"
-            width="500"
+            style="width: 480px"
             :close-on-click-modal="false"
             class="dialog_avaflow"
           >
@@ -2985,13 +2983,14 @@
               </div>
             </template>
             <p id="name_par2">模型参数</p>
-            <el-form
-              :model="form1"
-              label-width="auto"
-              style="max-width: 600px"
-              class="form_avaflow"
-            >
-              <el-form-item label="输入栅格文件" class="form_files_avaflow">
+            <el-form :model="form1" label-width="auto" class="form_avaflow">
+              <el-form-item
+                label="输入栅格文件"
+                label-position="left"
+                label-width="145px"
+                class="form_files_avaflow"
+                style="margin-bottom: 8px"
+              >
                 <div
                   style="
                     display: flex;
@@ -3085,28 +3084,49 @@
                   </el-input>
                 </div>
               </el-form-item>
-              <!-- <el-form-item label="研究区域" class="form1_avaflow">
-                <el-select v-model="form1.area" placeholder="巴宜区">
-                  <el-option label="巴宜区" value="巴宜区" />
-                  <el-option label="波密县" value="波密县" />
-                </el-select>
-              </el-form-item> -->
-              <el-form-item label="相数" class="form1_avaflow">
-                <el-select v-model="form1.phases" placeholder="1">
-                  <el-option label="单相" value="1" />
-                  <el-option label="双相" value="2" />
-                  <el-option label="多相" value="3" />
-                </el-select>
-              </el-form-item>
-              <el-form-item label="内部摩擦" class="form2_avaflow">
-                <el-input v-model="form1.cf" placeholder="35" />
-              </el-form-item>
-              <el-form-item label="基底摩擦" class="form3_avaflow">
-                <el-input v-model="form1.bf" placeholder="20" />
-              </el-form-item>
-              <!-- <el-form-item label="水摩擦" class="form4_avaflow">
-                <el-input v-model="form.ff" placeholder="0.05" />
-              </el-form-item> -->
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  height: 20px;
+                  margin-top: 15px;
+                "
+              >
+                <el-form-item
+                  label="相数"
+                  label-width="50px"
+                  label-position="left"
+                  class="form1_avaflow"
+                >
+                  <el-select
+                    v-model="form1.phases"
+                    placeholder="1"
+                    style="width: 90px"
+                  >
+                    <el-option label="单相" value="1" />
+                    <el-option label="双相" value="2" />
+                    <el-option label="多相" value="3" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item
+                  label="内部摩擦"
+                  label-position="left"
+                  label-width="88px"
+                  class="form2_avaflow"
+                >
+                  <el-input v-model="form1.cf" placeholder="35" />
+                </el-form-item>
+                <el-form-item
+                  label="基底摩擦"
+                  label-position="left"
+                  label-width="88px"
+                  class="form3_avaflow"
+                >
+                  <el-input v-model="form1.bf" placeholder="20" />
+                </el-form-item>
+              </div>
+
               <el-form-item>
                 <el-button
                   type="primary"
@@ -4584,7 +4604,7 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
 :deep(.el-form-item__label) {
   color: rgba(255, 255, 255, 1);
   font-size: 18px;
-  line-height: 50px;
+  //line-height: 50px;
 }
 
 :deep(.el-input__inner) {
