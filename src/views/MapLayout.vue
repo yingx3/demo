@@ -92,15 +92,37 @@ onBeforeUnmount(() => {
   background: #000; /* 防止缩放后露底 */
 }
 
+// .screen-root {
+//   pointer-events: none; // 如果只是展示层，建议这样
+//   position: absolute;
+  
+//   left: 50%;
+//   top: 50%;
+//   width: 1920px;
+//   height: 1080px;
+//   transform: translate(-50%, -50%) scale(var(--scale));
+//   transform-origin: center center;
+// }
 .screen-root {
-  pointer-events: none; // 如果只是展示层，建议这样
+  pointer-events: none;
   position: absolute;
+  
   left: 50%;
-  top: 50%;
+  top: 0;           
   width: 1920px;
   height: 1080px;
-  transform: translate(-50%, -50%) scale(var(--scale));
-  transform-origin: center center;
+  transform: translate(-50%, 0) scale(var(--scale));
+  transform-origin: top center; /* 缩放原点：顶部居中 */
+}
+@media screen and (height: 567.2px) {
+  .screen-root {
+    transform: translate(-50%, 0) scale(0.575);
+  }
+}
+@media screen and (height: 911px) {
+  .screen-root {
+    transform: translate(-50%, 0) scale(1);
+  }
 }
 
 .top-container {
