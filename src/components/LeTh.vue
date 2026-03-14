@@ -4375,6 +4375,9 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
   top: 50px;
   left: 60px;
 }
+.left .total_theme .theme {
+margin: 20px 0;
+}
 
 .theme .title {
   width: 300px;
@@ -4403,7 +4406,6 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
 .box {
   height: 30px;
   font-weight: 500;
-  /* letter-spacing: 1px; */
   letter-spacing: 1px;
   /* 添加字间距 */
   line-height: 40px;
@@ -4412,6 +4414,8 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
   color: #606266;
   text-align: left;
   font-size: 15px;
+  padding-left: 10px;
+  padding-top: 5px;
 }
 
 .box img {
