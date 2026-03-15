@@ -59,7 +59,7 @@ onMounted(async () => {
     if (infoBoxFrame && typeof infoBoxFrame.setAttribute === 'function') {
       infoBoxFrame.setAttribute(
         'sandbox',
-        'allow-same-origin allow-scripts allow-popups allow-forms'
+        'allow-same-origin allow-scripts allow-popups allow-forms',
       )
     }
   } catch (e) {
@@ -95,7 +95,7 @@ onBeforeUnmount(() => {
 // .screen-root {
 //   pointer-events: none; // 如果只是展示层，建议这样
 //   position: absolute;
-  
+
 //   left: 50%;
 //   top: 50%;
 //   width: 1920px;
@@ -106,9 +106,9 @@ onBeforeUnmount(() => {
 .screen-root {
   pointer-events: none;
   position: absolute;
-  
+
   left: 50%;
-  top: 0;           
+  top: 0;
   width: 1920px;
   height: 1080px;
   transform: translate(-50%, 0) scale(var(--scale));
@@ -124,13 +124,19 @@ onBeforeUnmount(() => {
     transform: translate(-50%, 0) scale(1);
   }
 }
+@media screen and (height: 1187px) {
+  .screen-root {
+    transform: translate(-50%, 0) scale(1.35);
+  }
+}
 
 .top-container {
   position: relative;
   width: 100%;
   height: 100%;
-  font-family: 'Source Han Sans', 'Trebuchet MS', 'Lucida Sans Unicode',
-    'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+  font-family:
+    'Source Han Sans', 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande',
+    'Lucida Sans', Arial, sans-serif;
 }
 
 #cesiumContainer {
