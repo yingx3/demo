@@ -2605,24 +2605,23 @@ const addLayer_river = () => {
 
 function addRiverToCesium(riverData) {
   try {
-    const geoJSON = parseWKBMultiLineString(riverData.geom)
+    const lines = parseWKBMultiLineString(riverData.geom)
+    const style = getRiverStyle(riverData.fclass)
 
-    geoJSON.coordinates.forEach(line => {
+    lines.forEach(line => {
       const positions = line.map(point =>
         Cesium.Cartesian3.fromDegrees(point[0], point[1], point[2] || 0),
       )
-      const style = getRiverStyle(riverData.fclass)
+
       const entity = viewer.value.entities.add({
         name: riverData.Name,
         polyline: {
           positions,
-          // width: parseFloat(riverData.width) || 5,
           width: style.width,
           material: new Cesium.PolylineGlowMaterialProperty({
             color: style.color,
             glowPower: 0.2,
           }),
-          // width: getRiverStyle(riverData.fclass).width,
           clampToGround: !line[0][2],
         },
         properties: {
@@ -2631,7 +2630,7 @@ function addRiverToCesium(riverData) {
           id: riverData.id,
         },
       })
-      // 标记为河流图层
+
       entity.riverTag = true
     })
   } catch (e) {
@@ -2641,6 +2640,44 @@ function addRiverToCesium(riverData) {
     })
   }
 }
+// function addRiverToCesium(riverData) {
+//   try {
+//     const geoJSON = parseWKBMultiLineString(riverData.geom)
+
+//     lines.forEach.forEach(line => {
+//       const positions = line.map(point =>
+//         Cesium.Cartesian3.fromDegrees(point[0], point[1], point[2] || 0),
+//       )
+//       const style = getRiverStyle(riverData.fclass)
+//       const entity = viewer.value.entities.add({
+//         name: riverData.Name,
+//         polyline: {
+//           positions,
+//           // width: parseFloat(riverData.width) || 5,
+//           width: style.width,
+//           material: new Cesium.PolylineGlowMaterialProperty({
+//             color: style.color,
+//             glowPower: 0.2,
+//           }),
+//           // width: getRiverStyle(riverData.fclass).width,
+//           clampToGround: !line[0][2],
+//         },
+//         properties: {
+//           code: riverData.code,
+//           fclass: riverData.fclass,
+//           id: riverData.id,
+//         },
+//       })
+//       // 标记为河流图层
+//       entity.riverTag = true
+//     })
+//   } catch (e) {
+//     console.error('解析失败:', {
+//       error: e,
+//       sampleData: riverData.geom?.substring(0, 50) + '...',
+//     })
+//   }
+// }
 //样式优化
 function getRiverStyle(fclass) {
   const styles = {
@@ -2669,9 +2706,9 @@ const addLayer_glacier = () => {
 
     data.forEach(glacier => {
       try {
-        const geoJSON = parseWKBMultiPolygon(glacier.geom) // ⬅️ 新函数（见下方）
+        const polygons = parseWKBMultiPolygon(glacier.geom) // ⬅️ 新函数（见下方）
         const style = getGlacierStyle(glacier.fclass)
-        geoJSON.coordinates.forEach(polygon => {
+        polygons.forEach(polygon => {
           // polygon 是二维数组，外环 + 若干内环
           const hierarchy = polygon.map(ring =>
             ring.map(point =>
