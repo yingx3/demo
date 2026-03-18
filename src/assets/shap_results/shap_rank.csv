@@ -1,0 +1,16 @@
+Feature,Global SHAP Values,rank
+NDVI,2.33758816,1
+Fault distance,1.417561887,2
+Glacier area ratio,0.65070319,3
+Temperature,0.448162624,4
+Gully gradient,0.425958435,5
+Soil thickness,0.33629105,6
+TWI,0.280775357,7
+Precipitation,0.257655237,8
+Stream Distance,0.243049838,9
+SPI,0.147374765,10
+Curvature,0.135682641,11
+Surface roughness,0.060199636,12
+Aspect,0.030115833,13
+Slope,0.018377959,14
+Relief amplitude,0.006137548,15
