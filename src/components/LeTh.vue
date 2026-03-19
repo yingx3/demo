@@ -2099,7 +2099,7 @@
           <el-dialog
             v-model="dialogVisibleSeismic"
             title="冰川泥石流监测预警模型"
-            width="500"
+            width="700"
             :close-on-click-modal="false"
             class="dialog_seismic"
           >
@@ -2524,8 +2524,8 @@
             <p
               id="name_par_seismic"
               style="
-                margin-left: 24px;
-                margin-top: -26px;
+                margin-left: 70px;
+                margin-top: -6px;
                 font-size: 18px;
                 color: #2763ca;
               "
@@ -2536,7 +2536,7 @@
             <el-form
               :model="formSeismic"
               label-width="auto"
-              style="max-width: 600px"
+              style="max-width: 650px"
               class="form_seismic"
             >
               <el-form-item
@@ -2584,21 +2584,95 @@
                   display: flex;
                   flex-direction: row;
                   justify-content: space-between;
+                  margin-bottom: 10px;
                 "
               >
                 <el-form-item
-                  label="占位"
+                  label="阈值(threshold)"
                   label-width="123px"
                   label-position="right"
                 >
-                  <el-input placeholder="------" style="width: 80px" />
+                  <el-input
+                    v-model="formSeismic.threshold"
+                    type="number"
+                    step="0.1"
+                    placeholder="2.5"
+                    style="width: 80px"
+                  />
                 </el-form-item>
                 <el-form-item
-                  label="占位"
-                  label-width="60px"
+                  label="短时窗(秒)"
+                  label-width="123px"
                   label-position="right"
                 >
-                  <el-input placeholder="------" style="width: 80px" />
+                  <el-input
+                    v-model="formSeismic.short_window"
+                    type="number"
+                    step="1"
+                    placeholder="30"
+                    style="width: 80px"
+                  />
+                </el-form-item>
+                <el-form-item
+                  label="长时窗(秒)"
+                  label-width="123px"
+                  label-position="right"
+                >
+                  <el-input
+                    v-model="formSeismic.long_window"
+                    type="number"
+                    step="1"
+                    placeholder="240"
+                    style="width: 80px"
+                  />
+                </el-form-item>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  flex-direction: row;
+                  justify-content: space-between;
+                  margin-bottom: 10px;
+                "
+              >
+                <el-form-item
+                  label="分段时长(秒)"
+                  label-width="123px"
+                  label-position="right"
+                >
+                  <el-input
+                    v-model="formSeismic.segment_duration"
+                    type="number"
+                    step="1"
+                    placeholder="10"
+                    style="width: 80px"
+                  />
+                </el-form-item>
+                <el-form-item
+                  label="总时长(秒)"
+                  label-width="123px"
+                  label-position="right"
+                >
+                  <el-input
+                    v-model="formSeismic.total_duration"
+                    type="number"
+                    step="1"
+                    placeholder="60"
+                    style="width: 80px"
+                  />
+                </el-form-item>
+                <el-form-item
+                  label="采样率(Hz)"
+                  label-width="123px"
+                  label-position="right"
+                >
+                  <el-input
+                    v-model="formSeismic.sampling_rate"
+                    type="number"
+                    step="1"
+                    placeholder="100"
+                    style="width: 80px"
+                  />
                 </el-form-item>
               </div>
 
@@ -3759,7 +3833,14 @@ const fileNameSeismic = ref('')
 const fileSeismic = ref(null)
 const uploadDataSeismic = () => ({}) // 如果需要额外数据，可扩展
 const showBarrage = ref(false) // 修复 "showBarrage" 未定义
-const formSeismic = reactive({}) // 修复 "formSeismic" 未定义（如果模板中用了 :model="formSeismic"）
+const formSeismic = reactive({
+  threshold: 2.5,
+  short_window: 30,
+  long_window: 240,
+  segment_duration: 10,
+  total_duration: 60,
+  sampling_rate: 100,
+}) // 修复 "formSeismic" 未定义（如果模板中用了 :model="formSeismic"）
 // 返回给 el-upload 的附加表单字段
 const uploadDataGBM = () => {
   return {
@@ -4265,7 +4346,7 @@ const handleUploadSuccessSeismic = async (response, file, fileList) => {
 
   const savedFile = response.file // 单文件
   try {
-    const resp = await modelService.postSeismic(savedFile)
+    const resp = await modelService.postSeismic(savedFile, formSeismic)
 
     ElMessage.closeAll()
     ElMessage({ message: '后端处理完成，正在加载结果', type: 'success' })
@@ -4541,8 +4622,8 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
 :deep(.el-dialog.dialog_seismic) {
   --el-dialog-bg-color: transparent;
   margin-top: 15%;
-  width: 450px;
-  height: 300px;
+  width: 700px;
+  height: 400px;
   background-image: url('../assets/img/fz173.png');
   background-size: 100% 100%;
 }

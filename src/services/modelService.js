@@ -27,11 +27,11 @@ const modelService = {
       { timeout: 120000 },
     )
   },
-  postSeismic(savedFile) {
+  postSeismic(savedFile, params) {
     return axios
       .post(
         '/testapi/admin/user/seismic',
-        { file: savedFile },
+        { file: savedFile, params },
         { timeout: 120000 },
       )
       .then(r => r.data)

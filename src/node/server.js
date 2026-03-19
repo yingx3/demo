@@ -1095,7 +1095,7 @@ app.post('/node/upload_shp', uploadGBM.array('file', 10), (req, res) => {
 })
 
 // 新存储目录（确保ensureDirectoryExists函数已定义，或添加一个简单mkdir）
-// const SEISMIC_SAVE_DIR = 'E:\\Projects\\ZHLXT\\backend\\hd\\data\\seismic'
+const SEISMIC_SAVE_DIR = 'E:\\Projects\\ZHLXT\\backend\\hd\\data\\seismic'
 // if (!fs.existsSync(SEISMIC_SAVE_DIR)) {
 //   fs.mkdirSync(SEISMIC_SAVE_DIR, { recursive: true })
 // }
