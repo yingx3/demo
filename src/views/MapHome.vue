@@ -1464,10 +1464,13 @@ const openLayers = async params => {
     }
 
     // 尝试直接解析并加载 GeoJSON
+    // console.log('openLayers: maybeGeo', maybeGeo)
+    // console.log(Array.isArray(maybeGeo))
     if (maybeGeo) {
       let geojsonObj = null
       if (typeof maybeGeo === 'string') {
         try {
+          // console.log('maybeGeo是字符串')
           geojsonObj = JSON.parse(maybeGeo)
         } catch (e) {
           // 不是 JSON 字符串 -> 可能是文件名，后续回退处理
@@ -1478,9 +1481,11 @@ const openLayers = async params => {
       }
 
       if (geojsonObj) {
+        console.log(geojsonObj)
         try {
           const dataSource = await Cesium.GeoJsonDataSource.load(geojsonObj, {
             clampToGround: true,
+            strict: false,
           })
           viewer.value.dataSources.add(dataSource)
 

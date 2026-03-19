@@ -25,12 +25,12 @@ warnings.filterwarnings("ignore")
 # 上级目录
 BASE_DIR = Path(__file__).parent
 # TODO: 请修改为实际路径
-MODEL_PATH = BASE_DIR.parent / "LightGBM.pkl"
-SCALER_PATH = BASE_DIR.parent / "standard_scaler.pkl"
+MODEL_PATH = BASE_DIR / "LightGBM.pkl"
+SCALER_PATH = BASE_DIR / "standard_scaler.pkl"
 
 # TODO: 输入输出shapefile路径
-INPUT_SHP_PATH = BASE_DIR.parent.parent / "input" "waternet_new.shp"
-OUTPUT_SHP_PATH = BASE_DIR.parent.parent / "output" "waternet_with_results.shp"
+INPUT_SHP_PATH = BASE_DIR.parent.parent / "assets" / "input" / "waternet_new.shp"
+OUTPUT_SHP_PATH = BASE_DIR.parent.parent / "assets" / "output" / "waternet_results.shp"
 
 # ============================================================
 # 列名映射：shapefile列名 -> 训练时的完整列名
