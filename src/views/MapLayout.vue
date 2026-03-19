@@ -129,6 +129,11 @@ onBeforeUnmount(() => {
     transform: translate(-50%, 0) scale(1.35);
   }
 }
+@media screen and (height: 882.22px) {
+  .screen-root {
+    transform: translate(-50%, 0) scale(1);
+  }
+}
 
 .top-container {
   position: relative;
