@@ -15,8 +15,28 @@ import joblib
 from pathlib import Path
 from jenkspy import jenks_breaks
 import warnings
+import json
+import ast
+import re
 
 warnings.filterwarnings("ignore")
+
+
+
+#接收文件路径
+folder = re.sub(r"\.[^.]+$", "", sys.argv[1])
+#接收参数
+json_str = sys.argv[2]
+# params = json.loads(json_str)
+fixed_str = re.sub(r'(\w+):', r'"\1":', json_str)
+params = json.loads(fixed_str)
+
+aspect = params["aspect"]
+curvature = params["curvature"]
+fault_distance = params["fault_distance"]
+ndvi = params["ndvi"]
+rainfall = params["rainfall"]
+relief_amplitude = params["relief_amplitude"]
 
 # ============================================================
 # 配置参数
@@ -28,9 +48,9 @@ BASE_DIR = Path(__file__).parent
 MODEL_PATH = BASE_DIR / "LightGBM.pkl"
 SCALER_PATH = BASE_DIR / "standard_scaler.pkl"
 
-# TODO: 输入输出shapefile路径
-INPUT_SHP_PATH = BASE_DIR.parent.parent / "assets" / "input" / "waternet_new.shp"
-OUTPUT_SHP_PATH = BASE_DIR.parent.parent / "assets" / "output" / "waternet_results.shp"
+# TODO: 输入输出shapefile路径,输入路径改为前端传入
+# INPUT_SHP_PATH = BASE_DIR.parent.parent / "assets" / "input" / "waternet_new1.shp"
+OUTPUT_SHP_PATH = BASE_DIR.parent.parent / "assets" / "output" / "waternet_results1.shp"
 
 # ============================================================
 # 列名映射：shapefile列名 -> 训练时的完整列名
@@ -83,30 +103,36 @@ def load_model_and_scaler(model_path, scaler_path):
     """加载训练好的模型和标准化器"""
     print(f"模型路径: {model_path}")
     print(f"Scaler路径: {scaler_path}")
-
+    # joblib.load用于读取机器学习模型，大文件，大字典的工具函数，将模型读到内存中。
     model = joblib.load(model_path)
     scaler = joblib.load(scaler_path)
     return model, scaler
 
 
-def load_and_prepare_shapefile(shp_path, column_mapping, feature_order):
+def load_and_prepare_shapefile(shp_path, column_mapping, feature_order, front_default_values):
     """
     读取shapefile，映射列名，并按训练时的顺序排列特征
-
     参数:
         shp_path: shapefile路径
         column_mapping: 列名映射字典
         feature_order: 训练时的特征顺序列表
+        front_deaflut_values:前端传的默认值字典 例{"height":20,"density":0.5,"type":1}
 
     返回:
         gdf: GeoDataFrame（包含几何信息）
         features_df: 特征DataFrame（按正确顺序）
     """
-    # 读取shapefile
+    # 读取shapefile,gpd是geopandas的缩写
     gdf = gpd.read_file(shp_path)
     # 重命名列（shapefile列名 -> 训练列名）
     gdf_renamed = gdf.rename(columns=column_mapping)
-
+    # 缺失列自动创建+前端值填充
+    for col in feature_order:
+        if col not in gdf_renamed.columns:
+            #字段不存在，创建字段，用前端传的默认值填充
+            defalut_val = front_default_values.get(col, 0) # 没有就0填充
+            gdf_renamed[col] =defalut_val
+            print(f"自动创建缺失列：{col}，默认值={defalut_val}")
     # 提取特征列，按训练时的顺序排列
     try:
         features_df = gdf_renamed[feature_order].copy()
@@ -245,7 +271,7 @@ def main():
 
         # 2. 读取并准备shapefile数据
         gdf, features_df = load_and_prepare_shapefile(
-            INPUT_SHP_PATH, COLUMN_MAPPING, FEATURE_ORDER
+            INPUT_SHP_PATH, COLUMN_MAPPING, FEATURE_ORDER, front_values
         )
 
         # 3. 执行推理
@@ -265,6 +291,42 @@ def main():
 
         traceback.print_exc()
 
+def run_inference(INPUT_SHP_PATH,front_values):
+    """
+    供外部/前端调用的主函数
+    :param INPUT_SHP_PATH :前端传入路径
+    :param front_values:前端传入缺失字段默认值
+    """
+    try:
+        print(f"前端传入的SHP路径：{INPUT_SHP_PATH}")
+        # 1. 加载模型和scaler
+        model, scaler = load_model_and_scaler(MODEL_PATH, SCALER_PATH)
+
+        # 2. 读取并准备shapefile数据
+        gdf, features_df = load_and_prepare_shapefile(
+            INPUT_SHP_PATH, COLUMN_MAPPING, FEATURE_ORDER, front_values
+        )
+
+        # 3. 执行推理
+        probabilities = perform_inference(model, scaler, features_df)
+
+        # 4. 使用Jenks分类
+        classes, breaks = classify_by_jenks(probabilities, n_classes=5)
+
+        # 5. 保存结果
+        save_results_to_shapefile(gdf, probabilities, classes, OUTPUT_SHP_PATH)
+
+
+    except Exception as e:
+        print("\n" + "=" * 60)
+        print(f"error: {e}")
+        print("=" * 60)
+        import traceback
+        traceback.print_exc()
+
 
 if __name__ == "__main__":
-    main()
+    # print(folder)
+    path = BASE_DIR.parent.parent / "assets" / "input" / f"{folder}.shp"
+    params={"Aspect":aspect,"Curvature":curvature,"Fault distance": fault_distance,"NDVI": ndvi,"Precipitation":rainfall,"Relief amplitude":relief_amplitude}
+    run_inference(path,params)

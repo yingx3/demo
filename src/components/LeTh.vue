@@ -1497,7 +1497,7 @@
               id="name_par_gbm"
               style="
                 margin-left: 24px;
-                margin-top: -27px;
+                margin-top: -17px;
                 font-size: 18px;
                 color: #2763ca;
               "
@@ -1519,7 +1519,6 @@
                 <el-input
                   v-model="fileNameGBM"
                   placeholder="上传shp文件"
-                  readonly
                   style="width: 160px"
                 >
                   <template #append>
@@ -1553,18 +1552,72 @@
               </el-form-item>
               <div style="display: flex; justify-content: space-between">
                 <el-form-item
-                  label="占位"
-                  label-position="right"
-                  label-width="120px"
+                  label="坡向"
+                  label-position="center"
+                  label-width="72px"
                 >
-                  <el-input placeholder="------" style="width: 80px" />
+                  <el-input
+                    placeholder="150"
+                    v-model="form_BGM.aspect"
+                    style="width: 60px"
+                  />
                 </el-form-item>
                 <el-form-item
-                  label="占位"
-                  label-position="right"
+                  label="曲率"
+                  label-position="center"
                   label-width="60px"
                 >
-                  <el-input placeholder="------" style="width: 80px" />
+                  <el-input
+                    placeholder="0.002"
+                    v-model="form_BGM.curvature"
+                    style="width: 60px"
+                  />
+                </el-form-item>
+                <el-form-item
+                  label="断层距离"
+                  label-position="left"
+                  label-width="90px"
+                >
+                  <el-input
+                    placeholder="30000"
+                    v-model="form_BGM.fault_distance"
+                    style="width: 60px"
+                  />
+                </el-form-item>
+              </div>
+              <div style="display: flex; justify-content: space-between">
+                <el-form-item
+                  label="NDVI"
+                  label-position="center"
+                  label-width="72px"
+                >
+                  <el-input
+                    placeholder="0.001"
+                    v-model="form_BGM.ndvi"
+                    style="width: 60px"
+                  />
+                </el-form-item>
+                <el-form-item
+                  label="降雨量"
+                  label-position="center"
+                  label-width="70px"
+                >
+                  <el-input
+                    placeholder="700"
+                    v-model="form_BGM.rainfall"
+                    style="width: 60px"
+                  />
+                </el-form-item>
+                <el-form-item
+                  label="起伏度"
+                  label-position="left"
+                  label-width="90px"
+                >
+                  <el-input
+                    placeholder="250"
+                    v-model="form_BGM.relief_amplitude"
+                    style="width: 60px"
+                  />
                 </el-form-item>
               </div>
 
@@ -3810,6 +3863,14 @@ const form_inverseV = reactive({
   latitude: '',
   file: '',
 })
+const form_BGM = reactive({
+  aspect: '150',
+  curvature: '0.002',
+  fault_distance: '30000',
+  ndvi: '0.001',
+  rainfall: '700',
+  relief_amplitude: '250',
+})
 const isProcessing = ref(false)
 function onSubmit() {
   dialogVisible.value = false
@@ -4045,7 +4106,7 @@ const handleUploadSuccessGBM = async (response, file, fileList) => {
 
   const savedFiles = response.files || []
   try {
-    const resp = await modelService.postGBM(savedFiles)
+    const resp = await modelService.postGBM(savedFiles, form_BGM)
 
     ElMessage.closeAll()
     ElMessage({ message: '后端处理完成，正在加载图层', type: 'success' })
@@ -4472,7 +4533,7 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
   --el-dialog-bg-color: transparent;
   margin-top: 15%;
   width: 450px;
-  height: 300px;
+  height: 350px;
   background-image: url('../assets/img/fz173.png');
   background-size: 100% 100%;
 }
