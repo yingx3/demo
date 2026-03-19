@@ -22,13 +22,15 @@ warnings.filterwarnings("ignore")
 # 配置参数
 # ============================================================
 # 模型和scaler路径
+# 上级目录
+BASE_DIR = Path(__file__).parent
 # TODO: 请修改为实际路径
-MODEL_PATH = Path(r"E:\Projects\ZHLXT\算法\冰川型灾害链判识\platform\src\LightGBM.pkl")
-SCALER_PATH = Path(r"E:\Projects\ZHLXT\算法\冰川型灾害链判识\platform\src\standard_scaler.pkl")
+MODEL_PATH = BASE_DIR.parent / "LightGBM.pkl"
+SCALER_PATH = BASE_DIR.parent / "standard_scaler.pkl"
 
 # TODO: 输入输出shapefile路径
-INPUT_SHP_PATH = Path(r"E:\Projects\ZHLXT\backend\hd\data\BCNSL\waternet_new.shp")
-OUTPUT_SHP_PATH = Path(r"E:\Projects\ZHLXT\backend\hd\data\BCNSL\output\waternet_with_results.shp")
+INPUT_SHP_PATH = BASE_DIR.parent.parent / "input" "waternet_new.shp"
+OUTPUT_SHP_PATH = BASE_DIR.parent.parent / "output" "waternet_with_results.shp"
 
 # ============================================================
 # 列名映射：shapefile列名 -> 训练时的完整列名

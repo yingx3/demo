@@ -1025,7 +1025,6 @@ app.get('/glacier', async (req, res) => {
   const { rows } = await pool.query('SELECT * FROM glacier')
   res.send(rows)
 })
-
 //创建要素（create）
 app.post('/point', async (req, res) => {
   try {
@@ -1055,11 +1054,7 @@ app.post('/point', async (req, res) => {
     res.status(500).send('创建要素失败')
   }
 })
-// --- 新增：接收 GBM/Shapefile 上传并保存到固定目录 ---
-const GBM_SAVE_DIR = 'E:\\Projects\\ZHLXT\\backend\\hd\\data\\BCNSL'
-// 确保目录存在（使用文件顶部已定义的 ensureDirectoryExists）
-// ensureDirectoryExists(GBM_SAVE_DIR)
-
+const GBM_SAVE_DIR = '../../src/assets/input'
 const storageGBM = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, GBM_SAVE_DIR)
