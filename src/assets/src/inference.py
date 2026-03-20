@@ -181,31 +181,70 @@ def perform_inference(model, scaler, features_df):
     return probabilities
 
 
+# def classify_by_jenks(probabilities, n_classes=5):
+#     """
+#     使用自然间断点法将概率分为5类
+#
+#     参数:
+#         probabilities: 概率数组
+#         n_classes: 分类数量（默认5）
+#
+#     返回:
+#         class_labels: 分类标签数组
+#         breaks: 分类断点
+#     """
+#
+#     # 计算断点
+#     breaks = jenks_breaks(probabilities, n_classes=n_classes)
+#
+#     # 分类标签
+#     labels = ["极低", "低", "中等", "高", "极高"]
+#
+#     # 分配类别
+#     classes = np.digitize(probabilities, breaks[1:-1], right=False)
+#     class_labels = np.array([labels[i] for i in classes])
+#
+#     # 统计每类数量
+#     print(f"\n分类统计:")
+#     for label in labels:
+#         count = np.sum(class_labels == label)
+#         percentage = count / len(probabilities) * 100
+#         print(f"  {label:12s}: {count:6d} ({percentage:5.2f}%)")
+#     print()
+#
+#     return class_labels, breaks
+
 def classify_by_jenks(probabilities, n_classes=5):
     """
-    使用自然间断点法将概率分为5类
-
-    参数:
-        probabilities: 概率数组
-        n_classes: 分类数量（默认5）
-
-    返回:
-        class_labels: 分类标签数组
-        breaks: 分类断点
+    自适应自然断点分类：根据唯一值数量自动决定分类数和标签
+    解决：Number of class have to be an integer... 报错
     """
+    # 1. 自动获取有效分类数（取 唯一值数量 和 你传入n_classes 的最小值）
+    unique_vals = np.unique(probabilities)
+    real_n_classes = min(len(unique_vals), n_classes)
+    real_n_classes = max(real_n_classes, 1)  # 至少1类
 
-    # 计算断点
-    breaks = jenks_breaks(probabilities, n_classes=n_classes)
+    # 2. 根据分类数自动匹配标签
+    if real_n_classes == 1:
+        labels = ["低"]
+    elif real_n_classes == 2:
+        labels = ["低", "高"]
+    elif real_n_classes == 3:
+        labels = ["低", "中", "高"]
+    elif real_n_classes == 4:
+        labels = ["低", "中", "高", "极高"]
+    else:  # >=5 类，使用完整5级
+        labels = ["极低", "低", "中等", "高", "极高"]
 
-    # 分类标签
-    labels = ["极低", "低", "中等", "高", "极高"]
+    # 3. 计算自然断点（使用真实分类数）
+    breaks = jenks_breaks(probabilities, real_n_classes)
 
-    # 分配类别
+    # 4. 分配类别
     classes = np.digitize(probabilities, breaks[1:-1], right=False)
     class_labels = np.array([labels[i] for i in classes])
 
-    # 统计每类数量
-    print(f"\n分类统计:")
+    # 5. 统计输出
+    print(f"\n=== 自适应分类完成 | 分类数: {real_n_classes} ===")
     for label in labels:
         count = np.sum(class_labels == label)
         percentage = count / len(probabilities) * 100
@@ -213,7 +252,6 @@ def classify_by_jenks(probabilities, n_classes=5):
     print()
 
     return class_labels, breaks
-
 
 def save_results_to_shapefile(gdf, probabilities, classes, output_path):
     """
@@ -275,7 +313,7 @@ def main():
         )
 
         # 3. 执行推理
-        probabilities = perform_inference(model, scaler, features_df)
+
 
         # 4. 使用Jenks分类
         classes, breaks = classify_by_jenks(probabilities, n_classes=5)
@@ -309,6 +347,7 @@ def run_inference(INPUT_SHP_PATH,front_values):
 
         # 3. 执行推理
         probabilities = perform_inference(model, scaler, features_df)
+        print(probabilities)
 
         # 4. 使用Jenks分类
         classes, breaks = classify_by_jenks(probabilities, n_classes=5)
