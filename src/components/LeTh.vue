@@ -1622,7 +1622,10 @@
               </div>
 
               <el-form-item>
-                <el-button type="primary" @click="submitGBM" class="b_ex1"
+                <el-button
+                  type="primary"
+                  @click="submitGBM"
+                  style="margin-left: 240px"
                   >上传并提交</el-button
                 >
                 <el-button @click="dialogVisibleGBM = false">取消</el-button>
@@ -2099,7 +2102,6 @@
           <el-dialog
             v-model="dialogVisibleSeismic"
             title="冰川泥石流监测预警模型"
-            width="700"
             :close-on-click-modal="false"
             class="dialog_seismic"
           >
@@ -2112,7 +2114,13 @@
                   width: 100%;
                 "
               >
-                <span style="color: #ffffff; font-size: 22px; margin-left: 24px"
+                <span
+                  style="
+                    color: #ffffff;
+                    font-size: 22px;
+                    margin-left: 40px;
+                    margin-top: 10px;
+                  "
                   >冰川泥石流监测预警模型</span
                 >
                 <!-- 问号容器：定位到关闭按钮左侧 -->
@@ -2525,7 +2533,7 @@
               id="name_par_seismic"
               style="
                 margin-left: 70px;
-                margin-top: -6px;
+                margin-top: -23px;
                 font-size: 18px;
                 color: #2763ca;
               "
@@ -2535,13 +2543,12 @@
 
             <el-form
               :model="formSeismic"
-              label-width="auto"
               style="max-width: 650px"
               class="form_seismic"
             >
               <el-form-item
                 label="Excel文件"
-                label-width="123px"
+                label-width="140px"
                 label-position="right"
               >
                 <el-input
@@ -2584,12 +2591,12 @@
                   display: flex;
                   flex-direction: row;
                   justify-content: space-between;
-                  margin-bottom: 10px;
+                  margin-bottom: 0px;
                 "
               >
                 <el-form-item
-                  label="阈值(threshold)"
-                  label-width="123px"
+                  label="阈值/threshold"
+                  label-width="187px"
                   label-position="right"
                 >
                   <el-input
@@ -2597,7 +2604,7 @@
                     type="number"
                     step="0.1"
                     placeholder="2.5"
-                    style="width: 80px"
+                    style="width: 68px"
                   />
                 </el-form-item>
                 <el-form-item
@@ -2632,20 +2639,19 @@
                   display: flex;
                   flex-direction: row;
                   justify-content: space-between;
-                  margin-bottom: 10px;
                 "
               >
                 <el-form-item
                   label="分段时长(秒)"
-                  label-width="123px"
-                  label-position="right"
+                  label-width="187px"
+                  label-position="center"
                 >
                   <el-input
                     v-model="formSeismic.segment_duration"
                     type="number"
                     step="1"
                     placeholder="10"
-                    style="width: 80px"
+                    style="width: 68px"
                   />
                 </el-form-item>
                 <el-form-item
@@ -2677,7 +2683,10 @@
               </div>
 
               <el-form-item>
-                <el-button type="primary" @click="submitSeismic" class="b_ex1"
+                <el-button
+                  type="primary"
+                  @click="submitSeismic"
+                  style="margin-left: 450px"
                   >上传并提交</el-button
                 >
                 <el-button @click="dialogVisibleSeismic = false"
@@ -4623,7 +4632,7 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
   --el-dialog-bg-color: transparent;
   margin-top: 15%;
   width: 700px;
-  height: 400px;
+  height: 360px;
   background-image: url('../assets/img/fz173.png');
   background-size: 100% 100%;
 }
@@ -4820,11 +4829,6 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
 .b_ex {
   margin-left: 440px;
 }
-
-.b_ex1 {
-  margin-left: 240px;
-}
-
 .b_ex_avaflow {
   margin-left: 180px;
 }
