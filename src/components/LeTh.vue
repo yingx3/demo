@@ -3126,16 +3126,6 @@
             >
           </el-dialog>
         </div>
-        <!-- <div class="box">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <span>基于地震动信号的反演过程模型</span>
-        </div> -->
-        <!-- <div class="box">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <el-button :plain="true" @click="dialog_inverseV = true">
-            <span>冰川泥石流监测预警模型</span></el-button
-          >
-        </div> -->
         <div class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
           <el-button :plain="true" @click="dialogVisibleSeismic = true">
@@ -3777,11 +3767,6 @@
             </el-form>
           </el-dialog>
         </div>
-
-        <!-- <div class="box">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <span>基于地震动数据的灾害识别模型</span>
-        </div> -->
       </div>
       <!-- 断链防控模块 -->
       <div class="theme">
