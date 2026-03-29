@@ -2667,7 +2667,7 @@
           <span>冰川泥石流动力学模型</span>
         </div>         -->
       </div>
-     <!-- 风险评估模块 -->
+      <!-- 风险评估模块 -->
       <div class="theme">
         <div class="title">风险评估</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
@@ -4286,8 +4286,9 @@ const submit_inverseV = async () => {
   try {
     ElMessage({ message: '运行中!', type: 'success' })
     const params = { form_inverseV }
-    const response = await axios.get('node/displ_file', { params })
-    // console.log('执行结果:', response.data.rt_json)
+    // await new Promise(resolve => setTimeout(resolve, 1000)) // 等待1秒
+    const response = await axios.get('/node/displ_file', { params })
+    console.log('执行结果:', response.data.rt_json)
     // console.log('执行结果:', response.data)
     // console.log('执行结果:', response.data.fileProcessing.rt_json.rt)
 

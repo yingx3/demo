@@ -4,7 +4,9 @@ import fs from 'fs'
 import path from 'path'
 import XLSX from 'xlsx'
 import { exec } from 'child_process'
-
+import { fileURLToPath } from 'url'
+//  获取当前脚本文件所在目录（固定标准写法）
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const router = express.Router()
 
 // 文件上传配置
@@ -23,8 +25,23 @@ const upload = multer({ storage })
 let filePath
 
 // 配置路径
-const SAVE_PATH = '../../src/assets/PFTF/output'
-const TARGET_PATH = '../../src/assets/PFTF/scripts'
+const SAVE_PATH = path.join(
+  __dirname, // 当前脚本所在目录
+  '..',
+  '..',
+  '..', // 向上三级目录
+  'assets',
+  'PFTF',
+  'output', // 进入目标文件夹
+)
+const TARGET_PATH = path.join(
+  __dirname, // 当前脚本所在目录
+  '..',
+  '..',
+  'assets',
+  'PFTF',
+  'scripts', // 进入目标文件夹
+)
 const R_SCRIPT_PATH = path.join(TARGET_PATH, '1_1_input.R')
 
 // 确保目录存在
@@ -46,6 +63,7 @@ function formatUTCTimestamp(date) {
 // 读取Excel数据
 function readExcelData(filePath) {
   try {
+    console.log(`开始读取Excel文件: ${filePath}`)
     const workbook = XLSX.readFile(filePath)
     const sheetName = workbook.SheetNames[0]
     const worksheet = workbook.Sheets[sheetName]
@@ -181,7 +199,12 @@ cat("成功转换", nrow(displ_data), "条记录到RDA文件\n")
       }
       fs.writeFileSync(rScriptPath, rScriptContent, 'utf8')
 
-      const Rscript = '"D:/application/r/baseR/bin/Rscript.exe"'
+      // const Rscript = '"D:/application/r/baseR/bin/Rscript.exe"'
+      const Rscript = path.join(
+        __dirname, // 当前 JS 脚本所在目录
+        '../../', // 向上跳多级（根据你真实目录层数修改）
+        'assets/PFTF/R/R-4.5.1/bin/Rscript.exe',
+      )
       const command = `cd /d "${SAVE_PATH}" && ${Rscript} "${rScriptPath}"`
 
       console.log('正在转换为RDA格式...')
@@ -289,11 +312,16 @@ function getFiveDaysBeforeLast(lastTimestamp) {
 function modifyRScript(rScriptPath, startTime, endTime) {
   try {
     const backupPath = rScriptPath + '.backup'
+    console.log('开始修改R脚本...')
+    // console.log('备份文件路径:', backupPath)
+    // 只有备份文件不存在时，才创建备份（已存在就跳过，不报错）
     if (!fs.existsSync(backupPath)) {
-      fs.copyFileSync(rScriptPath, backupPath)
+      // 👇 加上第三个参数，允许覆盖（防止意外报错）
+      fs.copyFileSync(rScriptPath, backupPath, fs.constants.COPYFILE_EXCL)
       console.log('📦 已创建R脚本备份文件')
     }
 
+    // 读取并修改内容
     let content = fs.readFileSync(rScriptPath, 'utf8')
     content = content.replace(
       /start_of_calc <- as\.POSIXct\(".*?", tz="UTC"\)/,
@@ -319,7 +347,13 @@ function modifyRScript(rScriptPath, startTime, endTime) {
 function executeRScript(rScriptPath) {
   return new Promise((resolve, reject) => {
     try {
-      const Rscript = '"D:/application/r/baseR/bin/Rscript.exe"'
+      // const Rscript = '"D:/application/r/baseR/bin/Rscript.exe"'
+      const Rscript = path.join(
+        __dirname, // 当前 JS 脚本所在目录
+        '../../', // 向上跳多级（根据你真实目录层数修改）
+        'assets/PFTF/R/R-4.5.1/bin/Rscript.exe',
+      )
+      console.log('Rscript路径:', Rscript)
       const command = `cd /d "${path.dirname(
         rScriptPath,
       )}" && ${Rscript} "${rScriptPath}"`
@@ -369,7 +403,12 @@ router.post('/displ', upload.single('file'), (req, res) => {
     return res.status(400).json({ code: 400, message: '没有文件上传' })
   }
 
-  filePath = path.join(path.dirname(import.meta.url).replace('file:///', ''), 'uploads', req.file.originalname)
+  filePath = path.join(
+    path.dirname(import.meta.url).replace('file:///', ''),
+    '../',
+    'uploads',
+    req.file.originalname,
+  )
   console.log('保存路径：', filePath)
   res.json({
     code: 200,
@@ -381,6 +420,7 @@ router.post('/displ', upload.single('file'), (req, res) => {
 // 处理位移数据路由
 router.get('/displ_file', async (req, res) => {
   try {
+    console.log('开始处理位移数据...')
     const processedData = processHourlyData(filePath)
     const timeSeriesData = processHourlyData(filePath)
 
@@ -391,7 +431,11 @@ router.get('/displ_file', async (req, res) => {
 
     const timeRange = getCSVTimeRange(csvInfo.filepath)
     const fiveDaysBeforeLast = getFiveDaysBeforeLast(timeRange.lastTimestamp)
-    await modifyRScript(R_SCRIPT_PATH, timeRange.firstTimestamp, fiveDaysBeforeLast)
+    await modifyRScript(
+      R_SCRIPT_PATH,
+      timeRange.firstTimestamp,
+      fiveDaysBeforeLast,
+    )
     const rScriptResult = await executeRScript(R_SCRIPT_PATH)
 
     console.log('R脚本执行完毕！')
@@ -407,7 +451,7 @@ router.get('/displ_file', async (req, res) => {
     const pool = new Pool({
       user: 'postgres',
       host: 'localhost',
-      database: 'postgres',
+      database: 'postgis',
       password: '123456',
       port: 5432,
     })
@@ -421,7 +465,10 @@ router.get('/displ_file', async (req, res) => {
         WHERE ST_DWithin(geom, ST_SetSRID(ST_MakePoint($1, $2), 4326), 0.001)
         LIMIT 1
       `
-      const pointResult = await client.query(findPointQuery, [longitude, latitude])
+      const pointResult = await client.query(findPointQuery, [
+        longitude,
+        latitude,
+      ])
       let pointId
       const data_forecast = JSON.parse(data)
 
