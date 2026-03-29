@@ -1,0 +1,63 @@
+time of calculation
+2025-08-07 15:27:45.278237
+
+working directory
+E:/practice/PFTF/PFTF_1.0.0/PFTF-PFTF_1.0.0
+
+start of calculations
+2022-01-01
+
+start of simulations
+2022-02-25
+
+time_factor
+1
+
+plotting window
+180
+
+smoothing windows
+48
+
+velocity windows
+6
+12
+24
+48
+72
+
+unit_factor
+1
+
+unit_displ
+mm
+
+unit_iv
+h/m
+
+unit_exp
+h
+
+OOA adjustment option
+off
+
+supplementary plots option
+off
+
+actual time of failure
+2022-03-01
+
+preset OOA
+NA
+
+bad timestamps
+NA
+
+bad timestamp option
+off
+
+comments
+enter comments here
+
+OOA detected at
+2022-02-23 06:00:00

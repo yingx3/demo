@@ -1,0 +1,7 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+plots
+*.Rproj
+1_0_analysis-loop.R
