@@ -1142,6 +1142,7 @@ async function loadShpFromBackend({
       clampToGround: false,
       stroke: Cesium.Color.WHITE.withAlpha(0),
       fill: Cesium.Color.WHITE.withAlpha(0),
+      clampToGround: true,
     })
 
     viewer.value.dataSources.add(dataSource)
@@ -1271,14 +1272,7 @@ function applySuscSymbology(dataSource) {
       )
 
       if (e.polygon) {
-        // 若需要 outline 可显式设置高度（注意性能与贴地行为）
-        try {
-          e.polygon.height = new Cesium.ConstantProperty(0)
-        } catch (err) {
-          try {
-            e.polygon.height = 0.1
-          } catch (e) {}
-        }
+        // 移除高度设置，保持 clampToGround 效果
         e.polygon.material = new Cesium.ColorMaterialProperty(color)
         e.polygon.outline = true
         e.polygon.fill = true
@@ -4401,7 +4395,7 @@ function handleSeismicResult(payload) {
   try {
     const detected = payload?.detected
     const lon = Number(payload?.lon) || 97.5
-    const lat = Number(payload?.lat) || 31.0
+    const lat = Number(payload?.lat) || 30.5
     const imageUrl = detected ? '/CS/img/warning_red.png' : '/CS/img/safe.png' // 统一大小写路径
     viewer.value.entities.add({
       id: `seismic_${Date.now()}`,
@@ -4419,7 +4413,7 @@ function handleSeismicResult(payload) {
     })
 
     viewer.value.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(lon, lat, 5000), // 高度可按需调整
+      destination: Cesium.Cartesian3.fromDegrees(lon, lat-0.05, 10000), // 高度可按需调整
       orientation: {
         heading: Cesium.Math.toRadians(0.0),
         pitch: Cesium.Math.toRadians(-35.0),

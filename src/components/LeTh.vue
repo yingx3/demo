@@ -2,9 +2,9 @@
   <div class="left">
     <div class="name">数值计算模型集</div>
     <div class="total_theme">
-      <!-- 发育规律与风险源判识 -->
+      <!-- 灾害链风险源判识模块 -->
       <div class="theme">
-        <div class="title">发育规律与风险源判识</div>
+        <div class="title">灾害链风险源判识</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
         <div class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
@@ -1634,1077 +1634,9 @@
           </el-dialog>
         </div>
       </div>
-      <!-- 突发性灾害监测预警 -->
+      <!-- 灾害链模拟模块  -->
       <div class="theme">
-        <div class="title">突发性灾害监测预警</div>
-        <img id="bar" src="../assets/img/left_line.png" alt="" />
-        <div class="box p_bottom box-used">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <el-button :plain="true" @click="dialog_inverseV = true">
-            <span>基于位移监测滑坡预警</span></el-button
-          >
-          <el-dialog
-            v-model="dialog_inverseV"
-            title="滑坡预警（测试版）"
-            width="500"
-            :close-on-click-modal="false"
-            class="dialog_inverseV"
-          >
-            <template #header>
-              <div
-                style="
-                  display: flex;
-                  align-items: center;
-                  justify-content: space-between;
-                  width: 100%;
-                "
-              >
-                <span style="color: #ffffff; font-size: 24px"
-                  >基于位移监测滑坡预警</span
-                >
-                <!-- 问号容器：定位到关闭按钮左侧 -->
-                <div style="position: relative; right: -4px; top: -11.5px">
-                  <el-tooltip content="帮助" placement="top">
-                    <el-icon
-                      class="help-icon"
-                      @click="openHelpDialog_inverseV = true"
-                    >
-                      <QuestionFilled />
-                    </el-icon>
-                  </el-tooltip>
-                </div>
-                <el-dialog
-                  v-model="openHelpDialog_inverseV"
-                  width="1200px"
-                  max-height="600px"
-                  :close-on-click-modal="false"
-                  position="absolute"
-                  top="70px"
-                  style="
-                    background-image: url('./CS/src/assets/img/fz174.png');
-                    background-size: cover; /* 让背景图铺满对话框 */
-                    background-position: center; /* 背景图居中 */
-                    background-color: rgba(0, 0, 130, 0.5);
-                  "
-                >
-                  <template #title>
-                    <span
-                      style="
-                        color: white;
-                        font-size: 26px;
-                        display: block;
-                        text-align: center;
-                      "
-                      >基于位移监测滑坡预警说明文档</span
-                    >
-                  </template>
-                  <div
-                    id="landslide-warning-model-info"
-                    style="
-                      width: 100%;
-                      max-width: 1000px;
-                      margin: 0 auto;
-                      padding: 20px;
-                      font-family: Arial, sans-serif;
-                      max-height: 600px;
-                      overflow-y: auto;
-                      -ms-overflow-style: none;
-                      scrollbar-width: none;
-                    "
-                  >
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      一、模型目的
-                    </h2>
-                    <p
-                      style="
-                        font-size: 16px;
-                        line-height: 1.5;
-                        color: #666;
-                        margin-bottom: 15px;
-                      "
-                    >
-                      基于位移传感器监测的时序数据，通过<strong>速度倒数法</strong>预测滑坡发生时间：将滑坡过程划分为恒速移动、变速移动、滑坡三阶段，检测变速起始点（OOA）到速度倒数为零的距离，判断滑坡发生时机，实现滑坡预警。
-                    </p>
-
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      二、所需数据/核心模块
-                    </h2>
-
-                    <h3
-                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
-                    >
-                      （一）核心输入数据
-                    </h3>
-                    <p
-                      style="
-                        font-size: 16px;
-                        line-height: 1.5;
-                        color: #666;
-                        margin-bottom: 8px;
-                      "
-                    >
-                      时序位移监测数据，包含两类字段：
-                    </p>
-                    <ul
-                      style="
-                        font-size: 16px;
-                        line-height: 1.6;
-                        color: #666;
-                        margin: 8px 0 15px;
-                        padding-left: 25px;
-                      "
-                    >
-                      <li style="margin-bottom: 5px">
-                        <strong>timestamp</strong>：时间戳（如 2022-01-01
-                        00:00:00）；
-                      </li>
-                      <li>
-                        <strong>displ</strong>：传感器检测到的位移值（数值型）。
-                      </li>
-                    </ul>
-
-                    <h3
-                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
-                    >
-                      （二）R语言核心脚本模块
-                    </h3>
-                    <table
-                      style="
-                        width: 100%;
-                        border-collapse: collapse;
-                        font-size: 16px;
-                        color: #666;
-                        margin: 8px 0 15px;
-                      "
-                    >
-                      <tbody>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                              font-weight: bold;
-                            "
-                          >
-                            脚本文件
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                              font-weight: bold;
-                            "
-                          >
-                            功能
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            1_1_input.R
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            主配置文件（参数入口）
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            2_data-input.R
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            数据读取与预处理
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            4_calculate_v-iv.R
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            计算速度/逆速度
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            6_OOA-detection_auto_2.R
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            自动检测加速起始点（OOA）
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            7_calculate_tof.R
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            计算破坏时间（滑坡发生时间）
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            plot7_combi.R
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            生成综合预测图表
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            99_1_new-iteration_run.R
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            增量更新预测（新数据到来时）
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      三、生成结果
-                    </h2>
-                    <ol
-                      style="
-                        font-size: 16px;
-                        line-height: 1.6;
-                        color: #666;
-                        margin: 8px 0 15px;
-                        padding-left: 25px;
-                      "
-                    >
-                      <li style="margin-bottom: 5px">
-                        <strong>量化结果</strong
-                        >：滑坡破坏时间（失效时间）预测值、预测不确定性区间、速度/逆速度计算结果、OOA检测结果；
-                      </li>
-                      <li style="margin-bottom: 5px">
-                        <strong>可视化结果</strong>：
-                        <ul style="margin: 4px 0 0 20px; padding: 0">
-                          <li>
-                            综合预测图表：位移-时间曲线、逆速度曲线、OOA检测标记；
-                          </li>
-                          <li>
-                            统计图表：失效时间分布箱线图、预期寿命图表、速度区间可视化图；
-                          </li>
-                          <li>
-                            案例专项图：PFTF结果图（含失效窗口、速度区间、四分位距等）。
-                          </li>
-                        </ul>
-                      </li>
-                      <li>
-                        <strong>功能扩展</strong
-                        >：支持新数据增量更新预测，输出实时预警相关的时间轴、不确定性分析结果。
-                      </li>
-                    </ol>
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      四、运行结果示例
-                    </h2>
-                    <p
-                      style="
-                        font-size: 16px;
-                        line-height: 1.5;
-                        color: #666;
-                        margin-bottom: 15px;
-                      "
-                    >
-                      以下是模型运行后的示例输出结果：
-                    </p>
-                    <img
-                      src="/img/pftf.png"
-                      alt="运行结果示例"
-                      style="
-                        width: 80%;
-                        height: auto;
-                        border: 1px solid #ddd;
-                        border-radius: 8px;
-                        margin: 10px 0;
-                        display: block;
-                        margin-left: auto;
-                        margin-right: auto;
-                        filter: none;
-                      "
-                    />
-                  </div>
-                </el-dialog>
-              </div>
-            </template>
-            <el-form
-              :model="form_inverseV"
-              label-width="auto"
-              style="max-width: 600px"
-              class="form_inverseV"
-            >
-              <el-form-item label="地点" class="">
-                <el-input v-model="form_inverseV.name" placeholder="林芝" />
-              </el-form-item>
-
-              <el-form-item label="位移文件">
-                <el-input
-                  v-model="fileName_inverseV"
-                  placeholder="上传文件"
-                  readonly
-                  style="width: 100px"
-                >
-                  <template #append>
-                    <el-upload
-                      ref="uploadRef"
-                      action="/node/displ"
-                      name="file"
-                      :auto-upload="false"
-                      :show-file-list="false"
-                      @change="handleFileChange"
-                    >
-                      <el-button
-                        style="
-                          border: none;
-                          color: white;
-                          padding: 0;
-                          margin-left: 8px;
-                        "
-                        @click.stop="triggerUpload"
-                      >
-                        <i class="iconfont icon-daoru"></i>
-                      </el-button>
-                    </el-upload>
-                  </template>
-                </el-input>
-              </el-form-item>
-
-              <el-form-item label="经度" class="">
-                <el-input
-                  v-model="form_inverseV.longitude"
-                  placeholder="十进制度"
-                />
-              </el-form-item>
-              <el-form-item label="纬度" class="">
-                <el-input
-                  v-model="form_inverseV.latitude"
-                  placeholder="十进制度"
-                />
-              </el-form-item>
-            </el-form>
-            <el-button
-              type="primary"
-              @click="(submit_inverseV(), (dialog_inverseV = false))"
-              style="margin-left: 280px; margin-top: 20px"
-              >运行</el-button
-            >
-            <el-button style="margin-top: 20px" @click="dialog_inverseV = false"
-              >取消</el-button
-            >
-          </el-dialog>
-        </div>
-        <!-- <div class="box">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <span>基于地震动信号的反演过程模型</span>
-        </div> -->
-        <!-- <div class="box">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <el-button :plain="true" @click="dialog_inverseV = true">
-            <span>冰川泥石流监测预警模型</span></el-button
-          >
-        </div> -->
-        <div class="box box-used p_bottom">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <el-button :plain="true" @click="dialogVisibleSeismic = true">
-            <span>冰川泥石流监测预警模型</span>
-          </el-button>
-          <el-dialog
-            v-model="dialogVisibleSeismic"
-            title="冰川泥石流监测预警模型"
-            :close-on-click-modal="false"
-            class="dialog_seismic"
-          >
-            <template #header>
-              <div
-                style="
-                  display: flex;
-                  align-items: center;
-                  justify-content: space-between;
-                  width: 100%;
-                "
-              >
-                <span
-                  style="
-                    color: #ffffff;
-                    font-size: 22px;
-                    margin-left: 40px;
-                    margin-top: 10px;
-                  "
-                  >冰川泥石流监测预警模型</span
-                >
-                <!-- 问号容器：定位到关闭按钮左侧 -->
-                <div style="position: relative; right: -8px; top: -12px">
-                  <el-tooltip content="帮助" placement="top">
-                    <el-icon
-                      class="help-icon"
-                      @click="openHelpDialog_seismic = true"
-                    >
-                      <QuestionFilled />
-                    </el-icon>
-                  </el-tooltip>
-                </div>
-                <el-dialog
-                  v-model="openHelpDialog_seismic"
-                  width="1200px"
-                  max-height="600px"
-                  :close-on-click-modal="false"
-                  position="absolute"
-                  top="70px"
-                  style="
-                    background-image: url('./CS/src/assets/img/fz174.png');
-                    background-size: cover; /* 让背景图铺满对话框 */
-                    background-position: center; /* 背景图居中 */
-                    background-color: rgba(0, 0, 130, 0.5);
-                  "
-                >
-                  <template #title>
-                    <span
-                      style="
-                        color: white;
-                        font-size: 26px;
-                        display: block;
-                        text-align: center;
-                      "
-                      >冰川泥石流监测预警模型说明文档</span
-                    >
-                  </template>
-                  <div
-                    id="debris-flow-signal-detection-info"
-                    style="
-                      width: 100%;
-                      max-width: 1000px;
-                      margin: 0 auto;
-                      padding: 20px;
-                      font-family: Arial, sans-serif;
-                      max-height: 600px;
-                      overflow-y: auto;
-                      -ms-overflow-style: none;
-                      scrollbar-width: none;
-                    "
-                  >
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      一、脚本目的
-                    </h2>
-                    <p
-                      style="
-                        font-size: 16px;
-                        line-height: 1.5;
-                        color: #666;
-                        margin-bottom: 15px;
-                      "
-                    >
-                      处理传感器采集的地震波/地声/振动等时序信号，基于<strong>改进的STA/LTA（短长时窗平均比）算法</strong>自动识别泥石流事件；通过二次校验（分段趋势分析）排除误报，输出检测结果并可视化波形与检测状态。
-                    </p>
-
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      二、参数/环境/输入要求
-                    </h2>
-
-                    <h3
-                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
-                    >
-                      （一）环境依赖
-                    </h3>
-
-                    <ul
-                      style="
-                        font-size: 16px;
-                        line-height: 1.6;
-                        color: #666;
-                        margin: 8px 0 15px;
-                        padding-left: 25px;
-                      "
-                    >
-                      <li style="margin-bottom: 4px">
-                        numpy：高性能数值计算与数组操作
-                      </li>
-                      <li style="margin-bottom: 4px">
-                        pandas：读取Excel/CSV格式数据
-                      </li>
-                      <li style="margin-bottom: 4px">
-                        matplotlib：绘制波形与检测状态可视化图表
-                      </li>
-                      <li>openpyxl：pandas读取.xlsx文件的引擎</li>
-                    </ul>
-
-                    <h3
-                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
-                    >
-                      （二）关键参数（代码第39-45行）
-                    </h3>
-                    <table
-                      style="
-                        width: 100%;
-                        border-collapse: collapse;
-                        font-size: 16px;
-                        color: #666;
-                        margin: 8px 0 15px;
-                      "
-                    >
-                      <tbody>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                              font-weight: bold;
-                            "
-                          >
-                            参数名
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                              font-weight: bold;
-                            "
-                          >
-                            默认值
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                              font-weight: bold;
-                            "
-                          >
-                            说明
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            threshold
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            2.5
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            触发阈值，STA/LTA比值超此值启动二次校验
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            short_window
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            30秒
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            短时窗，计算瞬时能量变化（反应灵敏）
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            long_window
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            240秒
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            长时窗，计算背景噪声水平（反应迟钝）
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            segment_duration
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            10秒
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            校验分段时长，触发后切分后续时间窗
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            total_duration
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            60秒
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            校验总时长，触发后向后检查的总时间
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            sampling_rate
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            100Hz
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            采样率，需与硬件采集参数一致
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-
-                    <h3
-                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
-                    >
-                      （三）输入数据要求
-                    </h3>
-                    <ul
-                      style="
-                        font-size: 16px;
-                        line-height: 1.6;
-                        color: #666;
-                        margin: 8px 0 15px;
-                        padding-left: 25px;
-                      "
-                    >
-                      <li style="margin-bottom: 5px">
-                        文件格式：Excel（.xlsx）格式的传感器波形数据；
-                      </li>
-                      <li style="margin-bottom: 5px">
-                        数据结构：默认跳过第一行表头，读取第1列作为信号数值；若第一列为时间戳，需修改代码列索引；
-                      </li>
-                      <li>
-                        使用前需修改代码第30行的
-                        <code>filepath</code>
-                        为实际数据文件路径。
-                      </li>
-                    </ul>
-
-                    <h3
-                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
-                    >
-                      （四）核心判定逻辑
-                    </h3>
-                    <ol
-                      style="
-                        font-size: 16px;
-                        line-height: 1.6;
-                        color: #666;
-                        margin: 8px 0 15px;
-                        padding-left: 25px;
-                      "
-                    >
-                      <li style="margin-bottom: 4px">
-                        能量计算：原始数据平方后，计算STA（短时平均能量）、LTA（长时平均能量）；
-                      </li>
-                      <li style="margin-bottom: 4px">
-                        初筛：Ratio=STA/LTA > threshold 时，进入二次校验；
-                      </li>
-                      <li style="margin-bottom: 4px">
-                        二次校验：锁定LTA背景值，截取后续60秒数据并切分为10秒片段，计算各片段均值与锁定LTA的比值；
-                      </li>
-                      <li>
-                        最终判定：所有片段比值>threshold
-                        <strong>且</strong> 片段能量增长趋势次数≥3次。
-                      </li>
-                    </ol>
-
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      三、生成结果
-                    </h2>
-                    <ol
-                      style="
-                        font-size: 16px;
-                        line-height: 1.6;
-                        color: #666;
-                        margin: 8px 0 15px;
-                        padding-left: 25px;
-                      "
-                    >
-                      <li style="margin-bottom: 5px">
-                        <strong>控制台输出</strong
-                        >：是否检测到泥石流、检测到的信号数据点索引；
-                      </li>
-                      <li>
-                        <strong>可视化结果</strong
-                        >：弹出波形与检测状态图表，其中灰色曲线为原始信号波形，红色脉冲为判定的泥石流时间段（值为1）。
-                      </li>
-                    </ol>
-                  </div>
-                </el-dialog>
-              </div>
-            </template>
-            <p
-              id="name_par_seismic"
-              style="
-                margin-left: 70px;
-                margin-top: -23px;
-                font-size: 18px;
-                color: #2763ca;
-              "
-            >
-              模型参数
-            </p>
-
-            <el-form
-              :model="formSeismic"
-              style="max-width: 650px"
-              class="form_seismic"
-            >
-              <el-form-item
-                label="Excel文件"
-                label-width="140px"
-                label-position="right"
-              >
-                <el-input
-                  v-model="fileNameSeismic"
-                  placeholder="上传.xlsx文件"
-                  readonly
-                  style="width: 160px"
-                >
-                  <template #append>
-                    <el-upload
-                      ref="uploadRefSeismic"
-                      action="http://localhost:3000/node/upload_excel"
-                      name="file"
-                      :auto-upload="false"
-                      :multiple="false"
-                      :show-file-list="false"
-                      accept=".xlsx"
-                      :data="uploadDataSeismic"
-                      @change="handleFileChangeSeismic"
-                      @success="handleUploadSuccessSeismic"
-                      @error="handleUploadErrorSeismic"
-                    >
-                      <el-button
-                        style="
-                          border: none;
-                          color: white;
-                          padding: 0;
-                          margin-left: 8px;
-                        "
-                        @click.stop="triggerUploadSeismic"
-                      >
-                        <i class="iconfont icon-daoru"></i>
-                      </el-button>
-                    </el-upload>
-                  </template>
-                </el-input>
-              </el-form-item>
-              <div
-                style="
-                  display: flex;
-                  flex-direction: row;
-                  justify-content: space-between;
-                  margin-bottom: 0px;
-                "
-              >
-                <el-form-item
-                  label="阈值/threshold"
-                  label-width="187px"
-                  label-position="right"
-                >
-                  <el-input
-                    v-model="formSeismic.threshold"
-                    type="number"
-                    step="0.1"
-                    placeholder="2.5"
-                    style="width: 68px"
-                  />
-                </el-form-item>
-                <el-form-item
-                  label="短时窗(秒)"
-                  label-width="123px"
-                  label-position="right"
-                >
-                  <el-input
-                    v-model="formSeismic.short_window"
-                    type="number"
-                    step="1"
-                    placeholder="30"
-                    style="width: 80px"
-                  />
-                </el-form-item>
-                <el-form-item
-                  label="长时窗(秒)"
-                  label-width="123px"
-                  label-position="right"
-                >
-                  <el-input
-                    v-model="formSeismic.long_window"
-                    type="number"
-                    step="1"
-                    placeholder="240"
-                    style="width: 80px"
-                  />
-                </el-form-item>
-              </div>
-              <div
-                style="
-                  display: flex;
-                  flex-direction: row;
-                  justify-content: space-between;
-                "
-              >
-                <el-form-item
-                  label="分段时长(秒)"
-                  label-width="187px"
-                  label-position="center"
-                >
-                  <el-input
-                    v-model="formSeismic.segment_duration"
-                    type="number"
-                    step="1"
-                    placeholder="10"
-                    style="width: 68px"
-                  />
-                </el-form-item>
-                <el-form-item
-                  label="总时长(秒)"
-                  label-width="123px"
-                  label-position="right"
-                >
-                  <el-input
-                    v-model="formSeismic.total_duration"
-                    type="number"
-                    step="1"
-                    placeholder="60"
-                    style="width: 80px"
-                  />
-                </el-form-item>
-                <el-form-item
-                  label="采样率(Hz)"
-                  label-width="123px"
-                  label-position="right"
-                >
-                  <el-input
-                    v-model="formSeismic.sampling_rate"
-                    type="number"
-                    step="1"
-                    placeholder="100"
-                    style="width: 80px"
-                  />
-                </el-form-item>
-              </div>
-
-              <el-form-item>
-                <el-button
-                  type="primary"
-                  @click="submitSeismic"
-                  style="margin-left: 450px"
-                  >上传并提交</el-button
-                >
-                <el-button @click="dialogVisibleSeismic = false"
-                  >取消</el-button
-                >
-              </el-form-item>
-            </el-form>
-          </el-dialog>
-        </div>
-
-        <!-- <div class="box">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <span>基于地震动数据的灾害识别模型</span>
-        </div> -->
-      </div>
-      <!-- 动力学过程模型模拟 -->
-      <div class="theme">
-        <div class="title">动力学过程模型模拟</div>
+        <div class="title">灾害链模拟</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
         <div class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
@@ -3735,18 +2667,1125 @@
           <span>冰川泥石流动力学模型</span>
         </div>         -->
       </div>
-      <!-- 脆弱性分析 -->
+     <!-- 风险评估模块 -->
       <div class="theme">
-        <div class="title">脆弱性分析</div>
+        <div class="title">风险评估</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
         <div class="box">
           <img src="../assets/img/云反射率.png" alt="" />
           <span>全域风险脆弱性分析</span>
         </div>
       </div>
-
+      <!-- 监测预警模块 -->
       <div class="theme">
-        <div class="title">调控技术与防控体系</div>
+        <div class="title">监测预警</div>
+        <img id="bar" src="../assets/img/left_line.png" alt="" />
+        <div class="box p_bottom box-used">
+          <img src="../assets/img/云反射率.png" alt="" />
+          <el-button :plain="true" @click="dialog_inverseV = true">
+            <span>基于位移监测滑坡预警</span></el-button
+          >
+          <el-dialog
+            v-model="dialog_inverseV"
+            title="滑坡预警（测试版）"
+            width="500"
+            :close-on-click-modal="false"
+            class="dialog_inverseV"
+          >
+            <template #header>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  width: 100%;
+                "
+              >
+                <span style="color: #ffffff; font-size: 24px"
+                  >基于位移监测滑坡预警</span
+                >
+                <!-- 问号容器：定位到关闭按钮左侧 -->
+                <div style="position: relative; right: -4px; top: -11.5px">
+                  <el-tooltip content="帮助" placement="top">
+                    <el-icon
+                      class="help-icon"
+                      @click="openHelpDialog_inverseV = true"
+                    >
+                      <QuestionFilled />
+                    </el-icon>
+                  </el-tooltip>
+                </div>
+                <el-dialog
+                  v-model="openHelpDialog_inverseV"
+                  width="1200px"
+                  max-height="600px"
+                  :close-on-click-modal="false"
+                  position="absolute"
+                  top="70px"
+                  style="
+                    background-image: url('./CS/src/assets/img/fz174.png');
+                    background-size: cover; /* 让背景图铺满对话框 */
+                    background-position: center; /* 背景图居中 */
+                    background-color: rgba(0, 0, 130, 0.5);
+                  "
+                >
+                  <template #title>
+                    <span
+                      style="
+                        color: white;
+                        font-size: 26px;
+                        display: block;
+                        text-align: center;
+                      "
+                      >基于位移监测滑坡预警说明文档</span
+                    >
+                  </template>
+                  <div
+                    id="landslide-warning-model-info"
+                    style="
+                      width: 100%;
+                      max-width: 1000px;
+                      margin: 0 auto;
+                      padding: 20px;
+                      font-family: Arial, sans-serif;
+                      max-height: 600px;
+                      overflow-y: auto;
+                      -ms-overflow-style: none;
+                      scrollbar-width: none;
+                    "
+                  >
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
+                      一、模型目的
+                    </h2>
+                    <p
+                      style="
+                        font-size: 16px;
+                        line-height: 1.5;
+                        color: #666;
+                        margin-bottom: 15px;
+                      "
+                    >
+                      基于位移传感器监测的时序数据，通过<strong>速度倒数法</strong>预测滑坡发生时间：将滑坡过程划分为恒速移动、变速移动、滑坡三阶段，检测变速起始点（OOA）到速度倒数为零的距离，判断滑坡发生时机，实现滑坡预警。
+                    </p>
+
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
+                      二、所需数据/核心模块
+                    </h2>
+
+                    <h3
+                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
+                    >
+                      （一）核心输入数据
+                    </h3>
+                    <p
+                      style="
+                        font-size: 16px;
+                        line-height: 1.5;
+                        color: #666;
+                        margin-bottom: 8px;
+                      "
+                    >
+                      时序位移监测数据，包含两类字段：
+                    </p>
+                    <ul
+                      style="
+                        font-size: 16px;
+                        line-height: 1.6;
+                        color: #666;
+                        margin: 8px 0 15px;
+                        padding-left: 25px;
+                      "
+                    >
+                      <li style="margin-bottom: 5px">
+                        <strong>timestamp</strong>：时间戳（如 2022-01-01
+                        00:00:00）；
+                      </li>
+                      <li>
+                        <strong>displ</strong>：传感器检测到的位移值（数值型）。
+                      </li>
+                    </ul>
+
+                    <h3
+                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
+                    >
+                      （二）R语言核心脚本模块
+                    </h3>
+                    <table
+                      style="
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-size: 16px;
+                        color: #666;
+                        margin: 8px 0 15px;
+                      "
+                    >
+                      <tbody>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                              font-weight: bold;
+                            "
+                          >
+                            脚本文件
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                              font-weight: bold;
+                            "
+                          >
+                            功能
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            1_1_input.R
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            主配置文件（参数入口）
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            2_data-input.R
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            数据读取与预处理
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            4_calculate_v-iv.R
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            计算速度/逆速度
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            6_OOA-detection_auto_2.R
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            自动检测加速起始点（OOA）
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            7_calculate_tof.R
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            计算破坏时间（滑坡发生时间）
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            plot7_combi.R
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            生成综合预测图表
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            99_1_new-iteration_run.R
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            增量更新预测（新数据到来时）
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
+                      三、生成结果
+                    </h2>
+                    <ol
+                      style="
+                        font-size: 16px;
+                        line-height: 1.6;
+                        color: #666;
+                        margin: 8px 0 15px;
+                        padding-left: 25px;
+                      "
+                    >
+                      <li style="margin-bottom: 5px">
+                        <strong>量化结果</strong
+                        >：滑坡破坏时间（失效时间）预测值、预测不确定性区间、速度/逆速度计算结果、OOA检测结果；
+                      </li>
+                      <li style="margin-bottom: 5px">
+                        <strong>可视化结果</strong>：
+                        <ul style="margin: 4px 0 0 20px; padding: 0">
+                          <li>
+                            综合预测图表：位移-时间曲线、逆速度曲线、OOA检测标记；
+                          </li>
+                          <li>
+                            统计图表：失效时间分布箱线图、预期寿命图表、速度区间可视化图；
+                          </li>
+                          <li>
+                            案例专项图：PFTF结果图（含失效窗口、速度区间、四分位距等）。
+                          </li>
+                        </ul>
+                      </li>
+                      <li>
+                        <strong>功能扩展</strong
+                        >：支持新数据增量更新预测，输出实时预警相关的时间轴、不确定性分析结果。
+                      </li>
+                    </ol>
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
+                      四、运行结果示例
+                    </h2>
+                    <p
+                      style="
+                        font-size: 16px;
+                        line-height: 1.5;
+                        color: #666;
+                        margin-bottom: 15px;
+                      "
+                    >
+                      以下是模型运行后的示例输出结果：
+                    </p>
+                    <img
+                      src="/img/pftf.png"
+                      alt="运行结果示例"
+                      style="
+                        width: 80%;
+                        height: auto;
+                        border: 1px solid #ddd;
+                        border-radius: 8px;
+                        margin: 10px 0;
+                        display: block;
+                        margin-left: auto;
+                        margin-right: auto;
+                        filter: none;
+                      "
+                    />
+                  </div>
+                </el-dialog>
+              </div>
+            </template>
+            <el-form
+              :model="form_inverseV"
+              label-width="auto"
+              style="max-width: 600px"
+              class="form_inverseV"
+            >
+              <el-form-item label="地点" class="">
+                <el-input v-model="form_inverseV.name" placeholder="林芝" />
+              </el-form-item>
+
+              <el-form-item label="位移文件">
+                <el-input
+                  v-model="fileName_inverseV"
+                  placeholder="上传文件"
+                  readonly
+                  style="width: 100px"
+                >
+                  <template #append>
+                    <el-upload
+                      ref="uploadRef"
+                      action="/node/displ"
+                      name="file"
+                      :auto-upload="false"
+                      :show-file-list="false"
+                      @change="handleFileChange"
+                    >
+                      <el-button
+                        style="
+                          border: none;
+                          color: white;
+                          padding: 0;
+                          margin-left: 8px;
+                        "
+                        @click.stop="triggerUpload"
+                      >
+                        <i class="iconfont icon-daoru"></i>
+                      </el-button>
+                    </el-upload>
+                  </template>
+                </el-input>
+              </el-form-item>
+
+              <el-form-item label="经度" class="">
+                <el-input
+                  v-model="form_inverseV.longitude"
+                  placeholder="十进制度"
+                />
+              </el-form-item>
+              <el-form-item label="纬度" class="">
+                <el-input
+                  v-model="form_inverseV.latitude"
+                  placeholder="十进制度"
+                />
+              </el-form-item>
+            </el-form>
+            <el-button
+              type="primary"
+              @click="(submit_inverseV(), (dialog_inverseV = false))"
+              style="margin-left: 280px; margin-top: 20px"
+              >运行</el-button
+            >
+            <el-button style="margin-top: 20px" @click="dialog_inverseV = false"
+              >取消</el-button
+            >
+          </el-dialog>
+        </div>
+        <!-- <div class="box">
+          <img src="../assets/img/云反射率.png" alt="" />
+          <span>基于地震动信号的反演过程模型</span>
+        </div> -->
+        <!-- <div class="box">
+          <img src="../assets/img/云反射率.png" alt="" />
+          <el-button :plain="true" @click="dialog_inverseV = true">
+            <span>冰川泥石流监测预警模型</span></el-button
+          >
+        </div> -->
+        <div class="box box-used p_bottom">
+          <img src="../assets/img/云反射率.png" alt="" />
+          <el-button :plain="true" @click="dialogVisibleSeismic = true">
+            <span>冰川泥石流监测预警模型</span>
+          </el-button>
+          <el-dialog
+            v-model="dialogVisibleSeismic"
+            title="冰川泥石流监测预警模型"
+            :close-on-click-modal="false"
+            class="dialog_seismic"
+          >
+            <template #header>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  width: 100%;
+                "
+              >
+                <span
+                  style="
+                    color: #ffffff;
+                    font-size: 22px;
+                    margin-left: 40px;
+                    margin-top: 10px;
+                  "
+                  >冰川泥石流监测预警模型</span
+                >
+                <!-- 问号容器：定位到关闭按钮左侧 -->
+                <div style="position: relative; right: -8px; top: -12px">
+                  <el-tooltip content="帮助" placement="top">
+                    <el-icon
+                      class="help-icon"
+                      @click="openHelpDialog_seismic = true"
+                    >
+                      <QuestionFilled />
+                    </el-icon>
+                  </el-tooltip>
+                </div>
+                <el-dialog
+                  v-model="openHelpDialog_seismic"
+                  width="1200px"
+                  max-height="600px"
+                  :close-on-click-modal="false"
+                  position="absolute"
+                  top="70px"
+                  style="
+                    background-image: url('./CS/src/assets/img/fz174.png');
+                    background-size: cover; /* 让背景图铺满对话框 */
+                    background-position: center; /* 背景图居中 */
+                    background-color: rgba(0, 0, 130, 0.5);
+                  "
+                >
+                  <template #title>
+                    <span
+                      style="
+                        color: white;
+                        font-size: 26px;
+                        display: block;
+                        text-align: center;
+                      "
+                      >冰川泥石流监测预警模型说明文档</span
+                    >
+                  </template>
+                  <div
+                    id="debris-flow-signal-detection-info"
+                    style="
+                      width: 100%;
+                      max-width: 1000px;
+                      margin: 0 auto;
+                      padding: 20px;
+                      font-family: Arial, sans-serif;
+                      max-height: 600px;
+                      overflow-y: auto;
+                      -ms-overflow-style: none;
+                      scrollbar-width: none;
+                    "
+                  >
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
+                      一、脚本目的
+                    </h2>
+                    <p
+                      style="
+                        font-size: 16px;
+                        line-height: 1.5;
+                        color: #666;
+                        margin-bottom: 15px;
+                      "
+                    >
+                      处理传感器采集的地震波/地声/振动等时序信号，基于<strong>改进的STA/LTA（短长时窗平均比）算法</strong>自动识别泥石流事件；通过二次校验（分段趋势分析）排除误报，输出检测结果并可视化波形与检测状态。
+                    </p>
+
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
+                      二、参数/环境/输入要求
+                    </h2>
+
+                    <h3
+                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
+                    >
+                      （一）环境依赖
+                    </h3>
+
+                    <ul
+                      style="
+                        font-size: 16px;
+                        line-height: 1.6;
+                        color: #666;
+                        margin: 8px 0 15px;
+                        padding-left: 25px;
+                      "
+                    >
+                      <li style="margin-bottom: 4px">
+                        numpy：高性能数值计算与数组操作
+                      </li>
+                      <li style="margin-bottom: 4px">
+                        pandas：读取Excel/CSV格式数据
+                      </li>
+                      <li style="margin-bottom: 4px">
+                        matplotlib：绘制波形与检测状态可视化图表
+                      </li>
+                      <li>openpyxl：pandas读取.xlsx文件的引擎</li>
+                    </ul>
+
+                    <h3
+                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
+                    >
+                      （二）关键参数（代码第39-45行）
+                    </h3>
+                    <table
+                      style="
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-size: 16px;
+                        color: #666;
+                        margin: 8px 0 15px;
+                      "
+                    >
+                      <tbody>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                              font-weight: bold;
+                            "
+                          >
+                            参数名
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                              font-weight: bold;
+                            "
+                          >
+                            默认值
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                              font-weight: bold;
+                            "
+                          >
+                            说明
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            threshold
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            2.5
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            触发阈值，STA/LTA比值超此值启动二次校验
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            short_window
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            30秒
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            短时窗，计算瞬时能量变化（反应灵敏）
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            long_window
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            240秒
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            长时窗，计算背景噪声水平（反应迟钝）
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            segment_duration
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            10秒
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            校验分段时长，触发后切分后续时间窗
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            total_duration
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            60秒
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            校验总时长，触发后向后检查的总时间
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            sampling_rate
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            100Hz
+                          </td>
+                          <td
+                            style="
+                              border: 1px solid #ddd;
+                              padding: 10px;
+                              text-align: left;
+                            "
+                          >
+                            采样率，需与硬件采集参数一致
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <h3
+                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
+                    >
+                      （三）输入数据要求
+                    </h3>
+                    <ul
+                      style="
+                        font-size: 16px;
+                        line-height: 1.6;
+                        color: #666;
+                        margin: 8px 0 15px;
+                        padding-left: 25px;
+                      "
+                    >
+                      <li style="margin-bottom: 5px">
+                        文件格式：Excel（.xlsx）格式的传感器波形数据；
+                      </li>
+                      <li style="margin-bottom: 5px">
+                        数据结构：默认跳过第一行表头，读取第1列作为信号数值；若第一列为时间戳，需修改代码列索引；
+                      </li>
+                      <li>
+                        使用前需修改代码第30行的
+                        <code>filepath</code>
+                        为实际数据文件路径。
+                      </li>
+                    </ul>
+
+                    <h3
+                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
+                    >
+                      （四）核心判定逻辑
+                    </h3>
+                    <ol
+                      style="
+                        font-size: 16px;
+                        line-height: 1.6;
+                        color: #666;
+                        margin: 8px 0 15px;
+                        padding-left: 25px;
+                      "
+                    >
+                      <li style="margin-bottom: 4px">
+                        能量计算：原始数据平方后，计算STA（短时平均能量）、LTA（长时平均能量）；
+                      </li>
+                      <li style="margin-bottom: 4px">
+                        初筛：Ratio=STA/LTA > threshold 时，进入二次校验；
+                      </li>
+                      <li style="margin-bottom: 4px">
+                        二次校验：锁定LTA背景值，截取后续60秒数据并切分为10秒片段，计算各片段均值与锁定LTA的比值；
+                      </li>
+                      <li>
+                        最终判定：所有片段比值>threshold
+                        <strong>且</strong> 片段能量增长趋势次数≥3次。
+                      </li>
+                    </ol>
+
+                    <h2
+                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
+                    >
+                      三、生成结果
+                    </h2>
+                    <ol
+                      style="
+                        font-size: 16px;
+                        line-height: 1.6;
+                        color: #666;
+                        margin: 8px 0 15px;
+                        padding-left: 25px;
+                      "
+                    >
+                      <li style="margin-bottom: 5px">
+                        <strong>控制台输出</strong
+                        >：是否检测到泥石流、检测到的信号数据点索引；
+                      </li>
+                      <li>
+                        <strong>可视化结果</strong
+                        >：弹出波形与检测状态图表，其中灰色曲线为原始信号波形，红色脉冲为判定的泥石流时间段（值为1）。
+                      </li>
+                    </ol>
+                  </div>
+                </el-dialog>
+              </div>
+            </template>
+            <p
+              id="name_par_seismic"
+              style="
+                margin-left: 70px;
+                margin-top: -23px;
+                font-size: 18px;
+                color: #2763ca;
+              "
+            >
+              模型参数
+            </p>
+
+            <el-form
+              :model="formSeismic"
+              style="max-width: 650px"
+              class="form_seismic"
+            >
+              <div
+                style="
+                  display: flex;
+                  flex-direction: row;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 10px;
+                "
+              >
+                <el-form-item
+                  label="Excel文件"
+                  label-width="100px"
+                  label-position="right"
+                >
+                  <el-input
+                    v-model="fileNameSeismic"
+                    placeholder="上传.xlsx文件"
+                    readonly
+                    style="width: 160px"
+                  >
+                    <template #append>
+                      <el-upload
+                        ref="uploadRefSeismic"
+                        action="http://localhost:3000/node/upload_excel"
+                        name="file"
+                        :auto-upload="false"
+                        :multiple="false"
+                        :show-file-list="false"
+                        accept=".xlsx"
+                        :data="uploadDataSeismic"
+                        @change="handleFileChangeSeismic"
+                        @success="handleUploadSuccessSeismic"
+                        @error="handleUploadErrorSeismic"
+                      >
+                        <el-button
+                          style="
+                            border: none;
+                            color: white;
+                            padding: 0;
+                            margin-left: 8px;
+                          "
+                          @click.stop="triggerUploadSeismic"
+                        >
+                          <i class="iconfont icon-daoru"></i>
+                        </el-button>
+                      </el-upload>
+                    </template>
+                  </el-input>
+                </el-form-item>
+
+                <el-form-item
+                  label="经度"
+                  label-width="67px"
+                  label-position="right"
+                >
+                  <el-input
+                    v-model="formSeismic.longitude"
+                    type="number"
+                    step="0.000001"
+                    placeholder="97.5"
+                    style="width: 100px"
+                  />
+                </el-form-item>
+
+                <el-form-item
+                  label="纬度"
+                  label-width="50px"
+                  label-position="right"
+                >
+                  <el-input
+                    v-model="formSeismic.latitude"
+                    type="number"
+                    step="0.000001"
+                    placeholder="31.0"
+                    style="width: 100px"
+                  />
+                </el-form-item>
+              </div>
+
+              <div
+                style="
+                  display: flex;
+                  flex-direction: row;
+                  justify-content: space-between;
+                  margin-bottom: 0px;
+                "
+              >
+                <el-form-item
+                  label="阈值/threshold"
+                  label-width="187px"
+                  label-position="right"
+                >
+                  <el-input
+                    v-model="formSeismic.threshold"
+                    type="number"
+                    step="0.1"
+                    placeholder="2.5"
+                    style="width: 68px"
+                  />
+                </el-form-item>
+                <el-form-item
+                  label="短时窗(秒)"
+                  label-width="123px"
+                  label-position="right"
+                >
+                  <el-input
+                    v-model="formSeismic.short_window"
+                    type="number"
+                    step="1"
+                    placeholder="30"
+                    style="width: 80px"
+                  />
+                </el-form-item>
+                <el-form-item
+                  label="长时窗(秒)"
+                  label-width="123px"
+                  label-position="right"
+                >
+                  <el-input
+                    v-model="formSeismic.long_window"
+                    type="number"
+                    step="1"
+                    placeholder="240"
+                    style="width: 80px"
+                  />
+                </el-form-item>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  flex-direction: row;
+                  justify-content: space-between;
+                "
+              >
+                <el-form-item
+                  label="分段时长(秒)"
+                  label-width="187px"
+                  label-position="center"
+                >
+                  <el-input
+                    v-model="formSeismic.segment_duration"
+                    type="number"
+                    step="1"
+                    placeholder="10"
+                    style="width: 68px"
+                  />
+                </el-form-item>
+                <el-form-item
+                  label="总时长(秒)"
+                  label-width="123px"
+                  label-position="right"
+                >
+                  <el-input
+                    v-model="formSeismic.total_duration"
+                    type="number"
+                    step="1"
+                    placeholder="60"
+                    style="width: 80px"
+                  />
+                </el-form-item>
+                <el-form-item
+                  label="采样率(Hz)"
+                  label-width="123px"
+                  label-position="right"
+                >
+                  <el-input
+                    v-model="formSeismic.sampling_rate"
+                    type="number"
+                    step="1"
+                    placeholder="100"
+                    style="width: 80px"
+                  />
+                </el-form-item>
+              </div>
+
+              <el-form-item>
+                <el-button
+                  type="primary"
+                  @click="submitSeismic"
+                  style="margin-left: 450px"
+                  >上传并提交</el-button
+                >
+                <el-button @click="dialogVisibleSeismic = false"
+                  >取消</el-button
+                >
+              </el-form-item>
+            </el-form>
+          </el-dialog>
+        </div>
+
+        <!-- <div class="box">
+          <img src="../assets/img/云反射率.png" alt="" />
+          <span>基于地震动数据的灾害识别模型</span>
+        </div> -->
+      </div>
+      <!-- 断链防控模块 -->
+      <div class="theme">
+        <div class="title">断链防控</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
         <div class="box">
           <img src="../assets/img/云反射率.png" alt="" />
@@ -3849,6 +3888,8 @@ const formSeismic = reactive({
   segment_duration: 10,
   total_duration: 60,
   sampling_rate: 100,
+  longitude: 97.5,
+  latitude: 31.0,
 }) // 修复 "formSeismic" 未定义（如果模板中用了 :model="formSeismic"）
 // 返回给 el-upload 的附加表单字段
 const uploadDataGBM = () => {
@@ -4362,11 +4403,11 @@ const handleUploadSuccessSeismic = async (response, file, fileList) => {
 
     // 不在子组件直接操作 Cesium，改为发事件给父组件由父组件渲染
     const detected = resp?.detected || false
-    // 传回检测结果和可选坐标（若后端返回）
+    // 使用前端输入的经纬度，而不是后端返回的
     const payload = {
       detected,
-      lon: resp?.lon ?? 97.5,
-      lat: resp?.lat ?? 31.0,
+      lon: Number(formSeismic.longitude) || 97.5,
+      lat: Number(formSeismic.latitude) || 31.0,
       info: resp,
     }
     // 发出事件，父组件监听 seismicResult
