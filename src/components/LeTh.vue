@@ -4381,6 +4381,9 @@ const handleUploadSuccessSeismic = async (response, file, fileList) => {
   console.log('Seismic upload success resp:', response)
 
   const savedFile = response.file // 单文件
+  console.log(savedFile)
+  // {originalFileName: '20250918_test.xlsx', savedPath: '..\\..\\src\\assets\\input\\20250918_test.xlsx'}
+  console.log(file, fileList)
   try {
     const resp = await modelService.postSeismic(savedFile, formSeismic)
 

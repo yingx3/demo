@@ -2,7 +2,7 @@ import express from 'express'
 import multer from 'multer'
 import fs from 'fs'
 import path from 'path'
-
+import { fileURLToPath } from 'url'
 const router = express.Router()
 
 // GBM shapefile 上传配置
@@ -18,7 +18,9 @@ const storageGBM = multer.diskStorage({
 const uploadGBM = multer({ storage: storageGBM })
 
 // Seismic Excel 上传配置
-const SEISMIC_SAVE_DIR = 'E:\\Projects\\ZHLXT\\backend\\hd\\data\\seismic'
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const SEISMIC_SAVE_DIR = '../../src/assets/input'
+
 const storageSeismic = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, SEISMIC_SAVE_DIR)
@@ -65,7 +67,12 @@ router.post('/node/upload_excel', uploadSeismic.single('file'), (req, res) => {
 
     const savedFile = {
       originalFileName: req.file.originalname,
-      savedPath: path.join(SEISMIC_SAVE_DIR, req.file.originalname),
+      savedPath: path.join(
+        __dirname,
+        '../',
+        SEISMIC_SAVE_DIR,
+        req.file.originalname,
+      ),
     }
     console.log('Seismic Excel 保存：', savedFile)
 
