@@ -24,3 +24,5 @@ config.local.js
 *.njsproj
 *.sln
 *.sw?
+cs_test.xlsx
+20250918_test.xlsx

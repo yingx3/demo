@@ -4378,12 +4378,11 @@ const handleUploadSuccessSeismic = async (response, file, fileList) => {
     type: 'info',
     duration: 0,
   })
-  console.log('Seismic upload success resp:', response)
+  // console.log('Seismic upload success resp:', response)
 
   const savedFile = response.file // 单文件
-  console.log(savedFile)
-  // {originalFileName: '20250918_test.xlsx', savedPath: '..\\..\\src\\assets\\input\\20250918_test.xlsx'}
-  console.log(file, fileList)
+  // console.log(savedFile)
+  // console.log(file, fileList)
   try {
     const resp = await modelService.postSeismic(savedFile, formSeismic)
 
@@ -4392,12 +4391,15 @@ const handleUploadSuccessSeismic = async (response, file, fileList) => {
 
     // 不在子组件直接操作 Cesium，改为发事件给父组件由父组件渲染
     const detected = resp?.detected || false
+    const echarts_data = JSON.parse(resp.echarts_data)
+    // const data = await resp.json() // 将响应转换为 JSON
     // 使用前端输入的经纬度，而不是后端返回的
     const payload = {
       detected,
       lon: Number(formSeismic.longitude) || 97.5,
       lat: Number(formSeismic.latitude) || 31.0,
       info: resp,
+      echarts_data,
     }
     // 发出事件，父组件监听 seismicResult
     $emit('seismicResult', payload)
@@ -4906,7 +4908,6 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
   0% {
     transform: translateX(100%);
   }
-
   100% {
     transform: translateX(-100%);
   }
