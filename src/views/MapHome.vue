@@ -432,7 +432,7 @@
       ></div>
     </div>
   </el-dialog>
-  <el-drawer v-model="drawer" direction="ttb" resizable>
+  <el-drawer v-model="drawer" direction="ttb" resizable size="60%">
     <div>
       <el-button type="primary" @click="drawer_seismic('data')"
         >seismic_rawdata</el-button
@@ -440,7 +440,7 @@
       <el-button type="primary" @click="drawer_seismic('ratio')"
         >seismic_ratio</el-button
       >
-      <el-button type="primary" @click="drawer_seismic('result_array')"
+      <el-button type="primary" @click="drawer_seismic('result')"
         >seismic_result</el-button
       >
     </div>
@@ -4476,7 +4476,7 @@ function handleSeismicResult(payload) {
 //使用echart绘制seismic图表
 let seismic_chart = null
 function drawSeismicChart(d) {
-  console.log(d)
+  // console.log(d)
   const dataType = d || 'data'
   let seismic_data
   switch (dataType) {
@@ -4492,7 +4492,7 @@ function drawSeismicChart(d) {
     default:
       seismic_data = echarts_data.data // 默认使用 data
   }
-
+  console.log(seismic_data)
   // 检查数据是否存在
   if (!seismic_data || !Array.isArray(seismic_data)) {
     console.error('数据不存在或格式错误')
@@ -4518,7 +4518,7 @@ function drawSeismicChart(d) {
           },
           title: {
             left: 'center',
-            text: 'Seismic_rawdata ',
+            text: `Seismic_${dataType}`,
           },
           toolbox: {
             feature: {
@@ -4545,7 +4545,7 @@ function drawSeismicChart(d) {
           },
           series: [
             {
-              name: 'Seismic_rawdata',
+              name: `Seismic_${dataType}`,
               type: 'line',
               smooth: false,
               symbol: 'none',
