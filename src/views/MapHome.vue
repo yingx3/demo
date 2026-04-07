@@ -432,6 +432,20 @@
       ></div>
     </div>
   </el-dialog>
+  <el-drawer v-model="drawer" direction="ttb" resizable>
+    <div>
+      <el-button type="primary" @click="drawer_seismic('data')"
+        >seismic_rawdata</el-button
+      >
+      <el-button type="primary" @click="drawer_seismic('ratio')"
+        >seismic_ratio</el-button
+      >
+      <el-button type="primary" @click="drawer_seismic('result_array')"
+        >seismic_result</el-button
+      >
+    </div>
+    <div id="seismic-chart" style="width: 100%; height: 500px"></div>
+  </el-drawer>
 </template>
 <script setup>
 // import wkb from 'wkb'
@@ -487,6 +501,7 @@ import {
   addLayerDZDdevice,
   removeLayerDZDdevice,
 } from '../services/deviceService.js'
+import { ElMessageBox } from 'element-plus'
 // import { Popover } from 'ant-design-vue'
 
 // import type { TableColumnCtx } from 'element-plus'
@@ -557,7 +572,7 @@ const form_disastersearch = reactive({
 })
 
 // 响应式数据
-
+const drawer = ref(false)
 const popupVisible = ref(false)
 const currentEntity = ref(null)
 const currentRecords = ref([])
@@ -4390,15 +4405,17 @@ const cleanentity = () => {
   squareStore.closeSquare()
   squareStore.closeRisk()
 }
-
+var echarts_data = ''
 function handleSeismicResult(payload) {
   try {
+    echarts_data = payload.echarts_data
     const detected = payload?.detected
     const lon = Number(payload?.lon) || 97.5
     const lat = Number(payload?.lat) || 30.5
     const imageUrl = detected ? '/CS/img/warning_red.png' : '/CS/img/safe.png' // 统一大小写路径
     viewer.value.entities.add({
-      id: `seismic_${Date.now()}`,
+      // id: `seismic_${Date.now()}`,
+      id: 'seismic',
       position: Cesium.Cartesian3.fromDegrees(lon, lat),
       billboard: {
         image: imageUrl,
@@ -4413,7 +4430,7 @@ function handleSeismicResult(payload) {
     })
 
     viewer.value.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(lon, lat-0.05, 10000), // 高度可按需调整
+      destination: Cesium.Cartesian3.fromDegrees(lon, lat - 0.05, 10000), // 高度可按需调整
       orientation: {
         heading: Cesium.Math.toRadians(0.0),
         pitch: Cesium.Math.toRadians(-35.0),
@@ -4432,9 +4449,129 @@ function handleSeismicResult(payload) {
     } else {
       ElMessage({ message: '未检测到异常', type: 'success' })
     }
+    //监听seismic鼠标点击事件,
+    const handler_seismic = new Cesium.ScreenSpaceEventHandler(
+      viewer.value.scene.canvas,
+    )
+    handler_seismic.setInputAction(e => {
+      //获取点击位置
+      // console.log(echarts_data)
+      const pick = viewer.value.scene.pick(e.position)
+      // console.log(pick.id._id)
+      if (pick.id._id == 'seismic') {
+        console.log(echarts_data)
+        //绘制图表
+        drawSeismicChart()
+
+        //销毁监听
+        // handler_seismic.destroy()
+      } else {
+        // handler_seismic.destroy()
+      }
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
   } catch (e) {
     console.error('handleSeismicResult error', e)
   }
+}
+//使用echart绘制seismic图表
+let seismic_chart = null
+function drawSeismicChart(d) {
+  console.log(d)
+  const dataType = d || 'data'
+  let seismic_data
+  switch (dataType) {
+    case 'data':
+      seismic_data = echarts_data.data
+      break
+    case 'ratio':
+      seismic_data = echarts_data.ratio
+      break
+    case 'result':
+      seismic_data = echarts_data.result_array
+      break
+    default:
+      seismic_data = echarts_data.data // 默认使用 data
+  }
+
+  // 检查数据是否存在
+  if (!seismic_data || !Array.isArray(seismic_data)) {
+    console.error('数据不存在或格式错误')
+    return
+  }
+  drawer.value = true
+  // console.log(echarts_data.data)
+  nextTick(() => {
+    const seismic_container = document.getElementById('seismic-chart')
+
+    // 检查 DOM 元素是否存在
+    if (seismic_container) {
+      try {
+        seismic_chart = echarts.init(seismic_container)
+
+        // 配置图表
+        const option = {
+          tooltip: {
+            trigger: 'axis',
+            position: function (pt) {
+              return [pt[0], '10%']
+            },
+          },
+          title: {
+            left: 'center',
+            text: 'Seismic_rawdata ',
+          },
+          toolbox: {
+            feature: {
+              dataZoom: {
+                yAxisIndex: 'none',
+              },
+              restore: {},
+              saveAsImage: {},
+            },
+          },
+          xAxis: {
+            name: 'x',
+            type: 'category',
+            minorTick: {
+              show: true,
+            },
+          },
+          yAxis: {
+            name: 'y',
+
+            minorTick: {
+              show: true,
+            },
+          },
+          series: [
+            {
+              name: 'Seismic_rawdata',
+              type: 'line',
+              smooth: false,
+              symbol: 'none',
+              areaStyle: {},
+              data: seismic_data.map((item, index) => [index, item]), // 使用索引作为 x 轴
+            },
+          ],
+        }
+
+        seismic_chart.setOption(option)
+      } catch (error) {
+        console.error('ECharts 初始化失败:', error)
+      }
+    } else {
+      console.error('DOM 元素不存在')
+    }
+  })
+}
+function drawer_seismic(data) {
+  // console.log('点击事件的：', data)
+  const seismic = document.getElementById('seismic-chart')
+  if (seismic) {
+    seismic_chart.dispose()
+    // console.log('销毁图表')
+  }
+  drawSeismicChart(data)
 }
 </script>
 <style lang="scss" scoped>
