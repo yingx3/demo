@@ -29,6 +29,7 @@
     "multer": "^2.0.2",
     "pg": "^8.16.3",
     "pinia": "^2.2.8",
+    "shpjs": "^6.2.0",
     "sockjs-client": "^1.6.1",
     "turf": "^3.0.14",
     "vite-plugin-cesium": "^1.2.23",

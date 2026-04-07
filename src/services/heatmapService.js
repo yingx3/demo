@@ -29,6 +29,7 @@ export async function loadHeatmap(viewer, index, base) {
 export async function loadHeatmapFlood(viewer, index) {
   try {
     const geoJson = await Cesium.Resource.fetchJson(`/ng/flood/flood_output${index}.geojson`)
+    console.log('geoJson', geoJson)
     const list = geoJson.features.map(feature => ({
       lnglat: feature.geometry.coordinates,
       value: feature.properties.value,

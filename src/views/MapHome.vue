@@ -692,6 +692,12 @@ const checkedLayers = (ps, node) => {
     case 17:
       removeLayer_glacier()
       break
+    case 114:
+      removeLayer_building()
+      break
+    case 115:
+      removeLayer_population()
+      break
     case 131:
       viewer.value.entities.removeById('2')
       break
@@ -779,6 +785,12 @@ const checkedLayers = (ps, node) => {
           break
         case 17:
           addLayer_glacier()
+          break
+        case 114:
+          addLayer_building()
+          break
+        case 115:
+          addLayer_population()
           break
         case 131:
           // console.log('3小时图层打开')
@@ -2775,6 +2787,123 @@ const removeLayer_glacier = () => {
     if (e.glacierTag) {
       viewer.value.entities.remove(e)
     }
+  }
+}
+
+//添加建筑数据
+const addLayer_building = async () => {
+  try {
+    // 使用现有的ghpzhl.geojson文件
+    const geojsonPath = '/CS/json/ygBuildings.geojson'
+    console.log('GeoJSON文件路径:', geojsonPath)
+    
+    // 先获取文件内容，检查是否为有效JSON
+    const response = await fetch(geojsonPath)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    const text = await response.text()
+    console.log('文件内容前100字符:', text.substring(0, 100))
+    
+    // 尝试解析JSON
+    const geojson = JSON.parse(text)
+    console.log('GeoJSON解析成功')
+
+    // 使用Cesium加载GeoJSON对象
+    const dataSource = await Cesium.GeoJsonDataSource.load(geojson, {
+      clampToGround: true,
+      outline: false,
+      fill: Cesium.Color.BLUE.withAlpha(0.5),
+    })
+
+    viewer.value.dataSources.add(dataSource)
+
+    const entities = dataSource.entities.values
+    entities.forEach(entity => {
+      entity.buildingTag = true
+    })
+
+    viewer.value.flyTo(dataSource)
+    ElMessage.success('建筑数据加载完成')
+  } catch (error) {
+    console.error('加载建筑数据失败:', error)
+    ElMessage.error(`加载建筑数据失败: ${error.message || error}`)
+  }
+}
+
+
+//移除建筑数据
+const removeLayer_building = () => {
+  const entities = viewer.value.entities.values
+  for (let i = entities.length - 1; i >= 0; i--) {
+    const e = entities[i]
+    if (e.buildingTag) {
+      viewer.value.entities.remove(e)
+    }
+  }
+  ElMessage.success('建筑数据已移除')
+}
+
+//添加人口数据
+const addLayer_population = () => {
+  try {
+    // 使用本地TIFF文件路径
+    const tiffPath = '/CS/tiff/pop_LinZhi.tif'
+    console.log('人口数据TIFF路径:', tiffPath)
+    
+    // 使用Cesium的SingleTileImageryProvider加载单张TIFF图片
+    const imageryProvider = new Cesium.SingleTileImageryProvider({
+      url: tiffPath,
+      rectangle: Cesium.Rectangle.fromDegrees(
+        94.730835,
+        29.606009, // 西南经度, 西南纬度
+        95.417971,
+        29.959721, // 东北经度, 东北纬度
+      ),
+    })
+    
+    const layers = viewer.value.scene.imageryLayers
+    const addedLayer = layers.addImageryProvider(imageryProvider)
+    
+    // 为图层添加标签，方便后续移除
+    addedLayer.populationTag = true
+    
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+      //相机的姿态
+      orientation: {
+        heading: Cesium.Math.toRadians(56.34), //朝向
+        pitch: Cesium.Math.toRadians(-31), //俯仰
+        roll: 0.0, //滚转
+      },
+    })
+    ElMessage.success('人口数据加载完成')
+  } catch (error) {
+    console.error('加载人口数据失败:', error)
+    ElMessage.error(`加载人口数据失败: ${error.message || error}`)
+  }
+}
+
+//移除人口数据
+const removeLayer_population = () => {
+  try {
+    // 假设 viewer 是您的 Cesium Viewer 对象
+    const imageryLayers = viewer.value.scene.imageryLayers
+
+    // 遍历所有图层，找到带有populationTag标签的图层并移除
+    for (let i = 0; i < imageryLayers.length; i++) {
+      const layer = imageryLayers.get(i)
+
+      if (layer.populationTag) {
+        imageryLayers.remove(layer)
+        break // 移除后退出循环
+      }
+    }
+    ElMessage.success('人口数据已移除')
+  } catch (error) {
+    console.error('移除人口数据失败:', error)
+    ElMessage.error(`移除人口数据失败: ${error.message || error}`)
   }
 }
 //加载全国气象站

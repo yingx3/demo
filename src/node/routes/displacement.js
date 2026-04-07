@@ -451,7 +451,7 @@ router.get('/displ_file', async (req, res) => {
     const pool = new Pool({
       user: 'postgres',
       host: 'localhost',
-      database: 'postgis',
+      database: 'postgres',
       password: '123456',
       port: 5432,
     })

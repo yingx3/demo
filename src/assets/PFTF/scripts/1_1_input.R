@@ -9,7 +9,7 @@
 
 ##input data==========
 #set working directory
-setwd("D:/practice/PFTF/PFTF_1.0.0/PFTF-PFTF_1.0.0") #<-- set your pathname here
+setwd("E:/Projects/ZHLXT/算法/基于位移监测滑坡预警/PFTF_1.0.0/PFTF_1.0.0/PFTF-PFTF_1.0.0") #<-- set your pathname here
 
 #set start of calculations
 #as.POSIXct("YYYY-MM-DD HH:MM", tz="UTC")
