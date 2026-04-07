@@ -4404,7 +4404,10 @@ const cleanentity = () => {
   // 7. 关闭风险/方框等 UI 状态
   squareStore.closeSquare()
   squareStore.closeRisk()
+  //移除事件handler_seismic
+  handler_seismic.value.destroy()
 }
+const handler_seismic = ref('')
 var echarts_data = ''
 function handleSeismicResult(payload) {
   try {
@@ -4450,10 +4453,10 @@ function handleSeismicResult(payload) {
       ElMessage({ message: '未检测到异常', type: 'success' })
     }
     //监听seismic鼠标点击事件,
-    const handler_seismic = new Cesium.ScreenSpaceEventHandler(
+    handler_seismic.value = new Cesium.ScreenSpaceEventHandler(
       viewer.value.scene.canvas,
     )
-    handler_seismic.setInputAction(e => {
+    handler_seismic.value.setInputAction(e => {
       //获取点击位置
       // console.log(echarts_data)
       const pick = viewer.value.scene.pick(e.position)
@@ -4462,11 +4465,6 @@ function handleSeismicResult(payload) {
         console.log(echarts_data)
         //绘制图表
         drawSeismicChart()
-
-        //销毁监听
-        // handler_seismic.destroy()
-      } else {
-        // handler_seismic.destroy()
       }
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
   } catch (e) {
@@ -4492,7 +4490,7 @@ function drawSeismicChart(d) {
     default:
       seismic_data = echarts_data.data // 默认使用 data
   }
-  console.log(seismic_data)
+  // console.log(seismic_data)
   // 检查数据是否存在
   if (!seismic_data || !Array.isArray(seismic_data)) {
     console.error('数据不存在或格式错误')
