@@ -435,13 +435,13 @@
   <el-drawer v-model="drawer" direction="ttb" resizable size="60%">
     <div>
       <el-button type="primary" @click="drawer_seismic('data')"
-        >seismic_rawdata</el-button
+        >地震仪原数据</el-button
       >
       <el-button type="primary" @click="drawer_seismic('ratio')"
-        >seismic_ratio</el-button
+        >比率</el-button
       >
       <el-button type="primary" @click="drawer_seismic('result')"
-        >seismic_result</el-button
+        >结果</el-button
       >
     </div>
     <div id="seismic-chart" style="width: 100%; height: 500px"></div>
@@ -4516,7 +4516,7 @@ function drawSeismicChart(d) {
           },
           title: {
             left: 'center',
-            text: `Seismic_${dataType}`,
+            text: `${dataType === 'data' ? '地震仪原数据' : dataType === 'ratio' ? '比率' : '结果'}`,
           },
           toolbox: {
             feature: {
@@ -4543,7 +4543,7 @@ function drawSeismicChart(d) {
           },
           series: [
             {
-              name: `Seismic_${dataType}`,
+              name: `${dataType === 'data' ? '地震仪原数据' : dataType === 'ratio' ? '比率' : '结果'}`,
               type: 'line',
               smooth: false,
               symbol: 'none',
