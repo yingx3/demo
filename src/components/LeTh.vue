@@ -2658,14 +2658,258 @@
             </el-form>
           </el-dialog>
         </div>
-        <!-- <div class="box">
+        <div class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
-          <span>冰岩崩起动和冰岩碎屑流运动模型</span>
-        </div> -->
-        <!-- <div class="box">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <span>冰川泥石流动力学模型</span>
-        </div>         -->
+          <el-button :plain="true" @click="dialog_avainit = true">
+            <span>冰岩崩起动模型</span>
+          </el-button>
+          <el-dialog
+            v-model="dialog_avainit"
+            title="冰岩崩起动模型"
+            width="500"
+            :close-on-click-modal="false"
+            class="dialog_avainit"
+          >
+            <template #header>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  width: 100%;
+                "
+              >
+                <span style="color: #ffffff; font-size: 24px"
+                  >冰岩崩起动模型</span
+                >
+                <!-- 问号容器：定位到关闭按钮左侧 -->
+                <div style="position: relative; right: -3px; top: -28.5px">
+                  <el-tooltip content="帮助" placement="top">
+                    <el-icon
+                      class="help-icon"
+                      @click="openHelpDialog_flood = true"
+                    >
+                      <QuestionFilled />
+                    </el-icon>
+                  </el-tooltip>
+                </div>
+              </div>
+            </template>
+            <div style="margin-left: 25px">
+              <el-radio-group v-model="radio_avainit" size="large">
+                <el-radio :value="1">顺层</el-radio>
+                <el-radio :value="2">反倾</el-radio>
+                <el-radio :value="3">楔形</el-radio>
+              </el-radio-group>
+            </div>
+            <el-form
+              :model="form_avainit"
+              label-width="auto"
+              style="max-width: 600px"
+              class="form_flood"
+              v-if="radio_avainit == 1"
+            >
+              <el-form-item label="融冰时长" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.melt_duration"
+                  placeholder="20"
+                />
+              </el-form-item>
+              <el-form-item label="边坡角度" class="form1_flood">
+                <el-input v-model="form_avainit.slope_angle" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="滑面角" class="form1_flood">
+                <el-input v-model="form_avainit.slide_angle" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="冰层厚度" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.ice_thickness"
+                  placeholder="20"
+                />
+              </el-form-item>
+              <el-form-item label="裂隙高度" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.fissure_height"
+                  placeholder="20"
+                />
+              </el-form-item>
+              <el-form-item label="滑面长度" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.slide_length"
+                  placeholder="20"
+                />
+              </el-form-item>
+              <el-form-item label="内聚力" class="form1_flood">
+                <el-input v-model="form_avainit.cohesion" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="内摩擦角" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.friction_angle"
+                  placeholder="20"
+                />
+              </el-form-item>
+              <el-form-item label="岩体重度" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.rock_density"
+                  placeholder="20"
+                />
+              </el-form-item>
+              <el-form-item label="渗透系数" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.permeability"
+                  placeholder="20"
+                />
+              </el-form-item>
+
+              <el-form-item>
+                <el-button
+                  type="primary"
+                  class="b_ex_avaflow"
+                  @click="sumbit_avainit"
+                  >运行</el-button
+                >
+                <el-button @click="dialog_avainit = false">取消</el-button>
+              </el-form-item>
+            </el-form>
+            <el-form
+              :model="form_avainit"
+              label-width="auto"
+              style="max-width: 600px"
+              class="form_flood"
+              v-if="radio_avainit == 2"
+            >
+              <el-form-item label="融冰时长" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.melt_duration"
+                  placeholder="20"
+                />
+              </el-form-item>
+              <el-form-item label="边坡角度" class="form1_flood">
+                <el-input v-model="form_avainit.slope_angle" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="反倾角" class="form1_flood">
+                <el-input v-model="form_avainit.slide_angle" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="冰层厚度" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.ice_thickness"
+                  placeholder="20"
+                />
+              </el-form-item>
+              <el-form-item label="边坡高度" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.fissure_height"
+                  placeholder="20"
+                />
+              </el-form-item>
+              <el-form-item label="层面间隔" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.slide_length"
+                  placeholder="20"
+                />
+              </el-form-item>
+              <el-form-item label="内聚力" class="form1_flood">
+                <el-input v-model="form_avainit.cohesion" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="内摩擦角" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.friction_angle"
+                  placeholder="20"
+                />
+              </el-form-item>
+              <el-form-item label="岩体重度" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.rock_density"
+                  placeholder="20"
+                />
+              </el-form-item>
+              <el-form-item label="渗透系数" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.permeability"
+                  placeholder="20"
+                />
+              </el-form-item>
+
+              <el-form-item>
+                <el-button type="primary" class="b_ex_avaflow">运行</el-button>
+                <el-button @click="dialog_avainit = false">取消</el-button>
+              </el-form-item>
+            </el-form>
+            <el-form
+              :model="form_avainit"
+              label-width="auto"
+              style="max-width: 600px"
+              class="form_flood"
+              v-if="radio_avainit == 3"
+            >
+              <el-form-item label="融冰时长" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.melt_duration"
+                  placeholder="20"
+                />
+              </el-form-item>
+              <el-form-item label="边坡角度" class="form1_flood">
+                <el-input v-model="form_avainit.slope_angle" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="法向量" class="form1_flood">
+                <el-input v-model="form_avainit.slide_angle" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="冰层厚度" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.ice_thickness"
+                  placeholder="20"
+                />
+              </el-form-item>
+              <el-form-item label="面积" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.fissure_height"
+                  placeholder="20"
+                />
+              </el-form-item>
+              <el-form-item label="边坡高度" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.slide_length"
+                  placeholder="20"
+                />
+              </el-form-item>
+              <el-form-item label="裂隙/中线" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.slide_length"
+                  placeholder="20"
+                />
+              </el-form-item>
+              <el-form-item label="内聚力" class="form1_flood">
+                <el-input v-model="form_avainit.cohesion" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="内摩擦角" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.friction_angle"
+                  placeholder="20"
+                />
+              </el-form-item>
+              <el-form-item label="岩体重度" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.rock_density"
+                  placeholder="20"
+                />
+              </el-form-item>
+              <el-form-item label="渗透系数" class="form1_flood">
+                <el-input
+                  v-model="form_avainit.permeability"
+                  placeholder="20"
+                  style="width: 60px"
+                />
+              </el-form-item>
+
+              <el-form-item>
+                <el-button type="primary">运行</el-button>
+                <el-button @click="dialog_avainit = false"
+                  >取消</el-button
+                ></el-form-item
+              >
+            </el-form>
+          </el-dialog>
+        </div>
       </div>
       <!-- 风险评估模块 -->
       <div class="theme">
@@ -3843,6 +4087,7 @@ const dialogVisible1 = ref(false)
 const dialogVisibleGBM = ref(false)
 const dialogVisible2 = ref(false)
 const dialog_inverseV = ref(false)
+const dialog_avainit = ref(false)
 const openHelpDialog_fxy = ref(false)
 const openHelpDialog_sh = ref(false)
 const openHelpDialog_flood = ref(false)
@@ -3860,6 +4105,19 @@ const formGBM = reactive({
   // 前端不用把 targetFolder 强行传死，若后端需要可以传；这里演示也可以传
   targetFolder: './src/assets/shps',
 })
+const form_avainit = reactive({
+  slope_angle: '60',
+  slide_angle: '15',
+  cohesion: '15',
+  friction_angle: '20',
+  rock_density: '20',
+  permeability: '0.0001',
+  ice_thickness: '4',
+  fissure_height: '10',
+  melt_duration: '240',
+  slide_length: '20',
+})
+const radio_avainit = ref('1')
 const dialogVisibleSeismic = ref(false)
 const uploadRefSeismic = ref(null)
 const fileNameSeismic = ref('')
@@ -3988,6 +4246,12 @@ const form_BGM = reactive({
   relief_amplitude: '250',
 })
 const isProcessing = ref(false)
+async function sumbit_avainit() {
+  ElMessage({ message: '运行中!', type: 'success' })
+  dialog_avainit.value = false
+  const resp = await modelService.postAvainit(form_avainit)
+  console.log(resp)
+}
 function onSubmit() {
   dialogVisible.value = false
   ElMessage({ message: '运行中!', type: 'success', duration: 40000 })
@@ -3995,14 +4259,6 @@ function onSubmit() {
   // console.log(form.time[0])
   //把选中的时间通过自定义事件传递给父组件
   $emit('timeSelected', form.time)
-  // for (let t of form.time) {
-  //   console.log(t) //打印每个选中的时间（秒数）
-  // }
-  // if (form.color == 'dangerLevel') {
-  //   // squareStore.openSquare()
-  //   console.log('111')
-  //   // console.log(squareStore.showSquare)
-  // }
 }
 const subitForm = () => {
   axios
@@ -4255,18 +4511,6 @@ const handleUploadErrorGBM = (err, file, fileList) => {
   fileGBM.value = null
   fileNameGBM.value = ''
 }
-// 执行R脚本
-// const submit_inverseV = async () => {
-//   try {
-//     const response = await axios.post('node/rscript', {
-//       path: 'E:/practice/demo/PFTF_1.0.0/PFTF-PFTF_1.0.0',
-//       script: '1_1_input.R'
-//     })
-//     console.log('执行结果:', response.data)
-//   } catch (error) {
-//     console.error('执行失败:', error.response?.data || error.message)
-//   }
-// }
 const submit_inverseV = async () => {
   try {
     ElMessage({ message: '运行中!', type: 'success' })
@@ -4303,37 +4547,7 @@ const submit_inverseV = async () => {
     console.error('执行失败:', error.response?.data || error.message)
   }
 }
-// const submit_inverseV = async () => {
-//   try {
-//     ElMessage({ message: '运行中!(约2分钟)', type: 'success', duration: 120000 })
-//     const response = await axios.get('node/api/crack/ZXPRTL5002024A0454')
 
-//     console.log('执行结果:', response.data)
-//     if (response.data.ooaDetected==false){
-//       alert("并未出现滑坡！")
-//     }else{
-//       alert("请您及时关注预警！！！")
-//     }
-
-//   } catch (error) {
-//     console.error('执行失败:', error.response?.data || error.message)
-//   }
-// }
-// const submit_inverseV = async () => {
-//   const rscriptPath = '"C:\\Program Files\\R\\R-4.3.1\\bin\\x64\\Rscript.exe"'
-//   const targetDir = 'E:/practice/demo/PFTF_1.0.0/PFTF-PFTF_1.0.0'
-//   const script = '1_1_input.R'
-
-//   const command = `cd /d "${targetDir}" && ${rscriptPath} ${script}`
-
-//   exec(command, (error, stdout, stderr) => {
-//     if (error) {
-//       console.error('执行失败:', { error: error.message, stderr })
-//       return
-//     }
-//     console.log('执行成功:', stdout)
-//   })
-// }
 const triggerUploadSeismic = () => {
   // 打开文件选择
   uploadRefSeismic.value?.$el.querySelector('input[type=file]').click()
@@ -4693,6 +4907,14 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
   width: 450px;
   height: 280px;
   background-image: url('../assets/img/fz173.png');
+  background-size: 100% 100%;
+}
+:deep(.el-dialog.dialog_avainit) {
+  --el-dialog-bg-color: transparent;
+  margin-top: 14%;
+  width: 400px;
+  height: 482px;
+  background-image: url('../assets/img/fz175.png');
   background-size: 100% 100%;
 }
 
