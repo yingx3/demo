@@ -36,6 +36,11 @@ const modelService = {
       )
       .then(r => r.data)
   },
+  postAvainit(form) {
+    return axios
+      .post('/testapi/admin/user/avainit', form, { timeout: 40000 })
+      .then(r => r.data)
+  },
 }
 
 export default modelService
