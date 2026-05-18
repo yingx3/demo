@@ -748,9 +748,20 @@ const checkedLayers = (ps, node) => {
     case 32:
       removeLayer_DZDdevice()
       break
+    case 114:
+      removeLayer_building()
+      break
+    case 115:
+      removeLayer_population()
+      break
 
     default:
       break
+  }
+
+  // 取消勾选时从已处理集合中移除该节点ID，确保重新勾选时可再次加载
+  if (node !== null) {
+    processedPValues.value = processedPValues.value.filter(id => id !== node)
   }
 
   // 计算差集：当前循环中新增的 p 值
@@ -934,6 +945,12 @@ const checkedLayers = (ps, node) => {
         case 32:
           // 使用 deviceService 中的封装方法，回调由本文件处理弹窗展示
           addlayer_DZDdevice()
+          break
+        case 114:
+          addLayer_building()
+          break
+        case 115:
+          addLayer_population()
           break
       }
     })
@@ -2792,6 +2809,110 @@ const removeLayer_glacier = () => {
     }
   }
 }
+
+// ============================================================
+// GeoServer WMS 配置（发布数据后修改以下常量即可）
+// ============================================================
+const GEOSERVER_WMS_URL = '/geoserver/ZHLXT/wms'
+const BUILDING_WMS_LAYER = 'ygBuildings' // 图层名
+const POPULATION_WMS_LAYER = 'pop_LinZhi' // 图层名
+const STUDY_AREA_RECT = Cesium.Rectangle.fromDegrees(
+  92.1550260147193, 27.422589628183562, // 西, 南
+  98.8797996278891, 30.68902208298092, // 东, 北
+)
+
+// WMS imagery provider 工厂：统一配置，避免重复
+const createWmsProvider = (layerName, transparent) => {
+  return new Cesium.WebMapServiceImageryProvider({
+    url: GEOSERVER_WMS_URL,
+    layers: layerName,
+    parameters: {
+      format: 'image/png',
+      transparent: true,
+      version: '1.1.0',
+    },
+    // 图层以 EPSG:4326 发布，使用 GeographicTilingScheme 避免投影不匹配
+    tilingScheme: new Cesium.GeographicTilingScheme(),
+    rectangle: STUDY_AREA_RECT,
+    maximumLevel: 18,
+  })
+}
+
+//添加建筑数据（GeoServer WMS）
+const addLayer_building = () => {
+  try {
+    console.log(`[建筑数据] 正在加载 WMS 图层: ${BUILDING_WMS_LAYER}`)
+    const provider = createWmsProvider(BUILDING_WMS_LAYER, true)
+
+    const layers = viewer.value.scene.imageryLayers
+    const addedLayer = layers.addImageryProvider(provider)
+    addedLayer.buildingTag = true
+
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+      orientation: {
+        heading: Cesium.Math.toRadians(56.34),
+        pitch: Cesium.Math.toRadians(-31),
+        roll: 0.0,
+      },
+    })
+    ElMessage.success('建筑数据加载完成')
+  } catch (error) {
+    console.error('加载建筑数据失败:', error)
+    ElMessage.error(`加载建筑数据失败: ${error.message || error}`)
+  }
+}
+
+//移除建筑数据
+const removeLayer_building = () => {
+  const imageryLayers = viewer.value.scene.imageryLayers
+  for (let i = imageryLayers.length - 1; i >= 0; i--) {
+    const layer = imageryLayers.get(i)
+    if (layer.buildingTag) {
+      imageryLayers.remove(layer)
+    }
+  }
+  ElMessage.success('建筑数据已移除')
+}
+
+//添加人口数据（GeoServer WMS）
+const addLayer_population = () => {
+  try {
+    console.log(`[人口数据] 正在加载 WMS 图层: ${POPULATION_WMS_LAYER}`)
+    const provider = createWmsProvider(POPULATION_WMS_LAYER, false)
+
+    const layers = viewer.value.scene.imageryLayers
+    const addedLayer = layers.addImageryProvider(provider)
+    addedLayer.populationTag = true
+
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+      orientation: {
+        heading: Cesium.Math.toRadians(56.34),
+        pitch: Cesium.Math.toRadians(-31),
+        roll: 0.0,
+      },
+    })
+    ElMessage.success('人口数据加载完成')
+  } catch (error) {
+    console.error('加载人口数据失败:', error)
+    ElMessage.error(`加载人口数据失败: ${error.message || error}`)
+  }
+}
+
+//移除人口数据
+const removeLayer_population = () => {
+  const imageryLayers = viewer.value.scene.imageryLayers
+  for (let i = imageryLayers.length - 1; i >= 0; i--) {
+    const layer = imageryLayers.get(i)
+    if (layer.populationTag) {
+      imageryLayers.remove(layer)
+      break
+    }
+  }
+  ElMessage.success('人口数据已移除')
+}
+
 //加载全国气象站
 const addLayer_weatherstation = () => {
   axios.get('/node/weatherstation').then(res => {
@@ -2938,62 +3059,6 @@ const initRightClickHandler = () => {
     }
   }, Cesium.ScreenSpaceEventType.RIGHT_CLICK)
 }
-
-//加载地震动设备
-// const addlayer_DZDdevice = () => {
-//   Cesium.GeoJsonDataSource.load('/ng/DZD1.geojson')
-//     .then(dataSource => {
-//       layer17_guid.value = Cesium.createGuid() // 生成唯一 GUID
-//       dataSource.guid = layer17_guid.value
-//       viewer.value.dataSources.add(dataSource)
-
-//       const entities = dataSource.entities.values
-
-//       // 为每个实体绑定点击事件
-//       entities.forEach(entity => {
-//         entity.billboard = {
-//           image: '/ng/position.png',
-//           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-//           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-//           width: 32,
-//           height: 32,
-//         }
-//       })
-//       // viewer.value.zoomTo(dataSource) // 自动飞行到数据范围
-//       viewer.value.camera.flyTo({
-//         destination: Cesium.Cartesian3.fromDegrees(
-//           102.166189,
-//           30.091431,
-//           4321.57
-//         ),
-//         //相机的姿态
-//         orientation: {
-//           heading: Cesium.Math.toRadians(237.79), //朝向
-//           pitch: Cesium.Math.toRadians(-12.97), //俯仰
-//           // pitch: Cesium.Math.toRadians(-90), //俯仰
-//           roll: 0.0, //滚转
-//         },
-//       })
-
-//       viewer.value.selectedEntityChanged.addEventListener(selectedEntity => {
-//         if (selectedEntity) {
-//           // console.log('选中实体:', selectedEntity._id)
-//           // 检查 _id 是否包含 'dev'
-//           if (selectedEntity._id.includes('dev')) {
-//             showPopup(selectedEntity)
-//           }
-//           // showPopup(selectedEntity)
-//         } else {
-//           hidePopup()
-//         }
-//       })
-
-//       // showPopup(entity) // 调用 addEarthquakeDevices 的弹窗逻辑
-//     })
-//     .catch(error => {
-//       // console.error('加载地震监测设备失败:', error)
-//     })
-// }
 
 // 更新 showPopup 函数
 // 修改 showPopupWithDetection，直接操作 popup 元素

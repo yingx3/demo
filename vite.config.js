@@ -73,6 +73,12 @@ export default defineConfig({
       //     '^/ws': '', // 重写路径为空（后端需监听根路径）
       //   },
       // },
+      '/geoserver': {
+        target: 'http://localhost:8090', // GeoServer 服务
+        secure: false,
+        changeOrigin: true,
+        // 不 rewrite，保留 /geoserver 前缀以匹配 GeoServer 路由
+      },
       '/node': {
         target: 'http://localhost:3000', //需代理的后端接口
         secure: false, //开启代理：在本地会创建一个虚拟服务端，然后发送请求的数据，并同时接收请求
