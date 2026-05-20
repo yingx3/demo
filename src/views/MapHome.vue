@@ -518,6 +518,8 @@ const isChartVisible = ref(true) // 控制图表显示的标志
 
 const data = ref(null)
 const dialogs = ref()
+const dujiangImagePopup = ref(null) // 堵江点图片弹窗
+const dujiangClickHandler = ref(null) // 堵江点点击事件处理器
 // 获取 store 实例
 const squareStore = useSquareStore()
 const leftlong = ref(97.51465187373286)
@@ -754,7 +756,18 @@ const checkedLayers = (ps, node) => {
     case 115:
       removeLayer_population()
       break
-
+    case 621:
+      removeLayer_621()
+      break
+    case 622:
+      removeLayer_622()
+      break
+    case 623:
+      removeLayer_623()
+      break
+    case 711:
+      removeLayer_HP_pop_Vulnerability()
+      break
     default:
       break
   }
@@ -952,6 +965,18 @@ const checkedLayers = (ps, node) => {
         case 115:
           addLayer_population()
           break
+        case 621:
+          addLayer_621()
+          break
+        case 622:
+          addLayer_622()
+          break
+        case 623:
+          addLayer_623()
+          break
+        case 711:
+          addLayer_HP_pop_Vulnerability()
+          break
       }
     })
     processedPValues.value = [
@@ -1074,16 +1099,16 @@ const checkedLayers = (ps, node) => {
         // console.log('111')
         viewer.value.entities.removeById('7')
       }
-      if (p === 14) {
+      if (p === 612) {
         addLayer4()
       }
-      if (p !== 14) {
+      if (p !== 612) {
         removeLayer4()
       }
-      if (p === 15) {
+      if (p === 613) {
         addLayer5()
       }
-      if (p !== 15) {
+      if (p !== 613) {
         removeLayer5()
       }
     }
@@ -1741,153 +1766,6 @@ const foreCast = params => {
           console.log('点击了实体，点ID为:', entity.pointId)
           fetchDisplacementData(entity.pointId)
         }
-        // axios
-        //   .get('node/search_displ', {
-        //     params: {
-        //       pointId: pointId, // 确保 pointId 有值
-        //     },
-        //   })
-        //   .then(response => {
-        //     const data = response.data
-        //     isChartVisible.value = false // 显示图表
-        //     if (data.success) {
-        //       // 数据处理成功
-        //       console.log('获取到的位移数据:', data.data)
-        //       // 这里可以处理返回的数据，比如绘制图表等
-        //       // data.data 是一个数组，包含 { record_time: '2023-01-01 08:00:00', displacement: 10.2 } 这样的对象
-        //       // 准备图表数据
-        //       const chartData = data.data
-
-        //       // 分离时间和位移数据
-        //       const times = chartData.map(item => item.record_time)
-        //       const displacements = chartData.map(item => item.displacement)
-
-        //       // 初始化ECharts实例
-        //       const chartDom = document.getElementById('displacement-chart')
-        //       const myChart = echarts.init(chartDom)
-
-        //       // 配置图表选项
-        //       const option = {
-        //         title: {
-        //           text: '位移变化趋势图',
-        //           left: 'center',
-        //           textStyle: {
-        //             fontSize: 8,
-        //             fontWeight: 'regular',
-        //           },
-        //         },
-        //         tooltip: {
-        //           trigger: 'axis',
-        //           formatter: function (params) {
-        //             const date = new Date(params[0].data[0])
-        //             const formattedDate = date.toLocaleString('zh-CN', {
-        //               year: 'numeric',
-        //               month: '2-digit',
-        //               day: '2-digit',
-        //               hour: '2-digit',
-        //               minute: '2-digit',
-        //               second: '2-digit',
-        //             })
-        //             return `时间: ${formattedDate}<br/>位移: ${params[0].data[1]} mm`
-        //           },
-        //         },
-        //         grid: {
-        //           left: '3%',
-        //           right: '4%',
-        //           bottom: '3%',
-        //           containLabel: true,
-        //         },
-        //         xAxis: {
-        //           type: 'time',
-        //           name: '时间',
-        //           nameLocation: 'middle',
-        //           nameGap: 30,
-        //           axisLabel: {
-        //             formatter: function (value) {
-        //               return new Date(value).toLocaleDateString('zh-CN', {
-        //                 month: '2-digit',
-        //                 day: '2-digit',
-        //                 hour: '2-digit',
-        //                 minute: '2-digit',
-        //               })
-        //             },
-        //           },
-        //         },
-        //         yAxis: {
-        //           type: 'value',
-        //           name: '位移 (mm)',
-        //           nameGap: 30,
-        //           axisLabel: {
-        //             formatter: '{value} mm',
-        //           },
-        //         },
-        //         dataZoom: [
-        //           {
-        //             type: 'inside',
-        //             start: 0,
-        //             end: 100,
-        //           },
-        //           {
-        //             type: 'slider',
-        //             start: 0,
-        //             end: 100,
-        //           },
-        //         ],
-        //         series: [
-        //           {
-        //             name: '位移',
-        //             type: 'line',
-        //             data: chartData.map(item => [
-        //               item.record_time,
-        //               item.displacement,
-        //             ]),
-        //             smooth: true,
-        //             symbol: 'circle',
-        //             symbolSize: 6,
-        //             itemStyle: {
-        //               color: '#5470c6',
-        //             },
-        //             lineStyle: {
-        //               width: 2,
-        //             },
-        //             areaStyle: {
-        //               color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-        //                 { offset: 0, color: 'rgba(84, 112, 198, 0.6)' },
-        //                 { offset: 1, color: 'rgba(84, 112, 198, 0.1)' },
-        //               ]),
-        //             },
-        //           },
-        //         ],
-        //         width: '280px',
-        //         height: '180px',
-        //       }
-
-        //       // 应用配置项并渲染图表
-        //       myChart.setOption(option)
-
-        //       // 响应式调整
-        //       window.addEventListener('resize', function () {
-        //         myChart.resize()
-        //       })
-        //       ElMessage({
-        //         message: data.message,
-        //         type: 'success',
-        //       })
-        //     } else {
-        //       // 后端返回了错误信息
-        //       ElMessage({
-        //         message: data.message,
-        //         type: data.type || 'warning',
-        //       })
-        //     }
-        //   })
-        //   .catch(error => {
-        //     console.error('请求失败:', error)
-        //     ElMessage({
-        //       message: '请求数据失败',
-        //       type: 'error',
-        //     })
-        //   })
       }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
     },
   })
@@ -1942,141 +1820,6 @@ const renderDisplacementChart = chartData => {
   // 清空之前的图表
   myChart.clear()
 
-  // 配置图表选项 - 优化尺寸和样式
-  // const option = {
-  //   title: {
-  //     text: '位移变化趋势图',
-  //     left: 'center',
-  //     textStyle: {
-  //       fontSize: 14,
-  //       fontWeight: 'bold',
-  //     },
-  //     // 右上角关闭按钮
-  //     right: 10,
-  //     buttonGap: 10,
-  //     itemGap: 15,
-  //     textStyle: {
-  //       fontSize: 14,
-  //     },
-  //   },
-  //   tooltip: {
-  //     trigger: 'axis',
-  //     formatter: function (params) {
-  //       const date = new Date(params[0].data[0])
-  //       const formattedDate = date.toLocaleString('zh-CN', {
-  //         year: 'numeric',
-  //         month: '2-digit',
-  //         day: '2-digit',
-  //         hour: '2-digit',
-  //         minute: '2-digit',
-  //         second: '2-digit',
-  //       })
-  //       return `时间: ${formattedDate}<br/>位移: ${params[0].data[1]} mm`
-  //     },
-  //     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-  //     borderColor: '#ddd',
-  //     borderWidth: 1,
-  //     textStyle: { color: '#333' },
-  //     padding: 10,
-  //   },
-  //   grid: {
-  //     left: '5%',
-  //     right: '5%',
-  //     bottom: '10%',
-  //     top: '15%',
-  //     containLabel: true,
-  //   },
-  //   xAxis: {
-  //     type: 'time',
-  //     name: '时间',
-  //     nameLocation: 'middle',
-  //     nameGap: 30,
-  //     nameTextStyle: {
-  //       fontSize: 12,
-  //     },
-  //     axisLabel: {
-  //       formatter: function (value) {
-  //         return new Date(value).toLocaleDateString('zh-CN', {
-  //           month: '2-digit',
-  //           day: '2-digit',
-  //           hour: '2-digit',
-  //           minute: '2-digit',
-  //         })
-  //       },
-  //       rotate: 30, // 旋转避免文字重叠
-  //       fontSize: 10,
-  //     },
-  //     axisLine: {
-  //       lineStyle: {
-  //         color: '#ccc',
-  //       },
-  //     },
-  //   },
-  //   yAxis: {
-  //     type: 'value',
-  //     name: '位移 (mm)',
-  //     nameGap: 30,
-  //     nameTextStyle: {
-  //       fontSize: 12,
-  //     },
-  //     axisLabel: {
-  //       formatter: '{value} mm',
-  //       fontSize: 10,
-  //     },
-  //     axisLine: {
-  //       lineStyle: {
-  //         color: '#ccc',
-  //       },
-  //     },
-  //     splitLine: {
-  //       lineStyle: {
-  //         color: '#f0f0f0',
-  //       },
-  //     },
-  //   },
-  //   dataZoom: [
-  //     {
-  //       type: 'inside',
-  //       start: 0,
-  //       end: 100,
-  //       zoomLock: false,
-  //     },
-  //     {
-  //       type: 'slider',
-  //       start: 0,
-  //       end: 100,
-  //       height: 8,
-  //       bottom: 5,
-  //     },
-  //   ],
-  //   series: [
-  //     {
-  //       name: '位移',
-  //       type: 'line',
-  //       data: chartData.map(item => [item.record_time, item.displacement]),
-  //       smooth: true,
-  //       symbol: 'circle',
-  //       symbolSize: 6,
-  //       showSymbol: false, // 鼠标 hover 时才显示点
-  //       emphasis: {
-  //         showSymbol: true,
-  //         symbolSize: 8,
-  //       },
-  //       itemStyle: {
-  //         color: '#5470c6',
-  //       },
-  //       lineStyle: {
-  //         width: 2,
-  //       },
-  //       areaStyle: {
-  //         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-  //           { offset: 0, color: 'rgba(84, 112, 198, 0.6)' },
-  //           { offset: 1, color: 'rgba(84, 112, 198, 0.1)' },
-  //         ]),
-  //       },
-  //     },
-  //   ],
-  // }
   const option = {
     title: {
       text: '位移变化趋势图',
@@ -2816,6 +2559,8 @@ const removeLayer_glacier = () => {
 const GEOSERVER_WMS_URL = '/geoserver/ZHLXT/wms'
 const BUILDING_WMS_LAYER = 'ygBuildings' // 图层名
 const POPULATION_WMS_LAYER = 'pop_LinZhi' // 图层名
+const HP_pop_Vulnerability = 'HP_pop_Vulnerability' // 图层名
+const HISTORY_SIM_WMS_LAYER = 'BCNSL_results' // 历史数据模拟
 const STUDY_AREA_RECT = Cesium.Rectangle.fromDegrees(
   92.1550260147193, 27.422589628183562, // 西, 南
   98.8797996278891, 30.68902208298092, // 东, 北
@@ -2912,6 +2657,262 @@ const removeLayer_population = () => {
   }
   ElMessage.success('人口数据已移除')
 }
+
+//添加历史数据模拟（GeoServer WMS）
+const addLayer_621 = () => {
+  try {
+    console.log(`[历史数据模拟] 正在加载 WMS 图层: ${HISTORY_SIM_WMS_LAYER}`)
+    const provider = createWmsProvider(HISTORY_SIM_WMS_LAYER, true)
+
+    const layers = viewer.value.scene.imageryLayers
+    const addedLayer = layers.addImageryProvider(provider)
+    addedLayer.historySimTag = true
+
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+      orientation: {
+        heading: Cesium.Math.toRadians(56.34),
+        pitch: Cesium.Math.toRadians(-31),
+        roll: 0.0,
+      },
+    })
+    ElMessage.success('历史数据模拟加载完成')
+  } catch (error) {
+    console.error('加载历史数据模拟失败:', error)
+    ElMessage.error(`加载历史数自动检测
+    中文（简体）
+    实验成果合集据模拟失败: ${error.message || error}`)
+  }
+}
+
+//移除历史数据模拟
+const removeLayer_621 = () => {
+  const imageryLayers = viewer.value.scene.imageryLayers
+  for (let i = imageryLayers.length - 1; i >= 0; i--) {
+    const layer = imageryLayers.get(i)
+    if (layer.historySimTag) {
+      imageryLayers.remove(layer)
+    }
+  }
+  ElMessage.success('历史数据模拟已移除')
+}
+
+// 历史未堵江点数据接口（点数据路径在此配置）
+const NODUJIANG_DATA_URL = '/CS/json/select_nodujiang.geojson'
+const DUJIANG_DATA_URL = '/CS/json/select_dujiang_glacier.geojson'
+
+// 添加历史未堵江点（Cesium Entity 悬浮图标）
+const addLayer_622 = () => {
+  axios.get(NODUJIANG_DATA_URL).then(res => {
+    const features = res.data.features
+    console.log(`[历史未堵江点] 加载 ${features.length} 个点`)
+
+    features.forEach(feature => {
+      const [lon, lat] = feature.geometry.coordinates
+      const props = feature.properties
+
+      // 构建 Cesium InfoBox 描述 HTML（点击实体时自动弹出）
+      const descFields = Object.entries(props)
+        .map(([key, value]) => `<tr><th>${key}</th><td>${value ?? ''}</td></tr>`)
+        .join('')
+      const description = `<table style="width:100%">${descFields}</table>`
+
+      const entity = viewer.value.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(lon, lat),
+        name: props.名称 || props.新编号 || '',
+        description,
+        billboard: {
+          image: '/CS/img/positionBlue.png',
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          width: 32,
+          height: 32,
+        },
+      })
+      entity.noDujiangTag = true
+    })
+
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+      orientation: {
+        heading: Cesium.Math.toRadians(56.34),
+        pitch: Cesium.Math.toRadians(-31),
+        roll: 0.0,
+      },
+    })
+    ElMessage.success('历史未堵江点加载完成')
+  }).catch(error => {
+    console.error('加载历史未堵江点失败:', error)
+    ElMessage.error(`加载历史未堵江点失败: ${error.message || error}`)
+  })
+}
+
+//移除历史未堵江点
+const removeLayer_622 = () => {
+  const entities = viewer.value.entities.values
+  for (let i = entities.length - 1; i >= 0; i--) {
+    if (entities[i].noDujiangTag) {
+      viewer.value.entities.remove(entities[i])
+    }
+  }
+  ElMessage.success('历史未堵江点已移除')
+}
+
+// ========== 堵江点图片弹窗 ==========
+const DUJIANG_PHOTO_BASE = '/CS/img/dujiang_photos'
+
+const showDujiangImagePopup = (imageUrl, title) => {
+  closeDujiangImagePopup()
+  const el = document.createElement('div')
+  el.style.cssText = `
+    position: fixed; bottom: 75px; left: 105px; z-index: 9999;
+    background: rgba(0,0,0,0.85); border: 1px solid #38e1ff;
+    border-radius: 8px; box-shadow: 0 0 10px 2px #29baf1;
+    padding: 10px; min-width: 220px; min-height: 100px;
+    resize: both; overflow: auto;
+  `
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <span style="color:#fff;font-size:14px;font-weight:600;">${title}</span>
+      <span id="dujiang-popup-close" style="color:#fff;cursor:pointer;font-size:16px;padding:0 6px;">X</span>
+    </div>
+    <img src="${imageUrl}" style="width:100%;max-width:800px;display:block;"
+         onerror="this.style.display='none'" />
+  `
+  document.body.appendChild(el)
+  el.querySelector('#dujiang-popup-close').onclick = closeDujiangImagePopup
+  dujiangImagePopup.value = el
+}
+
+const closeDujiangImagePopup = () => {
+  if (dujiangImagePopup.value) {
+    dujiangImagePopup.value.remove()
+    dujiangImagePopup.value = null
+  }
+}
+
+const handleDujiangClick = movement => {
+  const picked = viewer.value.scene.pick(movement.position)
+  console.log('[堵江点] pick result:', picked)
+  if (!Cesium.defined(picked) || !picked.id) return
+  const entity = picked.id
+  console.log('[堵江点] entity:', entity.name, 'dujiangTag:', entity.dujiangTag)
+  if (!entity.dujiangTag) return
+  const name = entity.name || ''
+  const imageUrl = `${DUJIANG_PHOTO_BASE}/${name}.png`
+  console.log('[堵江点] 显示图片:', imageUrl)
+  showDujiangImagePopup(imageUrl, name)
+}
+
+//添加历史堵江点（Cesium Entity 悬浮图标）
+const addLayer_623 = () => {
+  axios.get(DUJIANG_DATA_URL).then(res => {
+    const features = res.data.features
+    console.log(`[历史堵江点] 加载 ${features.length} 个点`)
+
+    features.forEach(feature => {
+      const [lon, lat] = feature.geometry.coordinates
+      const props = feature.properties
+
+      const descFields = Object.entries(props)
+        .map(([key, value]) => `<tr><th>${key}</th><td>${value ?? ''}</td></tr>`)
+        .join('')
+      const description = `<table style="width:100%">${descFields}</table>`
+
+      const entity = viewer.value.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(lon, lat),
+        name: props.名称 || props.新编号 || '',
+        description,
+        billboard: {
+          image: '/CS/img/positionBlue.png',
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          width: 32,
+          height: 32,
+        },
+      })
+      entity.dujiangTag = true
+    })
+
+    // 添加点击事件：点击堵江点弹出关联图片
+    dujiangClickHandler.value = new Cesium.ScreenSpaceEventHandler(
+      viewer.value.scene.canvas,
+    )
+    dujiangClickHandler.value.setInputAction(
+      handleDujiangClick,
+      Cesium.ScreenSpaceEventType.LEFT_CLICK,
+    )
+
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+      orientation: {
+        heading: Cesium.Math.toRadians(56.34),
+        pitch: Cesium.Math.toRadians(-31),
+        roll: 0.0,
+      },
+    })
+    ElMessage.success('历史堵江点加载完成')
+  }).catch(error => {
+    console.error('加载历史堵江点失败:', error)
+    ElMessage.error(`加载历史堵江点失败: ${error.message || error}`)
+  })
+}
+
+//移除历史堵江点
+const removeLayer_623 = () => {
+  // 移除图片弹窗
+  closeDujiangImagePopup()
+  // 移除点击事件处理器
+  if (dujiangClickHandler.value) {
+    dujiangClickHandler.value.destroy()
+    dujiangClickHandler.value = null
+  }
+  // 移除实体
+  const entities = viewer.value.entities.values
+  for (let i = entities.length - 1; i >= 0; i--) {
+    if (entities[i].dujiangTag) {
+      viewer.value.entities.remove(entities[i])
+    }
+  }
+  ElMessage.success('历史堵江点已移除')
+}
+
+const addLayer_HP_pop_Vulnerability = () => {
+  try {
+    const provider = createWmsProvider(HP_pop_Vulnerability, false)
+
+    const layers = viewer.value.scene.imageryLayers
+    const addedLayer = layers.addImageryProvider(provider)
+    addedLayer.populationTag = true
+
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+      orientation: {
+        heading: Cesium.Math.toRadians(56.34),
+        pitch: Cesium.Math.toRadians(-31),
+        roll: 0.0,
+      },
+    })
+    ElMessage.success('滑坡人口脆弱性数据加载完成')
+  } catch (error) {
+    console.error('滑坡人口脆弱性数据失败:', error)
+    ElMessage.error(`滑坡人口脆弱性数据失败: ${error.message || error}`)
+  }
+}
+
+//移除滑坡人口脆弱性数据
+const removeLayer_HP_pop_Vulnerability = () => {
+  const imageryLayers = viewer.value.scene.imageryLayers
+  for (let i = imageryLayers.length - 1; i >= 0; i--) {
+    const layer = imageryLayers.get(i)
+    if (layer.HP_pop_VulnerabilityTag) {
+      imageryLayers.remove(layer)
+      break
+    }
+  }
+  ElMessage.success('滑坡人口脆弱性数据已移除')
+}
+
 
 //加载全国气象站
 const addLayer_weatherstation = () => {
