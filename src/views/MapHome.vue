@@ -768,6 +768,21 @@ const checkedLayers = (ps, node) => {
     case 711:
       removeLayer_HP_pop_Vulnerability()
       break
+    case 712:
+      removeLayer_NSL_pop_Vulnerability()
+      break
+    case 713:
+      removeLayer_SH_pop_Vulnerability()
+      break
+    case 721:
+      removeLayer_HP_Danger()
+      break
+    case 722:
+      removeLayer_NSL_Danger()
+      break
+    case 723:
+      removeLayer_SH_Danger()
+      break
     default:
       break
   }
@@ -976,6 +991,21 @@ const checkedLayers = (ps, node) => {
           break
         case 711:
           addLayer_HP_pop_Vulnerability()
+          break
+        case 712:
+          addLayer_NSL_pop_Vulnerability()
+          break
+        case 713:
+          addLayer_SH_pop_Vulnerability()
+          break
+        case 721:
+          addLayer_HP_Danger()
+          break
+        case 722:
+          addLayer_NSL_Danger()
+          break
+        case 723:
+          addLayer_SH_Danger()
           break
       }
     })
@@ -2560,6 +2590,11 @@ const GEOSERVER_WMS_URL = '/geoserver/ZHLXT/wms'
 const BUILDING_WMS_LAYER = 'ygBuildings' // 图层名
 const POPULATION_WMS_LAYER = 'pop_LinZhi' // 图层名
 const HP_pop_Vulnerability = 'HP_pop_Vulnerability' // 图层名
+const NSL_pop_Vulnerability = 'NSL_pop_Vulnerability' // 图层名
+const SH_pop_Vulnerability = 'SH_pop_Vulnerability' // 图层名
+const HP_Danger = 'HP_Danger' // 图层名
+const NSL_Danger = 'NSL_Danger' // 图层名
+const SH_Danger = 'SH_Danger' // 图层名
 const HISTORY_SIM_WMS_LAYER = 'BCNSL_results' // 历史数据模拟
 const STUDY_AREA_RECT = Cesium.Rectangle.fromDegrees(
   92.1550260147193, 27.422589628183562, // 西, 南
@@ -2877,13 +2912,14 @@ const removeLayer_623 = () => {
   ElMessage.success('历史堵江点已移除')
 }
 
+//添加滑坡人口脆弱性数据（GeoServer WMS）
 const addLayer_HP_pop_Vulnerability = () => {
   try {
     const provider = createWmsProvider(HP_pop_Vulnerability, false)
 
     const layers = viewer.value.scene.imageryLayers
     const addedLayer = layers.addImageryProvider(provider)
-    addedLayer.populationTag = true
+    addedLayer.HP_pop_VulnerabilityTag = true
 
     viewer.value.camera.flyTo({
       destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
@@ -2913,6 +2949,186 @@ const removeLayer_HP_pop_Vulnerability = () => {
   ElMessage.success('滑坡人口脆弱性数据已移除')
 }
 
+//添加泥石流人口脆弱性数据（GeoServer WMS）
+const addLayer_NSL_pop_Vulnerability = () => {
+  try {
+    const provider = createWmsProvider(NSL_pop_Vulnerability, false)
+
+    const layers = viewer.value.scene.imageryLayers
+    const addedLayer = layers.addImageryProvider(provider)
+    addedLayer.NSL_pop_VulnerabilityTag = true
+
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+      orientation: {
+        heading: Cesium.Math.toRadians(56.34),
+        pitch: Cesium.Math.toRadians(-31),
+        roll: 0.0,
+      },
+    })
+    ElMessage.success('泥石流人口脆弱性数据加载完成')
+  } catch (error) {
+    console.error('泥石流人口脆弱性数据失败:', error)
+    ElMessage.error(`泥石流人口脆弱性数据失败: ${error.message || error}`)
+  }
+}
+
+//移除泥石流人口脆弱性数据
+const removeLayer_NSL_pop_Vulnerability = () => {
+  const imageryLayers = viewer.value.scene.imageryLayers
+  for (let i = imageryLayers.length - 1; i >= 0; i--) {
+    const layer = imageryLayers.get(i)
+    if (layer.NSL_pop_VulnerabilityTag) {
+      imageryLayers.remove(layer)
+      break
+    }
+  }
+  ElMessage.success('泥石流人口脆弱性数据已移除')
+}
+
+//添加山洪人口脆弱性数据（GeoServer WMS）
+const addLayer_SH_pop_Vulnerability = () => {
+  try {
+    const provider = createWmsProvider(SH_pop_Vulnerability, false)
+
+    const layers = viewer.value.scene.imageryLayers
+    const addedLayer = layers.addImageryProvider(provider)
+    addedLayer.SH_pop_VulnerabilityTag = true
+
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+      orientation: {
+        heading: Cesium.Math.toRadians(56.34),
+        pitch: Cesium.Math.toRadians(-31),
+        roll: 0.0,
+      },
+    })
+    ElMessage.success('山洪人口脆弱性数据加载完成')
+  } catch (error) {
+    console.error('山洪人口脆弱性数据失败:', error)
+    ElMessage.error(`山洪人口脆弱性数据失败: ${error.message || error}`)
+  }
+}
+
+const removeLayer_SH_pop_Vulnerability = () => {
+  const imageryLayers = viewer.value.scene.imageryLayers
+  for (let i = imageryLayers.length - 1; i >= 0; i--) {
+    const layer = imageryLayers.get(i)
+    if (layer.SH_pop_VulnerabilityTag) {
+      imageryLayers.remove(layer)
+      break
+    }
+  }
+  ElMessage.success('山洪人口脆弱性数据已移除')
+}
+
+//添加滑坡危险性数据（GeoServer WMS）
+const addLayer_HP_Danger = () => {
+  try {
+    const provider = createWmsProvider(HP_Danger, false)
+
+    const layers = viewer.value.scene.imageryLayers
+    const addedLayer = layers.addImageryProvider(provider)
+    addedLayer.HP_DangerTag = true
+
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+      orientation: {
+        heading: Cesium.Math.toRadians(56.34),
+        pitch: Cesium.Math.toRadians(-31),
+        roll: 0.0,
+      },
+    })
+    ElMessage.success('滑坡危险性数据加载完成')
+  } catch (error) {
+    console.error('滑坡危险性数据失败:', error)
+    ElMessage.error(`滑坡危险性数据失败: ${error.message || error}`)
+  }
+}
+
+const removeLayer_HP_Danger = () => {
+  const imageryLayers = viewer.value.scene.imageryLayers
+  for (let i = imageryLayers.length - 1; i >= 0; i--) {
+    const layer = imageryLayers.get(i)
+    if (layer.HP_DangerTag) {
+      imageryLayers.remove(layer)
+      break
+    }
+  }
+  ElMessage.success('滑坡危险性数据已移除')
+}
+
+//添加泥石流危险性数据（GeoServer WMS）
+const addLayer_NSL_Danger = () => {
+  try {
+    const provider = createWmsProvider(NSL_Danger, false)
+
+    const layers = viewer.value.scene.imageryLayers
+    const addedLayer = layers.addImageryProvider(provider)
+    addedLayer.NSL_DangerTag = true
+
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+      orientation: {
+        heading: Cesium.Math.toRadians(56.34),
+        pitch: Cesium.Math.toRadians(-31),
+        roll: 0.0,
+      },
+    })
+    ElMessage.success('泥石流危险性数据加载完成')
+  } catch (error) {
+    console.error('泥石流危险性数据失败:', error)
+    ElMessage.error(`泥石流危险性数据失败: ${error.message || error}`)
+  }
+}
+
+const removeLayer_NSL_Danger = () => {
+  const imageryLayers = viewer.value.scene.imageryLayers
+  for (let i = imageryLayers.length - 1; i >= 0; i--) {
+    const layer = imageryLayers.get(i)
+    if (layer.NSL_DangerTag) {
+      imageryLayers.remove(layer)
+      break
+    }
+  }
+  ElMessage.success('泥石流危险性数据已移除')
+}
+
+//添加山洪危险性数据（GeoServer WMS）
+const addLayer_SH_Danger = () => {
+  try {
+    const provider = createWmsProvider(SH_Danger, false)
+
+    const layers = viewer.value.scene.imageryLayers
+    const addedLayer = layers.addImageryProvider(provider)
+    addedLayer.SH_DangerTag = true
+
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+      orientation: {
+        heading: Cesium.Math.toRadians(56.34),
+        pitch: Cesium.Math.toRadians(-31),
+        roll: 0.0,
+      },
+    })
+    ElMessage.success('山洪危险性数据加载完成')
+  } catch (error) {
+    console.error('山洪危险性数据失败:', error)
+    ElMessage.error(`山洪危险性数据失败: ${error.message || error}`)
+  }
+}
+
+const removeLayer_SH_Danger = () => {
+  const imageryLayers = viewer.value.scene.imageryLayers
+  for (let i = imageryLayers.length - 1; i >= 0; i--) {
+    const layer = imageryLayers.get(i)
+    if (layer.SH_DangerTag) {
+      imageryLayers.remove(layer)
+      break
+    }
+  }
+  ElMessage.success('山洪危险性数据已移除')
+}
 
 //加载全国气象站
 const addLayer_weatherstation = () => {
