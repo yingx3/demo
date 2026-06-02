@@ -4143,28 +4143,28 @@ const form_avainit = reactive({
   slide_length: '20',
 })
 const form_bedding_inverted = reactive({
-  slope_angle: '60',
-  inverse_angle: '15',
+melt_duration: '240',
+  slope_angle: '30',
+  inverse_angle: '70',
+  ice_thickness: '5',
+  slope_height: '10',
+  bedding_space: '20',
   cohesion: '15',
   friction_angle: '20',
   rock_density: '20',
   permeability: '0.0001',
-  ice_thickness: '4',
-  slope_height: '10',
-  melt_duration: '240',
-  bedding_space: '20',
 })
 const form_bedding_wedget = reactive({
-  slope_angle: '60',
-  normal_vector: '15',
+  slope_angle: '30',
+  normal_vector: '1,1,1',
   cohesion: '15',
   friction_angle: '20',
   rock_density: '20',
   permeability: '0.0001',
-  ice_thickness: '4',
+  ice_thickness: '5',
   slope_height: '10',
-  square: '240',
-  fracture: '20',
+  square: '200',
+  fracture: '0.5',
   melt_duration: '240',
 })
 const radio_avainit = ref('1')
@@ -4298,11 +4298,13 @@ const form_BGM = reactive({
 const isProcessing = ref(false)
 async function sumbit_avainit() {
   ElMessage({ message: '运行中!', type: 'success' })
+
   dialog_avainit.value = false
   $emit('bedding_parallel')
 }
 async function sumbit_inverse() {
   ElMessage({ message: '运行中!', type: 'success' })
+  await modelService.postInverse(form_bedding_inverted)
   dialog_avainit.value = false
   $emit('bedding_inverted')
 }

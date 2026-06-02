@@ -41,6 +41,16 @@ const modelService = {
       .post('/testapi/admin/user/avainit', form, { timeout: 40000 })
       .then(r => r.data)
   },
+    postInverse(form) {
+    return axios
+      .post('/testapi/admin/user/bedding_inverse', form, { timeout: 40000 })
+      .then(r => r.data)
+  },
+    postWedge(form) {
+    return axios
+      .post('/testapi/admin/user/bedding_wedge', form, { timeout: 40000 })
+      .then(r => r.data)
+  },
 }
 
 export default modelService

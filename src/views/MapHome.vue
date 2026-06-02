@@ -4521,13 +4521,13 @@ const bedding_inverted = () => {
   })
    let t, fos,fos_chart
   axios
-    .get('/testapi/output_bedding.txt')
+    .get('/testapi/output_anti.txt')
     .then(res => {
-      // console.log(res.data)
+      console.log(res.data)
       // const obj = JSON.parse(res.data)
       const obj = res.data
-      t = obj.t
-      fos = obj.fos
+      t = obj.time
+      fos = obj.safety_factor
       console.log('FOS数据:', t, fos)
 
       // 检查数据是否有效
