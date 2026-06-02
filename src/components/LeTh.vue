@@ -2772,7 +2772,7 @@
               </el-form-item>
             </el-form>
             <el-form
-              :model="form_avainit"
+              :model="form_bedding_inverted"
               label-width="auto"
               style="max-width: 600px"
               class="form_flood"
@@ -2780,63 +2780,77 @@
             >
               <el-form-item label="融冰时长" class="form1_flood">
                 <el-input
-                  v-model="form_avainit.melt_duration"
+                  v-model="form_bedding_inverted.melt_duration"
                   placeholder="20"
                 />
               </el-form-item>
               <el-form-item label="边坡角度" class="form1_flood">
-                <el-input v-model="form_avainit.slope_angle" placeholder="20" />
+                <el-input
+                  v-model="form_bedding_inverted.slope_angle"
+                  placeholder="20"
+                />
               </el-form-item>
               <el-form-item label="反倾角" class="form1_flood">
-                <el-input v-model="form_avainit.slide_angle" placeholder="20" />
+                <el-input
+                  v-model="form_bedding_inverted.inverse_angle"
+                  placeholder="20"
+                />
               </el-form-item>
               <el-form-item label="冰层厚度" class="form1_flood">
                 <el-input
-                  v-model="form_avainit.ice_thickness"
+                  v-model="form_bedding_inverted.ice_thickness"
                   placeholder="20"
                 />
               </el-form-item>
               <el-form-item label="边坡高度" class="form1_flood">
                 <el-input
-                  v-model="form_avainit.fissure_height"
+                  v-model="form_bedding_inverted.slope_height"
                   placeholder="20"
                 />
               </el-form-item>
               <el-form-item label="层面间隔" class="form1_flood">
                 <el-input
-                  v-model="form_avainit.slide_length"
+                  v-model="form_bedding_inverted.bedding_space"
                   placeholder="20"
                 />
               </el-form-item>
               <el-form-item label="内聚力" class="form1_flood">
-                <el-input v-model="form_avainit.cohesion" placeholder="20" />
+                <el-input
+                  v-model="form_bedding_inverted.cohesion"
+                  placeholder="20"
+                />
               </el-form-item>
               <el-form-item label="内摩擦角" class="form1_flood">
                 <el-input
-                  v-model="form_avainit.friction_angle"
+                  v-model="form_bedding_inverted.friction_angle"
                   placeholder="20"
                 />
               </el-form-item>
               <el-form-item label="岩体重度" class="form1_flood">
                 <el-input
-                  v-model="form_avainit.rock_density"
+                  v-model="form_bedding_inverted.rock_density"
                   placeholder="20"
                 />
               </el-form-item>
               <el-form-item label="渗透系数" class="form1_flood">
                 <el-input
-                  v-model="form_avainit.permeability"
+                  v-model="form_bedding_inverted.permeability"
                   placeholder="20"
                 />
               </el-form-item>
 
               <el-form-item>
-                <el-button type="primary" class="b_ex_avaflow">运行</el-button>
+                <el-button
+                  type="primary"
+                  class="b_ex_avaflow"
+                  @click="sumbit_inverse"
+                  >运行</el-button
+                >
                 <el-button @click="dialog_avainit = false">取消</el-button>
               </el-form-item>
             </el-form>
             <el-form
-              :model="form_avainit"
+              :model="form_bedding_wedget"
               label-width="auto"
               style="max-width: 600px"
               class="form_flood"
@@ -2844,65 +2858,76 @@
             >
               <el-form-item label="融冰时长" class="form1_flood">
                 <el-input
-                  v-model="form_avainit.melt_duration"
+                  v-model="form_bedding_wedget.melt_duration"
                   placeholder="20"
                 />
               </el-form-item>
               <el-form-item label="边坡角度" class="form1_flood">
-                <el-input v-model="form_avainit.slope_angle" placeholder="20" />
+                <el-input
+                  v-model="form_bedding_wedget.slope_angle"
+                  placeholder="20"
+                />
               </el-form-item>
               <el-form-item label="法向量" class="form1_flood">
-                <el-input v-model="form_avainit.slide_angle" placeholder="20" />
+                <el-input
+                  v-model="form_bedding_wedget.normal_vector"
+                  placeholder="20"
+                />
               </el-form-item>
               <el-form-item label="冰层厚度" class="form1_flood">
                 <el-input
-                  v-model="form_avainit.ice_thickness"
+                  v-model="form_bedding_wedget.ice_thickness"
                   placeholder="20"
                 />
               </el-form-item>
               <el-form-item label="面积" class="form1_flood">
                 <el-input
-                  v-model="form_avainit.fissure_height"
+                  v-model="form_bedding_wedget.square"
                   placeholder="20"
                 />
               </el-form-item>
               <el-form-item label="边坡高度" class="form1_flood">
                 <el-input
-                  v-model="form_avainit.slide_length"
+                  v-model="form_bedding_wedget.slope_height"
                   placeholder="20"
                 />
               </el-form-item>
               <el-form-item label="裂隙/中线" class="form1_flood">
                 <el-input
-                  v-model="form_avainit.slide_length"
+                  v-model="form_bedding_wedget.fracture"
                   placeholder="20"
                 />
               </el-form-item>
               <el-form-item label="内聚力" class="form1_flood">
-                <el-input v-model="form_avainit.cohesion" placeholder="20" />
+                <el-input
+                  v-model="form_bedding_wedget.cohesion"
+                  placeholder="20"
+                />
               </el-form-item>
               <el-form-item label="内摩擦角" class="form1_flood">
                 <el-input
-                  v-model="form_avainit.friction_angle"
+                  v-model="form_bedding_wedget.friction_angle"
                   placeholder="20"
                 />
               </el-form-item>
               <el-form-item label="岩体重度" class="form1_flood">
                 <el-input
-                  v-model="form_avainit.rock_density"
+                  v-model="form_bedding_wedget.rock_density"
                   placeholder="20"
                 />
               </el-form-item>
               <el-form-item label="渗透系数" class="form1_flood">
                 <el-input
-                  v-model="form_avainit.permeability"
+                  v-model="form_bedding_wedget.permeability"
                   placeholder="20"
                   style="width: 60px"
                 />
               </el-form-item>
 
               <el-form-item>
-                <el-button type="primary">运行</el-button>
+                <el-button type="primary" @click="sumbit_wedget"
+                  >运行</el-button
+                >
                 <el-button @click="dialog_avainit = false"
                   >取消</el-button
                 ></el-form-item
@@ -4117,6 +4142,31 @@ const form_avainit = reactive({
   melt_duration: '240',
   slide_length: '20',
 })
+const form_bedding_inverted = reactive({
+  slope_angle: '60',
+  inverse_angle: '15',
+  cohesion: '15',
+  friction_angle: '20',
+  rock_density: '20',
+  permeability: '0.0001',
+  ice_thickness: '4',
+  slope_height: '10',
+  melt_duration: '240',
+  bedding_space: '20',
+})
+const form_bedding_wedget = reactive({
+  slope_angle: '60',
+  normal_vector: '15',
+  cohesion: '15',
+  friction_angle: '20',
+  rock_density: '20',
+  permeability: '0.0001',
+  ice_thickness: '4',
+  slope_height: '10',
+  square: '240',
+  fracture: '20',
+  melt_duration: '240',
+})
 const radio_avainit = ref('1')
 const dialogVisibleSeismic = ref(false)
 const uploadRefSeismic = ref(null)
@@ -4249,8 +4299,17 @@ const isProcessing = ref(false)
 async function sumbit_avainit() {
   ElMessage({ message: '运行中!', type: 'success' })
   dialog_avainit.value = false
-  const resp = await modelService.postAvainit(form_avainit)
-  console.log(resp)
+  $emit('bedding_parallel')
+}
+async function sumbit_inverse() {
+  ElMessage({ message: '运行中!', type: 'success' })
+  dialog_avainit.value = false
+  $emit('bedding_inverted')
+}
+async function sumbit_wedget() {
+  ElMessage({ message: '运行中!', type: 'success' })
+  dialog_avainit.value = false
+  $emit('bedding_wedget')
 }
 function onSubmit() {
   dialogVisible.value = false
@@ -4275,7 +4334,7 @@ const subitForm = () => {
       for (let i = 1; i <= form.time.length; i++) {
         imageNameRegex += `,图片名称${i}:(\\S+\\.png)`
       }
-      // console.log(imageNameRegex)
+      console.log(imageNameRegex)
       // 动态构建完整的正则表达式
       const regex = new RegExp(
         `左下经度:([\\d.]+),左下纬度:([\\d.]+),右上经度:([\\d.]+),右上纬度:([\\d.]+)` +

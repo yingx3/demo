@@ -8,6 +8,9 @@
       @floodLayers="floodLayers"
       @forecast="foreCast"
       @seismicResult="handleSeismicResult"
+      @bedding_parallel="bedding_parallel"
+      @bedding_inverted="bedding_inverted"
+      @bedding_wedget="bedding_wedget"
     ></le-th>
     <zy-ml
       :time="selectedTime"
@@ -446,6 +449,12 @@
     </div>
     <div id="seismic-chart" style="width: 100%; height: 500px"></div>
   </el-drawer>
+  <el-dialog
+    v-model="dialogVisible_bedding_parallel" 
+  title="FOS 变化曲线" 
+  width="800px"
+  append-to-body> <div id="fos-chart" style="width: 100%; height: 500px"></div></el-dialog>
+ 
 </template>
 <script setup>
 // import wkb from 'wkb'
@@ -515,7 +524,7 @@ const layer4_guid = ref(null)
 const layer5_guid = ref(null)
 const entityInterval = ref(null)
 const isChartVisible = ref(true) // 控制图表显示的标志
-
+const dialogVisible_bedding_parallel = ref(false)
 const data = ref(null)
 const dialogs = ref()
 const dujiangImagePopup = ref(null) // 堵江点图片弹窗
@@ -4357,7 +4366,395 @@ const position = () => {
     })
   }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
 }
+const bedding_parallel = () => {
+  dialogVisible_bedding_parallel.value = true
+  let coordinate = {
+    longitude: '97.56593',
+    latitude: '31.171519',
+    altitude: '4959',
+  }
+  viewer.value.entities.add({
+    position: Cesium.Cartesian3.fromDegrees(
+      Number(coordinate.longitude),
+      Number(coordinate.latitude),
+      Number(coordinate.altitude),
+    ),
+    billboard: {
+      image: '/ng/position.png',
+      heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
+      width: 48,
+      height: 48,
+    },
+  })
+  viewer.value.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(
+      97.57525564355794,
+      31.17263707,
+      5205.101,
+    ),
+    orientation: {
+      heading: Cesium.Math.toRadians(261.7),
+      pitch: Cesium.Math.toRadians(-16.5),
+      roll: Cesium.Math.toRadians(0),
+    },
+  })
+  let t, fos,fos_chart
+  axios
+    .get('/testapi/output_bedding.txt')
+    .then(res => {
+      // console.log(res.data)
+      // const obj = JSON.parse(res.data)
+      const obj = res.data
+      t = obj.t
+      fos = obj.fos
+      console.log('FOS数据:', t, fos)
 
+      // 检查数据是否有效
+      if (
+        !t ||
+        !fos ||
+        !Array.isArray(t) ||
+        !Array.isArray(fos) ||
+        t.length === 0 ||
+        fos.length === 0
+      ) {
+        console.error('FOS数据无效')
+        return
+      }
+
+      // 绘制平滑曲线图
+      const xData = t.map(time => time / (3600 * 24))
+      const seriesData = xData.map((x, index) => [x, fos[index]])
+      console.log('图表数据:', seriesData)
+
+      // 先销毁之前的图表
+      if (fos_chart) {
+        fos_chart.dispose()
+        fos_chart = null
+      }
+
+      nextTick(() => {
+        const container = document.getElementById('fos-chart')
+        console.log('图表容器:', container)
+        if (container) {
+          fos_chart = echarts.init(container)
+          console.log('图表实例:', fos_chart)
+          const option = {
+            title: {
+              left: 'center',
+              text: 'FOS 变化曲线',
+            },
+            tooltip: {
+              trigger: 'axis',
+              formatter: function (params) {
+                return `时间: ${params[0].value[0].toFixed(2)} 天<br/>FOS: ${params[0].value[1].toFixed(2)}`
+              },
+            },
+            xAxis: {
+              type: 'value',
+              name: '时间（天）',
+              axisLabel: {
+                formatter: '{value} 天',
+              },
+            },
+            yAxis: {
+              type: 'value',
+              name: 'FOS',
+            },
+            series: [
+              {
+                name: 'FOS',
+                type: 'line',
+                smooth: true,
+                symbol: 'none',
+                data: seriesData,
+              },
+            ],
+          }
+          fos_chart.setOption(option)
+          console.log('图表配置已设置')
+
+          // 监听窗口大小变化
+          window.addEventListener('resize', () => {
+            if (fos_chart) {
+              fos_chart.resize()
+            }
+          })
+        } else {
+          console.error('找不到图表容器 #fos-chart')
+        }
+      })
+    })
+    .catch(error => {
+      console.error('获取FOS数据失败:', error)
+    })
+}
+const bedding_inverted = () => {
+  dialogVisible_bedding_parallel.value = true
+  let coordinate = {
+    longitude: '97.53529',
+    latitude: '31.087017',
+    altitude: '4622',
+  }
+  viewer.value.entities.add({
+    position: Cesium.Cartesian3.fromDegrees(
+      Number(coordinate.longitude),
+      Number(coordinate.latitude),
+      Number(coordinate.altitude),
+    ),
+    billboard: {
+      image: '/ng/position.png',
+      heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
+      width: 48,
+      height: 48,
+    },
+  })
+  viewer.value.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(97.533432, 31.098434, 5312),
+    orientation: {
+      heading: Cesium.Math.toRadians(174.7),
+      pitch: Cesium.Math.toRadians(-33.5),
+      roll: Cesium.Math.toRadians(0),
+    },
+  })
+   let t, fos,fos_chart
+  axios
+    .get('/testapi/output_bedding.txt')
+    .then(res => {
+      // console.log(res.data)
+      // const obj = JSON.parse(res.data)
+      const obj = res.data
+      t = obj.t
+      fos = obj.fos
+      console.log('FOS数据:', t, fos)
+
+      // 检查数据是否有效
+      if (
+        !t ||
+        !fos ||
+        !Array.isArray(t) ||
+        !Array.isArray(fos) ||
+        t.length === 0 ||
+        fos.length === 0
+      ) {
+        console.error('FOS数据无效')
+        return
+      }
+
+      // 绘制平滑曲线图
+      const xData = t.map(time => time / (3600 * 24))
+      const seriesData = xData.map((x, index) => [x, fos[index]])
+      console.log('图表数据:', seriesData)
+
+      // 先销毁之前的图表
+      if (fos_chart) {
+        fos_chart.dispose()
+        fos_chart = null
+      }
+
+      nextTick(() => {
+        const container = document.getElementById('fos-chart')
+        console.log('图表容器:', container)
+        if (container) {
+          fos_chart = echarts.init(container)
+          console.log('图表实例:', fos_chart)
+          const option = {
+            title: {
+              left: 'center',
+              text: 'FOS 变化曲线',
+            },
+            tooltip: {
+              trigger: 'axis',
+              formatter: function (params) {
+                return `时间: ${params[0].value[0].toFixed(2)} 天<br/>FOS: ${params[0].value[1].toFixed(2)}`
+              },
+            },
+            xAxis: {
+              type: 'value',
+              name: '时间（天）',
+              axisLabel: {
+                formatter: '{value} 天',
+              },
+            },
+            yAxis: {
+              type: 'value',
+              name: 'FOS',
+            },
+            series: [
+              {
+                name: 'FOS',
+                type: 'line',
+                smooth: true,
+                symbol: 'none',
+                data: seriesData,
+              },
+            ],
+          }
+          fos_chart.setOption(option)
+          console.log('图表配置已设置')
+
+          // 监听窗口大小变化
+          window.addEventListener('resize', () => {
+            if (fos_chart) {
+              fos_chart.resize()
+            }
+          })
+        } else {
+          console.error('找不到图表容器 #fos-chart')
+        }
+      })
+    })
+    .catch(error => {
+      console.error('获取FOS数据失败:', error)
+    })
+}
+const bedding_wedget = () => {
+  dialogVisible_bedding_parallel.value = true
+  let coordinate = {
+    longitude: '97.557207',
+    latitude: '31.068265',
+    altitude: '4429',
+  }
+  viewer.value.entities.add({
+    position: Cesium.Cartesian3.fromDegrees(
+      Number(coordinate.longitude),
+      Number(coordinate.latitude),
+      Number(coordinate.altitude),
+    ),
+    billboard: {
+      image: '/ng/position.png',
+      heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
+      width: 48,
+      height: 48,
+    },
+  })
+  viewer.value.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(97.5540875, 31.0707996, 4609),
+    orientation: {
+      heading: Cesium.Math.toRadians(131.7),
+      pitch: Cesium.Math.toRadians(-26.5),
+      roll: Cesium.Math.toRadians(0),
+    },
+  })
+   let t, fos,fos_chart
+  axios
+    .get('/testapi/output_bedding.txt')
+    .then(res => {
+      // console.log(res.data)
+      // const obj = JSON.parse(res.data)
+      const obj = res.data
+      t = obj.t
+      fos = obj.fos
+      console.log('FOS数据:', t, fos)
+
+      // 检查数据是否有效
+      if (
+        !t ||
+        !fos ||
+        !Array.isArray(t) ||
+        !Array.isArray(fos) ||
+        t.length === 0 ||
+        fos.length === 0
+      ) {
+        console.error('FOS数据无效')
+        return
+      }
+
+      // 绘制平滑曲线图
+      const xData = t.map(time => time / (3600 * 24))
+      const seriesData = xData.map((x, index) => [x, fos[index]])
+      console.log('图表数据:', seriesData)
+
+      // 先销毁之前的图表
+      if (fos_chart) {
+        fos_chart.dispose()
+        fos_chart = null
+      }
+
+      nextTick(() => {
+        const container = document.getElementById('fos-chart')
+        console.log('图表容器:', container)
+        if (container) {
+          fos_chart = echarts.init(container)
+          console.log('图表实例:', fos_chart)
+          const option = {
+            title: {
+              left: 'center',
+              text: 'FOS 变化曲线',
+            },
+            tooltip: {
+              trigger: 'axis',
+              formatter: function (params) {
+                return `时间: ${params[0].value[0].toFixed(2)} 天<br/>FOS: ${params[0].value[1].toFixed(2)}`
+              },
+            },
+            xAxis: {
+              type: 'value',
+              name: '时间（天）',
+              axisLabel: {
+                formatter: '{value} 天',
+              },
+            },
+            yAxis: {
+              type: 'value',
+              name: 'FOS',
+            },
+            series: [
+              {
+                name: 'FOS',
+                type: 'line',
+                smooth: true,
+                symbol: 'none',
+                data: seriesData,
+              },
+            ],
+          }
+          fos_chart.setOption(option)
+          console.log('图表配置已设置')
+
+          // 监听窗口大小变化
+          window.addEventListener('resize', () => {
+            if (fos_chart) {
+              fos_chart.resize()
+            }
+          })
+        } else {
+          console.error('找不到图表容器 #fos-chart')
+        }
+      })
+    })
+    .catch(error => {
+      console.error('获取FOS数据失败:', error)
+    })
+}
+
+function get_camera() {
+  const handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
+  handler.setInputAction(e => {
+    const camera = viewer.value.camera
+
+    // ✅ 相机的世界坐标（WGS84 经纬度 + 高度）
+    const cartographic = Cesium.Cartographic.fromCartesian(camera.position)
+    const lon = Cesium.Math.toDegrees(cartographic.longitude) // 经度
+    const lat = Cesium.Math.toDegrees(cartographic.latitude) // 纬度
+    const height = cartographic.height // 高度（米）
+
+    // ✅ 相机姿态（朝向/俯仰/横滚）
+    const heading = Cesium.Math.toDegrees(camera.heading) // 朝向角
+    const pitch = Cesium.Math.toDegrees(camera.pitch) // 俯仰角
+    const roll = Cesium.Math.toDegrees(camera.roll) // 横滚角
+
+    // 输出结果
+    console.log('相机坐标：', { lon, lat, height })
+    console.log('相机姿态：', { heading, pitch, roll })
+  }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+}
+setTimeout(() => {
+  // get_camera()
+}, 10000)
 const position_point = ref(null)
 
 //添加灾害点属性
