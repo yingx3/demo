@@ -8,6 +8,7 @@
       @floodLayers="floodLayers"
       @forecast="foreCast"
       @seismicResult="handleSeismicResult"
+      @fullRiskAnalysis="handleFullRiskAnalysis"
     ></le-th>
     <zy-ml
       :time="selectedTime"
@@ -701,6 +702,7 @@ onMounted(() => {
 
 //选中与未选中图层
 const checkedLayers = (ps, node) => {
+  console.log('[checkedLayers] ps:', ps, 'node:', node)
   //移除取消勾选的图层
   switch (node) {
     case 16:
@@ -783,6 +785,60 @@ const checkedLayers = (ps, node) => {
     case 723:
       removeLayer_SH_Danger()
       break
+    case 731:
+      removeLayer_domestic_build()
+      break
+    case 732:
+      removeLayer_linzhi_pop()
+      break
+    case 733:
+      removeLayer_motuo_traffic()
+      break
+    case 741:
+      removeLayer_build_one()
+      break
+    case 742:
+      removeLayer_build_two()
+      break
+    case 743:
+      removeLayer_build_three()
+      break
+    case 744:
+      removeLayer_build_masonry()
+      break
+    case 745:
+      removeLayer_building_risk()
+      break
+    case 751:
+      removeLayer_roadrisk_h()
+      break
+    case 752:
+      removeLayer_roadrisk_m()
+      break
+    case 753:
+      removeLayer_roadrisk_s()
+      break
+    case 754:
+      removeLayer_road_risk()
+      break
+    case 761:
+      removeLayer_bridge_d()
+      break
+    case 762:
+      removeLayer_bridge_s()
+      break
+    case 763:
+      removeLayer_bridge()
+      break
+    case 77:
+      removeLayer_pop_risk()
+      break
+    case 781:
+      removeLayer_linzi_hazard()
+      break
+    case 782:
+      removeLayer_yigong_hazard()
+      break
     default:
       break
   }
@@ -796,10 +852,9 @@ const checkedLayers = (ps, node) => {
   const newPValues = ps.filter(p => !processedPValues.value.includes(p))
   // console.log(ps)
   if (ps.length === 0) {
+    console.warn('[checkedLayers] ps 为空，即将清除所有图层，node:', node)
     squareStore.closeSquare()
     processedPValues.value = []
-    // console.log(processedPValues.value)
-    // console.log('没有选中任何图层')
     removeLayer1()
     removeLayer2()
     removeLayer4()
@@ -811,10 +866,17 @@ const checkedLayers = (ps, node) => {
     removeLayer_DZDdevice()
     removeLayer_river()
     removeLayer_glacier()
-    // clearInterval(entityInterval)
-    // entityInterval = null
-    // viewer.value.entities.removeById('2')
-    viewer.value.entities.removeAll()
+    // 停止动态图层定时器
+    if (entityInterval.value) {
+      clearInterval(entityInterval.value)
+      entityInterval.value = null
+    }
+    // 只移除树图层管理的实体，避免误伤模型结果
+    ;['2','3','4','5','6','7','h0','h1','h2','h3','h4','h5','h6','h7'].forEach(id => {
+      if (viewer.value.entities.getById(id)) {
+        viewer.value.entities.removeById(id)
+      }
+    })
   } else {
     // 遍历新增的 p 值并执行相应操作
     newPValues.forEach(p => {
@@ -884,6 +946,7 @@ const checkedLayers = (ps, node) => {
             },
           })
           flyToWithRangeCheck(viewer.value, leftlong.value, leftlat.value - 0.4)
+          break
         case 137:
           const match137 = hd.value.match(/^([^_]+)_/)
           if (match137[1] === 'dangerLevel') {
@@ -1006,6 +1069,60 @@ const checkedLayers = (ps, node) => {
           break
         case 723:
           addLayer_SH_Danger()
+          break
+        case 731:
+          addLayer_domestic_build()
+          break
+        case 732:
+          addLayer_linzhi_pop()
+          break
+        case 733:
+          addLayer_motuo_traffic()
+          break
+        case 741:
+          addLayer_build_one()
+          break
+        case 742:
+          addLayer_build_two()
+          break
+        case 743:
+          addLayer_build_three()
+          break
+        case 744:
+          addLayer_build_masonry()
+          break
+        case 745:
+          addLayer_building_risk()
+          break
+        case 751:
+          addLayer_roadrisk_h()
+          break
+        case 752:
+          addLayer_roadrisk_m()
+          break
+        case 753:
+          addLayer_roadrisk_s()
+          break
+        case 754:
+          addLayer_road_risk()
+          break
+        case 761:
+          addLayer_bridge_d()
+          break
+        case 762:
+          addLayer_bridge_s()
+          break
+        case 763:
+          addLayer_bridge()
+          break
+        case 77:
+          addLayer_pop_risk()
+          break
+        case 781:
+          addLayer_linzi_hazard()
+          break
+        case 782:
+          addLayer_yigong_hazard()
           break
       }
     })
@@ -2587,6 +2704,7 @@ const removeLayer_glacier = () => {
 // GeoServer WMS 配置（发布数据后修改以下常量即可）
 // ============================================================
 const GEOSERVER_WMS_URL = '/geoserver/ZHLXT/wms'
+const FULL_RISK_RESULT_LAYER = 'linzi_hazard' // 全域风险脆弱性分析结果
 const BUILDING_WMS_LAYER = 'ygBuildings' // 图层名
 const POPULATION_WMS_LAYER = 'pop_LinZhi' // 图层名
 const HP_pop_Vulnerability = 'HP_pop_Vulnerability' // 图层名
@@ -2595,6 +2713,30 @@ const SH_pop_Vulnerability = 'SH_pop_Vulnerability' // 图层名
 const HP_Danger = 'HP_Danger' // 图层名
 const NSL_Danger = 'NSL_Danger' // 图层名
 const SH_Danger = 'SH_Danger' // 图层名
+// 73 承载体分布
+const domestic_build = 'domestic_build'   // 731 建筑物提取
+const linzhi_pop = 'linzhi_pop'           // 732 人口提取（栅格）
+const motuo_traffic = 'motuo_traffic'     // 733 交通流量预测
+// 74 建筑物风险评估
+const build_one = 'build_one'             // 741 1层建筑物脆弱性
+const build_two = 'build_two'             // 742 2层建筑物脆弱性
+const build_three = 'build_three'         // 743 3层建筑物脆弱性
+const build_masonry = 'build_masonry'     // 744 砌体建筑物脆弱性
+const building_risk = 'building_risk'     // 745 总体建筑物脆弱性
+// 75 道路风险评估
+const roadrisk_h = 'roadrisk_h'           // 751 高等级道路
+const roadrisk_m = 'roadrisk_m'           // 752 次等级道路
+const roadrisk_s = 'roadrisk_s'           // 753 简单道路
+const road_risk = 'road_risk'             // 754 总体道路
+// 76 桥梁风险评估
+const bridge_d = 'bridge_d'               // 761 双柱式桥梁脆弱性
+const bridge_s = 'bridge_s'               // 762 单柱式桥梁脆弱性
+const bridge = 'bridge'                   // 763 总体桥梁脆弱性
+// 77 人口风险评估
+const pop_risk = 'pop_risk'              // 77 人口风险评估（栅格）
+// 78 危险性评估
+const linzi_hazard = 'linzi_hazard'     // 781 区域危险性评估（栅格）
+const yigong_hazard = 'yigong_hazard'     // 782 点危险性评估（栅格）
 const HISTORY_SIM_WMS_LAYER = 'BCNSL_results' // 历史数据模拟
 const STUDY_AREA_RECT = Cesium.Rectangle.fromDegrees(
   92.1550260147193, 27.422589628183562, // 西, 南
@@ -2621,21 +2763,16 @@ const createWmsProvider = (layerName, transparent) => {
 //添加建筑数据（GeoServer WMS）
 const addLayer_building = () => {
   try {
-    console.log(`[建筑数据] 正在加载 WMS 图层: ${BUILDING_WMS_LAYER}`)
+    console.log(`[建筑数据] 加前 primitives:${viewer.value.scene.primitives.length} entities:${viewer.value.entities.values.length} imageryLayers:${viewer.value.scene.imageryLayers.length}`)
+    console.log(`[建筑数据] heatmapPrimitive:`, !!heatmapPrimitive, 'intervalId:', !!intervalId)
+
     const provider = createWmsProvider(BUILDING_WMS_LAYER, true)
 
     const layers = viewer.value.scene.imageryLayers
     const addedLayer = layers.addImageryProvider(provider)
     addedLayer.buildingTag = true
 
-    viewer.value.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-      orientation: {
-        heading: Cesium.Math.toRadians(56.34),
-        pitch: Cesium.Math.toRadians(-31),
-        roll: 0.0,
-      },
-    })
+    console.log(`[建筑数据] 加后 primitives:${viewer.value.scene.primitives.length} entities:${viewer.value.entities.values.length} imageryLayers:${viewer.value.scene.imageryLayers.length}`)
     ElMessage.success('建筑数据加载完成')
   } catch (error) {
     console.error('加载建筑数据失败:', error)
@@ -3128,6 +3265,282 @@ const removeLayer_SH_Danger = () => {
     }
   }
   ElMessage.success('山洪危险性数据已移除')
+}
+
+// ========== 73 承载体分布 ==========
+const addLayer_domestic_build = () => {
+  try {
+    const provider = createWmsProvider(domestic_build, false)
+    const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+    addedLayer.domestic_buildTag = true
+    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    ElMessage.success('建筑物提取加载完成')
+  } catch (error) { console.error('建筑物提取失败:', error); ElMessage.error(`建筑物提取失败: ${error.message || error}`) }
+}
+const removeLayer_domestic_build = () => {
+  const layers = viewer.value.scene.imageryLayers
+  for (let i = layers.length - 1; i >= 0; i--) { if (layers.get(i).domestic_buildTag) { layers.remove(layers.get(i)); break } }
+  ElMessage.success('建筑物提取已移除')
+}
+
+const addLayer_linzhi_pop = () => {
+  try {
+    const provider = createWmsProvider(linzhi_pop, false)
+    const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+    addedLayer.linzhi_popTag = true
+    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    ElMessage.success('人口提取加载完成')
+  } catch (error) { console.error('人口提取失败:', error); ElMessage.error(`人口提取失败: ${error.message || error}`) }
+}
+const removeLayer_linzhi_pop = () => {
+  const layers = viewer.value.scene.imageryLayers
+  for (let i = layers.length - 1; i >= 0; i--) { if (layers.get(i).linzhi_popTag) { layers.remove(layers.get(i)); break } }
+  ElMessage.success('人口提取已移除')
+}
+
+const addLayer_motuo_traffic = () => {
+  try {
+    const provider = createWmsProvider(motuo_traffic, false)
+    const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+    addedLayer.motuo_trafficTag = true
+    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    ElMessage.success('交通流量预测加载完成')
+  } catch (error) { console.error('交通流量预测失败:', error); ElMessage.error(`交通流量预测失败: ${error.message || error}`) }
+}
+const removeLayer_motuo_traffic = () => {
+  const layers = viewer.value.scene.imageryLayers
+  for (let i = layers.length - 1; i >= 0; i--) { if (layers.get(i).motuo_trafficTag) { layers.remove(layers.get(i)); break } }
+  ElMessage.success('交通流量预测已移除')
+}
+
+// ========== 74 建筑物风险评估 ==========
+const addLayer_build_one = () => {
+  try {
+    const provider = createWmsProvider(build_one, false)
+    const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+    addedLayer.build_oneTag = true
+    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    ElMessage.success('1层建筑物脆弱性加载完成')
+  } catch (error) { console.error('1层建筑物脆弱性失败:', error); ElMessage.error(`1层建筑物脆弱性失败: ${error.message || error}`) }
+}
+const removeLayer_build_one = () => {
+  const layers = viewer.value.scene.imageryLayers
+  for (let i = layers.length - 1; i >= 0; i--) { if (layers.get(i).build_oneTag) { layers.remove(layers.get(i)); break } }
+  ElMessage.success('1层建筑物脆弱性已移除')
+}
+
+const addLayer_build_two = () => {
+  try {
+    const provider = createWmsProvider(build_two, false)
+    const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+    addedLayer.build_twoTag = true
+    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    ElMessage.success('2层建筑物脆弱性加载完成')
+  } catch (error) { console.error('2层建筑物脆弱性失败:', error); ElMessage.error(`2层建筑物脆弱性失败: ${error.message || error}`) }
+}
+const removeLayer_build_two = () => {
+  const layers = viewer.value.scene.imageryLayers
+  for (let i = layers.length - 1; i >= 0; i--) { if (layers.get(i).build_twoTag) { layers.remove(layers.get(i)); break } }
+  ElMessage.success('2层建筑物脆弱性已移除')
+}
+
+const addLayer_build_three = () => {
+  try {
+    const provider = createWmsProvider(build_three, false)
+    const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+    addedLayer.build_threeTag = true
+    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    ElMessage.success('3层建筑物脆弱性加载完成')
+  } catch (error) { console.error('3层建筑物脆弱性失败:', error); ElMessage.error(`3层建筑物脆弱性失败: ${error.message || error}`) }
+}
+const removeLayer_build_three = () => {
+  const layers = viewer.value.scene.imageryLayers
+  for (let i = layers.length - 1; i >= 0; i--) { if (layers.get(i).build_threeTag) { layers.remove(layers.get(i)); break } }
+  ElMessage.success('3层建筑物脆弱性已移除')
+}
+
+const addLayer_build_masonry = () => {
+  try {
+    const provider = createWmsProvider(build_masonry, false)
+    const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+    addedLayer.build_masonryTag = true
+    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    ElMessage.success('砌体建筑物脆弱性加载完成')
+  } catch (error) { console.error('砌体建筑物脆弱性失败:', error); ElMessage.error(`砌体建筑物脆弱性失败: ${error.message || error}`) }
+}
+const removeLayer_build_masonry = () => {
+  const layers = viewer.value.scene.imageryLayers
+  for (let i = layers.length - 1; i >= 0; i--) { if (layers.get(i).build_masonryTag) { layers.remove(layers.get(i)); break } }
+  ElMessage.success('砌体建筑物脆弱性已移除')
+}
+
+const addLayer_building_risk = () => {
+  try {
+    const provider = createWmsProvider(building_risk, false)
+    const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+    addedLayer.building_riskTag = true
+    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    ElMessage.success('总体建筑物脆弱性加载完成')
+  } catch (error) { console.error('总体建筑物脆弱性失败:', error); ElMessage.error(`总体建筑物脆弱性失败: ${error.message || error}`) }
+}
+const removeLayer_building_risk = () => {
+  const layers = viewer.value.scene.imageryLayers
+  for (let i = layers.length - 1; i >= 0; i--) { if (layers.get(i).building_riskTag) { layers.remove(layers.get(i)); break } }
+  ElMessage.success('总体建筑物脆弱性已移除')
+}
+
+// ========== 75 道路风险评估 ==========
+const addLayer_roadrisk_h = () => {
+  try {
+    const provider = createWmsProvider(roadrisk_h, false)
+    const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+    addedLayer.roadrisk_hTag = true
+    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    ElMessage.success('高等级道路加载完成')
+  } catch (error) { console.error('高等级道路失败:', error); ElMessage.error(`高等级道路失败: ${error.message || error}`) }
+}
+const removeLayer_roadrisk_h = () => {
+  const layers = viewer.value.scene.imageryLayers
+  for (let i = layers.length - 1; i >= 0; i--) { if (layers.get(i).roadrisk_hTag) { layers.remove(layers.get(i)); break } }
+  ElMessage.success('高等级道路已移除')
+}
+
+const addLayer_roadrisk_m = () => {
+  try {
+    const provider = createWmsProvider(roadrisk_m, false)
+    const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+    addedLayer.roadrisk_mTag = true
+    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    ElMessage.success('次等级道路加载完成')
+  } catch (error) { console.error('次等级道路失败:', error); ElMessage.error(`次等级道路失败: ${error.message || error}`) }
+}
+const removeLayer_roadrisk_m = () => {
+  const layers = viewer.value.scene.imageryLayers
+  for (let i = layers.length - 1; i >= 0; i--) { if (layers.get(i).roadrisk_mTag) { layers.remove(layers.get(i)); break } }
+  ElMessage.success('次等级道路已移除')
+}
+
+const addLayer_roadrisk_s = () => {
+  try {
+    const provider = createWmsProvider(roadrisk_s, false)
+    const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+    addedLayer.roadrisk_sTag = true
+    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    ElMessage.success('简单道路加载完成')
+  } catch (error) { console.error('简单道路失败:', error); ElMessage.error(`简单道路失败: ${error.message || error}`) }
+}
+const removeLayer_roadrisk_s = () => {
+  const layers = viewer.value.scene.imageryLayers
+  for (let i = layers.length - 1; i >= 0; i--) { if (layers.get(i).roadrisk_sTag) { layers.remove(layers.get(i)); break } }
+  ElMessage.success('简单道路已移除')
+}
+
+const addLayer_road_risk = () => {
+  try {
+    const provider = createWmsProvider(road_risk, false)
+    const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+    addedLayer.road_riskTag = true
+    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    ElMessage.success('总体道路加载完成')
+  } catch (error) { console.error('总体道路失败:', error); ElMessage.error(`总体道路失败: ${error.message || error}`) }
+}
+const removeLayer_road_risk = () => {
+  const layers = viewer.value.scene.imageryLayers
+  for (let i = layers.length - 1; i >= 0; i--) { if (layers.get(i).road_riskTag) { layers.remove(layers.get(i)); break } }
+  ElMessage.success('总体道路已移除')
+}
+
+// ========== 76 桥梁风险评估 ==========
+const addLayer_bridge_d = () => {
+  try {
+    const provider = createWmsProvider(bridge_d, false)
+    const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+    addedLayer.bridge_dTag = true
+    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    ElMessage.success('双柱式桥梁脆弱性加载完成')
+  } catch (error) { console.error('双柱式桥梁脆弱性失败:', error); ElMessage.error(`双柱式桥梁脆弱性失败: ${error.message || error}`) }
+}
+const removeLayer_bridge_d = () => {
+  const layers = viewer.value.scene.imageryLayers
+  for (let i = layers.length - 1; i >= 0; i--) { if (layers.get(i).bridge_dTag) { layers.remove(layers.get(i)); break } }
+  ElMessage.success('双柱式桥梁脆弱性已移除')
+}
+
+const addLayer_bridge_s = () => {
+  try {
+    const provider = createWmsProvider(bridge_s, false)
+    const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+    addedLayer.bridge_sTag = true
+    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    ElMessage.success('单柱式桥梁脆弱性加载完成')
+  } catch (error) { console.error('单柱式桥梁脆弱性失败:', error); ElMessage.error(`单柱式桥梁脆弱性失败: ${error.message || error}`) }
+}
+const removeLayer_bridge_s = () => {
+  const layers = viewer.value.scene.imageryLayers
+  for (let i = layers.length - 1; i >= 0; i--) { if (layers.get(i).bridge_sTag) { layers.remove(layers.get(i)); break } }
+  ElMessage.success('单柱式桥梁脆弱性已移除')
+}
+
+const addLayer_bridge = () => {
+  try {
+    const provider = createWmsProvider(bridge, false)
+    const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+    addedLayer.bridgeTag = true
+    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    ElMessage.success('总体桥梁脆弱性加载完成')
+  } catch (error) { console.error('总体桥梁脆弱性失败:', error); ElMessage.error(`总体桥梁脆弱性失败: ${error.message || error}`) }
+}
+const removeLayer_bridge = () => {
+  const layers = viewer.value.scene.imageryLayers
+  for (let i = layers.length - 1; i >= 0; i--) { if (layers.get(i).bridgeTag) { layers.remove(layers.get(i)); break } }
+  ElMessage.success('总体桥梁脆弱性已移除')
+}
+
+// ========== 77 人口风险评估 ==========
+const addLayer_pop_risk = () => {
+  try {
+    const provider = createWmsProvider(pop_risk, false)
+    const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+    addedLayer.pop_riskTag = true
+    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    ElMessage.success('人口风险评估加载完成')
+  } catch (error) { console.error('人口风险评估失败:', error); ElMessage.error(`人口风险评估失败: ${error.message || error}`) }
+}
+const removeLayer_pop_risk = () => {
+  const layers = viewer.value.scene.imageryLayers
+  for (let i = layers.length - 1; i >= 0; i--) { if (layers.get(i).pop_riskTag) { layers.remove(layers.get(i)); break } }
+  ElMessage.success('人口风险评估已移除')
+}
+
+// ========== 78 危险性评估 ==========
+const addLayer_linzi_hazard = () => {
+  try {
+    const provider = createWmsProvider(linzi_hazard, false)
+    const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+    addedLayer.linzi_hazardTag = true
+    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    ElMessage.success('区域危险性评估加载完成')
+  } catch (error) { console.error('区域危险性评估失败:', error); ElMessage.error(`区域危险性评估失败: ${error.message || error}`) }
+}
+const removeLayer_linzi_hazard = () => {
+  const layers = viewer.value.scene.imageryLayers
+  for (let i = layers.length - 1; i >= 0; i--) { if (layers.get(i).linzi_hazardTag) { layers.remove(layers.get(i)); break } }
+  ElMessage.success('区域危险性评估已移除')
+}
+
+const addLayer_yigong_hazard = () => {
+  try {
+    const provider = createWmsProvider(yigong_hazard, false)
+    const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+    addedLayer.yigong_hazardTag = true
+    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    ElMessage.success('点危险性评估加载完成')
+  } catch (error) { console.error('点危险性评估失败:', error); ElMessage.error(`点危险性评估失败: ${error.message || error}`) }
+}
+const removeLayer_yigong_hazard = () => {
+  const layers = viewer.value.scene.imageryLayers
+  for (let i = layers.length - 1; i >= 0; i--) { if (layers.get(i).yigong_hazardTag) { layers.remove(layers.get(i)); break } }
+  ElMessage.success('点危险性评估已移除')
 }
 
 //加载全国气象站
@@ -4002,6 +4415,7 @@ async function loadHeatmap(index) {
       avaflowOutputBase.value ||
       (area_avaflow.value === '波密县' ? '/ng/avaflow_bomi' : '/ng/avaflow')
     heatmapPrimitive = await svcLoadHeatmap(viewer.value, index, base)
+    console.log('[loadHeatmap] 帧', index, '加载完成 primitive:', !!heatmapPrimitive, '总数:', viewer.value.scene.primitives.length)
   } catch (error) {
     console.error(`加载output${index}.geojson失败:`, error)
   }
@@ -4666,7 +5080,7 @@ const cleanentity = () => {
   clearHeatmapPrimitive()
   // 3. 移除洪水图层
   removeFloodPrimitive()
-  // 4. 移除各类影像/矢量图层（DEM、坡向、河流、冰川、站点、泥石流设备等）
+  // 4. 移除旧式图层
   removeLayer1()
   removeLayer2()
   removeLayer4()
@@ -4679,14 +5093,28 @@ const cleanentity = () => {
   removeLayer_glacier()
   removeAllStations()
   removeLayer_DZDdevice()
-  // 5. 移除所有模拟相关的 DataSource（如 GeoJSON、站点等）
+  // 5. 移除所有模拟相关的 DataSource
   removeAllSimulationDataSources()
-  // 6. 清空所有实体（图标、矩形、标记等）
+  // 6. 清空所有实体
   viewer.value.entities.removeAll()
-  // 7. 关闭风险/方框等 UI 状态
+  // 7. 移除所有 GeoServer WMS 影像图层（保留 Cesium 内置图层）
+  const imLayers = viewer.value.scene.imageryLayers
+  for (let i = imLayers.length - 1; i >= 0; i--) {
+    const layer = imLayers.get(i)
+    if (layer.imageryProvider?.url?.includes('/geoserver/')) {
+      imLayers.remove(layer)
+    }
+  }
+  // 8. 移除全域风险结果图层及图例
+  if (fullRiskResultLayer && !fullRiskResultLayer.isDestroyed?.()) {
+    try { viewer.value.scene.imageryLayers.remove(fullRiskResultLayer) } catch (e) {}
+    fullRiskResultLayer = null
+  }
+  if (fullRiskLegendEl) { fullRiskLegendEl.remove(); fullRiskLegendEl = null }
+  // 9. 关闭 UI 状态
   squareStore.closeSquare()
   squareStore.closeRisk()
-  //移除事件handler_seismic
+  // 10. 移除事件
   handler_seismic.value.destroy()
 }
 const handler_seismic = ref('')
@@ -4752,6 +5180,58 @@ function handleSeismicResult(payload) {
   } catch (e) {
     console.error('handleSeismicResult error', e)
   }
+}
+
+// 全域风险脆弱性分析结果处理
+let fullRiskResultLayer = null // 结果 WMS 图层引用
+let fullRiskLegendEl = null    // 图例 DOM 元素
+
+const handleFullRiskAnalysis = () => {
+  console.log('[全域风险脆弱性分析] 开始加载结果图层')
+  // 移除旧的结果图层
+  if (fullRiskResultLayer && !fullRiskResultLayer.isDestroyed?.()) {
+    viewer.value.scene.imageryLayers.remove(fullRiskResultLayer)
+    fullRiskResultLayer = null
+  }
+  if (fullRiskLegendEl) { fullRiskLegendEl.remove(); fullRiskLegendEl = null }
+
+  try {
+    const provider = createWmsProvider(FULL_RISK_RESULT_LAYER, false)
+    fullRiskResultLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+  } catch (e) {
+    console.error('加载结果图层失败:', e)
+  }
+
+  // 绘制风险图例（SLD ColorMap）
+  const colors = [
+    { color: '#eee400', label: 'Low', range: '≤0.42' },
+    { color: '#eea200', label: 'Medium', range: '0.42-0.70' },
+    { color: '#f08200', label: 'Medium-High', range: '0.70-0.86' },
+    { color: '#f34a00', label: 'High', range: '0.86-1.12' },
+  ]
+  fullRiskLegendEl = document.createElement('div')
+  fullRiskLegendEl.style.cssText = 'position:fixed;bottom:30px;left:30px;z-index:999;background:rgba(0,0,0,0.8);border:1px solid #38e1ff;border-radius:6px;padding:10px 14px;color:#fff;font-size:12px;'
+  fullRiskLegendEl.innerHTML = `
+    <div style="font-weight:600;margin-bottom:6px;color:#38e1ff">全域风险脆弱性</div>
+    ${colors.map(c => `
+      <div style="display:flex;align-items:center;gap:8px;margin:3px 0">
+        <span style="width:20px;height:14px;background:${c.color};border-radius:2px;flex-shrink:0"></span>
+        <span style="min-width:80px">${c.label}</span>
+        <span style="color:#999;font-size:11px">${c.range}</span>
+      </div>
+    `).join('')}
+    <div id="quanyu-legend-close" style="position:absolute;top:2px;right:8px;cursor:pointer;color:#999">×</div>
+  `
+  document.body.appendChild(fullRiskLegendEl)
+  fullRiskLegendEl.querySelector('#quanyu-legend-close').onclick = () => {
+    if (fullRiskResultLayer) { viewer.value.scene.imageryLayers.remove(fullRiskResultLayer); fullRiskResultLayer = null }
+    fullRiskLegendEl.remove(); fullRiskLegendEl = null
+  }
+
+  viewer.value.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+    orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 },
+  })
 }
 //使用echart绘制seismic图表
 let seismic_chart = null

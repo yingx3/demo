@@ -2917,7 +2917,51 @@
         <img id="bar" src="../assets/img/left_line.png" alt="" />
         <div class="box">
           <img src="../assets/img/云反射率.png" alt="" />
-          <span>全域风险脆弱性分析</span>
+          <el-button :plain="true" @click="dialogVisibleQuanYu = true"
+            ><span>全域风险脆弱性分析</span></el-button
+          >
+          <el-dialog
+            v-model="dialogVisibleQuanYu"
+            title="全域风险脆弱性分析"
+            width="560"
+            :close-on-click-modal="false"
+            class="dialog_quanyu"
+          >
+            <template #header>
+              <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+                <span style="color:#ffffff;font-size:21px;padding-left:20px">全域风险脆弱性分析</span>
+              </div>
+            </template>
+            <p id="name_par_gbm" style="margin-left:24px;margin-top:8px;font-size:18px;color:#2763ca">栅格数据</p>
+            <el-form label-width="auto" style="max-width:600px" class="form_gbm">
+              <el-form-item v-for="item in quanyuFileItems" :key="item.key" :label="item.label" label-position="right" label-width="120px">
+                <el-input v-model="quanYuFileNames[item.key]" :placeholder="item.placeholder" style="width:160px" readonly>
+                  <template #append>
+                    <el-upload
+                      :ref="el => { if (el) uploadRefsQuanYu[item.key] = el }"
+                      action="http://localhost:3000/node/upload_tif"
+                      name="file"
+                      :auto-upload="false"
+                      :multiple="false"
+                      :show-file-list="false"
+                      accept=".tif,.tiff"
+                      @change="(f,fs) => handleQuanYuFileChange(item.key, f, fs)"
+                    >
+                      <el-button style="border:none;color:white;padding:0;margin-left:8px" @click.stop="triggerQuanYuUpload(item.key)">
+                        <i class="iconfont icon-daoru"></i>
+                      </el-button>
+                    </el-upload>
+                  </template>
+                </el-input>
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" @click="submitQuanYu" :loading="quanYuLoading" style="margin-left:240px">
+                  {{ quanYuLoading ? '计算中 (10s)...' : '提交分析' }}
+                </el-button>
+                <el-button @click="dialogVisibleQuanYu = false">取消</el-button>
+              </el-form-item>
+            </el-form>
+          </el-dialog>
         </div>
       </div>
       <!-- 监测预警模块 -->
@@ -4105,6 +4149,56 @@ const formGBM = reactive({
   // 前端不用把 targetFolder 强行传死，若后端需要可以传；这里演示也可以传
   targetFolder: './src/assets/shps',
 })
+// --- 全域风险脆弱性分析 ---
+const dialogVisibleQuanYu = ref(false)
+const quanYuLoading = ref(false)
+const uploadRefsQuanYu = reactive({})
+const quanYuFiles = reactive({})   // key → File
+const quanYuFileNames = reactive({}) // key → display name
+const quanyuFileItems = [
+  { key:'elevation', label:'平均高程', placeholder:'选择 elevation.tif' },
+  { key:'relief', label:'地形起伏度', placeholder:'选择 relief.tif' },
+  { key:'watershed', label:'流域面积', placeholder:'选择 watershed.tif' },
+  { key:'lithology', label:'地层岩性', placeholder:'选择 lithology.tif' },
+  { key:'faultDensity', label:'断层密度', placeholder:'选择 fault_density.tif' },
+  { key:'soilType', label:'土壤类型', placeholder:'选择 soil_type.tif' },
+  { key:'waterDist', label:'距水系距离', placeholder:'选择 water_dist.tif' },
+  { key:'drainageDensity', label:'河网密度', placeholder:'选择 drainage_density.tif' },
+  { key:'rainfall', label:'降雨数据', placeholder:'选择 rainfall.tif' },
+  { key:'landUse', label:'土地利用', placeholder:'选择 land_use.tif' },
+  { key:'roadDist', label:'距公路距离', placeholder:'选择 road_dist.tif' },
+  { key:'ndvi', label:'NDVI', placeholder:'选择 ndvi.tif' },
+]
+// 初始化
+quanyuFileItems.forEach(item => {
+  quanYuFileNames[item.key] = ''
+  quanYuFiles[item.key] = null
+})
+const handleQuanYuFileChange = (key, uploadFile) => {
+  quanYuFiles[key] = uploadFile.raw || uploadFile
+  quanYuFileNames[key] = (uploadFile.raw || uploadFile).name || ''
+}
+const triggerQuanYuUpload = key => {
+  const el = uploadRefsQuanYu[key]?.$el?.querySelector?.('input[type=file]')
+  if (el) el.click()
+}
+const submitQuanYu = () => {
+  const missing = quanyuFileItems.filter(item => !quanYuFiles[item.key])
+  if (missing.length > 0) {
+    ElMessage({ message: `请选择: ${missing.map(i => i.label).join('、')}`, type: 'warning' })
+    return
+  }
+  dialogVisibleQuanYu.value = false
+  quanYuLoading.value = true
+  ElMessage({ message: '正在计算全域风险脆弱性', type: 'info', duration: 0 })
+  setTimeout(() => {
+    quanYuLoading.value = false
+    ElMessage.closeAll()
+    ElMessage({ message: '计算完成，正在加载结果图层', type: 'success' })
+    $emit('fullRiskAnalysis')
+  }, 10000)
+}
+
 const form_avainit = reactive({
   slope_angle: '60',
   slide_angle: '15',
@@ -4155,6 +4249,7 @@ let $emit = defineEmits([
   'floodLayers',
   'forecast',
   'seismicResult',
+  'fullRiskAnalysis',
 ])
 // 获取 store 实例
 const squareStore = useSquareStore()
@@ -4881,6 +4976,25 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
   height: 360px;
   background-image: url('../assets/img/fz173.png');
   background-size: 100% 100%;
+}
+
+:deep(.el-dialog.dialog_quanyu) {
+  --el-dialog-bg-color: transparent;
+  margin-top: 3%;
+  width: 560px;
+  background-image: url('../assets/img/fz174.png');
+  background-size: 100% 100%;
+}
+:deep(.el-dialog.dialog_quanyu .el-form-item__label) {
+  color: #c8e6ff;
+}
+:deep(.el-dialog.dialog_quanyu .el-input__wrapper) {
+  background: rgba(255,255,255,0.1);
+  box-shadow: 0 0 0 1px #38e1ff66 inset;
+}
+:deep(.el-dialog.dialog_quanyu .el-select .el-input__wrapper) {
+  background: rgba(255,255,255,0.1);
+  box-shadow: 0 0 0 1px #38e1ff66 inset;
 }
 
 :deep(.el-dialog.dialog_avaflow) {

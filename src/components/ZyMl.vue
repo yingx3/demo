@@ -233,6 +233,108 @@ const treeData = ref([
           },
         ],
       },
+      {
+        id: 73,
+        name: '承灾体分布',
+        children: [
+          {
+            id: 731,
+            name: '建筑物提取',//domestic_build
+          },
+          {
+            id: 732,
+            name: '人口提取',//linzhi_pop
+          },
+          {
+            id: 733,
+            name: '交通流量预测',//motuo_traffic
+          },
+        ],
+      },
+      {
+        id: 74,
+        name: '建筑物风险评估',
+        children: [
+          {
+            id: 741,
+            name: '1层建筑物脆弱性',//build_one
+          },
+          {
+            id: 742,
+            name: '2层建筑物脆弱性',//build_two
+          },
+          {
+            id: 743,
+            name: '3层建筑物脆弱性',//build_three
+          },
+          {
+            id: 744,
+            name: '砌体建筑物脆弱性',//build_masonry
+          },
+          {
+            id: 745,
+            name: '总体建筑物脆弱性',//building_risk
+          },
+        ],
+      },
+      {
+        id: 75,
+        name: '道路风险评估',
+        children: [
+          {
+            id: 751,
+            name: '高等级道路',//roadrisk_h
+          },
+          {
+            id: 752,
+            name: '次等级道路',//roadrisk_m
+          },
+          {
+            id: 753,
+            name: '简单道路',//roadrisk_s
+          },
+          {
+            id: 754,
+            name: '总体道路',//road_risk
+          },
+        ],
+      },
+      {
+        id: 76,
+        name: '桥梁风险评估',
+        children: [
+          {
+            id: 761,
+            name: '双柱式桥梁脆弱性',//bridge_d
+          },
+          {
+            id: 762,
+            name: '单柱式桥梁脆弱性',//bridge_s
+          },
+          {
+            id: 763,
+            name: '总体桥梁脆弱性',//bridge
+          },
+        ],
+      },
+      {
+        id: 77,
+        name: '人口风险评估',//pop_risk
+      },
+      {
+        id: 78,
+        name: '危险性评估',
+        children: [
+          {
+            id: 781,
+            name: '区域危险性评估',//linzhi_hazard
+          },
+          {
+            id: 782,
+            name: '点危险性评估',//yigong_hazard
+          },
+        ],
+      },
 
     ],
   },
@@ -575,43 +677,33 @@ function findNodeById(nodes, id) {
 }
 
 const addChildNode = time => {
-  // 使用递归查找 ID 为 13 的节点
   const targetNode = findNodeById(treeData.value, 13)
-  // console.log(targetNode) // 查看 targetNode 是否为 undefined 或目标节点
   if (targetNode) {
-    targetNode.children = []
-    // 根据选择的时间添加不同的子节点
-    // console.log('当前 children 数组:', targetNode.children) // 检查当前 children 数组
-    // 确保 time 数组不为空
-    let idCounter = 131 // 初始化 ID 计数器，从 131 开始
+    let idCounter = 131
     let layer_id = 2
+    const newChildren = []
     if (time && time.length > 0) {
       time.forEach(selectedTime => {
-        const newNode = {
-          // id: performance.now(), // 使用更精确的时间戳作为唯一 ID
+        newChildren.push({
           id: idCounter++,
           name: `${selectedTime / 3600}h`,
           children: [],
           layer_id: `${layer_id++}`,
-        }
-        // console.log(newNode)
-        targetNode.children.push(newNode)
-        // console.log('添加的子节点:', newNode) // 输出添加的节点
-        // 强制触发响应式更新
-        treeData.value = [...treeData.value] // 通过替换引用的方式触发视图更新
+        })
       })
       if (time.length > 1) {
-        //添加图层：合并所有时间段
-        const newNode1 = {
+        newChildren.push({
           id: 137,
           name: `合并所有时间段`,
           children: [],
-        }
-        targetNode.children.push(newNode1)
+        })
       }
     } else {
       console.log('时间数组为空，无法添加子节点')
     }
+    // 一次性替换 children 再触发视图更新，避免中间空数组触发 @check 发射空 ps
+    targetNode.children = newChildren
+    treeData.value = [...treeData.value]
   } else {
     console.log('节点未找到')
   }
