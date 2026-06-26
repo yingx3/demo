@@ -6,6 +6,7 @@
       @timeSelected="handleTimeSelected"
       @yjLayers="yjLayers"
       @floodLayers="floodLayers"
+      @floodLayersTest="floodLayersTest"
       @forecast="foreCast"
       @seismicResult="handleSeismicResult"
       @fullRiskAnalysis="handleFullRiskAnalysis"
@@ -758,6 +759,9 @@ const checkedLayers = (ps, node) => {
     case 115:
       removeLayer_population()
       break
+    case 116:
+      removeLayer_tianditu_road()
+      break
     case 621:
       removeLayer_621()
       break
@@ -1042,6 +1046,9 @@ const checkedLayers = (ps, node) => {
           break
         case 115:
           addLayer_population()
+          break
+        case 116:
+          addLayer_tianditu_road()
           break
         case 621:
           addLayer_621()
@@ -1640,102 +1647,123 @@ const openLayers = async params => {
     console.error('openLayers 原始逻辑执行错误：', err)
   }
 
-  // 新增：兼容处理后端返回的 processResp（不影响上面原有逻辑）
-  try {
-    if (!params) return
-
+  // 新增：兼容处理后端返回的 processResp
+  if (params) {
     const pr = params.processResp
-    if (!pr) return
+    if (pr) {
+      try {
+        console.log('openLayers: processResp detected', pr)
 
-    console.log('openLayers: processResp detected', pr)
-
-    // 兼容多种后端结构：geojson 对象 / geojson 字符串 / data 数组 / filename
-    let maybeGeo = pr.geojson ?? pr.data ?? pr.geoJson ?? pr.result ?? pr
-
-    // 若是数组且第一个元素存在，尝试取第一个（兼容旧接口）
-    if (Array.isArray(maybeGeo)) {
-      if (maybeGeo.length === 0) {
-        maybeGeo = null
-      } else {
-        maybeGeo = maybeGeo[0]
-      }
-    }
-
-    // 尝试直接解析并加载 GeoJSON
-    // console.log('openLayers: maybeGeo', maybeGeo)
-    // console.log(Array.isArray(maybeGeo))
-    if (maybeGeo) {
-      let geojsonObj = null
-      if (typeof maybeGeo === 'string') {
-        try {
-          // console.log('maybeGeo是字符串')
-          geojsonObj = JSON.parse(maybeGeo)
-        } catch (e) {
-          // 不是 JSON 字符串 -> 可能是文件名，后续回退处理
-          geojsonObj = null
+        let maybeGeo = pr.geojson ?? pr.data ?? pr.geoJson ?? pr.result ?? pr
+        if (Array.isArray(maybeGeo)) {
+          maybeGeo = maybeGeo.length > 0 ? maybeGeo[0] : null
         }
-      } else if (typeof maybeGeo === 'object') {
-        geojsonObj = maybeGeo
-      }
 
-      if (geojsonObj) {
-        console.log(geojsonObj)
-        try {
-          const dataSource = await Cesium.GeoJsonDataSource.load(geojsonObj, {
-            clampToGround: true,
-            strict: false,
-          })
-          viewer.value.dataSources.add(dataSource)
-
-          // ← 插入：对新加载的数据调用符号化并打印结果
-          console.log(
-            'openLayers: applying susc symbology for processResp GeoJSON',
-          )
-          try {
-            const applied = applySuscSymbology(dataSource)
-            console.log(
-              `openLayers: applySuscSymbology applied ${applied} / ${dataSource.entities.values.length}`,
-            )
-          } catch (err) {
-            console.warn('openLayers: applySuscSymbology failed', err)
+        if (maybeGeo) {
+          let geojsonObj = null
+          if (typeof maybeGeo === 'string') {
+            try { geojsonObj = JSON.parse(maybeGeo) } catch (e) { geojsonObj = null }
+          } else if (typeof maybeGeo === 'object') {
+            geojsonObj = maybeGeo
           }
 
-          debugPrintDataSourceEntities(dataSource)
-          viewer.value.flyTo(dataSource)
-          ElMessage({ message: '后端返回的 GeoJSON 已加载', type: 'success' })
-          return
-        } catch (e) {
-          console.error('将 processResp 的 geojson 加载到 Cesium 失败', e)
-          // 继续尝试回退（filename）
+          if (geojsonObj) {
+            const dataSource = await Cesium.GeoJsonDataSource.load(geojsonObj, {
+              clampToGround: true, strict: false,
+            })
+            viewer.value.dataSources.add(dataSource)
+            try { applySuscSymbology(dataSource) } catch (err) {}
+            viewer.value.flyTo(dataSource)
+            ElMessage({ message: '后端返回的 GeoJSON 已加载', type: 'success' })
+            return
+          }
         }
+
+        const filename = pr.filename || pr.savedFilename || params.uploadResp?.savedFilename || params.uploadResp?.filename
+        const folder = pr.folder || params.uploadResp?.folder || ''
+        if (filename) {
+          await loadShpFromBackend({ filename, folder, endpoint: '/testapi/GBM' })
+          return
+        }
+        console.warn('openLayers: processResp 未包含可解析的 geojson 或 filename')
+      } catch (err) {
+        console.error('openLayers 处理 processResp 时出错：', err)
       }
     }
+  }
 
-    // 回退：尝试从 processResp 或 uploadResp 中取 filename 再次请求后端处理
-    const filename =
-      pr.filename ||
-      pr.savedFilename ||
-      params.uploadResp?.savedFilename ||
-      params.uploadResp?.filename
-    const folder = pr.folder || params.uploadResp?.folder || ''
+  // 泥石流启动物源计算模型结果：sdpResultUrl (TIFF Blob URL)
+  try {
+    if (params?.sdpResult) {
+      const { imageBase64, minLng, minLat, maxLng, maxLat } = params.sdpResult
+      console.log('openLayers: SDP result', { minLng, minLat, maxLng, maxLat })
+      const img = new Image()
+      img.onload = () => {
+        // 用 Canvas 去掉白色背景（NoData 区域变透明）
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width
+        canvas.height = img.height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0)
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        const d = imageData.data
+        for (let i = 0; i < d.length; i += 4) {
+          // R>250 && G>250 && B>250 视为白色/接近白色 → 变透明
+          if (d[i] > 250 && d[i+1] > 250 && d[i+2] > 250) {
+            d[i+3] = 0
+          }
+        }
+        ctx.putImageData(imageData, 0, 0)
+        const cleanUrl = canvas.toDataURL('image/png')
 
-    if (filename) {
-      console.log(
-        'openLayers: fallback to loadShpFromBackend with filename',
-        filename,
-        folder,
-      )
-      await loadShpFromBackend({ filename, folder, endpoint: '/testapi/GBM' })
-      return
+        const provider = new Cesium.SingleTileImageryProvider({
+          url: cleanUrl,
+          rectangle: Cesium.Rectangle.fromDegrees(minLng, minLat, maxLng, maxLat),
+          tileWidth: img.width,
+          tileHeight: img.height,
+        })
+        const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+        addedLayer.sdpResultTag = true
+        viewer.value.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees((minLng + maxLng) / 2, (minLat + maxLat) / 2, 7299),
+          orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 },
+        })
+        // 清除旧图例
+        if (sdpLegendEl) { sdpLegendEl.remove(); sdpLegendEl = null }
+        // 绘制 ZMAX 图例
+        const legendColors = [
+          { color: '#f5f0b0', label: '10–25 m', desc: '极少物源' },
+          { color: '#f0c030', label: '25–50 m', desc: '少量物源' },
+          { color: '#f08020', label: '50–80 m', desc: '中等物源' },
+          { color: '#d03010', label: '80–110 m', desc: '大量物源' },
+          { color: '#5c1010', label: '110–131 m', desc: '巨量物源' },
+        ]
+        sdpLegendEl = document.createElement('div')
+        sdpLegendEl.style.cssText = 'position:fixed;bottom:30px;left:30px;z-index:999;background:rgba(0,0,0,0.8);border:1px solid #38e1ff;border-radius:6px;padding:10px 14px;color:#fff;font-size:12px;'
+        sdpLegendEl.innerHTML = `
+          <div style="font-weight:600;margin-bottom:6px;color:#38e1ff">ZMAX 物源深度</div>
+          ${legendColors.map(c => `
+            <div style="display:flex;align-items:center;gap:8px;margin:3px 0">
+              <span style="width:20px;height:14px;background:${c.color};border-radius:2px;flex-shrink:0"></span>
+              <span style="min-width:70px">${c.label}</span>
+              <span style="color:#999;font-size:11px">${c.desc}</span>
+            </div>
+          `).join('')}
+          <div id="sdp-legend-close" style="position:absolute;top:2px;right:8px;cursor:pointer;color:#999">×</div>
+        `
+        document.body.appendChild(sdpLegendEl)
+        sdpLegendEl.querySelector('#sdp-legend-close').onclick = () => { sdpLegendEl.remove(); sdpLegendEl = null }
+
+        ElMessage({ message: '泥石流起动区深度结果已加载', type: 'success' })
+      }
+      img.onerror = () => {
+        console.error('SDP PNG 加载失败')
+        ElMessage({ message: 'PNG 图片加载失败', type: 'error' })
+      }
+      img.src = `data:image/png;base64,${imageBase64}`
     }
-
-    console.warn('openLayers: processResp 未包含可解析的 geojson 或 filename')
-  } catch (err) {
-    console.error('openLayers 处理 processResp 时出错：', err)
-    ElMessage({
-      message: '加载图层时发生错误：' + (err?.message || err),
-      type: 'error',
-    })
+  } catch (e) {
+    console.error('加载 SDP 结果失败:', e)
   }
 }
 const area_avaflow = ref(null)
@@ -1800,6 +1828,89 @@ const yjLayers = payload => {
     }
   })
   // console.log('已跳转！！！')
+}
+
+// 洪水泥石流启动动力学模型（测试） — 独立渲染逻辑
+// 洪水泥石流（测试）— DebrisFlow 渲染
+let sdpSim = null
+let sdpLegendEl = null
+
+const floodLayersTest = async payload => {
+  console.log('[floodLayersTest] 参数:', payload)
+  ElMessage({ message: '正在加载 DebrisFlow 渲染器...', type: 'info', duration: 0 })
+
+  try {
+    window.Cesium = Cesium
+    const [{ default: DebrisFlow }] = await Promise.all([
+      import('../../Simulation-extracted/DebrisFlow/index.js'),
+    ])
+
+    // 移除旧实例
+    if (sdpSim) { clearInterval(sdpSim._frameInterval); sdpSim.remove(); sdpSim = null }
+
+    // 解析第一帧 ASC 获取头信息
+    const { parseASC } = await import('../utils/ascConverter.js')
+    const firstResp = await fetch('/CS/asc_data/flood_output1.asc')
+    const header = parseASC(await firstResp.text())
+
+    const centerLon = header.xllcorner + (header.ncols * header.cellsize) / 2
+    const centerLat = header.yllcorner + (header.nrows * header.cellsize) / 2
+    const metersPerDegLon = 111320 * Math.cos(centerLat * Math.PI / 180)
+    const cellSizeM = header.cellsize * (111320 + metersPerDegLon) / 2
+    const centerCart = Cesium.Cartesian3.fromDegrees(centerLon, centerLat)
+    const sampled = await Cesium.sampleTerrain(viewer.value.terrainProvider, 13, [
+      Cesium.Cartographic.fromCartesian(centerCart)
+    ])
+    const groundH = sampled[0]?.height || 3000
+    const center = Cesium.Cartesian3.fromDegrees(centerLon, centerLat, groundH)
+
+    const debrisJSON = turf.polygon([[
+      [header.xllcorner, header.yllcorner],
+      [header.xllcorner + header.ncols * header.cellsize, header.yllcorner],
+      [header.xllcorner + header.ncols * header.cellsize, header.yllcorner + header.nrows * header.cellsize],
+      [header.xllcorner, header.yllcorner + header.nrows * header.cellsize],
+      [header.xllcorner, header.yllcorner],
+    ]])
+
+    sdpSim = new DebrisFlow({
+      viewer: viewer.value,
+      width: 2048,
+      height: 2048,
+      cellSize: cellSizeM * Math.max(header.ncols, header.nrows) / 2048,
+      rect: [header.ncols, header.nrows],
+      range: [0, 1],
+      debrisJSON: turf.featureCollection([debrisJSON]),
+      deepWaterColor: '#5c3a1e',
+      lightWaterColor: '#c8a050',
+      renderTerrain: false,
+      renderHeatMap: false,
+      renderOriginData: false,
+    })
+
+    await sdpSim.initBox({ center, level: 13 })
+
+    const totalFrames = 21
+    let currentFrame = 1
+    const frameInterval = setInterval(async () => {
+      if (!sdpSim || currentFrame > totalFrames) { clearInterval(frameInterval); return }
+      await sdpSim.loadAscAsWaterHeight(`/CS/asc_data/flood_output${currentFrame}.asc`)
+      currentFrame++
+    }, 600)
+    sdpSim._frameInterval = frameInterval
+
+    const terrainH = groundH + 2000
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, terrainH),
+      orientation: { heading: Cesium.Math.toRadians(0), pitch: Cesium.Math.toRadians(-60), roll: 0.0 },
+    })
+
+    ElMessage.closeAll()
+    ElMessage({ message: 'DebrisFlow 洪水模拟已启动', type: 'success' })
+  } catch (e) {
+    ElMessage.closeAll()
+    console.error('[floodLayersTest] 加载失败:', e)
+    ElMessage({ message: '加载失败: ' + (e.message || e), type: 'error' })
+  }
 }
 
 const floodLayers = () => {
@@ -2705,6 +2816,7 @@ const removeLayer_glacier = () => {
 // ============================================================
 const GEOSERVER_WMS_URL = '/geoserver/ZHLXT/wms'
 const FULL_RISK_RESULT_LAYER = 'linzi_hazard' // 全域风险脆弱性分析结果
+const TIANDITU_KEY = '20d721cc10d01248502d5e90f817ca93' // TODO: 替换为实际的天地图 tk
 const BUILDING_WMS_LAYER = 'ygBuildings' // 图层名
 const POPULATION_WMS_LAYER = 'pop_LinZhi' // 图层名
 const HP_pop_Vulnerability = 'HP_pop_Vulnerability' // 图层名
@@ -2828,6 +2940,38 @@ const removeLayer_population = () => {
     }
   }
   ElMessage.success('人口数据已移除')
+}
+
+//添加天地图路网（天地图 WMTS）
+const addLayer_tianditu_road = () => {
+  try {
+    console.log('[天地图路网] 正在加载天地图路网图层')
+    const provider = new Cesium.WebMapTileServiceImageryProvider({
+      url: `/tianditu/cia_w/wmts?tk=${TIANDITU_KEY}`,
+      layer: 'cia',
+      style: 'default',
+      format: 'image/png',
+      tileMatrixSetID: 'w',
+      maximumLevel: 18,
+      credit: '天地图',
+    })
+    const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
+    addedLayer.tiandituRoadTag = true
+    ElMessage.success('天地图路网加载完成')
+  } catch (error) {
+    console.error('加载天地图路网失败:', error)
+    ElMessage.error(`加载天地图路网失败: ${error.message || error}`)
+  }
+}
+const removeLayer_tianditu_road = () => {
+  const layers = viewer.value.scene.imageryLayers
+  for (let i = layers.length - 1; i >= 0; i--) {
+    if (layers.get(i).tiandituRoadTag) {
+      layers.remove(layers.get(i))
+      break
+    }
+  }
+  ElMessage.success('天地图路网已移除')
 }
 
 //添加历史数据模拟（GeoServer WMS）
@@ -5105,7 +5249,16 @@ const cleanentity = () => {
       imLayers.remove(layer)
     }
   }
-  // 8. 移除全域风险结果图层及图例
+  // 8. 移除 SDP 结果图层
+  const imLayers2 = viewer.value.scene.imageryLayers
+  for (let i = imLayers2.length - 1; i >= 0; i--) {
+    const layer = imLayers2.get(i)
+    if (layer.sdpResultTag) {
+      imLayers2.remove(layer)
+    }
+  }
+  if (sdpLegendEl) { sdpLegendEl.remove(); sdpLegendEl = null }
+  // 9. 移除全域风险结果图层及图例
   if (fullRiskResultLayer && !fullRiskResultLayer.isDestroyed?.()) {
     try { viewer.value.scene.imageryLayers.remove(fullRiskResultLayer) } catch (e) {}
     fullRiskResultLayer = null

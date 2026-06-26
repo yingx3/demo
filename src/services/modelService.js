@@ -51,6 +51,13 @@ const modelService = {
       .post('/testapi/admin/user/bedding_wedge', form, { timeout: 40000 })
       .then(r => r.data)
   },
+  postSDPStart(params) {
+    return axios
+      .post('/testapi/admin/user/SDP_Start', params, {
+        timeout: 600000,
+      })
+      .then(r => r.data)
+  },
 }
 
 export default modelService

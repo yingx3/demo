@@ -2658,6 +2658,57 @@
             </el-form>
           </el-dialog>
         </div>
+        <!-- 洪水泥石流启动动力学模型（测试） -->
+        <div class="box box-used p_bottom">
+          <img src="../assets/img/云反射率.png" alt="" />
+          <el-button :plain="true" @click="dialogVisible2Test = true"
+            ><span>洪水泥石流启动动力学模型（测试）</span></el-button
+          >
+          <el-dialog
+            v-model="dialogVisible2Test"
+            title="洪水泥石流启动动力学模型（测试）"
+            width="500"
+            :close-on-click-modal="false"
+            class="dialog_flood"
+          >
+            <template #header>
+              <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+                <span style="color:#ffffff;font-size:24px">洪水泥石流启动动力学模型（测试）</span>
+              </div>
+            </template>
+            <p id="name_par_gbm" style="margin-left:24px;margin-top:-17px;font-size:18px;color:#2763ca">模型参数</p>
+            <el-form :model="form2Test" label-width="auto" style="max-width:600px" class="form_flood">
+              <el-form-item label="基底摩擦" class="form1_flood">
+                <el-input v-model="form2Test.bed" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="曼宁摩擦系数" class="form1_flood">
+                <el-input v-model="form2Test.nn" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="网格长度" class="form1_flood">
+                <el-input v-model="form2Test.dx" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="网格宽度" class="form1_flood">
+                <el-input v-model="form2Test.dy" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="滑坡密度" class="form1_flood">
+                <el-input v-model="form2Test.rous" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="河水密度" class="form1_flood">
+                <el-input v-model="form2Test.rouf" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="输出间距" class="form1_flood">
+                <el-input v-model="form2Test.interval" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="计算时间" class="form1_flood">
+                <el-input v-model="form2Test.Tmax" placeholder="20" />
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" @click="onSubmit2Test" class="b_ex_avaflow">运行</el-button>
+                <el-button @click="dialogVisible2Test = false">取消</el-button>
+              </el-form-item>
+            </el-form>
+          </el-dialog>
+        </div>
         <div class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
           <el-button :plain="true" @click="dialog_avainit = true">
@@ -2932,6 +2983,75 @@
                   >取消</el-button
                 ></el-form-item
               >
+            </el-form>
+          </el-dialog>
+        </div>
+        <div class="box box-used p_bottom">
+          <img src="../assets/img/云反射率.png" alt="" />
+          <el-button :plain="true" @click="dialogVisibleSDP = true"
+            ><span>泥石流启动物源计算模型</span></el-button
+          >
+          <el-dialog
+            v-model="dialogVisibleSDP"
+            title="泥石流启动物源计算模型"
+            width="520"
+            :close-on-click-modal="false"
+            class="dialog_avaflow"
+            style="height:480px"
+          >
+            <template #header>
+              <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+                <span style="color:#ffffff;font-size:24px;display:block;text-align:center">泥石流启动物源计算模型</span>
+              </div>
+            </template>
+            <p id="name_par_gbm" style="margin-left:28px;margin-top:30px;font-size:18px;color:#2763ca">模型参数</p>
+            <el-form :model="formSDP" label-width="auto" style="max-width:600px" class="form_avaflow">
+              <el-form-item label="降雨栅格路径" label-position="right" label-width="140px">
+                <el-input v-model="fileNameRain" placeholder="选择降雨 tif 文件（可多选）" readonly style="width:220px">
+                  <template #append>
+                    <el-upload ref="uploadRainRef" :auto-upload="false" :show-file-list="false" :multiple="true" accept=".tif,.tiff" @change="handleFileRain">
+                      <el-button @click.stop="triggerUploadRain" style="border:none;color:white;padding:0;margin-left:8px">
+                        <i class="iconfont icon-daoru"></i>
+                      </el-button>
+                    </el-upload>
+                  </template>
+                </el-input>
+              </el-form-item>
+              <el-form-item label="温度栅格路径" label-position="right" label-width="140px">
+                <el-input v-model="fileNameTemp" placeholder="选择温度 tif 文件（可多选）" readonly style="width:220px">
+                  <template #append>
+                    <el-upload ref="uploadTempRef" :auto-upload="false" :show-file-list="false" :multiple="true" accept=".tif,.tiff" @change="handleFileTemp">
+                      <el-button @click.stop="triggerUploadTemp" style="border:none;color:white;padding:0;margin-left:8px">
+                        <i class="iconfont icon-daoru"></i>
+                      </el-button>
+                    </el-upload>
+                  </template>
+                </el-input>
+              </el-form-item>
+              <!-- 输出目录 暂时注释
+              <el-form-item label="输出目录" label-position="right" label-width="140px">
+                <el-input v-model="fileNameOutput" placeholder="选择输出文件（可多选）" readonly style="width:220px">
+                  <template #append>
+                    <el-upload ref="uploadOutputRef" :auto-upload="false" :show-file-list="false" :multiple="true" @change="handleFileOutput">
+                      <el-button @click.stop="triggerUploadOutput" style="border:none;color:white;padding:0;margin-left:8px">
+                        <i class="iconfont icon-daoru"></i>
+                      </el-button>
+                    </el-upload>
+                  </template>
+                </el-input>
+              </el-form-item>
+              -->
+              <el-form-item label="体积含冰量" label-position="right" label-width="140px">
+                <el-input v-model="formSDP.ice_content" type="number" step="0.01" placeholder="0.2" style="width:160px" />
+              </el-form-item>
+              <el-form-item style="margin-top:-12px">
+                <div style="display:flex;justify-content:center;gap:12px;width:100%">
+                  <el-button type="primary" @click="submitSDP" :loading="sdpLoading">
+                    {{ sdpLoading ? '计算中...' : '运行' }}
+                  </el-button>
+                  <el-button @click="dialogVisibleSDP = false">取消</el-button>
+                </div>
+              </el-form-item>
             </el-form>
           </el-dialog>
         </div>
@@ -4224,6 +4344,70 @@ const submitQuanYu = () => {
   }, 10000)
 }
 
+// --- 泥石流启动物源计算模型 ---
+const dialogVisibleSDP = ref(false)
+const sdpLoading = ref(false)
+const uploadRainRef = ref(null)
+const uploadTempRef = ref(null)
+const uploadOutputRef = ref(null)
+const fileNameRain = ref('')
+const fileNameTemp = ref('')
+const fileNameOutput = ref('')
+const fileRainPath = ref('')
+const fileTempPath = ref('')
+const fileOutputPath = ref('')
+const formSDP = reactive({
+  ice_content: '0.2',
+})
+const triggerUploadRain = () => { uploadRainRef.value?.$el.querySelector('input[type=file]').click() }
+const triggerUploadTemp = () => { uploadTempRef.value?.$el.querySelector('input[type=file]').click() }
+const triggerUploadOutput = () => { uploadOutputRef.value?.$el.querySelector('input[type=file]').click() }
+const handleFileRain = (uploadFile, uploadFiles) => {
+  const files = uploadFiles || [uploadFile]
+  fileNameRain.value = files.map(f => f.name).join(', ')
+  fileRainPath.value = files.map(f => f.name).join(',')
+}
+const handleFileTemp = (uploadFile, uploadFiles) => {
+  const files = uploadFiles || [uploadFile]
+  fileNameTemp.value = files.map(f => f.name).join(', ')
+  fileTempPath.value = files.map(f => f.name).join(',')
+}
+const handleFileOutput = (uploadFile, uploadFiles) => {
+  const files = uploadFiles || [uploadFile]
+  fileNameOutput.value = files.map(f => f.name).join(', ')
+  fileOutputPath.value = files.map(f => f.name).join(',')
+}
+const submitSDP = async () => {
+  dialogVisibleSDP.value = false
+  sdpLoading.value = true
+  ElMessage({ message: '泥石流起动物源计算运行中，约需数分钟...', type: 'info', duration: 0 })
+  try {
+    const params = {}
+    // 暂不传路径，后端使用默认路径；后续接入文件上传后再启用
+    // if (fileRainPath.value) params.rain_path = fileRainPath.value
+    // if (fileTempPath.value) params.temp_path = fileTempPath.value
+    if (formSDP.ice_content) params.ice_content = parseFloat(formSDP.ice_content)
+    const result = await modelService.postSDPStart(params)
+    console.log('[SDP] 后端返回:', result)
+    sdpLoading.value = false
+    ElMessage.closeAll()
+    ElMessage({ message: '计算完成，正在加载结果图层', type: 'success' })
+    $emit('openLayers', { sdpResult: result })
+  } catch (e) {
+    sdpLoading.value = false
+    ElMessage.closeAll()
+    console.error('SDP_Start error:', e)
+    // 500 通常是后端 Python 环境问题，打印详细错误
+    if (e.response?.data) {
+      const text = new TextDecoder().decode(e.response.data)
+      console.error('后端返回:', text)
+      ElMessage({ message: '计算失败: ' + text.substring(0, 200), type: 'error' })
+    } else {
+      ElMessage({ message: '计算失败: ' + (e.message || e), type: 'error' })
+    }
+  }
+}
+
 const form_avainit = reactive({
   slope_angle: '60',
   slide_angle: '15',
@@ -4297,9 +4481,13 @@ let $emit = defineEmits([
   'timeSelected',
   'yjLayers',
   'floodLayers',
+  'floodLayersTest',
   'forecast',
   'seismicResult',
   'fullRiskAnalysis',
+  'bedding_parallel',
+  'bedding_inverted',
+  'bedding_wedget',
 ])
 // 获取 store 实例
 const squareStore = useSquareStore()
@@ -4376,6 +4564,23 @@ const form2 = reactive({
   interval: '10',
   Tmax: '100',
 })
+// 洪水泥石流启动动力学模型（测试）
+const dialogVisible2Test = ref(false)
+const form2Test = reactive({
+  bed: '24',
+  nn: '0.0125',
+  dx: '20',
+  dy: '20',
+  rous: '2700',
+  rouf: '1000',
+  interval: '10',
+  Tmax: '100',
+})
+const onSubmit2Test = () => {
+  dialogVisible2Test.value = false
+  ElMessage({ message: '运行中!（测试）', type: 'success', duration: 1500 })
+  $emit('floodLayersTest', { ...form2Test })
+}
 const form_inverseV = reactive({
   name: '',
   longitude: '',
@@ -4392,21 +4597,46 @@ const form_BGM = reactive({
 })
 const isProcessing = ref(false)
 async function sumbit_avainit() {
-  ElMessage({ message: '运行中!', type: 'success' })
-
-  dialog_avainit.value = false
-  $emit('bedding_parallel')
+  ElMessage({ message: '顺层计算运行中...', type: 'success', duration: 0 })
+  try {
+    await modelService.postAvainit(form_avainit)
+    ElMessage.closeAll()
+    ElMessage({ message: '顺层计算完成', type: 'success' })
+    dialog_avainit.value = false
+    $emit('bedding_parallel', { ...form_avainit })
+  } catch (e) {
+    ElMessage.closeAll()
+    ElMessage({ message: '顺层计算失败: ' + (e.message || e), type: 'error' })
+    console.error('sumbit_avainit error:', e)
+  }
 }
 async function sumbit_inverse() {
-  ElMessage({ message: '运行中!', type: 'success' })
-  await modelService.postInverse(form_bedding_inverted)
-  dialog_avainit.value = false
-  $emit('bedding_inverted')
+  ElMessage({ message: '反倾计算运行中...', type: 'success', duration: 0 })
+  try {
+    await modelService.postInverse(form_bedding_inverted)
+    ElMessage.closeAll()
+    ElMessage({ message: '反倾计算完成', type: 'success' })
+    dialog_avainit.value = false
+    $emit('bedding_inverted', { ...form_bedding_inverted })
+  } catch (e) {
+    ElMessage.closeAll()
+    ElMessage({ message: '反倾计算失败: ' + (e.message || e), type: 'error' })
+    console.error('sumbit_inverse error:', e)
+  }
 }
 async function sumbit_wedget() {
-  ElMessage({ message: '运行中!', type: 'success' })
-  dialog_avainit.value = false
-  $emit('bedding_wedget')
+  ElMessage({ message: '楔形计算运行中...', type: 'success', duration: 0 })
+  try {
+    await modelService.postWedge(form_bedding_wedget)
+    ElMessage.closeAll()
+    ElMessage({ message: '楔形计算完成', type: 'success' })
+    dialog_avainit.value = false
+    $emit('bedding_wedget', { ...form_bedding_wedget })
+  } catch (e) {
+    ElMessage.closeAll()
+    ElMessage({ message: '楔形计算失败: ' + (e.message || e), type: 'error' })
+    console.error('sumbit_wedget error:', e)
+  }
 }
 function onSubmit() {
   dialogVisible.value = false

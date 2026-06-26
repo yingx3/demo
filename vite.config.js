@@ -79,6 +79,12 @@ export default defineConfig({
         changeOrigin: true,
         // 不 rewrite，保留 /geoserver 前缀以匹配 GeoServer 路由
       },
+      '/tianditu': {
+        target: 'http://t0.tianditu.gov.cn',
+        secure: false,
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/tianditu/, ''),
+      },
       '/node': {
         target: 'http://localhost:3000', //需代理的后端接口
         secure: false, //开启代理：在本地会创建一个虚拟服务端，然后发送请求的数据，并同时接收请求
