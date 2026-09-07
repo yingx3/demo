@@ -13,7 +13,7 @@ setwd("E:/Projects/ZHLXT/算法/基于位移监测滑坡预警/PFTF_1.0.0/PFTF_1
 
 #set start of calculations
 #as.POSIXct("YYYY-MM-DD HH:MM", tz="UTC")
-start_of_calc <- as.POSIXct("2022-01-01 14:00", tz="UTC")
+start_of_calc <- as.POSIXct("2022-01-01 23:00", tz="UTC")
 
 #set start of simulation timestamp if you want to simulate real time before latest timestamp of displ_data
 #if not, set "latest" (importing all data)

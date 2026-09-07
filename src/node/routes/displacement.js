@@ -199,10 +199,10 @@ cat("成功转换", nrow(displ_data), "条记录到RDA文件\n")
       }
       fs.writeFileSync(rScriptPath, rScriptContent, 'utf8')
 
-      // const Rscript = '"D:/application/r/baseR/bin/Rscript.exe"'
-      const Rscript = path.join(
-        __dirname, // 当前 JS 脚本所在目录
-        '../../', // 向上跳多级（根据你真实目录层数修改）
+      // Rscript 路径: 优先读环境变量 RSCRIPT_PATH, 开发环境用默认相对路径
+      const Rscript = process.env.RSCRIPT_PATH || path.join(
+        __dirname,
+        '../../',
         'assets/PFTF/R/R-4.5.1/bin/Rscript.exe',
       )
       const command = `cd /d "${SAVE_PATH}" && ${Rscript} "${rScriptPath}"`
@@ -347,10 +347,9 @@ function modifyRScript(rScriptPath, startTime, endTime) {
 function executeRScript(rScriptPath) {
   return new Promise((resolve, reject) => {
     try {
-      // const Rscript = '"D:/application/r/baseR/bin/Rscript.exe"'
-      const Rscript = path.join(
-        __dirname, // 当前 JS 脚本所在目录
-        '../../', // 向上跳多级（根据你真实目录层数修改）
+      const Rscript = process.env.RSCRIPT_PATH || path.join(
+        __dirname,
+        '../../',
         'assets/PFTF/R/R-4.5.1/bin/Rscript.exe',
       )
       console.log('Rscript路径:', Rscript)
@@ -452,7 +451,7 @@ router.get('/displ_file', async (req, res) => {
       user: 'postgres',
       host: 'localhost',
       database: 'postgres',
-      password: '123456',
+      password: process.env.DB_PASSWORD || '123456',
       port: 5432,
     })
 
@@ -588,7 +587,7 @@ router.get('/search_displ', async (req, res) => {
     user: 'postgres',
     host: 'localhost',
     database: 'postgres',
-    password: '123456',
+    password: process.env.DB_PASSWORD || '123456',
     port: 5432,
   })
 

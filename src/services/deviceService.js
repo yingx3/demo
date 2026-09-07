@@ -1,12 +1,12 @@
 import axios from 'axios'
 
 export async function fetchAllDevices() {
-  const res = await axios.get('http://localhost:3001/device/all')
+  const res = await axios.get('/device/all')
   return res.data
 }
 
 export async function fetchLatestRecords(deviceId) {
-  const res = await axios.get(`http://localhost:3001/device/latest/${deviceId}`)
+  const res = await axios.get(`/device/latest/${deviceId}`)
   return res.data
 }
 

@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
       user: 'postgres',
       host: 'localhost',
       database: 'postgres',
-      password: '123456',
+      password: process.env.DB_PASSWORD || '123456',
       port: 5432,
     })
 
@@ -48,7 +48,7 @@ router.get('/point', async (req, res) => {
       user: 'postgres',
       host: 'localhost',
       database: 'postgres',
-      password: '123456',
+      password: process.env.DB_PASSWORD || '123456',
       port: 5432,
     })
 
@@ -95,7 +95,7 @@ router.get('/point/attribute', async (req, res) => {
       user: 'postgres',
       host: 'localhost',
       database: 'postgres',
-      password: '123456',
+      password: process.env.DB_PASSWORD || '123456',
       port: 5432,
     })
 
@@ -158,7 +158,7 @@ router.get('/point/attribute_qxz', async (req, res) => {
       user: 'postgres',
       host: 'localhost',
       database: 'postgres',
-      password: '123456',
+      password: process.env.DB_PASSWORD || '123456',
       port: 5432,
     })
 
@@ -203,7 +203,7 @@ router.get('/point_qxz', async (req, res) => {
       user: 'postgres',
       host: 'localhost',
       database: 'postgres',
-      password: '123456',
+      password: process.env.DB_PASSWORD || '123456',
       port: 5432,
     })
 
@@ -230,7 +230,7 @@ router.get('/weatherstation', async (req, res) => {
       user: 'postgres',
       host: 'localhost',
       database: 'postgres',
-      password: '123456',
+      password: process.env.DB_PASSWORD || '123456',
       port: 5432,
     })
 
@@ -254,7 +254,7 @@ router.get('/river', async (req, res) => {
       user: 'postgres',
       host: 'localhost',
       database: 'postgres',
-      password: '123456',
+      password: process.env.DB_PASSWORD || '123456',
       port: 5432,
     })
 
@@ -278,7 +278,7 @@ router.get('/glacier', async (req, res) => {
       user: 'postgres',
       host: 'localhost',
       database: 'postgres',
-      password: '123456',
+      password: process.env.DB_PASSWORD || '123456',
       port: 5432,
     })
 
@@ -308,7 +308,7 @@ router.post('/point', async (req, res) => {
       user: 'postgres',
       host: 'localhost',
       database: 'postgres',
-      password: '123456',
+      password: process.env.DB_PASSWORD || '123456',
       port: 5432,
     })
 

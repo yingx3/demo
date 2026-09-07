@@ -85,6 +85,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: path => path.replace(/^\/tianditu/, ''),
       },
+      '/device': {
+        target: 'http://localhost:3001',
+        secure: false,
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/device/, ''),
+      },
       '/node': {
         target: 'http://localhost:3000', //需代理的后端接口
         secure: false, //开启代理：在本地会创建一个虚拟服务端，然后发送请求的数据，并同时接收请求

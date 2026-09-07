@@ -1,4 +1,4 @@
-# Logs
+﻿# Logs
 logs
 *.log
 npm-debug.log*
@@ -27,3 +27,6 @@ config.local.js
 cs_test.xlsx
 20250918_test.xlsx
 public/tiff/
+
+# Large raster data (exceeds GitHub 100MB limit - excluded)
+CS/tiff/

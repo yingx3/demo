@@ -19,7 +19,7 @@ router.get('/api/crack/:deviceId', async (req, res) => {
       user: 'postgres',
       host: 'localhost',
       database: 'postgres',
-      password: '123456',
+      password: process.env.DB_PASSWORD || '123456',
       port: 5432,
     })
 

@@ -2676,6 +2676,14 @@
                 <span style="color:#ffffff;font-size:24px">洪水泥石流启动动力学模型（测试）</span>
               </div>
             </template>
+            <div style="display:flex;align-items:center;gap:12px;margin:6px 0 10px 24px">
+              <span style="color:#aaa;font-size:14px">渲染方案：</span>
+              <el-radio-group v-model="renderMethod" size="small">
+                <el-radio value="debrisflow">DebrisFlow</el-radio>
+                <el-radio value="watersimulation">WaterSimulate</el-radio>
+                <el-radio value="sph">SPH</el-radio>
+              </el-radio-group>
+            </div>
             <p id="name_par_gbm" style="margin-left:24px;margin-top:-17px;font-size:18px;color:#2763ca">模型参数</p>
             <el-form :model="form2Test" label-width="auto" style="max-width:600px" class="form_flood">
               <el-form-item label="基底摩擦" class="form1_flood">
@@ -4006,7 +4014,18 @@
               模型参数
             </p>
 
+            <!-- ML/DL 切换 -->
+            <div style="display:flex;align-items:center;gap:12px;margin:6px 0 10px 24px">
+              <span style="color:#aaa;font-size:14px">模型类型：</span>
+              <el-radio-group v-model="seismicModelType" size="small">
+                <el-radio value="ml">机器学习 (STA/LTA)</el-radio>
+                <el-radio value="dl">深度学习 (Transformer1D)</el-radio>
+              </el-radio-group>
+            </div>
+
+            <!-- ======== ML 模式：STA/LTA ======== -->
             <el-form
+              v-if="seismicModelType === 'ml'"
               :model="formSeismic"
               style="max-width: 650px"
               class="form_seismic"
@@ -4196,6 +4215,50 @@
                 <el-button @click="dialogVisibleSeismic = false"
                   >取消</el-button
                 >
+              </el-form-item>
+            </el-form>
+
+            <!-- ======== DL 模式：Transformer1D ======== -->
+            <el-form
+              v-if="seismicModelType === 'dl'"
+              style="max-width:650px"
+              class="form_seismic"
+            >
+              <el-form-item label="CSV数据文件" label-width="150px" label-position="right">
+                <el-input v-model="fileNameSeismicDL" placeholder="上传 .csv 文件" readonly style="width:180px">
+                  <template #append>
+                    <el-upload
+                      ref="uploadRefSeismicDL"
+                      action="http://localhost:3000/node/upload_excel"
+                      name="file"
+                      :auto-upload="false"
+                      :multiple="false"
+                      :show-file-list="false"
+                      accept=".csv"
+                      @change="handleFileChangeSeismicDL"
+                      @success="handleUploadSuccessSeismicDL"
+                      @error="handleUploadErrorSeismicDL"
+                    >
+                      <el-button @click.stop="triggerUploadSeismicDL" style="border:none;color:white;padding:0;margin-left:8px">
+                        <i class="iconfont icon-daoru"></i>
+                      </el-button>
+                    </el-upload>
+                  </template>
+                </el-input>
+              </el-form-item>
+              <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+                <el-form-item label="经度" label-width="80px" label-position="right">
+                  <el-input v-model="formSeismicDL.longitude" type="number" step="0.0001" placeholder="97.5" style="width:50px" />
+                </el-form-item>
+                <el-form-item label="纬度" label-width="60px" label-position="right">
+                  <el-input v-model="formSeismicDL.latitude" type="number" step="0.0001" placeholder="31.0" style="width:50px" />
+                </el-form-item>
+              </div>
+              <el-form-item>
+                <el-button type="primary" @click="submitSeismicDL" :loading="dlLoading" style="margin-left:380px">
+                  {{ dlLoading ? '推理中...' : '上传并推理' }}
+                </el-button>
+                <el-button @click="dialogVisibleSeismic = false">取消</el-button>
               </el-form-item>
             </el-form>
           </el-dialog>
@@ -4446,12 +4509,80 @@ const form_bedding_wedget = reactive({
   melt_duration: '240',
 })
 const radio_avainit = ref('1')
+const seismicModelType = ref('ml') // ml | dl
 const dialogVisibleSeismic = ref(false)
 const uploadRefSeismic = ref(null)
 const fileNameSeismic = ref('')
 const fileSeismic = ref(null)
-const uploadDataSeismic = () => ({}) // 如果需要额外数据，可扩展
-const showBarrage = ref(false) // 修复 "showBarrage" 未定义
+const uploadDataSeismic = () => ({})
+const showBarrage = ref(false)
+// DL 模式
+const uploadRefSeismicDL = ref(null)
+const fileNameSeismicDL = ref('')
+const fileSeismicDL = ref(null)
+const dlLoading = ref(false)
+const formSeismicDL = reactive({ voltageColumn: 'Voltage_mV', longitude: '97.5', latitude: '31.0' })
+const triggerUploadSeismicDL = () => {
+  uploadRefSeismicDL.value?.$el.querySelector('input[type=file]').click()
+}
+const handleFileChangeSeismicDL = (uploadFile, uploadFiles) => {
+  fileSeismicDL.value = uploadFiles.map(f => f.raw || f)
+  fileNameSeismicDL.value = uploadFiles.map(f => f.name).join(', ')
+}
+const submitSeismicDL = async () => {
+  if (!fileSeismicDL.value || fileSeismicDL.value.length === 0) {
+    ElMessage({ message: '请选择 CSV 文件', type: 'warning' })
+    return
+  }
+  dialogVisibleSeismic.value = false
+  dlLoading.value = true
+  ElMessage({ message: '上传并推理中...', type: 'info', duration: 0 })
+  uploadRefSeismicDL.value?.submit()
+}
+const handleUploadSuccessSeismicDL = async (response, file, fileList) => {
+  ElMessage.closeAll()
+  if (response?.code !== 200) {
+    ElMessage({ message: '上传失败: ' + (response?.message || ''), type: 'error' })
+    dlLoading.value = false
+    return
+  }
+  try {
+    const resp = await modelService.postSeismicDL({ file: response.file, col: formSeismicDL.voltageColumn })
+    dlLoading.value = false
+    const prob = resp?.probability ?? 0
+    const pred = resp?.prediction ?? 0
+
+    // 读取 CSV 数据用于波形图
+    let waveformData = null
+    try {
+      const raw = fileSeismicDL.value[0]
+      const text = await raw.text()
+      const lines = text.trim().split('\n').slice(1) // skip header
+      const voltage = lines.map(l => parseFloat(l.split(',')[1])).filter(v => !isNaN(v))
+      waveformData = { data: voltage, ratio: [], result: [] }
+    } catch (e) {}
+
+    const lon = Number(formSeismicDL.longitude) || 97.5
+    const lat = Number(formSeismicDL.latitude) || 31.0
+    const msg = pred ? `检测到泥石流信号 (概率 ${(prob*100).toFixed(1)}%)` : `未检测到泥石流信号 (概率 ${(prob*100).toFixed(1)}%)`
+    ElMessage({ message: msg, type: pred ? 'warning' : 'success' })
+    $emit('seismicResult', { detected: pred === 1, lon, lat, info: resp, echarts_data: waveformData, isDL: true })
+  } catch (e) {
+    dlLoading.value = false
+    ElMessage({ message: '推理失败: ' + (e.message || e), type: 'error' })
+  } finally {
+    fileSeismicDL.value = []
+    fileNameSeismicDL.value = ''
+    uploadRefSeismicDL.value?.clearFiles()
+  }
+}
+const handleUploadErrorSeismicDL = (err, file, fileList) => {
+  dlLoading.value = false
+  ElMessage({ message: '上传失败', type: 'error' })
+  fileSeismicDL.value = []
+  fileNameSeismicDL.value = ''
+  uploadRefSeismicDL.value?.clearFiles()
+}
 const formSeismic = reactive({
   threshold: 2.5,
   short_window: 30,
@@ -4566,6 +4697,7 @@ const form2 = reactive({
 })
 // 洪水泥石流启动动力学模型（测试）
 const dialogVisible2Test = ref(false)
+const renderMethod = ref('debrisflow')
 const form2Test = reactive({
   bed: '24',
   nn: '0.0125',
@@ -4579,7 +4711,7 @@ const form2Test = reactive({
 const onSubmit2Test = () => {
   dialogVisible2Test.value = false
   ElMessage({ message: '运行中!（测试）', type: 'success', duration: 1500 })
-  $emit('floodLayersTest', { ...form2Test })
+  $emit('floodLayersTest', { ...form2Test, renderMethod: renderMethod.value })
 }
 const form_inverseV = reactive({
   name: '',
@@ -4883,6 +5015,7 @@ const handleUploadSuccessGBM = async (response, file, fileList) => {
   } finally {
     fileGBM.value = []
     fileNameGBM.value = ''
+    uploadRefGBM.value?.clearFiles()
   }
 }
 
@@ -4896,6 +5029,7 @@ const handleUploadErrorGBM = (err, file, fileList) => {
   console.error('GBM upload error:', err)
   fileGBM.value = null
   fileNameGBM.value = ''
+  uploadRefGBM.value?.clearFiles()
 }
 const submit_inverseV = async () => {
   try {
@@ -5021,19 +5155,17 @@ const handleUploadSuccessSeismic = async (response, file, fileList) => {
   } finally {
     fileSeismic.value = []
     fileNameSeismic.value = ''
+    uploadRefSeismic.value?.clearFiles()
   }
 }
 
-// el-upload 错误回调
 const handleUploadErrorSeismic = (err, file, fileList) => {
   ElMessage.closeAll()
-  ElMessage({
-    message: '上传失败：' + (err?.message || '网络或后端错误'),
-    type: 'error',
-  })
+  ElMessage({ message: '上传失败', type: 'error' })
   console.error('Seismic upload error:', err)
   fileSeismic.value = null
   fileNameSeismic.value = ''
+  uploadRefSeismic.value?.clearFiles()
 }
 </script>
 <style lang="scss" scoped>

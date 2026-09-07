@@ -439,10 +439,10 @@
       <el-button type="primary" @click="drawer_seismic('data')"
         >地震仪原数据</el-button
       >
-      <el-button type="primary" @click="drawer_seismic('ratio')"
+      <el-button v-if="!seismicIsDL" type="primary" @click="drawer_seismic('ratio')"
         >比率</el-button
       >
-      <el-button type="primary" @click="drawer_seismic('result')"
+      <el-button v-if="!seismicIsDL" type="primary" @click="drawer_seismic('result')"
         >结果</el-button
       >
     </div>
@@ -1836,14 +1836,20 @@ let sdpSim = null
 let sdpLegendEl = null
 
 const floodLayersTest = async payload => {
-  console.log('[floodLayersTest] 参数:', payload)
-  ElMessage({ message: '正在加载 DebrisFlow 渲染器...', type: 'info', duration: 0 })
+  const method = payload.renderMethod || 'debrisflow'
+  console.log('[floodLayersTest] 参数:', payload, '渲染方案:', method)
+  ElMessage({ message: `正在加载 ${method} 渲染器...`, type: 'info', duration: 0 })
 
   try {
     window.Cesium = Cesium
-    const [{ default: DebrisFlow }] = await Promise.all([
-      import('../../Simulation-extracted/DebrisFlow/index.js'),
-    ])
+    let Renderer
+    if (method === 'watersimulation') {
+      Renderer = (await import('../../Simulation-extracted/WaterSImulation/index.js')).default
+    } else if (method === 'sph') {
+      Renderer = (await import('../../Simulation-extracted/SPH/index.js')).default
+    } else {
+      Renderer = (await import('../../Simulation-extracted/DebrisFlow/index.js')).default
+    }
 
     // 移除旧实例
     if (sdpSim) { clearInterval(sdpSim._frameInterval); sdpSim.remove(); sdpSim = null }
@@ -1872,28 +1878,46 @@ const floodLayersTest = async payload => {
       [header.xllcorner, header.yllcorner],
     ]])
 
-    sdpSim = new DebrisFlow({
-      viewer: viewer.value,
-      width: 2048,
-      height: 2048,
-      cellSize: cellSizeM * Math.max(header.ncols, header.nrows) / 2048,
-      rect: [header.ncols, header.nrows],
-      range: [0, 1],
-      debrisJSON: turf.featureCollection([debrisJSON]),
-      deepWaterColor: '#5c3a1e',
-      lightWaterColor: '#c8a050',
-      renderTerrain: false,
-      renderHeatMap: false,
-      renderOriginData: false,
-    })
+    if (method === 'watersimulation') {
+      sdpSim = new Renderer({
+        viewer: viewer.value, width: 256, height: 256,
+        cellSize: cellSizeM * Math.max(header.ncols, header.nrows) / 256,
+        lakeJSON: turf.featureCollection([]),
+        debrisJSON: turf.featureCollection([debrisJSON]),
+        deepWaterColor: '#5c3a1e', lightWaterColor: '#c8a050',
+        renderHeatMap: true, renderOriginData: false, renderTerrain: false,
+      })
+      sdpSim.center = center; sdpSim.level = 13
+      const tData = await sdpSim.initTerrain(center, 13)
+      await sdpSim.genDemTexture(tData, true)
+      sdpSim.initShader(); await sdpSim.initTexture()
+      sdpSim.initFrameBuffer(); sdpSim.initRender()
+    } else if (method === 'sph') {
+      const sphCS = cellSizeM * Math.max(header.ncols, header.nrows) / 200
+      sdpSim = new Renderer({
+        viewer: viewer.value, width: header.ncols, height: header.nrows,
+        cellSize: sphCS, rect: [header.ncols, header.nrows],
+        validArea: { xmin:0, ymin:0, width:header.ncols, height:header.nrows },
+        range: [0, 1], debrisJSON: turf.featureCollection([debrisJSON]),
+        deepWaterColor: '#5c3a1e', lightWaterColor: '#c8a050', renderHeatMap: false,
+      })
+      await sdpSim.initBox({ center, level: 13 })
+    } else {
+      sdpSim = new Renderer({
+        viewer: viewer.value, width: 2048, height: 2048,
+        cellSize: cellSizeM * Math.max(header.ncols, header.nrows) / 2048,
+        rect: [header.ncols, header.nrows], range: [0, 1],
+        debrisJSON: turf.featureCollection([debrisJSON]),
+        deepWaterColor: '#5c3a1e', lightWaterColor: '#c8a050',
+        renderTerrain: false, renderHeatMap: false, renderOriginData: false,
+      })
+      await sdpSim.initBox({ center, level: 13 })
+    }
 
-    await sdpSim.initBox({ center, level: 13 })
-
-    const totalFrames = 21
-    let currentFrame = 1
+    const totalFrames = 21; let currentFrame = 1
     const frameInterval = setInterval(async () => {
       if (!sdpSim || currentFrame > totalFrames) { clearInterval(frameInterval); return }
-      await sdpSim.loadAscAsWaterHeight(`/CS/asc_data/flood_output${currentFrame}.asc`)
+      if (sdpSim.loadAscAsWaterHeight) await sdpSim.loadAscAsWaterHeight(`/CS/asc_data/flood_output${currentFrame}.asc`)
       currentFrame++
     }, 600)
     sdpSim._frameInterval = frameInterval
@@ -1903,9 +1927,8 @@ const floodLayersTest = async payload => {
       destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, terrainH),
       orientation: { heading: Cesium.Math.toRadians(0), pitch: Cesium.Math.toRadians(-60), roll: 0.0 },
     })
-
     ElMessage.closeAll()
-    ElMessage({ message: 'DebrisFlow 洪水模拟已启动', type: 'success' })
+    ElMessage({ message: `${method} 已启动`, type: 'success' })
   } catch (e) {
     ElMessage.closeAll()
     console.error('[floodLayersTest] 加载失败:', e)
@@ -4090,7 +4113,7 @@ const showPopup = async entity => {
     // ✅ 向后端请求该设备的最新 100 条记录
     const deviceId = entity.properties.deviceid
     const res = await axios.get(
-      `http://localhost:3001/device/latest/${deviceId}`,
+      `/device/latest/${deviceId}`,
     )
     const records = res.data.reverse() // 最新 -> 时间正序
 
@@ -5272,8 +5295,10 @@ const cleanentity = () => {
 }
 const handler_seismic = ref('')
 var echarts_data = ''
+const seismicIsDL = ref(false)
 function handleSeismicResult(payload) {
   try {
+    seismicIsDL.value = !!payload?.isDL
     echarts_data = payload.echarts_data
     const detected = payload?.detected
     const lon = Number(payload?.lon) || 97.5
