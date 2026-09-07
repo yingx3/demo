@@ -1,4 +1,5 @@
 import express from 'express'
+import pool from '../db.js'
 import multer from 'multer'
 import fs from 'fs'
 import path from 'path'
@@ -446,15 +447,6 @@ router.get('/displ_file', async (req, res) => {
     const latitude = req.query['form_inverseV[latitude]']
     const Name = req.query['form_inverseV[name]']
 
-    const { Pool } = await import('pg')
-    const pool = new Pool({
-      user: 'postgres',
-      host: 'localhost',
-      database: 'postgres',
-      password: process.env.DB_PASSWORD || '123456',
-      port: 5432,
-    })
-
     const client = await pool.connect()
     try {
       await client.query('BEGIN')
@@ -581,15 +573,6 @@ router.get('/search_displ', async (req, res) => {
       message: 'pointId 必须是有效的数字',
     })
   }
-
-  const { Pool } = await import('pg')
-  const pool = new Pool({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'postgres',
-    password: process.env.DB_PASSWORD || '123456',
-    port: 5432,
-  })
 
   const client = await pool.connect()
 

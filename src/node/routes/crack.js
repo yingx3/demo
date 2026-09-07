@@ -1,4 +1,5 @@
 import express from 'express'
+import pool from '../db.js'
 
 const router = express.Router()
 
@@ -10,19 +11,10 @@ function checkOOADetected() {
 // 获取裂缝数据
 router.get('/api/crack/:deviceId', async (req, res) => {
   const { deviceId } = req.params
-  const { months = 2 } = req.query
+  const months = parseInt(req.query.months, 10) || 2
 
   let client
   try {
-    const { Pool } = await import('pg')
-    const pool = new Pool({
-      user: 'postgres',
-      host: 'localhost',
-      database: 'postgres',
-      password: process.env.DB_PASSWORD || '123456',
-      port: 5432,
-    })
-
     client = await pool.connect()
 
     console.log(`🔍 查询设备: ${deviceId}, 时间范围: 最近${months}个月`)
@@ -36,11 +28,11 @@ router.get('/api/crack/:deviceId', async (req, res) => {
         public.crack
       WHERE 
         device_id = $1
-        AND update_time >= CURRENT_DATE - INTERVAL '${months} months'
+        AND update_time >= CURRENT_DATE - make_interval(months => $2)
       ORDER BY 
         update_time
     `,
-      [deviceId],
+      [deviceId, months],
     )
 
     console.log(`📊 查询到 ${result.rowCount} 条记录`)

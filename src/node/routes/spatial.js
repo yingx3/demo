@@ -1,4 +1,5 @@
 import express from 'express'
+import pool from '../db.js'
 
 const router = express.Router()
 
@@ -14,14 +15,6 @@ const ALLOWED_ATTRIBUTES = {
 // 获取所有空间参考数据
 router.get('/', async (req, res) => {
   try {
-    const { Pool } = await import('pg')
-    const pool = new Pool({
-      user: 'postgres',
-      host: 'localhost',
-      database: 'postgres',
-      password: process.env.DB_PASSWORD || '123456',
-      port: 5432,
-    })
 
     const { rows } = await pool.query('SELECT * FROM point1')
     res.send(rows)
@@ -42,15 +35,6 @@ router.get('/point', async (req, res) => {
     if (!name) {
       return res.status(400).json({ error: '缺少 name 参数' })
     }
-
-    const { Pool } = await import('pg')
-    const pool = new Pool({
-      user: 'postgres',
-      host: 'localhost',
-      database: 'postgres',
-      password: process.env.DB_PASSWORD || '123456',
-      port: 5432,
-    })
 
     const { rows } = await pool.query(
       `SELECT name, dcmd, lssl, slope, hlxqsl, pthhsmj, elevation, scale, ST_X(geom) AS lng,ST_Y(geom) AS lat FROM point2 WHERE name = $1`,
@@ -89,15 +73,6 @@ router.get('/point/attribute', async (req, res) => {
         allowed_attributes: Object.keys(ALLOWED_ATTRIBUTES),
       })
     }
-
-    const { Pool } = await import('pg')
-    const pool = new Pool({
-      user: 'postgres',
-      host: 'localhost',
-      database: 'postgres',
-      password: process.env.DB_PASSWORD || '123456',
-      port: 5432,
-    })
 
     const { rows } = await pool.query(
       `SELECT 
@@ -153,15 +128,6 @@ router.get('/point/attribute_qxz', async (req, res) => {
       })
     }
 
-    const { Pool } = await import('pg')
-    const pool = new Pool({
-      user: 'postgres',
-      host: 'localhost',
-      database: 'postgres',
-      password: process.env.DB_PASSWORD || '123456',
-      port: 5432,
-    })
-
     const { rows } = await pool.query(
       `SELECT 
       z_name, jyl, wind, ST_X(geom) AS lng,ST_Y(geom) AS lat 
@@ -198,15 +164,6 @@ router.get('/point_qxz', async (req, res) => {
       return res.status(400).json({ error: '缺少 name 参数' })
     }
 
-    const { Pool } = await import('pg')
-    const pool = new Pool({
-      user: 'postgres',
-      host: 'localhost',
-      database: 'postgres',
-      password: process.env.DB_PASSWORD || '123456',
-      port: 5432,
-    })
-
     const { rows } = await pool.query(
       `SELECT z_name, jyl, wind, ST_X(geom) AS lng,ST_Y(geom) AS lat FROM point_qxz WHERE z_name = $1`,
       [z_name],
@@ -225,14 +182,6 @@ router.get('/point_qxz', async (req, res) => {
 // 获取 weatherstation 数据
 router.get('/weatherstation', async (req, res) => {
   try {
-    const { Pool } = await import('pg')
-    const pool = new Pool({
-      user: 'postgres',
-      host: 'localhost',
-      database: 'postgres',
-      password: process.env.DB_PASSWORD || '123456',
-      port: 5432,
-    })
 
     const { rows } = await pool.query('SELECT * FROM weatherstation')
     res.send(rows)
@@ -249,14 +198,6 @@ router.get('/weatherstation', async (req, res) => {
 // 获取 river 数据
 router.get('/river', async (req, res) => {
   try {
-    const { Pool } = await import('pg')
-    const pool = new Pool({
-      user: 'postgres',
-      host: 'localhost',
-      database: 'postgres',
-      password: process.env.DB_PASSWORD || '123456',
-      port: 5432,
-    })
 
     const { rows } = await pool.query('SELECT * FROM river')
     res.send(rows)
@@ -273,14 +214,6 @@ router.get('/river', async (req, res) => {
 // 获取 glacier 数据
 router.get('/glacier', async (req, res) => {
   try {
-    const { Pool } = await import('pg')
-    const pool = new Pool({
-      user: 'postgres',
-      host: 'localhost',
-      database: 'postgres',
-      password: process.env.DB_PASSWORD || '123456',
-      port: 5432,
-    })
 
     const { rows } = await pool.query('SELECT * FROM glacier')
     res.send(rows)
@@ -302,15 +235,6 @@ router.post('/point', async (req, res) => {
     if (!geom || geom.type !== 'Point') {
       return res.status(400).send('Invalid GeoJSON')
     }
-
-    const { Pool } = await import('pg')
-    const pool = new Pool({
-      user: 'postgres',
-      host: 'localhost',
-      database: 'postgres',
-      password: process.env.DB_PASSWORD || '123456',
-      port: 5432,
-    })
 
     const result = await pool.query(
       'INSERT INTO point2(name,dcmd,lssl,slope,hlxqsl,pthhsmj,elevation,scale,geom) VALUES($1,$2,$3,$4,$5,$6,$7,$8,ST_SetSRID(ST_GeomFromGeoJSON($9),4326)) RETURNING *',
