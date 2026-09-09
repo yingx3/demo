@@ -1692,45 +1692,27 @@ const openLayers = async params => {
     }
   }
 
-  // 泥石流启动物源计算模型结果：sdpResultUrl (TIFF Blob URL)
+  // 泥石流启动物源计算模型结果：多帧时间轴动画
   try {
     if (params?.sdpResult) {
-      const { imageBase64, minLng, minLat, maxLng, maxLat } = params.sdpResult
-      console.log('openLayers: SDP result', { minLng, minLat, maxLng, maxLat })
-      const img = new Image()
-      img.onload = () => {
-        // 用 Canvas 去掉白色背景（NoData 区域变透明）
-        const canvas = document.createElement('canvas')
-        canvas.width = img.width
-        canvas.height = img.height
-        const ctx = canvas.getContext('2d')
-        ctx.drawImage(img, 0, 0)
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-        const d = imageData.data
-        for (let i = 0; i < d.length; i += 4) {
-          // R>250 && G>250 && B>250 视为白色/接近白色 → 变透明
-          if (d[i] > 250 && d[i+1] > 250 && d[i+2] > 250) {
-            d[i+3] = 0
-          }
-        }
-        ctx.putImageData(imageData, 0, 0)
-        const cleanUrl = canvas.toDataURL('image/png')
+      const sdp = params.sdpResult
+      const sdpFrames = (Array.isArray(sdp.frames) && sdp.frames.length)
+        ? sdp.frames
+        : (sdp.imageBase64 ? [sdp] : [])
+      if (!sdpFrames.length) {
+        console.warn('[SDP] 无有效帧')
+        return
+      }
+      let sdpCurrentIdx = sdpFrames.length - 1
 
-        const provider = new Cesium.SingleTileImageryProvider({
-          url: cleanUrl,
-          rectangle: Cesium.Rectangle.fromDegrees(minLng, minLat, maxLng, maxLat),
-          tileWidth: img.width,
-          tileHeight: img.height,
-        })
-        const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
-        addedLayer.sdpResultTag = true
-        viewer.value.camera.flyTo({
-          destination: Cesium.Cartesian3.fromDegrees((minLng + maxLng) / 2, (minLat + maxLat) / 2, 7299),
-          orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 },
-        })
-        // 清除旧图例
+      const imLayers = viewer.value.scene.imageryLayers
+      for (let i = imLayers.length - 1; i >= 0; i--) {
+        const layer = imLayers.get(i)
+        if (layer.sdpResultTag) imLayers.remove(layer)
+      }
+
+      const buildSdpLegend = () => {
         if (sdpLegendEl) { sdpLegendEl.remove(); sdpLegendEl = null }
-        // 绘制 ZMAX 图例
         const legendColors = [
           { color: '#f5f0b0', label: '10–25 m', desc: '极少物源' },
           { color: '#f0c030', label: '25–50 m', desc: '少量物源' },
@@ -1753,14 +1735,121 @@ const openLayers = async params => {
         `
         document.body.appendChild(sdpLegendEl)
         sdpLegendEl.querySelector('#sdp-legend-close').onclick = () => { sdpLegendEl.remove(); sdpLegendEl = null }
+      }
 
-        ElMessage({ message: '泥石流起动区深度结果已加载', type: 'success' })
+      const renderSdpFrame = (idx) => {
+        const f = sdpFrames[idx]
+        if (!f) return
+        const img = new Image()
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          canvas.width = img.width
+          canvas.height = img.height
+          const ctx = canvas.getContext('2d')
+          ctx.drawImage(img, 0, 0)
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+          const d = imageData.data
+          for (let i = 0; i < d.length; i += 4) {
+            if (d[i] > 250 && d[i+1] > 250 && d[i+2] > 250) d[i+3] = 0
+          }
+          ctx.putImageData(imageData, 0, 0)
+          const cleanUrl = canvas.toDataURL('image/png')
+
+          for (let i = imLayers.length - 1; i >= 0; i--) {
+            const layer = imLayers.get(i)
+            if (layer.sdpResultTag) imLayers.remove(layer)
+          }
+          const provider = new Cesium.SingleTileImageryProvider({
+            url: cleanUrl,
+            rectangle: Cesium.Rectangle.fromDegrees(f.minLng, f.minLat, f.maxLng, f.maxLat),
+            tileWidth: img.width,
+            tileHeight: img.height,
+          })
+          const addedLayer = imLayers.addImageryProvider(provider)
+          addedLayer.sdpResultTag = true
+
+          buildSdpLegend()
+          if (sdpTimeLabelEl) {
+            const hasTime = (f.time != null && !isNaN(Number(f.time)))
+            sdpTimeLabelEl.textContent = hasTime
+              ? `t = ${(Number(f.time) / 86400).toFixed(2)} 天 · 第 ${idx+1}/${sdpFrames.length} 帧`
+              : `第 ${idx+1}/${sdpFrames.length} 帧`
+          }
+        }
+        img.onerror = () => {
+          console.error('SDP PNG 加载失败')
+          ElMessage({ message: 'PNG 图片加载失败', type: 'error' })
+        }
+        img.src = `data:image/png;base64,${f.imageBase64}`
       }
-      img.onerror = () => {
-        console.error('SDP PNG 加载失败')
-        ElMessage({ message: 'PNG 图片加载失败', type: 'error' })
+
+      const pauseSdpPlay = () => {
+        if (sdpFrameTimer) { clearInterval(sdpFrameTimer); sdpFrameTimer = null }
+        const btn = sdpTimeControlEl?.querySelector('#sdp-play')
+        if (btn) btn.textContent = '▶'
       }
-      img.src = `data:image/png;base64,${imageBase64}`
+      const playSdp = () => {
+        if (sdpFrameTimer) return
+        sdpFrameTimer = setInterval(() => {
+          sdpCurrentIdx = (sdpCurrentIdx + 1) % sdpFrames.length
+          const range = sdpTimeControlEl?.querySelector('#sdp-range')
+          if (range) range.value = sdpCurrentIdx
+          renderSdpFrame(sdpCurrentIdx)
+        }, 1000)
+        const btn = sdpTimeControlEl?.querySelector('#sdp-play')
+        if (btn) btn.textContent = '⏸'
+      }
+
+      const buildSdpTimeline = () => {
+        if (sdpTimeControlEl) { sdpTimeControlEl.remove(); sdpTimeControlEl = null }
+        const el = document.createElement('div')
+        el.style.cssText = 'position:fixed;bottom:130px;left:30px;z-index:999;background:rgba(0,0,0,0.8);border:1px solid #38e1ff;border-radius:6px;padding:8px 12px;color:#fff;font-size:12px;display:flex;align-items:center;gap:8px;'
+        el.innerHTML = `
+          <button id="sdp-play" style="background:#38e1ff;border:none;border-radius:3px;color:#000;cursor:pointer;width:26px;height:26px;line-height:1;font-size:14px">▶</button>
+          <input id="sdp-range" type="range" min="0" max="${sdpFrames.length - 1}" value="${sdpCurrentIdx}" step="1" style="width:220px">
+          <span id="sdp-time-label" style="min-width:130px;white-space:nowrap"></span>
+          <button id="sdp-close" style="background:transparent;border:none;color:#999;cursor:pointer;font-size:14px">×</button>
+        `
+        document.body.appendChild(el)
+        sdpTimeControlEl = el
+        sdpTimeLabelEl = el.querySelector('#sdp-time-label')
+
+        const rangeEl = el.querySelector('#sdp-range')
+        rangeEl.addEventListener('input', e => {
+          pauseSdpPlay()
+          sdpCurrentIdx = Number(e.target.value)
+          renderSdpFrame(sdpCurrentIdx)
+        })
+        el.querySelector('#sdp-play').addEventListener('click', () => {
+          if (sdpFrameTimer) pauseSdpPlay()
+          else playSdp()
+        })
+        el.querySelector('#sdp-close').addEventListener('click', () => {
+          pauseSdpPlay()
+          el.remove()
+          sdpTimeControlEl = null
+        })
+
+        const f = sdpFrames[sdpCurrentIdx]
+        const hasTime = (f.time != null && !isNaN(Number(f.time)))
+        if (sdpTimeLabelEl) {
+          sdpTimeLabelEl.textContent = hasTime
+            ? `t = ${(Number(f.time) / 86400).toFixed(2)} 天 · 第 ${sdpCurrentIdx+1}/${sdpFrames.length} 帧`
+            : `第 ${sdpCurrentIdx+1}/${sdpFrames.length} 帧`
+        }
+      }
+
+      renderSdpFrame(sdpCurrentIdx)
+      buildSdpTimeline()
+      const first = sdpFrames[sdpCurrentIdx]
+      viewer.value.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(
+          (first.minLng + first.maxLng) / 2,
+          (first.minLat + first.maxLat) / 2,
+          7299),
+        orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 },
+      })
+      ElMessage({ message: '泥石流起动区深度结果已加载，可拖动下方时间轴查看演变', type: 'success' })
     }
   } catch (e) {
     console.error('加载 SDP 结果失败:', e)
@@ -1834,6 +1923,9 @@ const yjLayers = payload => {
 // 洪水泥石流（测试）— DebrisFlow 渲染
 let sdpSim = null
 let sdpLegendEl = null
+let sdpTimeControlEl = null
+let sdpTimeLabelEl = null
+let sdpFrameTimer = null
 
 const floodLayersTest = async payload => {
   const method = payload.renderMethod || 'debrisflow'
@@ -5281,6 +5373,8 @@ const cleanentity = () => {
     }
   }
   if (sdpLegendEl) { sdpLegendEl.remove(); sdpLegendEl = null }
+  if (sdpFrameTimer) { clearInterval(sdpFrameTimer); sdpFrameTimer = null }
+  if (sdpTimeControlEl) { sdpTimeControlEl.remove(); sdpTimeControlEl = null }
   // 9. 移除全域风险结果图层及图例
   if (fullRiskResultLayer && !fullRiskResultLayer.isDestroyed?.()) {
     try { viewer.value.scene.imageryLayers.remove(fullRiskResultLayer) } catch (e) {}
