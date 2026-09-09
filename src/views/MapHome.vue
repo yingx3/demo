@@ -1829,8 +1829,8 @@ function showBeddingFos(payload) {
   }
   // 在地图上放置冰岩崩边坡标记（按最小 FoS 红/绿 + 标注）
   const loc = payload?.location || {}
-  const lon = Number(loc.longitude) || 94.8935
-  const lat = Number(loc.latitude) || 29.7429
+  const lon = Number(loc.longitude) || 95.0020
+  const lat = Number(loc.latitude) || 30.2354
   const minFos = fos.length ? Math.min(...fos) : 1
   const unstable = minFos < 1
   const col = unstable ? Cesium.Color.RED : Cesium.Color.LIME

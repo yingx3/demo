@@ -4513,7 +4513,7 @@ const form_bedding_wedget = reactive({
   fracture: '0.5',
   melt_duration: '240',
 })
-const form_avainit_location = reactive({ longitude: '94.8935', latitude: '29.7429' })
+const form_avainit_location = reactive({ longitude: '95.0020', latitude: '30.2354' })
 const radio_avainit = ref('1')
 const seismicModelType = ref('ml') // ml | dl
 const dialogVisibleSeismic = ref(false)
