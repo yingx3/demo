@@ -702,6 +702,7 @@ const submit_setPosition = () => {
 }
 onMounted(() => {
   // viewer 由 MapLayout 初始化并通过 provide/inject 注入，此处无需再初始化 Cesium
+  initChainButton()
 })
 
 //选中与未选中图层
@@ -1781,6 +1782,38 @@ const openLayers = async params => {
     console.error('加载 SDP 结果失败:', e)
   }
 }
+function showSdpResultLayer(sdpResult) {
+  const sdp = (sdpResult && sdpResult.frames && sdpResult.frames.length) ? sdpResult.frames[sdpResult.frames.length - 1] : sdpResult
+  if (!sdp || !sdp.imageBase64) { console.warn('[SDP] 无有效结果'); return }
+  const { imageBase64, minLng, minLat, maxLng, maxLat } = sdp
+  const imLayers = viewer.value.scene.imageryLayers
+  for (let i = imLayers.length - 1; i >= 0; i--) { const l = imLayers.get(i); if (l.sdpResultTag) imLayers.remove(l) }
+  const img = new Image()
+  img.onload = () => {
+    const canvas = document.createElement('canvas')
+    canvas.width = img.width; canvas.height = img.height
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(img, 0, 0)
+    const d = ctx.getImageData(0, 0, canvas.width, canvas.height).data
+    for (let i = 0; i < d.length; i += 4) { if (d[i] > 250 && d[i+1] > 250 && d[i+2] > 250) d[i+3] = 0 }
+    ctx.putImageData(ctx.getImageData(0, 0, canvas.width, canvas.height), 0, 0)
+    const cleanUrl = canvas.toDataURL('image/png')
+    const provider = new Cesium.SingleTileImageryProvider({ url: cleanUrl, rectangle: Cesium.Rectangle.fromDegrees(minLng, minLat, maxLng, maxLat), tileWidth: img.width, tileHeight: img.height })
+    const addedLayer = imLayers.addImageryProvider(provider)
+    addedLayer.sdpResultTag = true
+    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees((minLng + maxLng) / 2, (minLat + maxLat) / 2, 7299) })
+    if (sdpLegendEl) { sdpLegendEl.remove(); sdpLegendEl = null }
+    const legendColors = [ { color: '#f5f0b0', label: '10–25 m', desc: '极少物源' }, { color: '#f0c030', label: '25–50 m', desc: '少量物源' }, { color: '#f08020', label: '50–80 m', desc: '中等物源' }, { color: '#d03010', label: '80–110 m', desc: '大量物源' }, { color: '#5c1010', label: '110–131 m', desc: '巨量物源' } ]
+    sdpLegendEl = document.createElement('div')
+    sdpLegendEl.style.cssText = 'position:fixed;bottom:30px;left:30px;z-index:999;background:rgba(0,0,0,0.8);border:1px solid #38e1ff;border-radius:6px;padding:10px 14px;color:#fff;font-size:12px;'
+    sdpLegendEl.innerHTML = `<div style="font-weight:600;margin-bottom:6px;color:#38e1ff">ZMAX 物源深度</div>` + legendColors.map(c => `<div style="display:flex;align-items:center;gap:8px;margin:3px 0"><span style="width:20px;height:14px;background:${c.color};border-radius:2px;flex-shrink:0"></span><span style="min-width:70px">${c.label}</span><span style="color:#999;font-size:11px">${c.desc}</span></div>`).join('')
+    document.body.appendChild(sdpLegendEl)
+    ElMessage({ message: '泥石流起动区深度结果已加载', type: 'success' })
+  }
+  img.onerror = () => { console.error('SDP PNG 加载失败'); ElMessage({ message: 'PNG 图片加载失败', type: 'error' }) }
+  img.src = `data:image/png;base64,${imageBase64}`
+}
+
 let fosChartDom = null
 let fosChartExpr = null
 function showBeddingFos(payload) {
@@ -1853,6 +1886,79 @@ function showBeddingFos(payload) {
 
   ElMessage({ message: mode + ' 冰岩崩安全系数已生成', type: 'success' })
 }
+// ---- 按案例(易贡/色东普)的冰川灾害链串联：每个案例都跑 冰岩崩→泥石流物源 并传参 ----
+let chainPanelEl = null
+const CHAIN_CASES = {
+  yigong: { name: '易贡', loc: { lon: 95.0020, lat: 30.2354 }, ice: { melt_duration: '240', slope_angle: '45', slide_angle: '30', ice_thickness: '5', fissure_height: '10', slide_length: '50', cohesion: '20', friction_angle: '35', rock_density: '2500', permeability: '1e-05' }, collapseVolume: 1.86e8, sourceArea: 2.6e7 },
+  sedongpu: { name: '色东普', loc: { lon: 94.8935, lat: 29.7429 }, ice: { melt_duration: '240', slope_angle: '50', slide_angle: '35', ice_thickness: '6', fissure_height: '12', slide_length: '60', cohesion: '22', friction_angle: '34', rock_density: '2500', permeability: '1e-05' }, collapseVolume: 0.4e8, sourceArea: 2.4e7 },
+}
+const chainCaseKey = { value: 'yigong' }
+const chainState = { minFos: null, unstable: false, sourceBoost: 0 }
+
+async function runChainCase() {
+  const c = CHAIN_CASES[chainCaseKey.value] || CHAIN_CASES.yigong
+  ElMessage({ message: c.name + ' 灾害链：冰岩崩→泥石流物源 运行中...', type: 'info', duration: 0 })
+  try {
+    const body = { ...c.ice }
+    const res = await axios.post('/testapi/admin/user/avainit', body)
+    const fos = Array.isArray(res.data.fos) ? res.data.fos : []
+    const minFos = fos.length ? Math.min(...fos) : 1
+    chainState.minFos = minFos
+    chainState.unstable = minFos < 1
+    // 参数传递：案例已知崩落体量 → 物源厚度增量(zmax_boost)
+    chainState.sourceBoost = Math.min(20, Math.max(0, c.collapseVolume / c.sourceArea))
+    showBeddingFos({ mode: c.name + '·冰岩崩', form: body, result: res.data, location: { longitude: String(c.loc.lon), latitude: String(c.loc.lat) } })
+    const sdp = await axios.post('/testapi/admin/user/SDP_Start', { ice_content: 0.2, zmax_boost: chainState.sourceBoost })
+    showSdpResultLayer(sdp.data)
+    ElMessage.closeAll()
+    ElMessage({ message: c.name + ' 完成：冰岩崩(' + (chainState.unstable ? '失稳' : '稳定') + ') → 泥石流物源(zmax+' + chainState.sourceBoost.toFixed(2) + 'm)', type: 'success' })
+    updateChainStatus()
+    return sdp.data
+  } catch (e) {
+    ElMessage.closeAll()
+    const m = e.response?.data || e.message || e
+    ElMessage({ message: c.name + ' 灾害链失败: ' + (typeof m === 'string' ? m : JSON.stringify(m)), type: 'error' })
+    console.error('chain error:', e)
+  }
+}
+
+function updateChainStatus() {
+  if (!chainPanelEl) return
+  const el = chainPanelEl.querySelector('#chain-status')
+  if (!el) return
+  const c = CHAIN_CASES[chainCaseKey.value]
+  el.textContent = c.name + ' 冰岩崩 minFoS=' + (chainState.minFos == null ? '-' : chainState.minFos.toFixed(2)) + (chainState.unstable ? ' ·失稳' : ' ·稳定') + ' | 崩落体量 ' + (c.collapseVolume / 1e8).toFixed(2) + '×10⁸m³ | 物源厚度+' + chainState.sourceBoost.toFixed(2) + 'm'
+}
+
+function toggleChainPanel() {
+  if (chainPanelEl) { chainPanelEl.remove(); chainPanelEl = null; return }
+  const el = document.createElement('div')
+  el.style.cssText = 'position:fixed;top:128px;left:30px;z-index:999;width:380px;background:rgba(0,0,0,0.85);border:1px solid #38e1ff;border-radius:6px;padding:10px 14px;color:#fff;font-size:13px;'
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;font-weight:600;color:#38e1ff;margin-bottom:8px"><span>冰川灾害链 · 按案例</span><span id="chain-close" style="cursor:pointer;color:#999">&times;</span></div>
+    <div style="margin:4px 0;color:#fff">案例 <span style="margin-left:6px"><button id="case-yigong" style="background:#38e1ff;border:none;border-radius:3px;cursor:pointer;padding:2px 8px">易贡</button></span> <button id="case-sedongpu" style="background:#444;border:none;border-radius:3px;color:#fff;cursor:pointer;padding:2px 8px">色东普</button></div>
+    <div style="margin:6px 0;color:#9cf;font-size:12px">每个案例都依次运行：①冰岩崩启动 ②(崩落体量→物源厚度) ③泥石流物源启动</div>
+    <div style="margin:6px 0"><button id="chain-run" style="background:#ffaa00;border:none;border-radius:3px;color:#000;cursor:pointer;padding:4px 12px;font-weight:600">运行当前案例灾害链</button></div>
+    <div id="chain-status" style="margin-top:6px;font-size:12px;color:#ffd"></div>
+  `
+  document.body.appendChild(el)
+  chainPanelEl = el
+  el.querySelector('#chain-close').onclick = () => { el.remove(); chainPanelEl = null }
+  el.querySelector('#chain-run').onclick = () => { runChainCase() }
+  el.querySelector('#case-yigong').onclick = () => { chainCaseKey.value = 'yigong'; updateChainStatus() }
+  el.querySelector('#case-sedongpu').onclick = () => { chainCaseKey.value = 'sedongpu'; updateChainStatus() }
+  updateChainStatus()
+}
+
+function initChainButton() {
+  const btn = document.createElement('div')
+  btn.textContent = '✦ 冰川灾害链'
+  btn.style.cssText = 'position:fixed;top:88px;left:30px;z-index:998;background:rgba(0,0,0,0.75);border:1px solid #38e1ff;border-radius:6px;padding:6px 10px;color:#fff;cursor:pointer;font-size:13px;'
+  btn.onclick = () => toggleChainPanel()
+  document.body.appendChild(btn)
+}
+
+
 
 const area_avaflow = ref(null)
 /** 山洪泥石流 GeoJSON 的 base path，由后端返回或按 area 默认 */
