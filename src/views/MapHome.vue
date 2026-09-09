@@ -1827,6 +1827,30 @@ function showBeddingFos(payload) {
     el.remove(); fosChartDom = null
     if (fosChartExpr) { fosChartExpr.dispose(); fosChartExpr = null }
   }
+  // 在地图上放置冰岩崩边坡标记（按最小 FoS 红/绿 + 标注）
+  const loc = payload?.location || {}
+  const lon = Number(loc.longitude) || 94.8935
+  const lat = Number(loc.latitude) || 29.7429
+  const minFos = fos.length ? Math.min(...fos) : 1
+  const unstable = minFos < 1
+  const col = unstable ? Cesium.Color.RED : Cesium.Color.LIME
+  const oldE = viewer.value.entities.getById('bedding_avainit')
+  if (oldE) viewer.value.entities.remove(oldE)
+  viewer.value.entities.add({
+    id: 'bedding_avainit',
+    position: Cesium.Cartesian3.fromDegrees(lon, lat),
+    point: { pixelSize: 16, color: col, outlineColor: Cesium.Color.WHITE, outlineWidth: 2 },
+    label: {
+      text: mode + (unstable ? ' · 不稳定' : ' · 稳定') + ' (minFoS=' + minFos.toFixed(2) + ')',
+      font: '13px sans-serif',
+      fillColor: col,
+      showBackground: true,
+      backgroundColor: new Cesium.Color(0, 0, 0, 0.6),
+      pixelOffset: new Cesium.Cartesian2(0, -28),
+    },
+  })
+  viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(lon, lat, 12000) })
+
   ElMessage({ message: mode + ' 冰岩崩安全系数已生成', type: 'success' })
 }
 
@@ -5359,6 +5383,10 @@ const cleanentity = () => {
     handler_seismic.value.destroy()
   }
   handler_seismic.value = ''
+  if (fosChartDom) { fosChartDom.remove(); fosChartDom = null }
+  if (fosChartExpr) { fosChartExpr.dispose(); fosChartExpr = null }
+  const bedE = viewer.value.entities.getById('bedding_avainit')
+  if (bedE) viewer.value.entities.remove(bedE)
 }
 const handler_seismic = ref('')
 var echarts_data = ''

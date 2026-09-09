@@ -2761,6 +2761,11 @@
                 <el-radio :value="3">楔形</el-radio>
               </el-radio-group>
             </div>
+            <div style="margin-left:25px;margin-top:8px;display:flex;gap:12px;align-items:center;font-size:13px;color:#fff">
+              <span>定位</span>
+              <el-input v-model="form_avainit_location.longitude" placeholder="经度" style="width:150px" />
+              <el-input v-model="form_avainit_location.latitude" placeholder="纬度" style="width:150px" />
+            </div>
             <el-form
               :model="form_avainit"
               label-width="auto"
@@ -4508,6 +4513,7 @@ const form_bedding_wedget = reactive({
   fracture: '0.5',
   melt_duration: '240',
 })
+const form_avainit_location = reactive({ longitude: '94.8935', latitude: '29.7429' })
 const radio_avainit = ref('1')
 const seismicModelType = ref('ml') // ml | dl
 const dialogVisibleSeismic = ref(false)
@@ -4735,7 +4741,7 @@ async function sumbit_avainit() {
     ElMessage.closeAll()
     ElMessage({ message: '顺层计算完成', type: 'success' })
     dialog_avainit.value = false
-    $emit('bedding_parallel', { mode: '顺层', form: { ...form_avainit }, result: res })
+    $emit('bedding_parallel', { mode: '顺层', form: { ...form_avainit }, result: res, location: { ...form_avainit_location } })
   } catch (e) {
     ElMessage.closeAll()
     const emsg = e.response?.data || e.message || e
@@ -4750,7 +4756,7 @@ async function sumbit_inverse() {
     ElMessage.closeAll()
     ElMessage({ message: '反倾计算完成', type: 'success' })
     dialog_avainit.value = false
-    $emit('bedding_inverted', { mode: '反倾', form: { ...form_bedding_inverted }, result: res })
+    $emit('bedding_inverted', { mode: '反倾', form: { ...form_bedding_inverted }, result: res, location: { ...form_avainit_location } })
   } catch (e) {
     ElMessage.closeAll()
     const emsg = e.response?.data || e.message || e
@@ -4765,7 +4771,7 @@ async function sumbit_wedget() {
     ElMessage.closeAll()
     ElMessage({ message: '楔形计算完成', type: 'success' })
     dialog_avainit.value = false
-    $emit('bedding_wedget', { mode: '楔形', form: { ...form_bedding_wedget }, result: res })
+    $emit('bedding_wedget', { mode: '楔形', form: { ...form_bedding_wedget }, result: res, location: { ...form_avainit_location } })
   } catch (e) {
     ElMessage.closeAll()
     const emsg = e.response?.data || e.message || e
