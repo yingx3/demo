@@ -4496,7 +4496,7 @@ melt_duration: '240',
   permeability: '0.0001',
 })
 const form_bedding_wedget = reactive({
-  slope_angle: '30',
+  slope_angle: '55',
   normal_vector: '1,1,1',
   cohesion: '15',
   friction_angle: '20',
@@ -4738,7 +4738,8 @@ async function sumbit_avainit() {
     $emit('bedding_parallel', { mode: '顺层', form: { ...form_avainit }, result: res })
   } catch (e) {
     ElMessage.closeAll()
-    ElMessage({ message: '顺层计算失败: ' + (e.message || e), type: 'error' })
+    const emsg = e.response?.data || e.message || e
+        ElMessage({ message: '顺层计算失败: ' + (typeof emsg === 'string' ? emsg : JSON.stringify(emsg)), type: 'error' })
     console.error('sumbit_avainit error:', e)
   }
 }
@@ -4752,7 +4753,8 @@ async function sumbit_inverse() {
     $emit('bedding_inverted', { mode: '反倾', form: { ...form_bedding_inverted }, result: res })
   } catch (e) {
     ElMessage.closeAll()
-    ElMessage({ message: '反倾计算失败: ' + (e.message || e), type: 'error' })
+    const emsg = e.response?.data || e.message || e
+        ElMessage({ message: '反倾计算失败: ' + (typeof emsg === 'string' ? emsg : JSON.stringify(emsg)), type: 'error' })
     console.error('sumbit_inverse error:', e)
   }
 }
@@ -4766,7 +4768,8 @@ async function sumbit_wedget() {
     $emit('bedding_wedget', { mode: '楔形', form: { ...form_bedding_wedget }, result: res })
   } catch (e) {
     ElMessage.closeAll()
-    ElMessage({ message: '楔形计算失败: ' + (e.message || e), type: 'error' })
+    const emsg = e.response?.data || e.message || e
+        ElMessage({ message: '楔形计算失败: ' + (typeof emsg === 'string' ? emsg : JSON.stringify(emsg)), type: 'error' })
     console.error('sumbit_wedget error:', e)
   }
 }

@@ -5355,7 +5355,10 @@ const cleanentity = () => {
   squareStore.closeSquare()
   squareStore.closeRisk()
   // 10. 移除事件
-  handler_seismic.value.destroy()
+  if (handler_seismic.value && typeof handler_seismic.value.destroy === 'function') {
+    handler_seismic.value.destroy()
+  }
+  handler_seismic.value = ''
 }
 const handler_seismic = ref('')
 var echarts_data = ''
