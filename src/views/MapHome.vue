@@ -1843,14 +1843,11 @@ function showBeddingFos(payload) {
 
   ElMessage({ message: mode + ' 冰岩崩安全系数已生成', type: 'success' })
 }
-// ---- 冰川灾害链串联 (A: 链式联动 + B: 参数传导) ----
+// ---- 冰川灾害链串联 (A+B 升级版：崩落体量 → 物源厚度增量) ----
 let chainPanelEl = null
-const chainState = { minFos: null, unstable: false, iceThickness: 5, enhancedIce: 0.2 }
-const CHAIN_ICE = {
-  melt_duration: '240', slope_angle: '45', slide_angle: '30', ice_thickness: '5',
-  fissure_height: '10', slide_length: '50', cohesion: '20', friction_angle: '35',
-  rock_density: '2500', permeability: '1e-05',
-}
+const chainState = { minFos: null, unstable: false, debrisVolume: 0, ice_content: 0.2, sourceBoost: 0, loc: { longitude: '95.0020', latitude: '30.2354' } }
+const CHAIN_ICE = { melt_duration: '240', slope_angle: '45', slide_angle: '30', ice_thickness: '5', fissure_height: '10', slide_length: '50', cohesion: '20', friction_angle: '35', rock_density: '2500', permeability: '1e-05' }
+const SDP_CENTER = { lon: 94.8935, lat: 29.7429 }
 
 async function runChainIceRock() {
   const body = { ...CHAIN_ICE }
@@ -1859,17 +1856,17 @@ async function runChainIceRock() {
   const minFos = fos.length ? Math.min(...fos) : 1
   chainState.minFos = minFos
   chainState.unstable = minFos < 1
-  chainState.iceThickness = Number(body.ice_thickness) || 5
-  // B: 冰岩崩失稳 → 提高泥石流物源模型的含冰量（简单启发式）
-  chainState.enhancedIce = Math.min(1, 0.2 + (chainState.unstable ? Math.min(0.6, chainState.iceThickness / 10) : 0))
-  showBeddingFos({ mode: '冰岩崩(易贡)', form: body, result: res.data, location: { longitude: '95.0020', latitude: '30.2354' } })
+  chainState.debrisVolume = Number(res.data.debrisVolume) || 0
+  // B: 冰岩崩崩落体量 → 物源厚度增量(zmax_boost, m)（简单按崩落体量折算）
+  chainState.sourceBoost = Math.min(10, Math.max(0, chainState.debrisVolume / 100))
+  showBeddingFos({ mode: '冰岩崩(易贡)', form: body, result: res.data, location: { ...chainState.loc } })
+  drawChainLine()
   updateChainStatus()
   return res.data
 }
 
-async function runChainSdp(iceContent) {
-  const ice = (iceContent != null) ? iceContent : chainState.enhancedIce
-  const res = await axios.post('/testapi/admin/user/SDP_Start', { ice_content: ice })
+async function runChainSdp() {
+  const res = await axios.post('/testapi/admin/user/SDP_Start', { ice_content: chainState.ice_content, zmax_boost: chainState.sourceBoost })
   showSdpResultLayer(res.data)
   updateChainStatus()
   return res.data
@@ -1881,7 +1878,7 @@ async function runChainAll() {
     await runChainIceRock()
     await runChainSdp()
     ElMessage.closeAll()
-    ElMessage({ message: '串联完成：冰岩崩(' + (chainState.unstable ? '失稳' : '稳定') + ') → 泥石流物源(ice_content=' + chainState.enhancedIce.toFixed(2) + ')', type: 'success' })
+    ElMessage({ message: '串联完成：冰岩崩(' + (chainState.unstable ? '失稳' : '稳定') + ') → 泥石流物源(zmax+' + chainState.sourceBoost.toFixed(2) + 'm)', type: 'success' })
   } catch (e) {
     ElMessage.closeAll()
     const m = e.response?.data || e.message || e
@@ -1890,25 +1887,45 @@ async function runChainAll() {
   }
 }
 
+function drawChainLine() {
+  const old = viewer.value.entities.getById('chain_link')
+  if (old) viewer.value.entities.remove(old)
+  const lon1 = Number(chainState.loc.longitude) || 95.0020
+  const lat1 = Number(chainState.loc.latitude) || 30.2354
+  viewer.value.entities.add({
+    id: 'chain_link',
+    polyline: {
+      positions: Cesium.Cartesian3.fromDegreesArray([lon1, lat1, SDP_CENTER.lon, SDP_CENTER.lat]),
+      width: 3,
+      material: Cesium.Color.YELLOW,
+      clampToGround: true,
+    },
+  })
+}
+
 function updateChainStatus() {
   if (!chainPanelEl) return
   const el = chainPanelEl.querySelector('#chain-status')
   if (!el) return
   el.textContent = '冰岩崩 minFoS=' + (chainState.minFos == null ? '-' : chainState.minFos.toFixed(2)) +
-    (chainState.unstable ? ' · 不稳定' : ' · 稳定') + '  |  泥石流 ice_content=' + chainState.enhancedIce.toFixed(2)
+    (chainState.unstable ? ' · 失稳' : ' · 稳定') + ' | 崩落体量=' + chainState.debrisVolume.toFixed(1) +
+    'm³ | 物源厚度+' + chainState.sourceBoost.toFixed(2) + 'm'
 }
 
 function toggleChainPanel() {
   if (chainPanelEl) { chainPanelEl.remove(); chainPanelEl = null; return }
   const el = document.createElement('div')
-  el.style.cssText = 'position:fixed;top:128px;left:30px;z-index:999;width:320px;background:rgba(0,0,0,0.85);border:1px solid #38e1ff;border-radius:6px;padding:10px 14px;color:#fff;font-size:13px;'
+  el.style.cssText = 'position:fixed;top:128px;left:30px;z-index:999;width:360px;background:rgba(0,0,0,0.85);border:1px solid #38e1ff;border-radius:6px;padding:10px 14px;color:#fff;font-size:13px;'
   el.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;font-weight:600;color:#38e1ff;margin-bottom:6px">
       <span>冰川灾害链</span>
       <span id="chain-close" style="cursor:pointer;color:#999">&times;</span>
     </div>
     <div style="margin:4px 0">① 冰岩崩启动（易贡） <button id="chain-ice" style="margin-left:6px;background:#38e1ff;border:none;border-radius:3px;color:#000;cursor:pointer;padding:2px 8px">运行</button></div>
-    <div style="margin:2px 0;padding-left:22px;color:#9cf">→ 物源供给</div>
+    <div style="margin:4px 0;padding-left:22px;color:#9cf;font-size:12px">
+      位置 <input id="chain-lon" value="${chainState.loc.longitude}" style="width:64px"> , <input id="chain-lat" value="${chainState.loc.latitude}" style="width:64px">
+    </div>
+    <div style="margin:2px 0;padding-left:22px;color:#9cf">→ 物源供给（崩落体量 → 厚度增量）</div>
     <div style="margin:4px 0">② 泥石流启动物源（色东普） <button id="chain-sdp" style="margin-left:6px;background:#38e1ff;border:none;border-radius:3px;color:#000;cursor:pointer;padding:2px 8px">运行</button></div>
     <div style="margin:8px 0"><button id="chain-all" style="background:#ffaa00;border:none;border-radius:3px;color:#000;cursor:pointer;padding:4px 12px;font-weight:600">一键串联运行</button></div>
     <div id="chain-status" style="margin-top:6px;font-size:12px;color:#ffd"></div>
@@ -1919,6 +1936,8 @@ function toggleChainPanel() {
   el.querySelector('#chain-ice').onclick = () => { runChainIceRock().catch(e => console.error(e)) }
   el.querySelector('#chain-sdp').onclick = () => { runChainSdp().catch(e => console.error(e)) }
   el.querySelector('#chain-all').onclick = () => { runChainAll() }
+  el.querySelector('#chain-lon').addEventListener('input', e => { chainState.loc.longitude = e.target.value })
+  el.querySelector('#chain-lat').addEventListener('input', e => { chainState.loc.latitude = e.target.value })
   updateChainStatus()
 }
 
@@ -1929,6 +1948,7 @@ function initChainButton() {
   btn.onclick = () => toggleChainPanel()
   document.body.appendChild(btn)
 }
+
 
 
 
