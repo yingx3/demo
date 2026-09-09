@@ -1701,7 +1701,6 @@ const openLayers = async params => {
     if (params?.sdpResult) {
       showSdpResultLayer(params.sdpResult)
     }
-    }
   } catch (e) {
     console.error('加载 SDP 结果失败:', e)
   }
