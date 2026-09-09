@@ -11,6 +11,11 @@ const modelService = {
       .post('/testapi/admin/user/yj', form1, { timeout: 60000 })
       .then(r => r.data)
   },
+  runAvaflowBeta(form1) {
+    return axios
+      .post('/testapi/admin/user/yj_beta', form1, { timeout: 600000 })
+      .then(r => r.data)
+  },
   uploadAvaflowFiles(formData) {
     return axios
       .post('/testapi/admin/user/upload_avaflow', formData, {

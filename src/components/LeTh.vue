@@ -3068,6 +3068,53 @@
             </el-form>
           </el-dialog>
         </div>
+        <div class="box box-used p_bottom">
+          <img src="../assets/img/云反射率.png" alt="" />
+          <el-button :plain="true" @click="dialogBeta = true"
+            ><span>洪水泥石流启动动力学模型_beta</span></el-button
+          >
+          <el-dialog v-model="dialogBeta" title="洪水泥石流启动动力学模型_beta" width="500" :close-on-click-modal="false" class="dialog_flood">
+            <template #header>
+              <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+                <span style="color:#ffffff;font-size:24px">洪水泥石流启动动力学模型_beta</span>
+              </div>
+            </template>
+            <p id="name_par_gbm" style="margin-left:28px;margin-top:10px;font-size:18px;color:#2763ca">模型参数</p>
+            <el-form :model="form1" label-width="auto" style="max-width:600px" class="form_avaflow">
+              <el-form-item label="区域" label-position="right" label-width="140px">
+                <el-select v-model="form1.area" style="width:200px">
+                  <el-option label="巴宜区" value="巴宜区" />
+                  <el-option label="波密县" value="波密县" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="相位数 phases" label-position="right" label-width="140px">
+                <el-input v-model="form1.phases" style="width:160px" />
+              </el-form-item>
+              <el-form-item label="摩擦系数 cf/bf/ff" label-position="right" label-width="140px">
+                <el-input v-model="form1.cf" style="width:160px" placeholder="cf" />
+              </el-form-item>
+              <el-form-item label="地形/物源/影响范围" label-position="right" label-width="140px">
+                <div style="display:flex;gap:8px">
+                  <el-upload ref="uploadElevRef" :auto-upload="false" :show-file-list="false" accept=".tif,.tiff" @change="handleFileChangeElev">
+                    <el-button @click.stop="triggerUploadElev">高程</el-button>
+                  </el-upload>
+                  <el-upload ref="uploadDebrisRef" :auto-upload="false" :show-file-list="false" accept=".tif,.tiff" @change="handleFileChangeDebris">
+                    <el-button @click.stop="triggerUploadDebris">物源</el-button>
+                  </el-upload>
+                  <el-upload ref="uploadImpactRef" :auto-upload="false" :show-file-list="false" accept=".tif,.tiff" @change="handleFileChangeImpact">
+                    <el-button @click.stop="triggerUploadImpact">影响区</el-button>
+                  </el-upload>
+                </div>
+              </el-form-item>
+              <el-form-item>
+                <div style="display:flex;justify-content:center;gap:12px;width:100%">
+                  <el-button type="primary" @click="submitBeta">运行</el-button>
+                  <el-button @click="dialogBeta = false">取消</el-button>
+                </div>
+              </el-form-item>
+            </el-form>
+          </el-dialog>
+        </div>
       </div>
       <!-- 风险评估模块 -->
       <div class="theme">
@@ -4414,6 +4461,7 @@ const submitQuanYu = () => {
 
 // --- 泥石流启动物源计算模型 ---
 const dialogVisibleSDP = ref(false)
+const dialogBeta = ref(false)
 const sdpLoading = ref(false)
 const uploadRainRef = ref(null)
 const uploadTempRef = ref(null)
@@ -4734,6 +4782,36 @@ const form_BGM = reactive({
   relief_amplitude: '250',
 })
 const isProcessing = ref(false)
+async function submitBeta() {
+  dialogBeta.value = false
+  ElMessage({ message: '洪水泥石流启动动力学模型_beta 运行中...', type: 'info', duration: 0 })
+  try {
+    const formData = new FormData()
+    if (fileElev.value) { const f = new File([fileElev.value], 'elev.tif', { type: fileElev.value.type || 'application/octet-stream' }); formData.append('files', f) }
+    if (fileDebris.value) { const f = new File([fileDebris.value], 'debris.tif', { type: fileDebris.value.type || 'application/octet-stream' }); formData.append('files', f) }
+    if (fileImpact.value) { const f = new File([fileImpact.value], 'impact_area.tif', { type: fileImpact.value.type || 'application/octet-stream' }); formData.append('files', f) }
+    let upResp = null
+    if (formData.has('files')) {
+      upResp = await modelService.uploadAvaflowFiles(formData)
+      if (!upResp || upResp?.status !== 'ok') { ElMessage.closeAll(); ElMessage({ message: upResp?.message || '文件上传失败', type: 'error' }); return }
+    }
+    const data = await modelService.runAvaflowBeta(form1)
+    ElMessage.closeAll()
+    if (data && data.status === 'ok') {
+      ElMessage({ message: data?.message || '洪水泥石流启动动力学模型_beta 已启动', type: 'success', duration: 2500 })
+      $emit('yjLayers', { area: form1.area, result: data })
+    } else {
+      ElMessage({ message: data?.message || '模拟失败', type: 'error' })
+    }
+  } catch (e) {
+    ElMessage.closeAll()
+    const m = e.response?.data || e.message || e
+    ElMessage({ message: 'beta 失败: ' + (typeof m === 'string' ? m : JSON.stringify(m)), type: 'error' })
+    console.error('submitBeta error:', e)
+    $emit('yjLayers', { area: form1.area, result: null })
+  }
+}
+
 async function sumbit_avainit() {
   ElMessage({ message: '顺层计算运行中...', type: 'success', duration: 0 })
   try {
