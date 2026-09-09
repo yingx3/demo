@@ -4731,11 +4731,11 @@ const isProcessing = ref(false)
 async function sumbit_avainit() {
   ElMessage({ message: '顺层计算运行中...', type: 'success', duration: 0 })
   try {
-    await modelService.postAvainit(form_avainit)
+    const res = await modelService.postAvainit(form_avainit)
     ElMessage.closeAll()
     ElMessage({ message: '顺层计算完成', type: 'success' })
     dialog_avainit.value = false
-    $emit('bedding_parallel', { ...form_avainit })
+    $emit('bedding_parallel', { mode: '顺层', form: { ...form_avainit }, result: res })
   } catch (e) {
     ElMessage.closeAll()
     ElMessage({ message: '顺层计算失败: ' + (e.message || e), type: 'error' })
@@ -4745,11 +4745,11 @@ async function sumbit_avainit() {
 async function sumbit_inverse() {
   ElMessage({ message: '反倾计算运行中...', type: 'success', duration: 0 })
   try {
-    await modelService.postInverse(form_bedding_inverted)
+    const res = await modelService.postInverse(form_bedding_inverted)
     ElMessage.closeAll()
     ElMessage({ message: '反倾计算完成', type: 'success' })
     dialog_avainit.value = false
-    $emit('bedding_inverted', { ...form_bedding_inverted })
+    $emit('bedding_inverted', { mode: '反倾', form: { ...form_bedding_inverted }, result: res })
   } catch (e) {
     ElMessage.closeAll()
     ElMessage({ message: '反倾计算失败: ' + (e.message || e), type: 'error' })
@@ -4759,11 +4759,11 @@ async function sumbit_inverse() {
 async function sumbit_wedget() {
   ElMessage({ message: '楔形计算运行中...', type: 'success', duration: 0 })
   try {
-    await modelService.postWedge(form_bedding_wedget)
+    const res = await modelService.postWedge(form_bedding_wedget)
     ElMessage.closeAll()
     ElMessage({ message: '楔形计算完成', type: 'success' })
     dialog_avainit.value = false
-    $emit('bedding_wedget', { ...form_bedding_wedget })
+    $emit('bedding_wedget', { mode: '楔形', form: { ...form_bedding_wedget }, result: res })
   } catch (e) {
     ElMessage.closeAll()
     ElMessage({ message: '楔形计算失败: ' + (e.message || e), type: 'error' })

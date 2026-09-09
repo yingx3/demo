@@ -10,6 +10,9 @@
       @forecast="foreCast"
       @seismicResult="handleSeismicResult"
       @fullRiskAnalysis="handleFullRiskAnalysis"
+      @bedding_parallel="showBeddingFos"
+      @bedding_inverted="showBeddingFos"
+      @bedding_wedget="showBeddingFos"
     ></le-th>
     <zy-ml
       :time="selectedTime"
@@ -1778,6 +1781,55 @@ const openLayers = async params => {
     console.error('加载 SDP 结果失败:', e)
   }
 }
+let fosChartDom = null
+let fosChartExpr = null
+function showBeddingFos(payload) {
+  const mode = payload?.mode || '冰岩崩启动'
+  const result = payload?.result || {}
+  const t = Array.isArray(result.t) ? result.t : []
+  const fos = Array.isArray(result.fos) ? result.fos : []
+  if (!t.length || !fos.length) { ElMessage({ message: '冰岩崩结果无效', type: 'warning' }); return }
+
+  if (fosChartDom) { fosChartDom.remove(); fosChartDom = null }
+  if (fosChartExpr) { fosChartExpr.dispose(); fosChartExpr = null }
+
+  const isSeconds = t.length > 0 && Math.max(...t) > 100000
+  const x = t.map(s => (isSeconds ? +(Number(s) / 86400).toFixed(2) : Number(s)))
+
+  const el = document.createElement('div')
+  el.style.cssText = 'position:fixed;bottom:30px;right:30px;z-index:999;width:560px;height:380px;background:rgba(0,0,0,0.85);border:1px solid #38e1ff;border-radius:6px;padding:8px 10px;color:#fff;'
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;font-weight:600;margin-bottom:4px;color:#38e1ff">
+      <span>${mode} · 安全系数 FoS 随时间变化</span>
+      <span id="bedding-fos-close" style="cursor:pointer;color:#999">&times;</span>
+    </div>
+    <div id="bedding-fos-chart" style="width:100%;height:330px"></div>
+  `
+  document.body.appendChild(el)
+  fosChartDom = el
+  const chart = echarts.init(el.querySelector('#bedding-fos-chart'))
+  fosChartExpr = chart
+  chart.setOption({
+    tooltip: { trigger: 'axis' },
+    grid: { left: 55, right: 20, top: 24, bottom: 40 },
+    xAxis: { type: 'category', name: isSeconds ? '时间 (天)' : '时间', data: x.map(v => String(v)) },
+    yAxis: { type: 'value', name: 'FoS', scale: true },
+    series: [{
+      name: 'FoS', type: 'line', data: fos, symbol: 'none', smooth: true, lineStyle: { width: 2 },
+      markLine: {
+        symbol: 'none', silent: true,
+        data: [{ yAxis: 1, name: '临界 FoS=1', lineStyle: { color: 'red', type: 'dashed' } }],
+        label: { formatter: '临界 FoS=1', color: '#ff8080', position: 'insideEndTop' },
+      },
+    }],
+  })
+  el.querySelector('#bedding-fos-close').onclick = () => {
+    el.remove(); fosChartDom = null
+    if (fosChartExpr) { fosChartExpr.dispose(); fosChartExpr = null }
+  }
+  ElMessage({ message: mode + ' 冰岩崩安全系数已生成', type: 'success' })
+}
+
 const area_avaflow = ref(null)
 /** 山洪泥石流 GeoJSON 的 base path，由后端返回或按 area 默认 */
 const avaflowOutputBase = ref('/ng/avaflow')
