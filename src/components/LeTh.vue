@@ -4793,7 +4793,7 @@ async function submitBeta() {
     ElMessage({ message: '请选择: ' + missing.map(i => i.label).join('、'), type: 'warning' })
     return
   }
-  ElMessage({ message: '洪水泥石流启动动力学模型_beta 运行中...', type: 'info', duration: 0 })
+  ElMessage({ message: '上传输入数据...', type: 'info', duration: 0 })
   try {
     const formData = new FormData()
     const map = { elev: 'elev.tif', debris: 'debris.tif', impact: 'impact_area.tif' }
@@ -4810,18 +4810,40 @@ async function submitBeta() {
       ElMessage({ message: upResp?.message || '文件上传失败', type: 'error' })
       return
     }
-    const data = await modelService.runAvaflowBeta({})
+    const accepted = await modelService.runAvaflowBeta({})
     ElMessage.closeAll()
-    if (data && data.status === 'ok') {
-      ElMessage({ message: data?.message || '洪水泥石流启动动力学模型_beta 已完成', type: 'success', duration: 2500 })
-      $emit('yjLayers', { area: '', result: data })
-    } else {
-      ElMessage({ message: data?.message || '模拟失败', type: 'error' })
+    if (!accepted || accepted.status !== 'accepted' || !accepted.jobId) {
+      ElMessage({ message: accepted?.message || '启动模拟失败', type: 'error' })
+      return
+    }
+    const jobId = accepted.jobId
+    ElMessage({ message: 'r.avaflow 计算已启动，等待结果（约数分钟~十余分钟）...', type: 'info', duration: 0 })
+    const startTs = Date.now()
+    while (true) {
+      await new Promise(r => setTimeout(r, 5000))
+      let st = null
+      try { st = await modelService.getAvaflowBetaStatus(jobId) } catch (e) { st = null }
+      if (st && st.status === 'done') {
+        ElMessage.closeAll()
+        ElMessage({ message: '洪水泥石流启动动力学模型_beta 完成，输出 ' + (st.frameCount || 0) + ' 帧', type: 'success', duration: 2500 })
+        $emit('yjLayers', { area: '', result: { status: 'ok', outputBase: st.outputBase, frameCount: st.frameCount } })
+        return
+      }
+      if (st && st.status === 'error') {
+        ElMessage.closeAll()
+        ElMessage({ message: '模拟失败: ' + (st.message || '未知错误'), type: 'error' })
+        return
+      }
+      if (Date.now() - startTs > 30 * 60 * 1000) {
+        ElMessage.closeAll()
+        ElMessage({ message: '等待结果超时（30分钟）', type: 'error' })
+        return
+      }
     }
   } catch (e) {
     ElMessage.closeAll()
-    const m = e.response?.data || e.message || e
-    ElMessage({ message: 'beta 失败: ' + (typeof m === 'string' ? m : JSON.stringify(m)), type: 'error' })
+    const m2 = e.response?.data || e.message || e
+    ElMessage({ message: 'beta 失败: ' + (typeof m2 === 'string' ? m2 : JSON.stringify(m2)), type: 'error' })
     console.error('submitBeta error:', e)
     $emit('yjLayers', { area: '', result: null })
   }

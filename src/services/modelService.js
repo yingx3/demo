@@ -13,7 +13,12 @@ const modelService = {
   },
   runAvaflowBeta(form1) {
     return axios
-      .post('/testapi/admin/user/yj_beta', form1, { timeout: 1800000 })
+      .post('/testapi/admin/user/yj_beta', form1, { timeout: 60000 })
+      .then(r => r.data)
+  },
+  getAvaflowBetaStatus(jobId) {
+    return axios
+      .get('/testapi/admin/user/yj_beta_status', { params: { jobId }, timeout: 30000 })
       .then(r => r.data)
   },
   uploadAvaflowFiles(formData) {
