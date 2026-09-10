@@ -4677,6 +4677,7 @@ let $emit = defineEmits([
   'bedding_parallel',
   'bedding_inverted',
   'bedding_wedget',
+  'betaLayers',
 ])
 // 获取 store 实例
 const squareStore = useSquareStore()
@@ -4810,27 +4811,36 @@ async function submitBeta() {
       ElMessage({ message: upResp?.message || '文件上传失败', type: 'error' })
       return
     }
-    const accepted = await modelService.runAvaflowBeta({})
+    const jobId = upResp.jobId
+    if (!jobId) {
+      ElMessage.closeAll()
+      ElMessage({ message: '\u4e0a\u4f20\u6210\u529f\u4f46\u672a\u8fd4\u56de\u4efb\u52a1ID', type: 'error' })
+      return
+    }
+    const accepted = await modelService.runAvaflowBeta({ jobId })
     ElMessage.closeAll()
     if (!accepted || accepted.status !== 'accepted' || !accepted.jobId) {
       ElMessage({ message: accepted?.message || '启动模拟失败', type: 'error' })
       return
     }
-    const jobId = accepted.jobId
     ElMessage({ message: 'r.avaflow 计算已启动，等待结果（约数分钟~十余分钟）...', type: 'info', duration: 0 })
     const startTs = Date.now()
     while (true) {
       await new Promise(r => setTimeout(r, 5000))
       let st = null
       try { st = await modelService.getAvaflowBetaStatus(jobId) } catch (e) { st = null }
-      if (st && st.status === 'running' && st.progress != null) {
+      if (st && st.status === 'running') {
+        const phaseLabel =
+          st.phase === 'converting'
+            ? '\u7ed3\u679c\u8f6c\u6362\u4e2d'
+            : 'r.avaflow \u8ba1\u7b97\u4e2d'
         ElMessage.closeAll()
-        ElMessage({ message: 'r.avaflow 计算中... ' + st.progress + '%（已产出 ' + (st.frames || 0) + ' 帧）', type: 'info', duration: 0 })
+        ElMessage({ message: phaseLabel + '... ' + (st.progress ?? 0) + '%\uff08\u5df2\u4ea7\u51fa ' + (st.frames || 0) + ' \u5e27\uff09', type: 'info', duration: 0 })
       }
       if (st && st.status === 'done') {
         ElMessage.closeAll()
         ElMessage({ message: '洪水泥石流启动动力学模型_beta 完成，输出 ' + (st.frameCount || 0) + ' 帧', type: 'success', duration: 2500 })
-        $emit('yjLayers', { area: '', result: { status: 'ok', outputBase: st.outputBase, frameCount: st.frameCount } })
+        $emit('betaLayers', { result: { status: 'ok', outputBase: st.outputBase, frameCount: st.frameCount, bbox: st.bbox } })
         return
       }
       if (st && st.status === 'error') {
@@ -4849,7 +4859,7 @@ async function submitBeta() {
     const m2 = e.response?.data || e.message || e
     ElMessage({ message: 'beta 失败: ' + (typeof m2 === 'string' ? m2 : JSON.stringify(m2)), type: 'error' })
     console.error('submitBeta error:', e)
-    $emit('yjLayers', { area: '', result: null })
+    $emit('betaLayers', { result: null })
   }
 }
 

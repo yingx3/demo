@@ -5,6 +5,7 @@
       @openLayers="openLayers"
       @timeSelected="handleTimeSelected"
       @yjLayers="yjLayers"
+      @betaLayers="betaLayers"
       @floodLayers="floodLayers"
       @floodLayersTest="floodLayersTest"
       @forecast="foreCast"
@@ -2028,6 +2029,28 @@ const yjLayers = payload => {
 // 洪水泥石流（测试）— DebrisFlow 渲染
 let sdpSim = null
 let sdpLegendEl = null
+
+const betaLayers = async payload => {
+  const result = payload?.result
+  if (!result || result.status !== 'ok' || !result.outputBase) return
+
+  stopHeatmapCycle()
+  currentHeatmapIndex = 1
+  avaflowOutputBase.value = result.outputBase
+  avaflowFrameCount.value = Math.max(1, Number(result.frameCount) || 1)
+
+  await loadHeatmap(1)
+
+  const bbox = Array.isArray(result.bbox) ? result.bbox.map(Number) : null
+  if (bbox && bbox.length === 4 && bbox.every(Number.isFinite)) {
+    viewer.value.camera.flyTo({
+      destination: Cesium.Rectangle.fromDegrees(bbox[0], bbox[1], bbox[2], bbox[3]),
+      duration: 1.5,
+    })
+  }
+
+  startHeatmapCycle()
+}
 
 const floodLayersTest = async payload => {
   const method = payload.renderMethod || 'debrisflow'
@@ -4797,6 +4820,7 @@ async function loadHeatmap_flood(index) {
 }
 // 启动定时任务-avaflow
 function startHeatmapCycle() {
+  stopHeatmapCycle()
   const maxFrame = avaflowFrameCount.value || 21
   intervalId = setInterval(() => {
     currentHeatmapIndex = (currentHeatmapIndex % maxFrame) + 1
