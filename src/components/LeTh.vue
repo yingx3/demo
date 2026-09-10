@@ -4823,6 +4823,10 @@ async function submitBeta() {
       await new Promise(r => setTimeout(r, 5000))
       let st = null
       try { st = await modelService.getAvaflowBetaStatus(jobId) } catch (e) { st = null }
+      if (st && st.status === 'running' && st.progress != null) {
+        ElMessage.closeAll()
+        ElMessage({ message: 'r.avaflow 计算中... ' + st.progress + '%（已产出 ' + (st.frames || 0) + ' 帧）', type: 'info', duration: 0 })
+      }
       if (st && st.status === 'done') {
         ElMessage.closeAll()
         ElMessage({ message: '洪水泥石流启动动力学模型_beta 完成，输出 ' + (st.frameCount || 0) + ' 帧', type: 'success', duration: 2500 })
