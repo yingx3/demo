@@ -89,6 +89,8 @@ class DebrisFlow {
     this.center = options.center
     // Flat DEM => max === min, so the mesh would collapse to zero thickness in initRender.
     this.flatMinThickness = Number.isFinite(Number(options.minThickness)) ? Number(options.minThickness) : 20
+    // Flat DEM already sits on the real ground, so the terrain-softening offset must not apply.
+    this.heightOffsetOverride = 0
     const terrainHeight = Number.isFinite(Number(options.terrainHeight)) ? Number(options.terrainHeight) : 0
     // genDemTexture reads longitude/latitude for every cell, so provide the centre
     // coordinates for all cells (the beta path uses an empty debris feature set).
@@ -638,7 +640,7 @@ class DebrisFlow {
       Cesium.Math.toDegrees(cartographicCenter.longitude),
       Cesium.Math.toDegrees(cartographicCenter.latitude),
       // cartographicCenter.height,
-      (this.max + this.min) / 2 + (heightOffset[this.lakeName] ?? 0)
+      this.min + (this.meshThickness = Math.max(this.max - this.min, this.flatMinThickness || 0)) / 2 + (heightOffset[this.lakeName] ?? 0) * (this.heightOffsetOverride ?? 1)
       // this.max,
     ]
 
@@ -649,7 +651,7 @@ class DebrisFlow {
       [90, 0, 0],
       [
         this._width * this.cellSize,
-        this.meshThickness = Math.max(this.max - this.min, this.flatMinThickness || 0),
+        this.meshThickness,
         // 1600,
         this._height * this.cellSize
       ]
