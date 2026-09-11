@@ -2147,9 +2147,12 @@ const betaLayers = async payload => {
 
     // 平面 DEM 初始化：网格按中心点地面高度定位，避免逐像元采样在线地形导致 Cesium 崩溃
     const groundHeight = getGroundHeightMeters(centerLon, centerLat, 3000)
+    // 网格抬高半个厚度，避免下半部分扎进真实地形被深度测试遮挡
+    const betaThickness = 20
     await sim.initBoxFlat({
-      center: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, groundHeight),
+      center: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, groundHeight + betaThickness / 2),
       terrainHeight: groundHeight,
+      minThickness: betaThickness,
     })
     sim.renderSpeed = 0
 

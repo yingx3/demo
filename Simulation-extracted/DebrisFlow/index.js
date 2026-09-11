@@ -87,6 +87,8 @@ class DebrisFlow {
    */
   async initBoxFlat(options) {
     this.center = options.center
+    // Flat DEM => max === min, so the mesh would collapse to zero thickness in initRender.
+    this.flatMinThickness = Number.isFinite(Number(options.minThickness)) ? Number(options.minThickness) : 20
     const terrainHeight = Number.isFinite(Number(options.terrainHeight)) ? Number(options.terrainHeight) : 0
     // genDemTexture reads longitude/latitude for every cell, so provide the centre
     // coordinates for all cells (the beta path uses an empty debris feature set).
@@ -647,7 +649,7 @@ class DebrisFlow {
       [90, 0, 0],
       [
         this._width * this.cellSize,
-        this.max - this.min,
+        Math.max(this.max - this.min, this.flatMinThickness || 0),
         // 1600,
         this._height * this.cellSize
       ]
