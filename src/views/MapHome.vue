@@ -2049,6 +2049,22 @@ function cleanupBetaRenderer() {
   }
 }
 
+/**
+ * Light-weight ground height lookup for the beta renderer.
+ * A single pick on the already-loaded globe instead of sampling the whole grid,
+ * which used to flood Cesium terrain requests and break the tile availability tree.
+ */
+function getGroundHeightMeters(lon, lat, fallback = 3000) {
+  try {
+    const carto = Cesium.Cartographic.fromDegrees(lon, lat)
+    const h = viewer.value?.scene?.globe?.getHeight(carto)
+    if (Number.isFinite(h)) return h
+  } catch (e) {
+    console.warn('[betaLayers] terrain height lookup failed:', e)
+  }
+  return fallback
+}
+
 const betaLayers = async payload => {
   const result = payload?.result
   if (!result || result.status !== 'ok') {
@@ -2129,9 +2145,11 @@ const betaLayers = async payload => {
     })
     betaSim = sim
 
-    await sim.initBox({
-      center: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, 0),
-      level: 13,
+    // 平面 DEM 初始化：网格按中心点地面高度定位，避免逐像元采样在线地形导致 Cesium 崩溃
+    const groundHeight = getGroundHeightMeters(centerLon, centerLat, 3000)
+    await sim.initBoxFlat({
+      center: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, groundHeight),
+      terrainHeight: groundHeight,
     })
     sim.renderSpeed = 0
 

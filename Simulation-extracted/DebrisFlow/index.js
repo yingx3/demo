@@ -79,6 +79,26 @@ class DebrisFlow {
     this.onDataUpdate = options.onDataUpdate
   }
 
+  /**
+   * Same as initBox but WITHOUT sampling the online terrain for every CPU grid cell.
+   * The DEM texture is only used by the pass-1 terrain shader (disabled for pre-computed
+   * ASC frames), so a flat DEM keeps positioning correct while avoiding thousands of
+   * Cesium.sampleTerrain requests that can break the terrain availability tree.
+   */
+  async initBoxFlat(options) {
+    this.center = options.center
+    const terrainHeight = Number.isFinite(Number(options.terrainHeight)) ? Number(options.terrainHeight) : 0
+    const terrainData = new Array(this._width * this._height)
+    for (let i = 0; i < terrainData.length; i++) {
+      terrainData[i] = { height: terrainHeight }
+    }
+    await this.genDemTexture(terrainData)
+    this.initShader()
+    await this.initTexture()
+    this.initFrameBuffer()
+    this.initRender()
+  }
+
   async initBox(options) {
     this.center = options.center
     const terrainData = this.lakeName == 'YaAn' ? YaAnHeight : await this.initTerrain(options.center, options.level)
