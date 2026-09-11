@@ -88,9 +88,14 @@ class DebrisFlow {
   async initBoxFlat(options) {
     this.center = options.center
     const terrainHeight = Number.isFinite(Number(options.terrainHeight)) ? Number(options.terrainHeight) : 0
+    // genDemTexture reads longitude/latitude for every cell, so provide the centre
+    // coordinates for all cells (the beta path uses an empty debris feature set).
+    const centerCarto = Cesium.Cartographic.fromCartesian(this.center)
+    const lonRad = centerCarto.longitude
+    const latRad = centerCarto.latitude
     const terrainData = new Array(this._width * this._height)
     for (let i = 0; i < terrainData.length; i++) {
-      terrainData[i] = { height: terrainHeight }
+      terrainData[i] = { height: terrainHeight, longitude: lonRad, latitude: latRad }
     }
     await this.genDemTexture(terrainData)
     this.initShader()
