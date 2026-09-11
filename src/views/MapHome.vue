@@ -2030,26 +2030,155 @@ const yjLayers = payload => {
 let sdpSim = null
 let sdpLegendEl = null
 
+let betaSim = null
+let betaFrameTimer = null
+
+function cleanupBetaRenderer() {
+  if (betaFrameTimer) {
+    clearTimeout(betaFrameTimer)
+    betaFrameTimer = null
+  }
+  if (betaSim) {
+    try {
+      if (typeof betaSim.destroy === 'function') betaSim.destroy()
+      else if (typeof betaSim.remove === 'function') betaSim.remove()
+    } catch (e) {
+      console.warn('[betaLayers] cleanup failed:', e)
+    }
+    betaSim = null
+  }
+}
+
 const betaLayers = async payload => {
   const result = payload?.result
-  if (!result || result.status !== 'ok' || !result.outputBase) return
-
-  stopHeatmapCycle()
-  currentHeatmapIndex = 1
-  avaflowOutputBase.value = result.outputBase
-  avaflowFrameCount.value = Math.max(1, Number(result.frameCount) || 1)
-
-  await loadHeatmap(1)
-
-  const bbox = Array.isArray(result.bbox) ? result.bbox.map(Number) : null
-  if (bbox && bbox.length === 4 && bbox.every(Number.isFinite)) {
-    viewer.value.camera.flyTo({
-      destination: Cesium.Rectangle.fromDegrees(bbox[0], bbox[1], bbox[2], bbox[3]),
-      duration: 1.5,
-    })
+  if (!result || result.status !== 'ok') {
+    cleanupBetaRenderer()
+    clearHeatmapPrimitive()
+    return
   }
 
-  startHeatmapCycle()
+  const meta = result.meta || {}
+  const frameFiles = Array.isArray(result.frameFiles) ? result.frameFiles : []
+  const ncols = Number(meta.ncols)
+  const nrows = Number(meta.nrows)
+  const cellsize = Number(meta.cellsize)
+  const centerLon = Number(meta.centerLon)
+  const centerLat = Number(meta.centerLat)
+  const globalMax = Math.max(Number(meta.globalMax) || 0, 1e-6)
+
+  // 兼容旧任务：没有 ASC 元数据时仍使用原来的 GeoJSON heatmap 链路
+  if (
+    !viewer.value ||
+    !result.ascBase ||
+    frameFiles.length === 0 ||
+    !(ncols > 0) ||
+    !(nrows > 0) ||
+    !(cellsize > 0) ||
+    !Number.isFinite(centerLon) ||
+    !Number.isFinite(centerLat)
+  ) {
+    if (!result.outputBase) {
+      cleanupBetaRenderer()
+      clearHeatmapPrimitive()
+      return
+    }
+
+    cleanupBetaRenderer()
+    stopHeatmapCycle()
+    currentHeatmapIndex = 1
+    avaflowOutputBase.value = result.outputBase
+    avaflowFrameCount.value = Math.max(1, Number(result.frameCount) || 1)
+    await loadHeatmap(1)
+
+    const bbox = Array.isArray(result.bbox) ? result.bbox.map(Number) : null
+    if (bbox && bbox.length === 4 && bbox.every(Number.isFinite)) {
+      viewer.value.camera.flyTo({
+        destination: Cesium.Rectangle.fromDegrees(bbox[0], bbox[1], bbox[2], bbox[3]),
+        duration: 1.5,
+      })
+    }
+    startHeatmapCycle()
+    return
+  }
+
+  cleanupBetaRenderer()
+  clearHeatmapPrimitive()
+
+  try {
+    const Renderer = (await import('../../Simulation-extracted/DebrisFlow/index.js')).default
+    const maxDim = 512
+    const scale = Math.max(1, Math.max(ncols, nrows) / maxDim)
+    const width = Math.max(2, Math.round(ncols / scale))
+    const height = Math.max(2, Math.round(nrows / scale))
+    const renderCellSize = cellsize * scale
+
+    const sim = new Renderer({
+      viewer: viewer.value,
+      width,
+      height,
+      cellSize: renderCellSize,
+      rect: [ncols, nrows],
+      range: [0, globalMax],
+      debrisJSON: turf.featureCollection([]),
+      lakeName: 'avaflow',
+      deepWaterColor: '#5c3a1e',
+      lightWaterColor: '#c8a050',
+      renderTerrain: false,
+      renderHeatMap: true,
+      renderOriginData: false,
+    })
+    betaSim = sim
+
+    await sim.initBox({
+      center: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, 0),
+      level: 13,
+    })
+    sim.renderSpeed = 0
+
+    const frameUrl = name =>
+      `${result.ascBase.replace(/\/$/, '')}/${encodeURIComponent(name)}`
+
+    await sim.loadAscAsWaterHeight(frameUrl(frameFiles[0]), globalMax)
+
+    const viewHeight = (Number(sim.max) || 5000) + 4000
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, viewHeight),
+      orientation: {
+        heading: Cesium.Math.toRadians(0),
+        pitch: Cesium.Math.toRadians(-60),
+        roll: 0,
+      },
+      duration: 1.5,
+    })
+
+    let frameIndex = 1
+    const tick = async () => {
+      if (betaSim !== sim || frameIndex >= frameFiles.length) return
+
+      try {
+        await sim.loadAscAsWaterHeight(frameUrl(frameFiles[frameIndex]), globalMax)
+      } catch (e) {
+        console.error('[betaLayers] frame load failed:', frameFiles[frameIndex], e)
+      }
+
+      frameIndex++
+      if (betaSim === sim && frameIndex < frameFiles.length) {
+        betaFrameTimer = setTimeout(tick, 600)
+      }
+    }
+
+    if (frameFiles.length > 1) {
+      betaFrameTimer = setTimeout(tick, 600)
+    }
+
+    ElMessage.closeAll()
+    ElMessage({ message: '山洪泥石流启动动力学模型_beta 渲染完成', type: 'success', duration: 2000 })
+  } catch (e) {
+    cleanupBetaRenderer()
+    console.error('[betaLayers] DebrisFlow render failed:', e)
+    ElMessage.closeAll()
+    ElMessage({ message: 'DebrisFlow 渲染失败: ' + (e.message || e), type: 'error' })
+  }
 }
 
 const floodLayersTest = async payload => {

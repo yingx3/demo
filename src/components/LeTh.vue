@@ -4789,6 +4789,7 @@ const form_BGM = reactive({
 const isProcessing = ref(false)
 async function submitBeta() {
   dialogBeta.value = false
+  $emit('betaLayers', { result: null })
   const missing = betaFileItems.filter(item => !betaFiles[item.key])
   if (missing.length > 0) {
     ElMessage({ message: '请选择: ' + missing.map(i => i.label).join('、'), type: 'warning' })
@@ -4840,7 +4841,17 @@ async function submitBeta() {
       if (st && st.status === 'done') {
         ElMessage.closeAll()
         ElMessage({ message: '洪水泥石流启动动力学模型_beta 完成，输出 ' + (st.frameCount || 0) + ' 帧', type: 'success', duration: 2500 })
-        $emit('betaLayers', { result: { status: 'ok', outputBase: st.outputBase, frameCount: st.frameCount, bbox: st.bbox } })
+        $emit('betaLayers', {
+          result: {
+            status: 'ok',
+            outputBase: st.outputBase,
+            ascBase: st.ascBase,
+            frameFiles: st.frameFiles,
+            frameCount: st.frameCount,
+            bbox: st.bbox,
+            meta: st.meta,
+          },
+        })
         return
       }
       if (st && st.status === 'error') {

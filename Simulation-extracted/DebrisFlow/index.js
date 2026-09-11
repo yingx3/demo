@@ -920,9 +920,13 @@ class DebrisFlow {
       for (const v of row) { if (idx < values.length) values[idx++] = v === nodata ? 0 : v }
     }
 
-    const validVals = []
-    for (const v of values) { if (v > 0) validVals.push(v) }
-    const computedMax = maxValue || Math.max(...validVals)
+    let computedMax = Number(maxValue)
+    if (!(computedMax > 0)) {
+      computedMax = 0
+      for (const v of values) {
+        if (v > computedMax) computedMax = v
+      }
+    }
     this.range = new Cesium.Cartesian2(0, computedMax)
 
     // 重采样到渲染纹理尺寸
@@ -956,14 +960,66 @@ class DebrisFlow {
   }
 
   remove() {
-    this._viewer.scene.primitives.remove(this.fluidCommand)
-    this._viewer.scene.primitives.remove(this.Buffer_D)
-    this._viewer.scene.primitives.remove(this.Buffer_C)
-    this._viewer.scene.primitives.remove(this.Buffer_B)
-    this._viewer.scene.primitives.remove(this.Buffer_A)
-
-    this._viewer.scene.preRender.removeEventListener(this.preEvent)
-    this._viewer.scene.postRender.removeEventListener(this.postEvent)
+    const primitives = [
+      this.fluidCommand,
+      this.Buffer_D,
+      this.Buffer_C,
+      this.Buffer_B,
+      this.Buffer_A,
+      this.Buffer_Range,
+      this.Buffer_RangeT
+    ]
+    for (const primitive of primitives) {
+      if (primitive && !primitive.isDestroyed?.()) {
+        try {
+          this._viewer.scene.primitives.remove(primitive)
+        } catch (e) {
+          console.warn('[DebrisFlow] remove primitive failed:', e)
+        }
+      }
+    }
+    if (this.preEvent) this._viewer.scene.preRender.removeEventListener(this.preEvent)
+    if (this.postEvent) this._viewer.scene.postRender.removeEventListener(this.postEvent)
+  }
+  destroy() {
+    try {
+      this.remove()
+    } catch (e) {
+      console.warn('[DebrisFlow] remove failed:', e)
+    }
+    const textures = [
+      this.demMap,
+      this.lakeMap,
+      this.waterHeightMap,
+      this.phase2,
+      this.phase3,
+      this.rangeMap,
+      this.rangeTempMap,
+      this.texA,
+      this.texB,
+      this.texC,
+      this.texD
+    ]
+    for (const texture of textures) {
+      if (texture && !texture.isDestroyed?.()) {
+        try {
+          texture.destroy()
+        } catch (e) {
+          console.warn('[DebrisFlow] destroy texture failed:', e)
+        }
+      }
+    }
+    this.demMap = null
+    this.lakeMap = null
+    this.waterHeightMap = null
+    this.phase2 = null
+    this.phase3 = null
+    this.rangeMap = null
+    this.rangeTempMap = null
+    this.texA = null
+    this.texB = null
+    this.texC = null
+    this.texD = null
   }
 }
 
