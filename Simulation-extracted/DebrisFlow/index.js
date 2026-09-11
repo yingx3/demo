@@ -343,7 +343,7 @@ class DebrisFlow {
       this._width +
       `;
       const float heightRange = ` +
-      (this.max - this.min) +
+      (Number.isFinite(this.max - this.min) ? Math.max(this.max - this.min, this.flatMinThickness || 0).toFixed(6) : '0.0') +
       `;` +
       Command
     // 计算地形和更新水位pass 1
@@ -649,7 +649,7 @@ class DebrisFlow {
       [90, 0, 0],
       [
         this._width * this.cellSize,
-        Math.max(this.max - this.min, this.flatMinThickness || 0),
+        this.meshThickness = Math.max(this.max - this.min, this.flatMinThickness || 0),
         // 1600,
         this._height * this.cellSize
       ]
