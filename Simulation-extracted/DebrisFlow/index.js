@@ -65,6 +65,7 @@ class DebrisFlow {
     this.renderOriginData = options.renderOriginData ?? false
     this.renderOriginData2 = options.renderOriginData2 ?? false
     this.renderOriginData3 = options.renderOriginData3 ?? false
+    this.renderDirectFrames = options.renderDirectFrames ?? false
 
     this.LakeGeoJson = options.debrisJSON
     this.lakeName = options.lakeName
@@ -91,6 +92,8 @@ class DebrisFlow {
     this.flatMinThickness = Number.isFinite(Number(options.minThickness)) ? Number(options.minThickness) : 20
     // Flat DEM already sits on the real ground, so the terrain-softening offset must not apply.
     this.heightOffsetOverride = 0
+    // Pre-computed depth frames: draw the texture directly instead of ray-marching.
+    this.renderDirectFrames = options.renderDirectFrames !== false
     const terrainHeight = Number.isFinite(Number(options.terrainHeight)) ? Number(options.terrainHeight) : 0
     // genDemTexture reads longitude/latitude for every cell, so provide the centre
     // coordinates for all cells (the beta path uses an empty debris feature set).
@@ -715,6 +718,9 @@ class DebrisFlow {
         },
         renderOriginData3: () => {
           return this.renderOriginData3
+        },
+        renderDirectFrames: () => {
+          return this.renderDirectFrames
         }
       },
       geometry: geometry,

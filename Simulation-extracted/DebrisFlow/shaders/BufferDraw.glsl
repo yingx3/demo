@@ -17,6 +17,8 @@ uniform float iTime;
 uniform int iFrame;
 uniform bool renderTerrain;
 uniform bool renderHeatMap;
+// Pre-computed frame mode: draw the depth map straight from the texture, no ray-march.
+uniform bool renderDirectFrames;
 uniform bool renderOriginData;
 uniform bool renderOriginData2;
 uniform bool renderOriginData3;
@@ -164,6 +166,18 @@ vec4 Render(in vec3 ro, in vec3 rd) {
           //  if(heatV < 0.00001 ) discard;
       return vec4(vec3(heatV), 1.);
     }
+    if(renderDirectFrames) {
+      // Skip the ray-march entirely: read the depth map at this fragment's own cell.
+      // Normalise the box-local hit point to the grid aspect ratio, same as getHeight().
+      vec3 dpos = clamp(ro + rd * max(ret.x, 0.0), vec3(-0.5), vec3(0.5));
+      vec2 duv = (dpos.xz + 0.5) * vec2(float(textureSize)) / iResolution.xy;
+      duv = clamp(duv, vec2(0.0), vec2(1.0));
+      float directV = texture(waterHeightMap, clamp(duv, 0.0, 1.0)).x;
+      if(directV < 0.00001)
+        discard;
+      return vec4(getColorByValue(directV), smoothstep(0.0, 1.0, directV));
+    }
+
     if(renderHeatMap) {
       if(heatV < 0.00001)
         discard;

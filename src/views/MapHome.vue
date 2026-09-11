@@ -2141,7 +2141,7 @@ const betaLayers = async payload => {
       lightWaterColor: '#c8a050',
       renderTerrain: false,
       renderHeatMap: true,
-      renderOriginData: false,
+      renderOriginData: true,
     })
     betaSim = sim
 
@@ -2153,6 +2153,7 @@ const betaLayers = async payload => {
       center: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, groundHeight + betaThickness / 2),
       terrainHeight: groundHeight,
       minThickness: betaThickness,
+      renderDirectFrames: true,
     })
     sim.renderSpeed = 0
 
