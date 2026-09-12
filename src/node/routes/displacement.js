@@ -6,26 +6,26 @@ import path from 'path'
 import XLSX from 'xlsx'
 import { exec } from 'child_process'
 import { fileURLToPath } from 'url'
+import crypto from 'crypto'
 //  获取当前脚本文件所在目录（固定标准写法）
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const router = express.Router()
 
 // 文件上传配置
+const UPLOAD_PATH = path.join(__dirname, '..', 'uploads')
+fs.mkdirSync(UPLOAD_PATH, { recursive: true })
+
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/')
-  },
+  destination: (req, file, cb) => cb(null, UPLOAD_PATH),
   filename: (req, file, cb) => {
-    cb(null, file.originalname) // 保留原始文件名
+    const ext = path.extname(file.originalname)
+    cb(null, `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`)
   },
 })
 
 const upload = multer({ storage })
-
-// 全局变量存储文件路径
-let filePath
-
-// 配置路径
+const uploadedFiles = new Map()
+let latestUploadedFileId = null
 const SAVE_PATH = path.join(
   __dirname, // 当前脚本所在目录
   '..',
@@ -117,12 +117,15 @@ function processHourlyData(filePath) {
   Object.keys(hourlyGroups)
     .sort()
     .forEach(hourKey => {
-      const hourData = hourlyGroups[hourKey]
+      const hourData = hourlyGroups[hourKey].sort(
+        (a, b) => a.timestamp.getTime() - b.timestamp.getTime(),
+      )
       const hourDate = new Date(hourKey)
       if (hourData.length > 0) {
+        const latestInHour = hourData[hourData.length - 1]
         processedData.push({
           timestamp: formatUTCTimestamp(hourDate),
-          displ: hourData[0].displ,
+          displ: latestInHour.displ,
         })
       }
     })
@@ -299,17 +302,15 @@ function getCSVTimeRange(csvFilePath) {
 
 // 计算最后一天的时间
 function getFiveDaysBeforeLast(lastTimestamp) {
-  const lastDate = new Date(lastTimestamp)
-  const fiveDaysBefore = new Date(lastDate)
-  fiveDaysBefore.setDate(lastDate.getDate())
-
-  const pad = n => n.toString().padStart(2, '0')
-  return `${fiveDaysBefore.getFullYear()}-${pad(
-    fiveDaysBefore.getMonth() + 1,
-  )}-${pad(fiveDaysBefore.getDate())} ${pad(fiveDaysBefore.getHours())}:00:00`
+  const parsed = new Date(String(lastTimestamp).trim().replace(' ', 'T') + ':00Z')
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(`无效的时间戳: ${lastTimestamp}`)
+  }
+  const fiveDaysBefore = new Date(
+    parsed.getTime() - 5 * 24 * 60 * 60 * 1000,
+  )
+  return formatUTCTimestamp(fiveDaysBefore)
 }
-
-// 修改R脚本
 function modifyRScript(rScriptPath, startTime, endTime) {
   try {
     const backupPath = rScriptPath + '.backup'
@@ -403,26 +404,42 @@ router.post('/displ', upload.single('file'), (req, res) => {
     return res.status(400).json({ code: 400, message: '没有文件上传' })
   }
 
-  filePath = path.join(
-    path.dirname(import.meta.url).replace('file:///', ''),
-    '../',
-    'uploads',
-    req.file.originalname,
-  )
-  console.log('保存路径：', filePath)
+  const fileId = crypto.randomUUID()
+  uploadedFiles.set(fileId, req.file.path)
+  latestUploadedFileId = fileId
+  console.log('保存路径：', req.file.path)
+
   res.json({
     code: 200,
+    fileId,
     fileName: req.file.originalname,
-    savedPath: filePath,
+    savedPath: req.file.path,
   })
 })
-
-// 处理位移数据路由
 router.get('/displ_file', async (req, res) => {
   try {
+    const fileId = String(req.query.fileId || latestUploadedFileId || '')
+    const currentFilePath = uploadedFiles.get(fileId)
+    if (!currentFilePath || !fs.existsSync(currentFilePath)) {
+      return res.status(400).json({
+        success: false,
+        message: '请先选择并上传位移文件',
+      })
+    }
+
+    const longitude = Number(req.query['form_inverseV[longitude]'])
+    const latitude = Number(req.query['form_inverseV[latitude]'])
+    const Name = req.query['form_inverseV[name]']
+    if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) {
+      return res.status(400).json({
+        success: false,
+        message: '请填写有效的经纬度',
+      })
+    }
+
     console.log('开始处理位移数据...')
-    const processedData = processHourlyData(filePath)
-    const timeSeriesData = processHourlyData(filePath)
+    const processedData = processHourlyData(currentFilePath)
+    const timeSeriesData = processedData
 
     const csvInfo = saveProcessedCSV(processedData)
     const rdaInfo = await convertToRDA(csvInfo.filepath)
@@ -443,17 +460,35 @@ router.get('/displ_file', async (req, res) => {
     const rt_json = path.join(TARGET_PATH, 'rt_data.json')
     const data = await fs.promises.readFile(rt_json, 'utf8')
 
-    const longitude = req.query['form_inverseV[longitude]']
-    const latitude = req.query['form_inverseV[latitude]']
-    const Name = req.query['form_inverseV[name]']
-
+    const data_forecast = JSON.parse(data)
+    const rawRt = Number(data_forecast.rt)
+    let forecastStatus = 'ok'
+    let forecastRt = rawRt
+    if (
+      data_forecast.error ||
+      data_forecast.status === 'all_NaN' ||
+      !Number.isFinite(rawRt)
+    ) {
+      forecastStatus = 'no_result'
+      forecastRt = null
+    } else if (rawRt < 0) {
+      forecastStatus = 'no_ooa'
+      forecastRt = -1
+    }
+    const forecastResult = {
+      ...data_forecast,
+      rt: forecastRt,
+      status: forecastStatus,
+    }
+    const forecastTime =
+      forecastResult.time || forecastResult.check_time || null
     const client = await pool.connect()
     try {
       await client.query('BEGIN')
 
       const findPointQuery = `
         SELECT point_id FROM monitoring_points 
-        WHERE ST_DWithin(geom, ST_SetSRID(ST_MakePoint($1, $2), 4326), 0.001)
+        WHERE ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, 50)
         LIMIT 1
       `
       const pointResult = await client.query(findPointQuery, [
@@ -461,7 +496,7 @@ router.get('/displ_file', async (req, res) => {
         latitude,
       ])
       let pointId
-      const data_forecast = JSON.parse(data)
+
 
       if (pointResult.rows.length > 0) {
         pointId = pointResult.rows[0].point_id
@@ -477,8 +512,8 @@ router.get('/displ_file', async (req, res) => {
           pointName,
           longitude,
           latitude,
-          data_forecast.rt,
-          data_forecast.time,
+          forecastResult.rt ?? -1,
+          forecastTime || new Date(),
         ])
         pointId = newPointResult.rows[0].point_id
         console.log(`创建新监测点，ID: ${pointId}`)
@@ -530,7 +565,7 @@ router.get('/displ_file', async (req, res) => {
           processedCount: rdaInfo.recordCount,
           rdaFile: targetRdaPath,
           rScriptExecuted: true,
-          rt_json: JSON.parse(data),
+          rt_json: forecastResult,
         },
         databaseOperation: {
           pointId: pointId,

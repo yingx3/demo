@@ -560,8 +560,11 @@ const dialogVisible_searchdisaster = ref(false)
 const dialogVisible_checkattribute = ref(false)
 const dialogVisible_checkqxz = ref(false)
 
-const chartVisible = ref(false) // 控制趋势图显示隐藏
-const currentPointId = ref(null) // 记录当前点击的点ID
+const chartVisible = ref(false) // displacement chart visibility
+let displacementChart = null
+let forecastHandler = null
+let forecastEntityId = null
+const currentPointId = ref(null) // current clicked point id
 const form = reactive({
   name: '111',
   dcmd: '222',
@@ -2447,54 +2450,83 @@ const floodLayers = () => {
   // console.log('已跳转！！！')
 }
 
+const clearForecastEntity = () => {
+  if (!viewer.value || !forecastEntityId) return
+  const existing = viewer.value.entities.getById(forecastEntityId)
+  if (existing) viewer.value.entities.remove(existing)
+  forecastEntityId = null
+}
+
 const foreCast = params => {
-  let picture
-  const rt = params.rt
-  const time = params.time
-  const longitude = params.lon
-  const latitude = params.lat
-  const pointId = params.pointId
-  let integer = Math.round(rt)
-  if (rt > 0 && rt < 24) {
-    // alert("红色警报！")
-    picture = 'warning_red'
-  } else if (rt >= 24 && rt < 48) {
-    // alert("橙色警报！")
-    picture = 'warning_orange'
-  } else if (rt >= 48 && rt < 72) {
-    // alert("黄色警报!")
-    picture = 'warning_yellow'
-  } else if (rt >= 72 && rt < 96) {
-    // alert("蓝色警报！")
-    picture = 'warning_blue'
-  } else {
-    // alert("未有险情！")
-    picture = 'safe'
+  if (!viewer.value) return
+
+  const rt = Number(params?.rt)
+  const time = params?.time || '--'
+  const longitude = Number(params?.lon)
+  const latitude = Number(params?.lat)
+  const pointId = params?.pointId
+  const status =
+    params?.status ||
+    (Number.isFinite(rt) ? (rt < 0 ? 'no_ooa' : 'ok') : 'no_result')
+
+  if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) {
+    ElMessage({ message: '缺少有效的监测点坐标，无法定位预警点', type: 'error' })
+    return
   }
-  // console.log(rt, time)
-  // 相机飞到目标位置
+
+  clearForecastEntity()
+
+  if (status === 'no_result' || !Number.isFinite(rt)) {
+    ElMessage({
+      message: '未获得有效预测结果，请检查位移数据长度或变化趋势',
+      type: 'warning',
+    })
+    return
+  }
+
+  let picture = 'safe'
+  let forecastText = ''
+  if (status === 'no_ooa' || rt < 0) {
+    picture = 'safe'
+    forecastText = '未检测到加速变形（OOA），暂无法计算失稳时间'
+  } else if (rt < 24) {
+    picture = 'warning_red'
+    forecastText = `红色预警，预计还有${Math.round(rt)}小时发生滑坡`
+  } else if (rt < 48) {
+    picture = 'warning_orange'
+    forecastText = `橙色预警，预计还有${Math.round(rt)}小时发生滑坡`
+  } else if (rt < 72) {
+    picture = 'warning_yellow'
+    forecastText = `黄色预警，预计还有${Math.round(rt)}小时发生滑坡`
+  } else if (rt < 96) {
+    picture = 'warning_blue'
+    forecastText = `蓝色预警，预计还有${Math.round(rt)}小时发生滑坡`
+  } else {
+    forecastText = `预计失稳时间超过96小时（约${Math.round(rt)}小时）`
+  }
+  if (rt >= 0) forecastText += `（预测时间：${time}）`
+
+  const groundHeight = getGroundHeightMeters(longitude, latitude, 3000)
+  const pointPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude)
   viewer.value.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(95.222479, 30.067881, 10565),
+    destination: Cesium.Cartesian3.fromDegrees(
+      longitude,
+      latitude,
+      groundHeight + 6500,
+    ),
     orientation: {
-      heading: Cesium.Math.toRadians(250.0), // 朝向
-      pitch: Cesium.Math.toRadians(-35.4), // 俯仰
-      roll: 0.0, // 滚转
+      heading: Cesium.Math.toRadians(250.0),
+      pitch: Cesium.Math.toRadians(-35.4),
+      roll: 0.0,
     },
     complete: () => {
-      // 检测并移除已有实体
-      const entityId = 'targetEntity'
-      const existingEntity = viewer.value.entities.getById(entityId)
-
-      if (existingEntity) {
-        viewer.value.entities.remove(existingEntity)
-      }
-      // 飞行结束后添加实体
-
-      const entity = viewer.value.entities.add({
-        id: 'pointId',
-        pointId: pointId, // 添加 pointId 属性
+      clearForecastEntity()
+      const entityId = `forecast-${pointId}-${Date.now()}`
+      viewer.value.entities.add({
+        id: entityId,
+        pointId,
         name: '预警信息',
-        position: Cesium.Cartesian3.fromDegrees(95.137369, 30.038497, 10556),
+        position: pointPosition,
         billboard: {
           image: `CS/img/${picture}.png`,
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
@@ -2502,35 +2534,27 @@ const foreCast = params => {
           width: 32,
           height: 32,
         },
-        description: `
-    <div>
-      <p>预计还有${integer}小时发生滑坡，于${time}进行预测！</p>
-    </div>
-  `,
+        description: `<div><p>${forecastText}</p></div>`,
       })
+      forecastEntityId = entityId
 
-      // 点击 billboard 时弹出信息框
-      const handler = new Cesium.ScreenSpaceEventHandler(
-        viewer.value.scene.canvas,
-      )
-      handler.setInputAction(movement => {
-        const picked = viewer.value.scene.pick(movement.position)
-        // console.log(picked) // 调试输出
-        // console.log('11212') // 调试输出
-        if (Cesium.defined(picked) && picked.id) {
-          const entity = picked.id
-          viewer.value.selectedEntity = entity // 使用 Cesium 内置 InfoBox 弹窗
-          // 记录当前点ID
-          currentPointId.value = entity.pointId // 假设实体有pointId属性
-          // 点击实体时显示图表
-          console.log('点击了实体，点ID为:', entity.pointId)
-          fetchDisplacementData(entity.pointId)
-        }
-      }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+      if (!forecastHandler) {
+        forecastHandler = new Cesium.ScreenSpaceEventHandler(
+          viewer.value.scene.canvas,
+        )
+        forecastHandler.setInputAction(movement => {
+          const picked = viewer.value.scene.pick(movement.position)
+          if (!Cesium.defined(picked) || !picked.id) return
+          const pickedPointId = picked.id.pointId
+          if (pickedPointId === undefined || pickedPointId === null) return
+          viewer.value.selectedEntity = picked.id
+          currentPointId.value = pickedPointId
+          fetchDisplacementData(pickedPointId)
+        }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+      }
     },
   })
 }
-// 提取数据获取和图表渲染为单独函数
 const fetchDisplacementData = pointId => {
   if (!pointId) {
     console.log('fetchDisplacementData: pointId is empty')
@@ -2545,8 +2569,10 @@ const fetchDisplacementData = pointId => {
       const data = response.data
       if (data.success) {
         console.log('获取到的位移数据:', data.data)
-        renderDisplacementChart(data.data)
-        chartVisible.value = true // 显示图表
+        chartVisible.value = true
+        nextTick(() => {
+          renderDisplacementChart(data.data)
+        }) // 显示图表
         console.log('图表已显示')
         ElMessage({
           message: data.message,
@@ -2575,10 +2601,11 @@ const renderDisplacementChart = chartData => {
 
   // 初始化ECharts实例
   const chartDom = document.getElementById('displacement-chart')
-  const myChart = echarts.init(chartDom)
-
-  // 清空之前的图表
-  myChart.clear()
+  if (!chartDom) return
+  if (displacementChart) {
+    displacementChart.dispose()
+  }
+  displacementChart = echarts.init(chartDom)
 
   const option = {
     title: {
@@ -2716,18 +2743,10 @@ const renderDisplacementChart = chartData => {
     responsive: true,
     maintainAspectRatio: false,
   }
-  watch(
-    () => chartVisible,
-    val => {
-      if (val) {
-        nextTick(() => {
-          chart.resize()
-        })
-      }
-    },
-  )
-  // 应用配置项并渲染图表
-  // myChart.setOption(option)
+  displacementChart.setOption(option, true)
+  nextTick(() => {
+    displacementChart?.resize()
+  })
 
   // 响应式调整
   // window.addEventListener('resize', function () {
@@ -5998,6 +6017,17 @@ function drawer_seismic(data) {
   }
   drawSeismicChart(data)
 }
+onBeforeUnmount(() => {
+  if (forecastHandler) {
+    forecastHandler.destroy()
+    forecastHandler = null
+  }
+  forecastEntityId = null
+  if (displacementChart) {
+    displacementChart.dispose()
+    displacementChart = null
+  }
+})
 </script>
 <style lang="scss" scoped>
 .flex-container {

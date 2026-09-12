@@ -3634,6 +3634,7 @@
                     <el-upload
                       ref="uploadRef"
                       action="/node/displ"
+                      :on-success="handleUploadSuccess"
                       name="file"
                       :auto-upload="false"
                       :show-file-list="false"
@@ -4459,6 +4460,7 @@ const openHelpDialog_inverseV = ref(false)
 const openHelpDialog_gbm = ref(false)
 const openHelpDialog_seismic = ref(false)
 const uploadRef = ref(null)
+const uploadedFileId = ref('')
 const fileName_inverseV = ref('')
 // --- GBM 上传相关 ---
 const uploadRefGBM = ref(null)
@@ -5352,13 +5354,16 @@ const triggerUpload = () => {
 }
 
 const handleFileChange = file => {
+  uploadedFileId.value = ''
   fileName_inverseV.value = file.name
-  // 这里可以添加文件处理逻辑
-  // console.log('已选择文件:', file.name)
-  // 自动触发上传（如需手动上传可删除这部分）
   uploadRef.value.submit()
 }
 
+const handleUploadSuccess = response => {
+  if (response?.code === 200 && response.fileId) {
+    uploadedFileId.value = response.fileId
+  }
+}
 const triggerUploadGBM = () => {
   // 打开文件选择
   uploadRefGBM.value?.$el.querySelector('input[type=file]').click()
@@ -5446,20 +5451,26 @@ const handleUploadErrorGBM = (err, file, fileList) => {
 const submit_inverseV = async () => {
   try {
     ElMessage({ message: '运行中!', type: 'success' })
-    const params = { form_inverseV }
+    if (!uploadedFileId.value) {
+      ElMessage({ message: '请先选择并上传位移文件', type: 'warning' })
+      return
+    }
+    const params = { form_inverseV, fileId: uploadedFileId.value }
     // await new Promise(resolve => setTimeout(resolve, 1000)) // 等待1秒
     const response = await axios.get('/node/displ_file', { params })
     console.log('执行结果:', response.data.rt_json)
     // console.log('执行结果:', response.data)
     // console.log('执行结果:', response.data.fileProcessing.rt_json.rt)
 
-    const rt = response.data.fileProcessing.rt_json.rt
-    const time = response.data.fileProcessing.rt_json.time
+    const forecast = response.data.fileProcessing.rt_json
+    const rt = forecast.rt
+    const time = forecast.time || forecast.check_time
+    const status = forecast.status
     const databaseOperation = response.data.databaseOperation
     const pointId = response.data.databaseOperation.pointId
     const lon = response.data.databaseOperation.coordinates.longitude
     const lat = response.data.databaseOperation.coordinates.latitude
-    const params_return = { pointId, lon, lat, rt, time }
+    const params_return = { pointId, lon, lat, rt, time, status }
     // console.log(databaseOperation)
     // console.log(lon, lat)
     // if (rt < 24) {
@@ -5476,7 +5487,11 @@ const submit_inverseV = async () => {
     // }
     $emit('forecast', params_return)
   } catch (error) {
-    console.error('执行失败:', error.response?.data || error.message)
+    console.error('位移预警计算失败:', error.response?.data || error.message)
+    ElMessage({
+      message: error.response?.data?.message || '位移预警计算失败',
+      type: 'error',
+    })
   }
 }
 

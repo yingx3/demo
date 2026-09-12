@@ -11,7 +11,9 @@ source("1_3_dataframes.R")
 source("1_4_log.R")
 
 #load data
-load("displ_data.Rda")
+rda_file <- if (file.exists("displ_data.rda")) "displ_data.rda" else "displ_data.Rda"
+if (!file.exists(rda_file)) stop("displ_data.rda not found in working directory: ", getwd())
+load(rda_file)
 # displ_data <- tmp
 # rm(tmp)
 

@@ -9,7 +9,11 @@
 
 ##input data==========
 #set working directory
-setwd("E:/Projects/ZHLXT/算法/基于位移监测滑坡预警/PFTF_1.0.0/PFTF_1.0.0/PFTF-PFTF_1.0.0") #<-- set your pathname here
+# Resolve paths relative to this script, not a developer-specific checkout.
+script_args <- commandArgs(trailingOnly = FALSE)
+script_file_arg <- grep("^--file=", script_args, value = TRUE)
+if (length(script_file_arg) == 0) stop("1_1_input.R must be run with Rscript")
+setwd(dirname(normalizePath(sub("^--file=", "", script_file_arg[[1]]), mustWork = TRUE)))
 
 #set start of calculations
 #as.POSIXct("YYYY-MM-DD HH:MM", tz="UTC")

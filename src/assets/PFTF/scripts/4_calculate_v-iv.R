@@ -58,7 +58,7 @@ if (is.na(mean(lmdata[,2], na.rm = T))) {next} else {  #make sure not all data a
  lm_i <- lm(lmdata[,2] ~ lmdata[,1])   #linear regression model
  lm_slope <- data.frame(timestamp = lmdata[nrow(lmdata),1],   #timestamp
                         v = lm_i$coefficients[2])             #slope
-    datalist[[i]] <- lm_slope                                 #assign to datalist
+    datalist[[1]] <- lm_slope                                 #assign to datalist
 }
     
 #put all velocities into one dataframe
