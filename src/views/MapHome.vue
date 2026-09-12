@@ -2206,6 +2206,48 @@ function computeBetaViewRect(meta, wetBbox, outW, outH, ncols, nrows, cellsize) 
   }
 }
 
+// 渲染完成后飞向结果矩形时，在 Cesium 默认取景距离上再抬高的米数
+const RESULT_CAMERA_LIFT_M = 500
+
+/**
+ * 飞到结果矩形，并在 Cesium 默认取景基础上抬高 lift 米。
+ *
+ * Cesium 对 Rectangle 的默认取景是「矩形中心正上方、俯视」，距离由视锥与矩形角点算出，
+ * 直接 flyTo(rectangle) 会把结果贴在屏幕边缘，很难看清。
+ * 这里用一台离屏 Camera 先把同一套默认取景复算出来（不改动当前视角），
+ * 再把高度加上 lift，最后用一次 flyTo 平滑飞过去：
+ * 画面内容与默认取景完全一致，只是整体看得更高。
+ */
+const flyToResultRect = (rectangle, lift = RESULT_CAMERA_LIFT_M, duration = 2.5) => {
+  const camera = viewer.value && viewer.value.camera
+  if (!camera || !rectangle) return
+  try {
+    const ellipsoid = Cesium.Ellipsoid.WGS84
+    // 离屏相机：只用来算 Cesium 的默认取景位置，不影响当前视角
+    const scratch = new Cesium.Camera(viewer.value.scene)
+    const fov = camera.frustum ? camera.frustum.fov : undefined
+    if (Number.isFinite(fov)) {
+      scratch.frustum.fov = fov
+      scratch.frustum.aspectRatio = camera.frustum.aspectRatio
+    }
+    scratch.flyTo({ destination: rectangle, duration: 0 })
+    const carto = ellipsoid.cartesianToCartographic(scratch.position)
+    if (!carto || !Number.isFinite(carto.height)) throw new Error('invalid framing')
+    const height = carto.height + lift
+    camera.flyTo({
+      destination: Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, height, ellipsoid),
+      orientation: { heading: 0, pitch: -Cesium.Math.PI_OVER_TWO, roll: 0 },
+      duration,
+    })
+    console.log(
+      '[betaLayers] 相机定位: 默认取景高度=' + carto.height.toFixed(1) + 'm → ' + height.toFixed(1) + 'm',
+    )
+  } catch (e) {
+    console.warn('[betaLayers] 抬高相机失败，回退默认取景:', e)
+    camera.flyTo({ destination: rectangle, duration })
+  }
+}
+
 // 前端固定渲染 solid（泥石流层厚度 zB-zL）
 // pro / python_port 支持的输出场：total=泥石流层+水层, water=水层, solid=泥石流层(zB-zL), speed=流速
 const PRO_FIELD_META = {
@@ -2260,10 +2302,7 @@ const betaLayers = async (payload, label = '山洪泥石流启动动力学模型
 
     const bbox = Array.isArray(result.bbox) ? result.bbox.map(Number) : null
     if (bbox && bbox.length === 4 && bbox.every(Number.isFinite)) {
-      viewer.value.camera.flyTo({
-        destination: Cesium.Rectangle.fromDegrees(bbox[0], bbox[1], bbox[2], bbox[3]),
-        duration: 1.5,
-      })
+      flyToResultRect(Cesium.Rectangle.fromDegrees(bbox[0], bbox[1], bbox[2], bbox[3]), RESULT_CAMERA_LIFT_M, 1.5)
     }
     startHeatmapCycle()
     return
@@ -2327,7 +2366,7 @@ const betaLayers = async (payload, label = '山洪泥石流启动动力学模型
         if (runId !== betaRunId) return
 
         const view = computeBetaViewRect(meta, wetBbox, width, height, ncols, nrows, cellsize)
-        viewer.value.camera.flyTo({ destination: view.rectangle, duration: 2.5 })
+        flyToResultRect(view.rectangle)
 
         const layerCollection = viewer.value.scene.imageryLayers
         frames.forEach(url => {
@@ -2429,7 +2468,7 @@ const betaLayers = async (payload, label = '山洪泥石流启动动力学模型
       '| 地面高度=' + groundHeight.toFixed(1) + 'm',
     )
     if (runId !== betaRunId) return
-    viewer.value.camera.flyTo({ destination: view.rectangle, duration: 2.5 })
+    flyToResultRect(view.rectangle)
 
     // ③ 建渲染器：网格仍定位在原始中心点上，整体抬高一点避开地形起伏
     const sim = new Renderer({
