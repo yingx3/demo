@@ -755,10 +755,13 @@ class DebrisFlow {
         sources: [this.Command + this.renderShaderSource]
       }),
       rawRenderState: {
+        // 预计算帧（ASC 贴图）是叠加层：关掉深度测试 + 深度写入，
+        // 否则结果会被地形（或地形网格误差）整片挡住，看起来就像"没渲染"。
         depthTest: {
-          enabled: true
+          enabled: !(this.renderPackedFrames || this.renderDirectFrames)
           // func: DepthFunction.LESS,
         },
+        depthMask: !(this.renderPackedFrames || this.renderDirectFrames),
         blending: Cesium.BlendingState.ALPHA_BLEND
       }
     })

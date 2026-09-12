@@ -2160,33 +2160,6 @@ function computeBetaViewRect(meta, wetBbox, outW, outH, ncols, nrows, cellsize) 
   }
 }
 
-/**
- * 沿结果范围采样真实地面高度并取最大值。
- * 平铺的 box 若低于地形会被深度测试整块挡掉（看不到泥石流的主要原因之一），
- * 这里直接用 terrainProvider 采样，不依赖相机是否已经飞到该处。
- */
-async function sampleMaxGroundHeightMeters(points, fallbackLon, fallbackLat, fallback = 3000) {
-  const pts = (Array.isArray(points) ? points : []).filter(p => Number.isFinite(p?.[0]) && Number.isFinite(p?.[1]))
-  try {
-    const provider = viewer.value?.terrainProvider
-    if (provider && pts.length) {
-      const cartos = await Cesium.sampleTerrain(
-        provider,
-        13,
-        pts.map(p => Cesium.Cartographic.fromDegrees(p[0], p[1])),
-      )
-      const heights = cartos.map(c => c.height).filter(h => Number.isFinite(h))
-      console.log('[betaLayers] 地面高度采样:', heights.length ? heights.map(h => h.toFixed(0)).join(' / ') : '无有效值')
-      if (heights.length) return Math.max(...heights)
-    }
-  } catch (e) {
-    console.warn('[betaLayers] sampleTerrain 失败，退回 globe.getHeight:', e)
-  }
-  const lon = Number.isFinite(fallbackLon) ? fallbackLon : pts[0]?.[0]
-  const lat = Number.isFinite(fallbackLat) ? fallbackLat : pts[0]?.[1]
-  return getGroundHeightMeters(lon, lat, fallback)
-}
-
 const betaLayers = async payload => {
   const result = payload?.result
   if (!result || result.status !== 'ok') {
@@ -2268,9 +2241,13 @@ const betaLayers = async payload => {
     )
     if (runId !== betaRunId) return
 
-    // ② 相机自动定位 + 真实地面高度（平铺 box 若低于地形会被深度测试整块挡掉）
+    // ② 相机自动定位。
+    // 注意：这里绝对不能再调 Cesium.sampleTerrain —— 本工程的地形服务一旦被批量采样，
+    // Cesium 的 TileAvailability 四叉树会被打坏，紧接着 globe 渲染直接崩：
+    // "Cannot read properties of undefined (reading 'rectangles')"。
+    // 所以地面高度只读已经加载好的瓦片（globe.getHeight），叠加层本身已经关掉深度测试。
     const view = computeBetaViewRect(meta, wetBbox, width, height, ncols, nrows, cellsize)
-    const groundHeight = await sampleMaxGroundHeightMeters(view.samples, centerLon, centerLat, 3000)
+    const groundHeight = getGroundHeightMeters(view.centerLon, view.centerLat, 3000)
     console.log(
       '[betaLayers] 定位到' + view.source + ':',
       view.centerLon.toFixed(5) + ',' + view.centerLat.toFixed(5),
