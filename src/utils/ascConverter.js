@@ -191,13 +191,22 @@ const WATER_DEPTH_RAMP = [
   [70, 40, 20],
 ]
 
-function sampleWaterDepthColor(v) {
-  const last = WATER_DEPTH_RAMP.length - 1
+// 流速场用另一套色带（蓝 -> 黄 -> 红），避免和泥石流深度混淆
+const SPEED_RAMP = [
+  [44, 123, 182],
+  [171, 217, 233],
+  [255, 255, 191],
+  [253, 174, 97],
+  [215, 25, 28],
+]
+
+function sampleWaterDepthColor(v, ramp = WATER_DEPTH_RAMP) {
+  const last = ramp.length - 1
   const x = Math.min(Math.max(v, 0), 1) * last
   const i = Math.min(Math.floor(x), last - 1)
   const t = x - i
-  const c0 = WATER_DEPTH_RAMP[i]
-  const c1 = WATER_DEPTH_RAMP[i + 1]
+  const c0 = ramp[i]
+  const c1 = ramp[i + 1]
   return [
     Math.round(c0[0] + (c1[0] - c0[0]) * t),
     Math.round(c0[1] + (c1[1] - c0[1]) * t),
@@ -214,11 +223,14 @@ function sampleWaterDepthColor(v) {
  * @param {{minDepth?: number, minAlpha?: number}} [options]
  *        minDepth：小于该流深视为无数据（透明），默认 0.05m
  *        minAlpha：湿区最小不透明度，默认 0.25，避免浅水看不到
+ *        ramp：'speed' 时改用流速色带（蓝->黄->红），默认水深棕色带
  */
 export function paintDepthToImageData(values, width, height, maxClip, options = {}) {
   const w = Math.max(1, Math.round(width))
   const h = Math.max(1, Math.round(height))
-  const minDepth = Number.isFinite(options.minDepth) ? Number(options.minDepth) : 0.05
+  const isSpeed = options.ramp === 'speed'
+  const ramp = isSpeed ? SPEED_RAMP : WATER_DEPTH_RAMP
+  const minDepth = Number.isFinite(options.minDepth) ? Number(options.minDepth) : isSpeed ? 0.02 : 0.05
   const minAlpha = Number.isFinite(options.minAlpha) ? Number(options.minAlpha) : 0.25
   const safeMax = maxClip > 0 ? maxClip : 1
   const canvas = document.createElement('canvas')
@@ -241,7 +253,7 @@ export function paintDepthToImageData(values, width, height, maxClip, options = 
     const vis = Math.pow(norm, 0.6) // 与着色器一致：浅水也能分辨层次
     const smooth = vis * vis * (3 - 2 * vis) // smoothstep(0, 1, vis)
     const alpha = Math.min(Math.max(minAlpha + (1 - minAlpha) * smooth, 0), 1)
-    const rgb = sampleWaterDepthColor(vis)
+    const rgb = sampleWaterDepthColor(vis, ramp)
     imgData.data[idx] = rgb[0]
     imgData.data[idx + 1] = rgb[1]
     imgData.data[idx + 2] = rgb[2]

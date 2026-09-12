@@ -2117,7 +2117,7 @@ function getGroundHeightMeters(lon, lat, fallback = 3000) {
  * 把后端输出的 ASC 帧转成 DebrisFlow.dataSet 需要的 base64 PNG（24 位打包）。
  * 与 RiskInsight 的做法一致：一次性把全部帧交给渲染器，由 postRender 自动播放。
  */
-async function buildAvaflowDataSet(frameFiles, ascBase, maxDepth, outW, outH, onProgress, mode = 'packed') {
+async function buildAvaflowDataSet(frameFiles, ascBase, maxDepth, outW, outH, onProgress, mode = 'packed', paintOptions = null) {
   const { parseASC, resampleASCToSize, packNormalizedDepthToImageData, paintDepthToImageData } = await import('../utils/ascConverter.js')
   // packed：24 位打包图（给 DebrisFlow BOX 着色器用）
   // visual：带颜色的透明 PNG（给 Cesium 影像图层贴地用）
@@ -2144,7 +2144,7 @@ async function buildAvaflowDataSet(frameFiles, ascBase, maxDepth, outW, outH, on
         }
       }
     }
-    const { canvas, ctx, imgData } = painter(resampled, outW, outH, maxDepth)
+    const { canvas, ctx, imgData } = painter(resampled, outW, outH, maxDepth, paintOptions || undefined)
     ctx.putImageData(imgData, 0, 0)
     frames.push(canvas.toDataURL('image/png'))
     onProgress && onProgress(i + 1, frameFiles.length)
@@ -2205,6 +2205,15 @@ function computeBetaViewRect(meta, wetBbox, outW, outH, ncols, nrows, cellsize) 
     samples: [[lon, lat]],
   }
 }
+
+// pro / python_port 支持的输出场：total=泥石流层+水层, water=水层, solid=泥石流层(zB-zL), speed=流速
+const PRO_FIELD_META = {
+  total: { title: '流深', unit: 'm', colors: ['#8C785A', '#A08250', '#8C6437', '#6E4623', '#462814'] },
+  water: { title: '水层深度', unit: 'm', colors: ['#8C785A', '#A08250', '#8C6437', '#6E4623', '#462814'] },
+  solid: { title: '泥石流层厚度', unit: 'm', colors: ['#8C785A', '#A08250', '#8C6437', '#6E4623', '#462814'] },
+  speed: { title: '流速', unit: 'm/s', colors: ['#2C7BB6', '#ABD9E9', '#FFFFBF', '#FDAE61', '#D7191C'] },
+}
+const proFieldMeta = field => PRO_FIELD_META[String(field || 'total').toLowerCase()] || PRO_FIELD_META.total
 
 const betaLayers = async (payload, label = '山洪泥石流启动动力学模型_beta', options = {}) => {
   const useDrape = options.drape !== false
@@ -2276,6 +2285,22 @@ const betaLayers = async (payload, label = '山洪泥石流启动动力学模型
         clearHeatmapPrimitive()
         const runId = ++betaRunId
 
+        const fmeta = proFieldMeta(meta.field)
+        // 空场保护：某字段全场为 0（例如 zB-zL≈0 时泥石流层为空）时直接提示，不再渲染空图层
+        if (!(globalMax > 1e-6)) {
+          cleanupBetaRenderer()
+          clearHeatmapPrimitive()
+          ElMessage.closeAll()
+          ElMessage({
+            message:
+              fmeta.title + ' 全场最大值为 0，没有可渲染内容' +
+              (meta.field === 'solid' ? '（zB - zL 无物源，请检查灾前/灾后地形）' : '（请检查输入数据或改用其他渲染场）'),
+            type: 'warning',
+            duration: 6000,
+          })
+          return
+        }
+
         const [west, south, east, north] = rawBbox
         const rect = Cesium.Rectangle.fromDegrees(west, south, east, north)
         const maxDim = 1024
@@ -2296,6 +2321,7 @@ const betaLayers = async (payload, label = '山洪泥石流启动动力学模型
             }
           },
           'visual',
+          meta.field === 'speed' ? { ramp: 'speed' } : null,
         )
         if (runId !== betaRunId) return
 
@@ -2333,10 +2359,10 @@ const betaLayers = async (payload, label = '山洪泥石流启动动力学模型
 
         // 图例：流深色带（复用地图右下角图例组件）
         const flowLegend = {
-          title: '流深',
-          unit: 'm',
+          title: fmeta.title,
+          unit: fmeta.unit,
           stops: [0, 0.25, 0.5, 0.75, 1],
-          colors: ['#8C785A', '#A08250', '#8C6437', '#6E4623', '#462814'],
+          colors: fmeta.colors,
           ticks: ['0', (globalMax / 2).toFixed(1), globalMax.toFixed(1)],
         }
         legendLayers.value = legendLayers.value.filter(l => l.id !== BETA_FLOW_LEGEND_ID)

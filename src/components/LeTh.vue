@@ -2685,6 +2685,14 @@
               <el-form-item label="计算时间" class="form1_flood">
                 <el-input v-model="form2.Tmax" placeholder="100" />
               </el-form-item>
+              <el-form-item label="渲染场" class="form1_flood">
+                <el-select v-model="form2.field" placeholder="总流深">
+                  <el-option label="总流深（泥石流层+水层）" value="total" />
+                  <el-option label="水层深度" value="water" />
+                  <el-option label="泥石流层厚度（zB-zL）" value="solid" />
+                  <el-option label="流速" value="speed" />
+                </el-select>
+              </el-form-item>
 
               <el-form-item style="flex: 1 1 100%; margin-bottom: 12px">
                 <span style="color: #a6a6a6; font-size: 13px"
@@ -4746,6 +4754,8 @@ const form2 = reactive({
   // 输出间距=出图节拍（秒）；后端按「模拟时刻」抽帧，总帧数不超过 maxFrames
   interval: '1',
   Tmax: '100',
+  // 渲染场：total=泥石流层+水层 / water=水层 / solid=泥石流层(zB-zL) / speed=流速
+  field: 'total',
 })
 // 洪水泥石流启动动力学模型（python_port）输入数据：zb 灾前地形 / zl 灾后地形 / hw 初始水深
 const proUploadRefs = reactive({})
@@ -5135,6 +5145,28 @@ const submitForm2 = async () => {
         return
       }
       jobId = up.jobId
+
+      // 输入探测提示：模型里泥石流层厚度 = zB - zL，若两者相同则该层为空
+      const probe = up.probe || null
+      const probeThick = Number(probe && probe.maxThickness)
+      const probeWater = Number(probe && probe.maxWaterDepth)
+      if (Number.isFinite(probeThick) && probeThick <= 1e-6) {
+        ElMessage({
+          message:
+            '提示：输入 zb 与 zl 完全相同，模型里泥石流层厚度 = zB - zL = 0，total 渲染出来的只是水层；如需泥石流效果请提供真正的灾前/灾后地形。',
+          type: 'warning',
+          duration: 9000,
+        })
+      } else if (Number.isFinite(probeThick) && probeThick < 5) {
+        ElMessage({
+          message:
+            '提示：本次物源最大厚度仅 ' + probeThick.toFixed(2) + ' m' +
+            (Number.isFinite(probeWater) ? '（水层最大 ' + probeWater.toFixed(2) + ' m）' : '') +
+            '，泥石流层体积很小，结果可能接近“原地铺展”。',
+          type: 'warning',
+          duration: 9000,
+        })
+      }
     }
 
     const anchorLonNum = proNumber(proAnchorLon.value, NaN)
@@ -5155,7 +5187,7 @@ const submitForm2 = async () => {
         interval: proNumber(form2.interval, 1),
         tmax: proNumber(form2.Tmax, 100),
         maxFrames: 40,
-        field: 'total',
+        field: form2.field || 'total',
       },
     })
     if (!accepted || accepted.status !== 'accepted') {
