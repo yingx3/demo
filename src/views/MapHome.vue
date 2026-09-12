@@ -2507,53 +2507,58 @@ const foreCast = params => {
   if (rt >= 0) forecastText += `（预测时间：${time}）`
 
   const groundHeight = getGroundHeightMeters(longitude, latitude, 3000)
-  const pointPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude)
-  viewer.value.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(
-      longitude,
-      latitude,
-      groundHeight + 6500,
-    ),
-    orientation: {
-      heading: Cesium.Math.toRadians(250.0),
-      pitch: Cesium.Math.toRadians(-35.4),
-      roll: 0.0,
-    },
-    complete: () => {
-      clearForecastEntity()
-      const entityId = `forecast-${pointId}-${Date.now()}`
-      viewer.value.entities.add({
-        id: entityId,
-        pointId,
-        name: '预警信息',
-        position: pointPosition,
-        billboard: {
-          image: `CS/img/${picture}.png`,
-          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-          width: 32,
-          height: 32,
-        },
-        description: `<div><p>${forecastText}</p></div>`,
-      })
-      forecastEntityId = entityId
+  const pointPosition = Cesium.Cartesian3.fromDegrees(
+    longitude,
+    latitude,
+    groundHeight,
+  )
+  // Keep the warning point centered and fly high enough to avoid a close-up
+  // terrain view. Range is the camera-to-point distance in meters.
+  viewer.value.camera.flyToBoundingSphere(
+    new Cesium.BoundingSphere(pointPosition, 1000),
+    {
+      offset: new Cesium.HeadingPitchRange(
+        Cesium.Math.toRadians(250.0),
+        Cesium.Math.toRadians(-55.0),
+        18000,
+      ),
+      duration: 2.5,
+      complete: () => {
+        clearForecastEntity()
+        const entityId = `forecast-${pointId}-${Date.now()}`
+        viewer.value.entities.add({
+          id: entityId,
+          pointId,
+          name: '预警信息',
+          position: pointPosition,
+          billboard: {
+            image: `CS/img/${picture}.png`,
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+            width: 32,
+            height: 32,
+          },
+          description: `<div><p>${forecastText}</p></div>`,
+        })
+        forecastEntityId = entityId
 
-      if (!forecastHandler) {
-        forecastHandler = new Cesium.ScreenSpaceEventHandler(
-          viewer.value.scene.canvas,
-        )
-        forecastHandler.setInputAction(movement => {
-          const picked = viewer.value.scene.pick(movement.position)
-          if (!Cesium.defined(picked) || !picked.id) return
-          const pickedPointId = picked.id.pointId
-          if (pickedPointId === undefined || pickedPointId === null) return
-          viewer.value.selectedEntity = picked.id
-          currentPointId.value = pickedPointId
-          fetchDisplacementData(pickedPointId)
-        }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
-      }
+        if (!forecastHandler) {
+          forecastHandler = new Cesium.ScreenSpaceEventHandler(
+            viewer.value.scene.canvas,
+          )
+          forecastHandler.setInputAction(movement => {
+            const picked = viewer.value.scene.pick(movement.position)
+            if (!Cesium.defined(picked) || !picked.id) return
+            const pickedPointId = picked.id.pointId
+            if (pickedPointId === undefined || pickedPointId === null) return
+            viewer.value.selectedEntity = picked.id
+            currentPointId.value = pickedPointId
+            fetchDisplacementData(pickedPointId)
+          }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+        }
+      },
     },
-  })
+  )
 }
 const fetchDisplacementData = pointId => {
   if (!pointId) {
