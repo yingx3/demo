@@ -35,3 +35,7 @@ CS/tiff/
 CS/CS.zip
 *.sr.lock
 vite.config.js.timestamp-*.mjs
+# Displacement runtime artifacts (generated each run)
+src/assets/PFTF/scripts/Rplots.pdf
+# Timestamped runtime uploads
+src/node/uploads/[0-9]*.*
