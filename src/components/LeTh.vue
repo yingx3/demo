@@ -3160,17 +3160,20 @@
             title="全域风险脆弱性分析"
             width="560"
             :close-on-click-modal="false"
-            class="dialog_quanyu"
+            class="dialog_quanyu dialog_fullRisk"
           >
             <template #header>
-              <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-                <span style="color:#ffffff;font-size:21px;padding-left:20px">全域风险脆弱性分析</span>
+              <div class="model-dialog-header quanyu-header">
+                <div class="model-dialog-heading">
+                  <span class="model-dialog-title">全域风险脆弱性分析</span>
+                  <span class="model-dialog-subtitle">全域风险评估参数配置</span>
+                </div>
               </div>
             </template>
-            <p id="name_par_gbm" style="margin-left:24px;margin-top:8px;font-size:18px;color:#2763ca">栅格数据</p>
-            <el-form label-width="auto" style="max-width:600px" class="form_gbm">
-              <el-form-item v-for="item in quanyuFileItems" :key="item.key" :label="item.label" label-position="right" label-width="120px">
-                <el-input v-model="quanYuFileNames[item.key]" :placeholder="item.placeholder" style="width:160px" readonly>
+            <p id="name_par_gbm" class="quanyu-section-label">栅格数据</p>
+            <el-form label-position="top" class="form_gbm quanyu-form">
+              <el-form-item v-for="item in quanyuFileItems" :key="item.key" :label="item.label" label-position="top" class="quanyu-file-field">
+                <el-input v-model="quanYuFileNames[item.key]" :placeholder="item.placeholder" readonly>
                   <template #append>
                     <el-upload
                       :ref="el => { if (el) uploadRefsQuanYu[item.key] = el }"
@@ -3182,18 +3185,18 @@
                       accept=".tif,.tiff"
                       @change="(f,fs) => handleQuanYuFileChange(item.key, f, fs)"
                     >
-                      <el-button style="border:none;color:white;padding:0;margin-left:8px" @click.stop="triggerQuanYuUpload(item.key)">
+                      <el-button class="quanyu-upload-trigger" @click.stop="triggerQuanYuUpload(item.key)">
                         <i class="iconfont icon-daoru"></i>
                       </el-button>
                     </el-upload>
                   </template>
                 </el-input>
               </el-form-item>
-              <el-form-item>
-                <el-button type="primary" @click="submitQuanYu" :loading="quanYuLoading" style="margin-left:240px">
+              <el-form-item class="quanyu-actions">
+                <el-button class="quanyu-submit" type="primary" @click="submitQuanYu" :loading="quanYuLoading">
                   {{ quanYuLoading ? '计算中 (10s)...' : '提交分析' }}
                 </el-button>
-                <el-button @click="dialogVisibleQuanYu = false">取消</el-button>
+                <el-button class="quanyu-cancel" @click="dialogVisibleQuanYu = false">取消</el-button>
               </el-form-item>
             </el-form>
           </el-dialog>
@@ -3216,20 +3219,13 @@
             class="dialog_inverseV"
           >
             <template #header>
-              <div
-                style="
-                  display: flex;
-                  align-items: center;
-                  justify-content: space-between;
-                  width: 100%;
-                "
-              >
-                <span style="color: #ffffff; font-size: 24px"
-                  >基于位移监测滑坡预警</span
-                >
-                <!-- 问号容器：定位到关闭按钮左侧 -->
-                <div style="position: relative; right: -4px; top: -11.5px">
-                  <el-tooltip content="帮助" placement="top">
+              <div class="model-dialog-header inverse-header">
+                <div class="model-dialog-heading">
+                  <span class="model-dialog-title">基于位移监测滑坡预警</span>
+                  <span class="model-dialog-subtitle">位移监测参数配置</span>
+                </div>
+                <div class="help-anchor">
+                  <el-tooltip content="查看参数说明" placement="top">
                     <el-icon
                       class="help-icon"
                       @click="openHelpDialog_inverseV = true"
@@ -3585,20 +3581,18 @@
             </template>
             <el-form
               :model="form_inverseV"
-              label-width="auto"
-              style="max-width: 600px"
-              class="form_inverseV"
+              label-position="top"
+              class="form_inverseV inverse-form"
             >
-              <el-form-item label="地点" class="">
+              <el-form-item label="地点" class="inverse-field">
                 <el-input v-model="form_inverseV.name" placeholder="林芝" />
               </el-form-item>
 
-              <el-form-item label="位移文件">
+              <el-form-item label="位移文件" class="inverse-file-field">
                 <el-input
                   v-model="fileName_inverseV"
                   placeholder="上传文件"
                   readonly
-                  style="width: 100px"
                 >
                   <template #append>
                     <el-upload
@@ -3610,12 +3604,7 @@
                       @change="handleFileChange"
                     >
                       <el-button
-                        style="
-                          border: none;
-                          color: white;
-                          padding: 0;
-                          margin-left: 8px;
-                        "
+                        class="inverse-upload-trigger"
                         @click.stop="triggerUpload"
                       >
                         <i class="iconfont icon-daoru"></i>
@@ -3625,28 +3614,32 @@
                 </el-input>
               </el-form-item>
 
-              <el-form-item label="经度" class="">
+              <el-form-item label="经度" class="inverse-field">
                 <el-input
                   v-model="form_inverseV.longitude"
                   placeholder="十进制度"
                 />
               </el-form-item>
-              <el-form-item label="纬度" class="">
+              <el-form-item label="纬度" class="inverse-field">
                 <el-input
                   v-model="form_inverseV.latitude"
                   placeholder="十进制度"
                 />
               </el-form-item>
             </el-form>
-            <el-button
-              type="primary"
-              @click="(submit_inverseV(), (dialog_inverseV = false))"
-              style="margin-left: 280px; margin-top: 20px"
-              >运行</el-button
-            >
-            <el-button style="margin-top: 20px" @click="dialog_inverseV = false"
-              >取消</el-button
-            >
+            <div class="inverse-actions">
+              <el-button
+                class="inverse-submit"
+                type="primary"
+                @click="(submit_inverseV(), (dialog_inverseV = false))"
+                >运行</el-button
+              >
+              <el-button
+                class="inverse-cancel"
+                @click="dialog_inverseV = false"
+                >取消</el-button
+              >
+            </div>
           </el-dialog>
         </div>
         <div class="box box-used p_bottom">
@@ -3661,26 +3654,13 @@
             class="dialog_seismic"
           >
             <template #header>
-              <div
-                style="
-                  display: flex;
-                  align-items: center;
-                  justify-content: space-between;
-                  width: 100%;
-                "
-              >
-                <span
-                  style="
-                    color: #ffffff;
-                    font-size: 22px;
-                    margin-left: 40px;
-                    margin-top: 10px;
-                  "
-                  >冰川泥石流监测预警模型</span
-                >
-                <!-- 问号容器：定位到关闭按钮左侧 -->
-                <div style="position: relative; right: -8px; top: -12px">
-                  <el-tooltip content="帮助" placement="top">
+              <div class="model-dialog-header seismic-header">
+                <div class="model-dialog-heading">
+                  <span class="model-dialog-title">冰川泥石流监测预警模型</span>
+                  <span class="model-dialog-subtitle">监测预警参数配置</span>
+                </div>
+                <div class="help-anchor">
+                  <el-tooltip content="查看参数说明" placement="top">
                     <el-icon
                       class="help-icon"
                       @click="openHelpDialog_seismic = true"
@@ -4084,21 +4064,13 @@
                 </el-dialog>
               </div>
             </template>
-            <p
-              id="name_par_seismic"
-              style="
-                margin-left: 70px;
-                margin-top: -23px;
-                font-size: 18px;
-                color: #2763ca;
-              "
-            >
+            <p id="name_par_seismic" class="seismic-section-label">
               模型参数
             </p>
 
             <!-- ML/DL 切换 -->
-            <div style="display:flex;align-items:center;gap:12px;margin:6px 0 10px 24px">
-              <span style="color:#aaa;font-size:14px">模型类型：</span>
+            <div class="seismic-mode-switch">
+              <span class="seismic-mode-label">模型类型</span>
               <el-radio-group v-model="seismicModelType" size="small">
                 <el-radio value="ml">机器学习 (STA/LTA)</el-radio>
                 <el-radio value="dl">深度学习 (Transformer1D)</el-radio>
@@ -4109,22 +4081,12 @@
             <el-form
               v-if="seismicModelType === 'ml'"
               :model="formSeismic"
-              style="max-width: 650px"
-              class="form_seismic"
+              class="form_seismic seismic-form seismic-form-ml"
             >
-              <div
-                style="
-                  display: flex;
-                  flex-direction: row;
-                  justify-content: space-between;
-                  align-items: center;
-                  margin-bottom: 10px;
-                "
-              >
+              <div class="seismic-row seismic-row-top">
                 <el-form-item
                   label="Excel文件"
-                  label-width="100px"
-                  label-position="right"
+                  class="seismic-file-field"
                 >
                   <el-input
                     v-model="fileNameSeismic"
@@ -4147,12 +4109,7 @@
                         @error="handleUploadErrorSeismic"
                       >
                         <el-button
-                          style="
-                            border: none;
-                            color: white;
-                            padding: 0;
-                            margin-left: 8px;
-                          "
+                          class="seismic-upload-trigger"
                           @click.stop="triggerUploadSeismic"
                         >
                           <i class="iconfont icon-daoru"></i>
@@ -4191,14 +4148,7 @@
                 </el-form-item>
               </div>
 
-              <div
-                style="
-                  display: flex;
-                  flex-direction: row;
-                  justify-content: space-between;
-                  margin-bottom: 0px;
-                "
-              >
+              <div class="seismic-row">
                 <el-form-item
                   label="阈值/threshold"
                   label-width="187px"
@@ -4239,13 +4189,7 @@
                   />
                 </el-form-item>
               </div>
-              <div
-                style="
-                  display: flex;
-                  flex-direction: row;
-                  justify-content: space-between;
-                "
-              >
+              <div class="seismic-row">
                 <el-form-item
                   label="分段时长(秒)"
                   label-width="187px"
@@ -4287,14 +4231,16 @@
                 </el-form-item>
               </div>
 
-              <el-form-item>
+              <el-form-item class="seismic-actions">
                 <el-button
+                  class="seismic-submit"
                   type="primary"
                   @click="submitSeismic"
-                  style="margin-left: 450px"
                   >上传并提交</el-button
                 >
-                <el-button @click="dialogVisibleSeismic = false"
+                <el-button
+                  class="seismic-cancel"
+                  @click="dialogVisibleSeismic = false"
                   >取消</el-button
                 >
               </el-form-item>
@@ -4303,11 +4249,10 @@
             <!-- ======== DL 模式：Transformer1D ======== -->
             <el-form
               v-if="seismicModelType === 'dl'"
-              style="max-width:650px"
-              class="form_seismic"
+              class="form_seismic seismic-form seismic-form-dl"
             >
-              <el-form-item label="CSV数据文件" label-width="150px" label-position="right">
-                <el-input v-model="fileNameSeismicDL" placeholder="上传 .csv 文件" readonly style="width:180px">
+              <el-form-item label="CSV数据文件" class="seismic-dl-file-field">
+                <el-input v-model="fileNameSeismicDL" placeholder="上传 .csv 文件" readonly>
                   <template #append>
                     <el-upload
                       ref="uploadRefSeismicDL"
@@ -4321,26 +4266,26 @@
                       @success="handleUploadSuccessSeismicDL"
                       @error="handleUploadErrorSeismicDL"
                     >
-                      <el-button @click.stop="triggerUploadSeismicDL" style="border:none;color:white;padding:0;margin-left:8px">
+                      <el-button class="seismic-upload-trigger" @click.stop="triggerUploadSeismicDL">
                         <i class="iconfont icon-daoru"></i>
                       </el-button>
                     </el-upload>
                   </template>
                 </el-input>
               </el-form-item>
-              <div style="display:flex;justify-content:space-between;margin-bottom:10px">
-                <el-form-item label="经度" label-width="80px" label-position="right">
-                  <el-input v-model="formSeismicDL.longitude" type="number" step="0.0001" placeholder="97.5" style="width:50px" />
+              <div class="seismic-dl-row">
+                <el-form-item label="经度">
+                  <el-input v-model="formSeismicDL.longitude" type="number" step="0.0001" placeholder="97.5" />
                 </el-form-item>
-                <el-form-item label="纬度" label-width="60px" label-position="right">
-                  <el-input v-model="formSeismicDL.latitude" type="number" step="0.0001" placeholder="31.0" style="width:50px" />
+                <el-form-item label="纬度">
+                  <el-input v-model="formSeismicDL.latitude" type="number" step="0.0001" placeholder="31.0" />
                 </el-form-item>
               </div>
-              <el-form-item>
-                <el-button type="primary" @click="submitSeismicDL" :loading="dlLoading" style="margin-left:380px">
+              <el-form-item class="seismic-actions">
+                <el-button class="seismic-submit" type="primary" @click="submitSeismicDL" :loading="dlLoading">
                   {{ dlLoading ? '推理中...' : '上传并推理' }}
                 </el-button>
-                <el-button @click="dialogVisibleSeismic = false">取消</el-button>
+                <el-button class="seismic-cancel" @click="dialogVisibleSeismic = false">取消</el-button>
               </el-form-item>
             </el-form>
           </el-dialog>
@@ -6699,5 +6644,413 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
   background: linear-gradient(180deg, #35d5ff, #2f7cff);
   box-shadow: 0 0 8px rgba(53, 213, 255, 0.55);
   vertical-align: -1px;
+}
+
+/* ===== Beautified input dialogs: full risk / displacement / seismic ===== */
+:deep(.el-dialog.dialog_fullRisk),
+:deep(.el-dialog.dialog_inverseV),
+:deep(.el-dialog.dialog_seismic) {
+  --el-dialog-bg-color: transparent;
+  margin-top: 7vh;
+  width: min(700px, calc(100vw - 32px)) !important;
+  height: auto !important;
+  max-height: 88vh;
+  border: 1px solid rgba(94, 178, 255, 0.35);
+  border-radius: 16px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  background-image: linear-gradient(180deg, rgba(5, 22, 40, 0.18), rgba(5, 22, 40, 0.72)), url('../assets/img/fz175.png');
+  background-size: 100% 100%;
+  overflow: hidden;
+}
+
+:deep(.el-dialog.dialog_inverseV) {
+  width: min(640px, calc(100vw - 32px)) !important;
+}
+
+:deep(.el-dialog.dialog_seismic) {
+  width: min(780px, calc(100vw - 32px)) !important;
+}
+
+:deep(.el-dialog.dialog_fullRisk > .el-dialog__header),
+:deep(.el-dialog.dialog_inverseV > .el-dialog__header),
+:deep(.el-dialog.dialog_seismic > .el-dialog__header) {
+  padding: 18px 42px 0 22px;
+}
+
+:deep(.el-dialog.dialog_fullRisk > .el-dialog__headerbtn),
+:deep(.el-dialog.dialog_inverseV > .el-dialog__headerbtn),
+:deep(.el-dialog.dialog_seismic > .el-dialog__headerbtn) {
+  top: 14px;
+  right: 14px;
+  z-index: 8;
+}
+
+:deep(.el-dialog.dialog_fullRisk > .el-dialog__body),
+:deep(.el-dialog.dialog_inverseV > .el-dialog__body),
+:deep(.el-dialog.dialog_seismic > .el-dialog__body) {
+  max-height: calc(88vh - 84px);
+  padding: 8px 22px 20px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(96, 180, 255, 0.5) transparent;
+}
+
+:deep(.el-dialog.dialog_fullRisk > .el-dialog__body::-webkit-scrollbar),
+:deep(.el-dialog.dialog_inverseV > .el-dialog__body::-webkit-scrollbar),
+:deep(.el-dialog.dialog_seismic > .el-dialog__body::-webkit-scrollbar) {
+  width: 6px;
+}
+
+:deep(.el-dialog.dialog_fullRisk > .el-dialog__body::-webkit-scrollbar-thumb),
+:deep(.el-dialog.dialog_inverseV > .el-dialog__body::-webkit-scrollbar-thumb),
+:deep(.el-dialog.dialog_seismic > .el-dialog__body::-webkit-scrollbar-thumb) {
+  border-radius: 999px;
+  background: rgba(96, 180, 255, 0.45);
+}
+
+.help-anchor {
+  position: relative;
+  flex: 0 0 auto;
+  margin-top: 4px;
+}
+
+.help-anchor .help-icon {
+  margin-top: 0;
+}
+
+.quanyu-section-label,
+.seismic-section-label {
+  position: relative;
+  margin: 2px 0 12px;
+  padding-left: 10px;
+  color: #d9ecff;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+}
+
+.quanyu-section-label::before,
+.seismic-section-label::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 12px;
+  margin-right: 8px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #35d5ff, #2f7cff);
+  box-shadow: 0 0 8px rgba(53, 213, 255, 0.55);
+  vertical-align: -1px;
+}
+
+.quanyu-form,
+.inverse-form,
+.seismic-form {
+  width: 100%;
+  margin: 8px 0 0;
+}
+
+.quanyu-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 14px;
+}
+
+.inverse-form {
+  height: auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 18px;
+  row-gap: 14px;
+}
+
+.inverse-file-field {
+  grid-column: 1 / -1;
+}
+
+.quanyu-form :deep(.el-form-item),
+.inverse-form :deep(.el-form-item),
+.seismic-form :deep(.el-form-item) {
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.quanyu-form :deep(.el-form-item__label),
+.inverse-form :deep(.el-form-item__label),
+.seismic-form :deep(.el-form-item__label) {
+  display: block;
+  float: none;
+  width: auto !important;
+  height: auto;
+  margin-bottom: 5px;
+  padding: 0;
+  color: #b9d6f1;
+  font-size: 12px;
+  line-height: 1.2;
+  text-align: left !important;
+}
+
+.quanyu-form :deep(.el-form-item__content),
+.inverse-form :deep(.el-form-item__content),
+.seismic-form :deep(.el-form-item__content) {
+  width: 100%;
+  margin-left: 0 !important;
+}
+
+.quanyu-form :deep(.el-input),
+.inverse-form :deep(.el-input),
+.seismic-form :deep(.el-input) {
+  width: 100% !important;
+}
+
+.quanyu-form :deep(.el-input__wrapper),
+.inverse-form :deep(.el-input__wrapper),
+.seismic-form :deep(.el-input__wrapper) {
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: rgba(5, 20, 36, 0.58);
+  box-shadow: inset 0 0 0 1px rgba(104, 181, 255, 0.24);
+  font-size: 14px;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.quanyu-form :deep(.el-input__wrapper:hover),
+.inverse-form :deep(.el-input__wrapper:hover),
+.seismic-form :deep(.el-input__wrapper:hover) {
+  box-shadow: inset 0 0 0 1px rgba(104, 181, 255, 0.42);
+}
+
+.quanyu-form :deep(.el-input__wrapper.is-focus),
+.inverse-form :deep(.el-input__wrapper.is-focus),
+.seismic-form :deep(.el-input__wrapper.is-focus) {
+  background: rgba(7, 28, 49, 0.82);
+  box-shadow: inset 0 0 0 1px rgba(91, 200, 255, 0.85), 0 0 0 3px rgba(55, 150, 255, 0.1);
+}
+
+.quanyu-form :deep(.el-input__inner),
+.inverse-form :deep(.el-input__inner),
+.seismic-form :deep(.el-input__inner) {
+  color: #eaf4ff;
+  font-size: 14px;
+}
+
+.quanyu-form :deep(.el-input__inner::placeholder),
+.inverse-form :deep(.el-input__inner::placeholder),
+.seismic-form :deep(.el-input__inner::placeholder) {
+  color: rgba(150, 181, 210, 0.52);
+}
+
+.quanyu-form :deep(.el-input-group__append),
+.inverse-form :deep(.el-input-group__append),
+.seismic-form :deep(.el-input-group__append) {
+  padding: 0 !important;
+  border: none;
+  background: transparent;
+}
+
+.quanyu-file-field :deep(.el-input__wrapper),
+.inverse-file-field :deep(.el-input__wrapper),
+.seismic-file-field :deep(.el-input__wrapper),
+.seismic-dl-file-field :deep(.el-input__wrapper) {
+  border-radius: 8px 0 0 8px;
+}
+
+.quanyu-upload-trigger,
+.inverse-upload-trigger,
+.seismic-upload-trigger {
+  width: 38px;
+  height: 34px;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 8px 8px 0;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #2f8cff, #24c6ff) !important;
+  box-shadow: none;
+}
+
+.quanyu-upload-trigger:hover,
+.inverse-upload-trigger:hover,
+.seismic-upload-trigger:hover {
+  background: linear-gradient(135deg, #3d98ff, #39d1ff) !important;
+}
+
+.quanyu-actions,
+.seismic-actions {
+  grid-column: 1 / -1;
+  margin-top: 2px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(104, 181, 255, 0.15);
+}
+
+.quanyu-actions :deep(.el-form-item__content),
+.seismic-actions :deep(.el-form-item__content) {
+  display: flex !important;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.inverse-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 2px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(104, 181, 255, 0.15);
+}
+
+.quanyu-submit,
+.inverse-submit,
+.seismic-submit {
+  min-width: 98px;
+  border: none !important;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #2f8cff, #24c6ff) !important;
+  box-shadow: 0 8px 20px rgba(31, 143, 255, 0.28);
+}
+
+.quanyu-submit:hover,
+.inverse-submit:hover,
+.seismic-submit:hover {
+  background: linear-gradient(135deg, #3d98ff, #39d1ff) !important;
+  box-shadow: 0 10px 24px rgba(31, 143, 255, 0.4);
+}
+
+.quanyu-cancel,
+.inverse-cancel,
+.seismic-cancel {
+  min-width: 78px;
+  color: #c9def3;
+  border-color: rgba(128, 181, 229, 0.45) !important;
+  background: rgba(9, 28, 47, 0.45) !important;
+}
+
+.quanyu-cancel:hover,
+.inverse-cancel:hover,
+.seismic-cancel:hover {
+  color: #ffffff;
+  border-color: rgba(128, 181, 229, 0.7) !important;
+  background: rgba(16, 46, 74, 0.68) !important;
+}
+
+.seismic-mode-switch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  margin: 4px 0 16px;
+  padding: 10px 12px;
+  border: 1px solid rgba(104, 181, 255, 0.18);
+  border-radius: 10px;
+  background: rgba(5, 20, 36, 0.42);
+}
+
+.seismic-mode-label {
+  color: #b9d6f1;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+
+.seismic-mode-switch :deep(.el-radio-group) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.seismic-mode-switch :deep(.el-radio) {
+  margin-right: 0;
+  padding: 5px 12px;
+  border: 1px solid rgba(104, 181, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(5, 20, 36, 0.5);
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.seismic-mode-switch :deep(.el-radio__input) {
+  display: none;
+}
+
+.seismic-mode-switch :deep(.el-radio__label) {
+  padding: 0;
+  color: #cfe6ff;
+  font-size: 13px;
+}
+
+.seismic-mode-switch :deep(.el-radio.is-checked) {
+  border-color: rgba(83, 190, 255, 0.55);
+  background: linear-gradient(135deg, rgba(45, 160, 255, 0.32), rgba(53, 213, 255, 0.18));
+  box-shadow: inset 0 0 0 1px rgba(83, 190, 255, 0.35);
+}
+
+.seismic-mode-switch :deep(.el-radio.is-checked .el-radio__label) {
+  color: #ffffff;
+}
+
+.seismic-form {
+  display: block !important;
+}
+
+.seismic-form-dl {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+
+.seismic-dl-file-field,
+.seismic-dl-row,
+.seismic-form-dl .seismic-actions {
+  grid-column: 1 / -1;
+}
+
+.seismic-dl-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.seismic-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.seismic-row-top {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 0.9fr);
+}
+
+.seismic-row:last-of-type {
+  margin-bottom: 0;
+}
+
+.seismic-row :deep(.el-form-item) {
+  width: 100%;
+  margin-bottom: 0;
+}
+
+.seismic-row :deep(.el-form-item__content) {
+  width: 100%;
+  margin-left: 0 !important;
+}
+
+@media (max-width: 680px) {
+  .inverse-form,
+  .seismic-form-dl,
+  .seismic-row,
+  .seismic-row-top,
+  .seismic-dl-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .seismic-dl-file-field,
+  .seismic-dl-row,
+  .seismic-form-dl .seismic-actions {
+    grid-column: auto;
+  }
+
+  .model-dialog-title {
+    font-size: 19px;
+  }
 }
 </style>
