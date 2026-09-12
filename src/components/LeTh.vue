@@ -2606,12 +2606,12 @@
               >
                 <el-input
                   v-model="proAnchorLon"
-                  placeholder="经度 94.9629943"
+                  placeholder="经度 95.0020"
                   style="width: 125px"
                 />
                 <el-input
                   v-model="proAnchorLat"
-                  placeholder="纬度 30.1975837"
+                  placeholder="纬度 30.2354"
                   style="width: 125px; margin-left: 10px"
                 />
               </el-form-item>
@@ -2689,7 +2689,7 @@
               <el-form-item style="flex: 1 1 100%; margin-bottom: 12px">
                 <span style="color: #a6a6a6; font-size: 13px"
                   >支持 .tif / .tiff / .txt / .asc（ESRI ASCII）；txt/asc <b>自带 xllcorner/yllcorner 头部</b>时按「数据坐标系」解释；
-                  无头部时必填「源区中心」经纬度（易贡示例 94.9629943, 30.1975837，坐标系 EPSG:32646）。zb / zl / hw 都不选时使用内置示例数据（suanfa/Pro/user1/task）。渲染场固定为泥石流层厚度（zB-zL）。</span
+                  无头部时必填「源区中心」经纬度（易贡示例 95.0020, 30.2354，坐标系 EPSG:32646）。zb / zl / hw 都不选时使用内置示例数据（suanfa/Pro/user1/task）。渲染场固定为泥石流层厚度（zB-zL）。</span
                 >
               </el-form-item>
 
@@ -4760,8 +4760,8 @@ const proFileItems = [
 ]
 // txt / asc（ESRI ASCII）输入不带坐标系，按此坐标系解释；tif 自带坐标系时以文件为准
 // 无 xllcorner/yllcorner 头部的 txt/asc：源区中心经纬度（WGS84），后端换算成 UTM 角点；有头部时忽略
-const proAnchorLon = ref('94.9629943')
-const proAnchorLat = ref('30.1975837')
+const proAnchorLon = ref('95.0020')
+const proAnchorLat = ref('30.2354')
 const proSourceCrs = ref('EPSG:32646')
 proFileItems.forEach(item => {
   proFileNames[item.key] = ''
