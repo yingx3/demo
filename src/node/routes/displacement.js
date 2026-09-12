@@ -346,7 +346,7 @@ function modifyRScript(rScriptPath, startTime, endTime) {
 }
 
 // 执行R脚本
-function executeRScript(rScriptPath) {
+function executeRScript(rScriptPath, envVars = {}) {
   return new Promise((resolve, reject) => {
     try {
       const Rscript = process.env.RSCRIPT_PATH || path.join(
@@ -362,7 +362,10 @@ function executeRScript(rScriptPath) {
       console.log('🚀 正在执行R脚本...')
       console.log('执行命令:', command)
 
-      const child = exec(command, { cwd: path.dirname(rScriptPath) })
+      const child = exec(command, {
+        cwd: path.dirname(rScriptPath),
+        env: { ...process.env, ...envVars },
+      })
 
       let stdoutData = ''
       let stderrData = ''
@@ -447,13 +450,12 @@ router.get('/displ_file', async (req, res) => {
     await copyFile(rdaInfo.filepath, targetRdaPath)
 
     const timeRange = getCSVTimeRange(csvInfo.filepath)
-    const fiveDaysBeforeLast = getFiveDaysBeforeLast(timeRange.lastTimestamp)
-    await modifyRScript(
-      R_SCRIPT_PATH,
-      timeRange.firstTimestamp,
-      fiveDaysBeforeLast,
-    )
-    const rScriptResult = await executeRScript(R_SCRIPT_PATH)
+    // Only calculate the latest timestamp. Replaying every historical hour
+    // makes the endpoint take minutes and blocks front-end rendering.
+    const rScriptResult = await executeRScript(R_SCRIPT_PATH, {
+      PFTF_START_OF_CALC: timeRange.firstTimestamp,
+      PFTF_START_OF_SIM: timeRange.lastTimestamp,
+    })
 
     console.log('R脚本执行完毕！')
 
@@ -482,8 +484,9 @@ router.get('/displ_file', async (req, res) => {
     }
     const forecastTime =
       forecastResult.time || forecastResult.check_time || null
-    const client = await pool.connect()
+    let client
     try {
+      client = await pool.connect()
       await client.query('BEGIN')
 
       const findPointQuery = `
@@ -581,16 +584,42 @@ router.get('/displ_file', async (req, res) => {
           rt_json: forecastResult,
         },
         databaseOperation: {
+          persisted: true,
           pointId: pointId,
           recordsInserted: insertedCount,
           coordinates: { longitude, latitude },
         },
       })
     } catch (dbError) {
-      await client.query('ROLLBACK')
-      throw dbError
+      if (client) {
+        try {
+          await client.query('ROLLBACK')
+        } catch (rollbackError) {
+          console.warn('回滚位移预警事务失败:', rollbackError.message)
+        }
+      }
+      console.warn(
+        '位移预警结果已生成，但数据库写入失败（不影响前端渲染）:',
+        dbError.message,
+      )
+      return res.json({
+        success: true,
+        fileProcessing: {
+          processedCount: rdaInfo.recordCount,
+          rdaFile: targetRdaPath,
+          rScriptExecuted: true,
+          rt_json: forecastResult,
+        },
+        databaseOperation: {
+          persisted: false,
+          pointId: null,
+          recordsInserted: 0,
+          coordinates: { longitude, latitude },
+          databaseWarning: dbError.message,
+        },
+      })
     } finally {
-      client.release()
+      if (client) client.release()
     }
   } catch (error) {
     console.error('处理失败:', error)

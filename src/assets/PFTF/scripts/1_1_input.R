@@ -17,12 +17,14 @@ setwd(dirname(normalizePath(sub("^--file=", "", script_file_arg[[1]]), mustWork 
 
 #set start of calculations
 #as.POSIXct("YYYY-MM-DD HH:MM", tz="UTC")
-start_of_calc <- as.POSIXct("2022-01-01 23:00", tz="UTC")
+start_of_calc_env <- Sys.getenv("PFTF_START_OF_CALC", unset = "")
+start_of_calc <- if (nzchar(start_of_calc_env)) as.POSIXct(start_of_calc_env, tz = "UTC") else as.POSIXct("2025-06-26 10:00", tz = "UTC")
 
 #set start of simulation timestamp if you want to simulate real time before latest timestamp of displ_data
 #if not, set "latest" (importing all data)
 #as.POSIXct("YYYY-MM-DD HH:MM", tz="UTC")
-start_of_sim <- as.POSIXct("2022-02-26 23:00:00", tz="UTC")
+start_of_sim_env <- Sys.getenv("PFTF_START_OF_SIM", unset = "")
+start_of_sim <- if (start_of_sim_env == "latest") "latest" else if (nzchar(start_of_sim_env)) as.POSIXct(start_of_sim_env, tz = "UTC") else as.POSIXct("2025-08-18 21:00", tz = "UTC")
 # "latest"
 
 #set time factor for data frequency

@@ -9,6 +9,7 @@ export const pool = new Pool({
   database: 'postgres',
   password: process.env.DB_PASSWORD || '123456',
   port: 5432,
+  connectionTimeoutMillis: 3000,
 })
 
 export default pool
