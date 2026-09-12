@@ -66,6 +66,8 @@ class DebrisFlow {
     this.renderOriginData2 = options.renderOriginData2 ?? false
     this.renderOriginData3 = options.renderOriginData3 ?? false
     this.renderDirectFrames = options.renderDirectFrames ?? false
+    // 预打包帧：深度归一化后 24 位打包进 RGBA8 PNG，采样时解码还原
+    this.renderPackedFrames = options.renderPackedFrames ?? false
 
     this.LakeGeoJson = options.debrisJSON
     this.lakeName = options.lakeName
@@ -93,7 +95,8 @@ class DebrisFlow {
     // Flat DEM already sits on the real ground, so the terrain-softening offset must not apply.
     this.heightOffsetOverride = 0
     // Pre-computed depth frames: draw the texture directly instead of ray-marching.
-    this.renderDirectFrames = options.renderDirectFrames !== false
+    this.renderPackedFrames = options.renderPackedFrames === true
+    this.renderDirectFrames = !this.renderPackedFrames && options.renderDirectFrames !== false
     const terrainHeight = Number.isFinite(Number(options.terrainHeight)) ? Number(options.terrainHeight) : 0
     // genDemTexture reads longitude/latitude for every cell, so provide the centre
     // coordinates for all cells (the beta path uses an empty debris feature set).
@@ -783,11 +786,22 @@ class DebrisFlow {
       _this.frame += 0.01 * _this.renderSpeed
 
       if (_this.dataSet.length) {
-        // _this.setWaterHeight(_this.dataSet[_this.dataSetIdx])
-        _this.updateDataSets(_this.dataSetIdx)
-
-        _this.dataSetIdx = Number.parseInt((_this.frame * 2) % _this.dataSet.length)
-        if (_this.dataSetIdx >= _this.dataSet.length) _this.dataSetIdx = _this.dataSet.length - 1
+        // 只在帧号真正变化时重建纹理：原实现每帧都上传一次 PNG 纹理（41 帧 x 60fps），
+        // 既拖慢渲染，动画也看不出推进。
+        const nextIdx = Math.min(
+          _this.dataSet.length - 1,
+          Number.parseInt((_this.frame * 2) % _this.dataSet.length)
+        )
+        if (!_this._dataSetBusy && (nextIdx !== _this.dataSetIdx || !_this._dataSetApplied)) {
+          _this.dataSetIdx = nextIdx
+          _this._dataSetApplied = true
+          _this._dataSetBusy = true
+          Promise.resolve(_this.updateDataSets(_this.dataSetIdx))
+            .catch(e => console.warn('[DebrisFlow] updateDataSets failed:', e))
+            .finally(() => {
+              _this._dataSetBusy = false
+            })
+        }
 
         _this.onDataUpdate && _this.onDataUpdate(_this)
       }
@@ -823,6 +837,8 @@ class DebrisFlow {
   }
 
   async updateDataSets(dataSetIdx) {
+    if (!this.dataSet || this.dataSet.length === 0) return
+    if (!(dataSetIdx >= 0) || dataSetIdx >= this.dataSet.length) dataSetIdx = this.dataSet.length - 1
     const img = await base64ToImg(this.dataSet[dataSetIdx])
 
     const newTex = new Cesium.Texture({

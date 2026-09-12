@@ -2074,15 +2074,16 @@ function getGroundHeightMeters(lon, lat, fallback = 3000) {
  */
 async function buildAvaflowDataSet(frameFiles, ascBase, maxDepth, outW, outH, onProgress) {
   const { parseASC, resampleASCToSize, packNormalizedDepthToImageData } = await import('../utils/ascConverter.js')
-  const base = String(ascBase).replace(/\/$/, '')
   const frames = []
   for (let i = 0; i < frameFiles.length; i++) {
-    const url = base + '/' + encodeURIComponent(frameFiles[i])
+    const url = frameUrlOf(ascBase, frameFiles[i])
     const resp = await fetch(url)
     if (!resp.ok) throw new Error('帧加载失败 ' + resp.status + ': ' + frameFiles[i])
     const text = await resp.text()
     const { ncols, nrows, values } = parseASC(text)
-    const resampled = resampleASCToSize(values, ncols, nrows, outW, outH)
+    // flipY=false：PNG 首行放 ASC 首行（北侧）。渲染器用 flipY:false 上传该图片，
+    // v=0 即北侧，正好对上 box 局部坐标（+z=南）；若翻转会南北镜像。
+    const resampled = resampleASCToSize(values, ncols, nrows, outW, outH, false)
     const { canvas, ctx, imgData } = packNormalizedDepthToImageData(resampled, outW, outH, maxDepth)
     ctx.putImageData(imgData, 0, 0)
     frames.push(canvas.toDataURL('image/png'))
@@ -2184,9 +2185,9 @@ const betaLayers = async payload => {
     })
     sim.renderSpeed = 0
 
-    // RiskInsight 方式：先把全部帧转成打包 PNG，再一次交给 dataSet，由渲染器自动播放
-    await sim.loadAscAsWaterHeight(frameUrlOf(frameFiles[0]), globalMax)
-
+    // RiskInsight 方式：先把全部帧转成打包 PNG，再一次交给 dataSet，由渲染器自动播放。
+    // 不再调 loadAscAsWaterHeight：dataSet 会自己建立水高纹理，多调一次只会把纹理
+    // 覆盖成一张和打包格式不一致的浮点纹理（之前日志里的 undefined x undefined 就是它取错了 URL）。
     const total = frameFiles.length
     const dataSet = await buildAvaflowDataSet(
       frameFiles,
@@ -2202,11 +2203,19 @@ const betaLayers = async payload => {
     )
     if (betaSim !== sim) return
 
-    // 单相数据：dataSet2/3 用首帧占位，保证 updateDataSets 不会因为空数组报错
+    // 单相数据：dataSet2/3 留空即可（updateDataSets 已做空数组保护），
+    // 否则每换一帧还要多上传两张完全一样的纹理。
     sim.dataSet = dataSet
-    sim.dataSet2 = dataSet.map(() => dataSet[0])
-    sim.dataSet3 = dataSet.map(() => dataSet[0])
-    sim.renderSpeed = 1.0
+    sim.dataSet2 = []
+    sim.dataSet3 = []
+    // 每渲染帧 frame += 0.01 * renderSpeed，帧号 = frame * 2：3.0 大约 10 秒播完 41 帧
+    sim.renderSpeed = 3.0
+    console.log(
+      '[betaLayers] 帧数据就绪:',
+      dataSet.length + ' 帧',
+      width + 'x' + height,
+      'globalMax=' + globalMax.toFixed(2),
+    )
 
     ElMessage.closeAll()
     ElMessage({ message: '山洪泥石流启动动力学模型_beta 渲染完成', type: 'success', duration: 2000 })

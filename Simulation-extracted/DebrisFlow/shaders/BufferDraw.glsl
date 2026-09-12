@@ -186,12 +186,16 @@ vec4 Render(in vec3 ro, in vec3 rd) {
       return vec4(getColorByValue(directV), smoothstep(0.0, 1.0, directV));
     }
     if(renderPackedFrames) {
+      // 纹理正好铺满整个 box，直接用 box 局部坐标当 uv（+x=东，+z=南）。
+      // 乘 textureSize/iResolution 只适合方形网格，非正方形时会把南北方向拉伸。
       vec3 ppos = clamp(ro + rd * max(ret.x, 0.0), vec3(-0.5), vec3(0.5));
-      vec2 puv = (ppos.xz + 0.5) * vec2(float(textureSize)) / iResolution.xy;
-      float packedV = unpackFloat(texture(waterHeightMap, clamp(puv, 0.0, 1.0)));
+      vec2 puv = clamp(ppos.xz + 0.5, vec2(0.0), vec2(1.0));
+      float packedV = unpackFloat(texture(waterHeightMap, puv));
       if(packedV < 0.00001)
         discard;
-      return vec4(getColorByValue(packedV), smoothstep(0.0, 1.0, packedV));
+      // 整个过程的最大流深远大于单帧最大流深，线性映射会几乎透明，这里抬一下低值可见度
+      float visV = pow(clamp(packedV, 0.0, 1.0), 0.6);
+      return vec4(getColorByValue(visV), smoothstep(0.0, 1.0, visV));
     }
 
 
