@@ -184,11 +184,11 @@ export function ascToPackedDataUrl(text, outW, outH, maxClip) {
  * 色带与 DebrisFlow 着色器 getColorByValue 保持一致，保证两种渲染方式观感统一。
  */
 const WATER_DEPTH_RAMP = [
-  [140, 120, 90],
-  [160, 130, 80],
-  [140, 100, 55],
-  [110, 70, 35],
-  [70, 40, 20],
+  [255, 200, 60],
+  [243, 146, 32],
+  [216, 82, 24],
+  [158, 38, 20],
+  [76, 12, 10],
 ]
 
 // 流速场用另一套色带（蓝 -> 黄 -> 红），避免和泥石流深度混淆
@@ -222,7 +222,7 @@ function sampleWaterDepthColor(v, ramp = WATER_DEPTH_RAMP) {
  * @param {number} maxClip 全帧最大流深，用于归一化配色
  * @param {{minDepth?: number, minAlpha?: number}} [options]
  *        minDepth：小于该流深视为无数据（透明），默认 0.05m
- *        minAlpha：湿区最小不透明度，默认 0.25，避免浅水看不到
+ *        minAlpha：湿区最小不透明度，默认 0.62（提高颜色浓度，避免在影像底图上发白）
  *        ramp：'speed' 时改用流速色带（蓝->黄->红），默认水深棕色带
  */
 export function paintDepthToImageData(values, width, height, maxClip, options = {}) {
@@ -231,7 +231,7 @@ export function paintDepthToImageData(values, width, height, maxClip, options = 
   const isSpeed = options.ramp === 'speed'
   const ramp = isSpeed ? SPEED_RAMP : WATER_DEPTH_RAMP
   const minDepth = Number.isFinite(options.minDepth) ? Number(options.minDepth) : isSpeed ? 0.02 : 0.05
-  const minAlpha = Number.isFinite(options.minAlpha) ? Number(options.minAlpha) : 0.25
+  const minAlpha = Number.isFinite(options.minAlpha) ? Number(options.minAlpha) : 0.62
   const safeMax = maxClip > 0 ? maxClip : 1
   const canvas = document.createElement('canvas')
   canvas.width = w

@@ -2209,9 +2209,9 @@ function computeBetaViewRect(meta, wetBbox, outW, outH, ncols, nrows, cellsize) 
 // 前端固定渲染 solid（泥石流层厚度 zB-zL）
 // pro / python_port 支持的输出场：total=泥石流层+水层, water=水层, solid=泥石流层(zB-zL), speed=流速
 const PRO_FIELD_META = {
-  total: { title: '流深', unit: 'm', colors: ['#8C785A', '#A08250', '#8C6437', '#6E4623', '#462814'] },
-  water: { title: '水层深度', unit: 'm', colors: ['#8C785A', '#A08250', '#8C6437', '#6E4623', '#462814'] },
-  solid: { title: '泥石流层厚度', unit: 'm', colors: ['#8C785A', '#A08250', '#8C6437', '#6E4623', '#462814'] },
+  total: { title: '流深', unit: 'm', colors: ['#FFC83C', '#F39220', '#D85218', '#9E2614', '#4C0C0A'] },
+  water: { title: '水层深度', unit: 'm', colors: ['#FFC83C', '#F39220', '#D85218', '#9E2614', '#4C0C0A'] },
+  solid: { title: '泥石流层厚度', unit: 'm', colors: ['#FFC83C', '#F39220', '#D85218', '#9E2614', '#4C0C0A'] },
   speed: { title: '流速', unit: 'm/s', colors: ['#2C7BB6', '#ABD9E9', '#FFFFBF', '#FDAE61', '#D7191C'] },
 }
 const proFieldMeta = field => PRO_FIELD_META[String(field || 'solid').toLowerCase()] || PRO_FIELD_META.solid
@@ -2340,7 +2340,7 @@ const betaLayers = async (payload, label = '山洪泥石流启动动力学模型
             }),
           )
           layer.show = false
-          layer.alpha = 0.95
+          layer.alpha = 1.0
           betaDrapeLayers.push(layer)
         })
         if (!betaDrapeLayers.length) throw new Error('未创建任何贴地图层')
