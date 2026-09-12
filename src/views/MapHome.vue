@@ -2206,6 +2206,7 @@ function computeBetaViewRect(meta, wetBbox, outW, outH, ncols, nrows, cellsize) 
   }
 }
 
+// 前端固定渲染 solid（泥石流层厚度 zB-zL）
 // pro / python_port 支持的输出场：total=泥石流层+水层, water=水层, solid=泥石流层(zB-zL), speed=流速
 const PRO_FIELD_META = {
   total: { title: '流深', unit: 'm', colors: ['#8C785A', '#A08250', '#8C6437', '#6E4623', '#462814'] },
@@ -2213,7 +2214,7 @@ const PRO_FIELD_META = {
   solid: { title: '泥石流层厚度', unit: 'm', colors: ['#8C785A', '#A08250', '#8C6437', '#6E4623', '#462814'] },
   speed: { title: '流速', unit: 'm/s', colors: ['#2C7BB6', '#ABD9E9', '#FFFFBF', '#FDAE61', '#D7191C'] },
 }
-const proFieldMeta = field => PRO_FIELD_META[String(field || 'total').toLowerCase()] || PRO_FIELD_META.total
+const proFieldMeta = field => PRO_FIELD_META[String(field || 'solid').toLowerCase()] || PRO_FIELD_META.solid
 
 const betaLayers = async (payload, label = '山洪泥石流启动动力学模型_beta', options = {}) => {
   const useDrape = options.drape !== false

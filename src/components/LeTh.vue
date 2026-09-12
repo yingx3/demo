@@ -2599,7 +2599,7 @@
                 />
               </el-form-item>
               <el-form-item
-                label="网格中心"
+                label="源区中心"
                 label-position="right"
                 label-width="110px"
                 style="flex: 1 1 100%; margin-bottom: 12px"
@@ -2685,19 +2685,11 @@
               <el-form-item label="计算时间" class="form1_flood">
                 <el-input v-model="form2.Tmax" placeholder="100" />
               </el-form-item>
-              <el-form-item label="渲染场" class="form1_flood">
-                <el-select v-model="form2.field" placeholder="总流深">
-                  <el-option label="总流深（泥石流层+水层）" value="total" />
-                  <el-option label="水层深度" value="water" />
-                  <el-option label="泥石流层厚度（zB-zL）" value="solid" />
-                  <el-option label="流速" value="speed" />
-                </el-select>
-              </el-form-item>
 
               <el-form-item style="flex: 1 1 100%; margin-bottom: 12px">
                 <span style="color: #a6a6a6; font-size: 13px"
                   >支持 .tif / .tiff / .txt / .asc（ESRI ASCII）；txt/asc <b>自带 xllcorner/yllcorner 头部</b>时按「数据坐标系」解释；
-                  无头部时必填「网格中心」经纬度（易贡示例 94.9629943, 30.1975837，坐标系 EPSG:32646）。zb / zl / hw 都不选时使用内置示例数据（suanfa/Pro/user1/task）</span
+                  无头部时必填「源区中心」经纬度（易贡示例 94.9629943, 30.1975837，坐标系 EPSG:32646）。zb / zl / hw 都不选时使用内置示例数据（suanfa/Pro/user1/task）。渲染场固定为泥石流层厚度（zB-zL）。</span
                 >
               </el-form-item>
 
@@ -4754,8 +4746,8 @@ const form2 = reactive({
   // 输出间距=出图节拍（秒）；后端按「模拟时刻」抽帧，总帧数不超过 maxFrames
   interval: '1',
   Tmax: '100',
-  // 渲染场：total=泥石流层+水层 / water=水层 / solid=泥石流层(zB-zL) / speed=流速
-  field: 'total',
+  // 渲染场固定为泥石流层厚度 solid=zB-zL（后端仍支持 total/water/speed）：旧语义 total=泥石流层+水层 / water=水层 / solid=泥石流层(zB-zL) / speed=流速
+  field: 'solid',
 })
 // 洪水泥石流启动动力学模型（python_port）输入数据：zb 灾前地形 / zl 灾后地形 / hw 初始水深
 const proUploadRefs = reactive({})
@@ -4767,7 +4759,7 @@ const proFileItems = [
   { key: 'hw', label: '初始水深', placeholder: 'hw.tif / hw.txt（堰塞湖水深）' },
 ]
 // txt / asc（ESRI ASCII）输入不带坐标系，按此坐标系解释；tif 自带坐标系时以文件为准
-// 无 xllcorner/yllcorner 头部的 txt/asc：网格中心经纬度（WGS84），后端换算成 UTM 角点；有头部时忽略
+// 无 xllcorner/yllcorner 头部的 txt/asc：源区中心经纬度（WGS84），后端换算成 UTM 角点；有头部时忽略
 const proAnchorLon = ref('94.9629943')
 const proAnchorLat = ref('30.1975837')
 const proSourceCrs = ref('EPSG:32646')
@@ -5187,7 +5179,7 @@ const submitForm2 = async () => {
         interval: proNumber(form2.interval, 1),
         tmax: proNumber(form2.Tmax, 100),
         maxFrames: 40,
-        field: form2.field || 'total',
+        field: 'solid',
       },
     })
     if (!accepted || accepted.status !== 'accepted') {
