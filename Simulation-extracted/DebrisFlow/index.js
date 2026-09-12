@@ -721,6 +721,9 @@ class DebrisFlow {
         },
         renderDirectFrames: () => {
           return this.renderDirectFrames
+        },
+        renderPackedFrames: () => {
+          return this.renderPackedFrames
         }
       },
       geometry: geometry,
@@ -838,6 +841,7 @@ class DebrisFlow {
     this.waterHeightMap = newTex
     oldTex.destroy()
 
+    if (!this.dataSet2 || !this.dataSet2.length) return
     const img2 = await base64ToImg(this.dataSet2[dataSetIdx])
     const newTex2 = new Cesium.Texture({
       context: this._viewer.scene.frameState.context,
@@ -855,6 +859,7 @@ class DebrisFlow {
     this.phase2 = newTex2
     oldTex.destroy()
 
+    if (!this.dataSet3 || !this.dataSet3.length) return
     const img3 = await base64ToImg(this.dataSet3[dataSetIdx])
     const newTex3 = new Cesium.Texture({
       context: this._viewer.scene.frameState.context,

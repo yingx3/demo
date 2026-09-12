@@ -110,3 +110,61 @@ export async function loadAscFrames(baseUrl, count, maxClip = 1) {
 
   return { base64List, header }
 }
+
+/**
+ * 把 [0,1] 归一化深度按 24 位整数打包进 RGB（小端），alpha 固定 255。
+ * 不用 float32 写进 4 字节是因为 canvas 会对 alpha 做预乘，会破坏字节精度。
+ */
+export function packNormalizedDepthToImageData(values, width, height, maxClip) {
+  const w = Math.max(1, Math.round(width))
+  const h = Math.max(1, Math.round(height))
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')
+  const imgData = ctx.createImageData(w, h)
+  const safeMax = maxClip > 0 ? maxClip : 1
+
+  for (let i = 0; i < w * h; i++) {
+    const raw = i < values.length ? values[i] : 0
+    let v = raw / safeMax
+    if (!Number.isFinite(v) || v < 0) v = 0
+    if (v > 1) v = 1
+    const q = Math.round(v * 16777215)
+    imgData.data[i * 4] = q & 255
+    imgData.data[i * 4 + 1] = (q >> 8) & 255
+    imgData.data[i * 4 + 2] = (q >> 16) & 255
+    imgData.data[i * 4 + 3] = 255
+  }
+  return { canvas, ctx, imgData }
+}
+
+/**
+ * 把 ASC 栅格最近邻重采样到渲染纹理尺寸（Y 轴翻转：ASC 首行是北侧），
+ * 与 DebrisFlow 内部 loadAscAsWaterHeight 的采样方式保持一致。
+ */
+export function resampleASCToSize(values, ncols, nrows, outW, outH, flipY = true) {
+  const out = new Float32Array(outW * outH)
+  for (let y = 0; y < outH; y++) {
+    const srcYFromBottom = Math.min(nrows - 1, Math.floor((y / outH) * nrows))
+    const srcY = flipY ? nrows - 1 - srcYFromBottom : srcYFromBottom
+    for (let x = 0; x < outW; x++) {
+      const srcX = Math.min(ncols - 1, Math.floor((x / outW) * ncols))
+      out[y * outW + x] = values[srcY * ncols + srcX]
+    }
+  }
+  return out
+}
+
+/**
+ * ASC 文本 → 24 位打包 base64 PNG（含 data: 前缀，可直接喂给 DebrisFlow.dataSet）
+ */
+export function ascToPackedDataUrl(text, outW, outH, maxClip) {
+  const { ncols, nrows, values } = parseASC(text)
+  const resampled = outW && outH ? resampleASCToSize(values, ncols, nrows, outW, outH) : values
+  const w = outW || ncols
+  const h = outH || nrows
+  const { canvas, ctx, imgData } = packNormalizedDepthToImageData(resampled, w, h, maxClip)
+  ctx.putImageData(imgData, 0, 0)
+  return canvas.toDataURL('image/png')
+}

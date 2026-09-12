@@ -2054,6 +2054,10 @@ function cleanupBetaRenderer() {
  * A single pick on the already-loaded globe instead of sampling the whole grid,
  * which used to flood Cesium terrain requests and break the tile availability tree.
  */
+function frameUrlOf(ascBase, name) {
+  return String(ascBase).replace(/\/$/, '') + '/' + encodeURIComponent(name)
+}
+
 function getGroundHeightMeters(lon, lat, fallback = 3000) {
   try {
     const carto = Cesium.Cartographic.fromDegrees(lon, lat)
@@ -2063,6 +2067,28 @@ function getGroundHeightMeters(lon, lat, fallback = 3000) {
     console.warn('[betaLayers] terrain height lookup failed:', e)
   }
   return fallback
+}
+/**
+ * 把后端输出的 ASC 帧转成 DebrisFlow.dataSet 需要的 base64 PNG（24 位打包）。
+ * 与 RiskInsight 的做法一致：一次性把全部帧交给渲染器，由 postRender 自动播放。
+ */
+async function buildAvaflowDataSet(frameFiles, ascBase, maxDepth, outW, outH, onProgress) {
+  const { parseASC, resampleASCToSize, packNormalizedDepthToImageData } = await import('../utils/ascConverter.js')
+  const base = String(ascBase).replace(/\/$/, '')
+  const frames = []
+  for (let i = 0; i < frameFiles.length; i++) {
+    const url = base + '/' + encodeURIComponent(frameFiles[i])
+    const resp = await fetch(url)
+    if (!resp.ok) throw new Error('帧加载失败 ' + resp.status + ': ' + frameFiles[i])
+    const text = await resp.text()
+    const { ncols, nrows, values } = parseASC(text)
+    const resampled = resampleASCToSize(values, ncols, nrows, outW, outH)
+    const { canvas, ctx, imgData } = packNormalizedDepthToImageData(resampled, outW, outH, maxDepth)
+    ctx.putImageData(imgData, 0, 0)
+    frames.push(canvas.toDataURL('image/png'))
+    onProgress && onProgress(i + 1, frameFiles.length)
+  }
+  return frames
 }
 
 const betaLayers = async payload => {
@@ -2141,7 +2167,7 @@ const betaLayers = async payload => {
       lightWaterColor: '#c8a050',
       renderTerrain: false,
       renderHeatMap: true,
-      renderOriginData: true,
+      renderOriginData: false,
     })
     betaSim = sim
 
@@ -2153,45 +2179,34 @@ const betaLayers = async payload => {
       center: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, groundHeight + betaThickness / 2),
       terrainHeight: groundHeight,
       minThickness: betaThickness,
-      renderDirectFrames: true,
+      renderDirectFrames: false,
+      renderPackedFrames: true,
     })
     sim.renderSpeed = 0
 
-    const frameUrl = name =>
-      `${result.ascBase.replace(/\/$/, '')}/${encodeURIComponent(name)}`
+    // RiskInsight 方式：先把全部帧转成打包 PNG，再一次交给 dataSet，由渲染器自动播放
+    await sim.loadAscAsWaterHeight(frameUrlOf(frameFiles[0]), globalMax)
 
-    await sim.loadAscAsWaterHeight(frameUrl(frameFiles[0]), globalMax)
-
-    const viewHeight = (Number(sim.max) || 5000) + 4000
-    viewer.value.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, viewHeight),
-      orientation: {
-        heading: Cesium.Math.toRadians(0),
-        pitch: Cesium.Math.toRadians(-60),
-        roll: 0,
+    const total = frameFiles.length
+    const dataSet = await buildAvaflowDataSet(
+      frameFiles,
+      result.ascBase,
+      globalMax,
+      width,
+      height,
+      done => {
+        if (done % 5 === 0 || done === total) {
+          ElMessage({ message: '帧转换中 ' + done + '/' + total, type: 'info', duration: 800 })
+        }
       },
-      duration: 1.5,
-    })
+    )
+    if (betaSim !== sim) return
 
-    let frameIndex = 1
-    const tick = async () => {
-      if (betaSim !== sim || frameIndex >= frameFiles.length) return
-
-      try {
-        await sim.loadAscAsWaterHeight(frameUrl(frameFiles[frameIndex]), globalMax)
-      } catch (e) {
-        console.error('[betaLayers] frame load failed:', frameFiles[frameIndex], e)
-      }
-
-      frameIndex++
-      if (betaSim === sim && frameIndex < frameFiles.length) {
-        betaFrameTimer = setTimeout(tick, 600)
-      }
-    }
-
-    if (frameFiles.length > 1) {
-      betaFrameTimer = setTimeout(tick, 600)
-    }
+    // 单相数据：dataSet2/3 用首帧占位，保证 updateDataSets 不会因为空数组报错
+    sim.dataSet = dataSet
+    sim.dataSet2 = dataSet.map(() => dataSet[0])
+    sim.dataSet3 = dataSet.map(() => dataSet[0])
+    sim.renderSpeed = 1.0
 
     ElMessage.closeAll()
     ElMessage({ message: '山洪泥石流启动动力学模型_beta 渲染完成', type: 'success', duration: 2000 })

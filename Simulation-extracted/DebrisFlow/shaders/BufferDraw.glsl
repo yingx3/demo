@@ -19,6 +19,14 @@ uniform bool renderTerrain;
 uniform bool renderHeatMap;
 // Pre-computed frame mode: draw the depth map straight from the texture, no ray-march.
 uniform bool renderDirectFrames;
+// Image-based frame sets store the normalised depth as a raw IEEE-754 float32 inside RGBA8.
+uniform bool renderPackedFrames;
+float unpackFloat(vec4 texel) {
+  // 24-bit integer packed into RGB (little endian), alpha kept at 1.0 to avoid
+  // the premultiplied-alpha rounding that would corrupt a byte-exact float32 layout.
+  float q = texel.r * 255.0 + texel.g * 255.0 * 256.0 + texel.b * 255.0 * 65536.0;
+  return q / 16777215.0;
+}
 uniform bool renderOriginData;
 uniform bool renderOriginData2;
 uniform bool renderOriginData3;
@@ -177,6 +185,15 @@ vec4 Render(in vec3 ro, in vec3 rd) {
         discard;
       return vec4(getColorByValue(directV), smoothstep(0.0, 1.0, directV));
     }
+    if(renderPackedFrames) {
+      vec3 ppos = clamp(ro + rd * max(ret.x, 0.0), vec3(-0.5), vec3(0.5));
+      vec2 puv = (ppos.xz + 0.5) * vec2(float(textureSize)) / iResolution.xy;
+      float packedV = unpackFloat(texture(waterHeightMap, clamp(puv, 0.0, 1.0)));
+      if(packedV < 0.00001)
+        discard;
+      return vec4(getColorByValue(packedV), smoothstep(0.0, 1.0, packedV));
+    }
+
 
     if(renderHeatMap) {
       if(heatV < 0.00001)
