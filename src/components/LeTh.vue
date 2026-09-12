@@ -5206,9 +5206,7 @@ const submitForm2 = async () => {
       if (st && st.status === 'running') {
         ElMessage.closeAll()
         ElMessage({
-          message:
-            '计算中 ' + Math.round(st.progress ?? 0) + '%（已输出 ' +
-            (st.frames || 0) + ' 帧，已用 ' + (st.elapsedSeconds || 0) + 's）',
+          message: '计算中 ' + Math.round(st.progress ?? 0) + '%',
           type: 'info',
           duration: 0,
         })

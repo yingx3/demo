@@ -715,7 +715,8 @@ const submit_setPosition = () => {
 }
 onMounted(() => {
   // viewer 由 MapLayout 初始化并通过 provide/inject 注入，此处无需再初始化 Cesium
-  initChainButton()
+  // 「冰川灾害链」模块已移除：不再初始化入口按钮（逻辑仍保留在 initChainButton/runChainCase 中）
+  // initChainButton()
 })
 
 //选中与未选中图层
@@ -2207,7 +2208,7 @@ function computeBetaViewRect(meta, wetBbox, outW, outH, ncols, nrows, cellsize) 
 }
 
 // 渲染完成后飞向结果矩形时，在 Cesium 默认取景距离上再抬高的米数
-const RESULT_CAMERA_LIFT_M = 2500
+const RESULT_CAMERA_LIFT_M = 5500
 
 /**
  * 飞到结果矩形，并在 Cesium 默认取景基础上抬高 lift 米。
