@@ -2207,7 +2207,7 @@ function computeBetaViewRect(meta, wetBbox, outW, outH, ncols, nrows, cellsize) 
 }
 
 // 渲染完成后飞向结果矩形时，在 Cesium 默认取景距离上再抬高的米数
-const RESULT_CAMERA_LIFT_M = 500
+const RESULT_CAMERA_LIFT_M = 2500
 
 /**
  * 飞到结果矩形，并在 Cesium 默认取景基础上抬高 lift 米。
