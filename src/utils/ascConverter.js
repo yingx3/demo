@@ -11,19 +11,26 @@ export function parseASC(text) {
   const lines = text.trim().split('\n')
   const header = {}
   let dataStart = 0
+  // 注意：r.avaflow 输出的是 xllcenter/yllcenter（像元中心），原来的白名单里没有这两个键，
+  // 会把表头当成第一行数据，导致整幅栅格错位两个像元。
+  const headerKeys = ['ncols', 'nrows', 'xllcorner', 'yllcorner', 'xllcenter', 'yllcenter', 'cellsize', 'nodata_value']
   for (let i = 0; i < lines.length; i++) {
     const parts = lines[i].trim().split(/\s+/)
-    if (parts.length === 2 && isNaN(Number(parts[1]))) continue
-    if (['ncols', 'nrows', 'xllcorner', 'yllcorner', 'cellsize', 'NODATA_value'].includes(parts[0].toLowerCase())) {
-      const key = parts[0].toLowerCase() === 'nodata_value' ? 'nodata' : parts[0].toLowerCase()
-      header[key] = Number(parts[1])
-    } else {
+    const key = (parts[0] || '').toLowerCase()
+    if (!headerKeys.includes(key)) {
       dataStart = i
       break
     }
+    header[key] = Number(parts[1])
   }
 
-  const { ncols, nrows, xllcorner, yllcorner, cellsize, nodata } = header
+  // 像元中心 → 角点，和 Elevation 里的 xllcorner/yllcorner 语义保持一致
+  const halfCell = (header.cellsize || 0) / 2
+  if (header.xllcenter != null) header.xllcorner = header.xllcenter - halfCell
+  if (header.yllcenter != null) header.yllcorner = header.yllcenter - halfCell
+
+  const nodata = header.nodata_value
+  const { ncols, nrows, xllcorner, yllcorner, cellsize } = header
   const values = new Float32Array(ncols * nrows)
 
   let idx = 0

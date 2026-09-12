@@ -2032,6 +2032,8 @@ let sdpLegendEl = null
 
 let betaSim = null
 let betaFrameTimer = null
+// 每次 beta 渲染的序号：转换/采样是异步的，用序号丢弃过期的调用
+let betaRunId = 0
 
 function cleanupBetaRenderer() {
   if (betaFrameTimer) {
@@ -2075,6 +2077,8 @@ function getGroundHeightMeters(lon, lat, fallback = 3000) {
 async function buildAvaflowDataSet(frameFiles, ascBase, maxDepth, outW, outH, onProgress) {
   const { parseASC, resampleASCToSize, packNormalizedDepthToImageData } = await import('../utils/ascConverter.js')
   const frames = []
+  // 所有帧湿区的并集（输出网格坐标，行 0 = 北），用来给相机定位
+  const wet = { row0: Infinity, row1: -1, col0: Infinity, col1: -1 }
   for (let i = 0; i < frameFiles.length; i++) {
     const url = frameUrlOf(ascBase, frameFiles[i])
     const resp = await fetch(url)
@@ -2084,12 +2088,103 @@ async function buildAvaflowDataSet(frameFiles, ascBase, maxDepth, outW, outH, on
     // flipY=false：PNG 首行放 ASC 首行（北侧）。渲染器用 flipY:false 上传该图片，
     // v=0 即北侧，正好对上 box 局部坐标（+z=南）；若翻转会南北镜像。
     const resampled = resampleASCToSize(values, ncols, nrows, outW, outH, false)
+    for (let y = 0; y < outH; y++) {
+      for (let x = 0; x < outW; x++) {
+        if (resampled[y * outW + x] > 0.01) {
+          if (y < wet.row0) wet.row0 = y
+          if (y > wet.row1) wet.row1 = y
+          if (x < wet.col0) wet.col0 = x
+          if (x > wet.col1) wet.col1 = x
+        }
+      }
+    }
     const { canvas, ctx, imgData } = packNormalizedDepthToImageData(resampled, outW, outH, maxDepth)
     ctx.putImageData(imgData, 0, 0)
     frames.push(canvas.toDataURL('image/png'))
     onProgress && onProgress(i + 1, frameFiles.length)
   }
-  return frames
+  return { frames, wetBbox: wet.row1 >= 0 ? wet : null }
+}
+
+/**
+ * 结果范围 → 相机要看的矩形（附带用于采样地面高度的点）。
+ * 优先用湿区并集：整幅网格有十几公里，直接看整幅会把泥石流缩成一个点。
+ */
+function computeBetaViewRect(meta, wetBbox, outW, outH, ncols, nrows, cellsize) {
+  const bbox = Array.isArray(meta.bbox) && meta.bbox.length === 4 ? meta.bbox.map(Number) : null
+  const cell = Number(cellsize) > 0 ? Number(cellsize) : 30
+  if (bbox && bbox.every(Number.isFinite)) {
+    const [west, south, east, north] = bbox
+    const lonSpan = east - west
+    const latSpan = north - south
+    const hasWet = wetBbox && wetBbox.col1 >= wetBbox.col0 && wetBbox.row1 >= wetBbox.row0
+    const fx0 = hasWet ? wetBbox.col0 / outW : 0
+    const fx1 = hasWet ? (wetBbox.col1 + 1) / outW : 1
+    const fy0 = hasWet ? wetBbox.row0 / outH : 0
+    const fy1 = hasWet ? (wetBbox.row1 + 1) / outH : 1
+    const westX = west + fx0 * lonSpan
+    const eastX = west + fx1 * lonSpan
+    const northY = north - fy0 * latSpan // 打包帧第 0 行 = 北侧
+    const southY = north - fy1 * latSpan
+    const padX = Math.max((eastX - westX) * 0.3, 0.0025)
+    const padY = Math.max((northY - southY) * 0.3, 0.0022)
+    const centerLon = (westX + eastX) / 2
+    const centerLat = (southY + northY) / 2
+    return {
+      rectangle: Cesium.Rectangle.fromDegrees(westX - padX, southY - padY, eastX + padX, northY + padY),
+      centerLon,
+      centerLat,
+      source: hasWet ? '湿区范围' : '整个网格',
+      samples: [
+        [westX, southY],
+        [westX, northY],
+        [eastX, northY],
+        [eastX, southY],
+        [centerLon, centerLat],
+      ],
+    }
+  }
+
+  // 没有 bbox 时退回：以网格中心俯视整幅
+  const lon = Number(meta.centerLon)
+  const lat = Number(meta.centerLat)
+  const spanM = Math.max(ncols * cell, nrows * cell) || 15000
+  const halfLat = spanM / 2 / 111320
+  const halfLon = halfLat / Math.max(0.2, Math.cos((lat || 30) * Math.PI / 180))
+  return {
+    rectangle: Cesium.Rectangle.fromDegrees(lon - halfLon, lat - halfLat, lon + halfLon, lat + halfLat),
+    centerLon: lon,
+    centerLat: lat,
+    source: '网格中心',
+    samples: [[lon, lat]],
+  }
+}
+
+/**
+ * 沿结果范围采样真实地面高度并取最大值。
+ * 平铺的 box 若低于地形会被深度测试整块挡掉（看不到泥石流的主要原因之一），
+ * 这里直接用 terrainProvider 采样，不依赖相机是否已经飞到该处。
+ */
+async function sampleMaxGroundHeightMeters(points, fallbackLon, fallbackLat, fallback = 3000) {
+  const pts = (Array.isArray(points) ? points : []).filter(p => Number.isFinite(p?.[0]) && Number.isFinite(p?.[1]))
+  try {
+    const provider = viewer.value?.terrainProvider
+    if (provider && pts.length) {
+      const cartos = await Cesium.sampleTerrain(
+        provider,
+        13,
+        pts.map(p => Cesium.Cartographic.fromDegrees(p[0], p[1])),
+      )
+      const heights = cartos.map(c => c.height).filter(h => Number.isFinite(h))
+      console.log('[betaLayers] 地面高度采样:', heights.length ? heights.map(h => h.toFixed(0)).join(' / ') : '无有效值')
+      if (heights.length) return Math.max(...heights)
+    }
+  } catch (e) {
+    console.warn('[betaLayers] sampleTerrain 失败，退回 globe.getHeight:', e)
+  }
+  const lon = Number.isFinite(fallbackLon) ? fallbackLon : pts[0]?.[0]
+  const lat = Number.isFinite(fallbackLat) ? fallbackLat : pts[0]?.[1]
+  return getGroundHeightMeters(lon, lat, fallback)
 }
 
 const betaLayers = async payload => {
@@ -2147,6 +2242,8 @@ const betaLayers = async payload => {
   cleanupBetaRenderer()
   clearHeatmapPrimitive()
 
+  const runId = ++betaRunId
+
   try {
     const Renderer = (await import('../../Simulation-extracted/DebrisFlow/index.js')).default
     const maxDim = 512
@@ -2155,6 +2252,34 @@ const betaLayers = async payload => {
     const height = Math.max(2, Math.round(nrows / scale))
     const renderCellSize = cellsize * scale
 
+    // ① 先把全部帧转成打包 PNG（只依赖 meta），顺便算出湿区并集用于定位相机
+    const total = frameFiles.length
+    const { frames: dataSet, wetBbox } = await buildAvaflowDataSet(
+      frameFiles,
+      result.ascBase,
+      globalMax,
+      width,
+      height,
+      done => {
+        if (done % 5 === 0 || done === total) {
+          ElMessage({ message: '帧转换中 ' + done + '/' + total, type: 'info', duration: 800 })
+        }
+      },
+    )
+    if (runId !== betaRunId) return
+
+    // ② 相机自动定位 + 真实地面高度（平铺 box 若低于地形会被深度测试整块挡掉）
+    const view = computeBetaViewRect(meta, wetBbox, width, height, ncols, nrows, cellsize)
+    const groundHeight = await sampleMaxGroundHeightMeters(view.samples, centerLon, centerLat, 3000)
+    console.log(
+      '[betaLayers] 定位到' + view.source + ':',
+      view.centerLon.toFixed(5) + ',' + view.centerLat.toFixed(5),
+      '| 地面高度=' + groundHeight.toFixed(1) + 'm',
+    )
+    if (runId !== betaRunId) return
+    viewer.value.camera.flyTo({ destination: view.rectangle, duration: 2.5 })
+
+    // ③ 建渲染器：网格仍定位在原始中心点上，整体抬高一点避开地形起伏
     const sim = new Renderer({
       viewer: viewer.value,
       width,
@@ -2173,38 +2298,19 @@ const betaLayers = async payload => {
     betaSim = sim
 
     // 平面 DEM 初始化：网格按中心点地面高度定位，避免逐像元采样在线地形导致 Cesium 崩溃
-    const groundHeight = getGroundHeightMeters(centerLon, centerLat, 3000)
-    // 网格抬高半个厚度，避免下半部分扎进真实地形被深度测试遮挡
     const betaThickness = 20
+    // betaClearance：整体再抬 30m，免得被起伏地形和地形网格误差挡掉
+    const betaClearance = 30
     await sim.initBoxFlat({
-      center: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, groundHeight + betaThickness / 2),
-      terrainHeight: groundHeight,
+      center: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, groundHeight + betaClearance + betaThickness / 2),
+      terrainHeight: groundHeight + betaClearance,
       minThickness: betaThickness,
       renderDirectFrames: false,
       renderPackedFrames: true,
     })
-    sim.renderSpeed = 0
-
-    // RiskInsight 方式：先把全部帧转成打包 PNG，再一次交给 dataSet，由渲染器自动播放。
-    // 不再调 loadAscAsWaterHeight：dataSet 会自己建立水高纹理，多调一次只会把纹理
-    // 覆盖成一张和打包格式不一致的浮点纹理（之前日志里的 undefined x undefined 就是它取错了 URL）。
-    const total = frameFiles.length
-    const dataSet = await buildAvaflowDataSet(
-      frameFiles,
-      result.ascBase,
-      globalMax,
-      width,
-      height,
-      done => {
-        if (done % 5 === 0 || done === total) {
-          ElMessage({ message: '帧转换中 ' + done + '/' + total, type: 'info', duration: 800 })
-        }
-      },
-    )
     if (betaSim !== sim) return
 
-    // 单相数据：dataSet2/3 留空即可（updateDataSets 已做空数组保护），
-    // 否则每换一帧还要多上传两张完全一样的纹理。
+    // ④ 交给 dataSet 自动播放：单相数据，dataSet2/3 留空即可（updateDataSets 已做空数组保护）
     sim.dataSet = dataSet
     sim.dataSet2 = []
     sim.dataSet3 = []
