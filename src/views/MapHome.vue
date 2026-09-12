@@ -453,6 +453,14 @@
     </div>
     <div id="seismic-chart" style="width: 100%; height: 500px"></div>
   </el-drawer>
+  <!-- 地形因子图层图例（随图层勾选自动显示） -->
+  <div class="map-legend" v-if="legendLayers.length">
+    <div class="legend-item" v-for="lg in legendLayers" :key="lg.id">
+      <div class="legend-title">{{ lg.title }}<span class="legend-unit" v-if="lg.unit">（{{ lg.unit }}）</span></div>
+      <div class="legend-bar" :style="{ background: lg.gradient }"></div>
+      <div class="legend-ticks"><span v-for="t in lg.ticks" :key="t">{{ t }}</span></div>
+    </div>
+  </div>
 </template>
 <script setup>
 // import wkb from 'wkb'
@@ -2039,7 +2047,38 @@ let betaFrameTimer = null
 // 每次 beta 渲染的序号：转换/采样是异步的，用序号丢弃过期的调用
 let betaRunId = 0
 
+// ---- 贴地渲染状态：pro/beta 的流深帧由 Cesium 影像图层承载（自动贴合地形）----
+let betaDrapeLayers = []
+let betaDrapeTimer = null
+let betaDrapeIndex = -1
+const BETA_FLOW_LEGEND_ID = 'flowDepth'
+
+/**
+ * 清掉上一次的贴地渲染：移除影像图层、停掉时间轴、撤掉图例。
+ */
+function clearBetaDrape() {
+  if (betaDrapeTimer) {
+    clearInterval(betaDrapeTimer)
+    betaDrapeTimer = null
+  }
+  const layers = viewer.value?.scene?.imageryLayers
+  if (layers && betaDrapeLayers.length) {
+    betaDrapeLayers.forEach(layer => {
+      try {
+        layers.remove(layer, true)
+      } catch (e) {
+        console.warn('[betaLayers] 移除贴地图层失败:', e)
+      }
+    })
+  }
+  betaDrapeLayers = []
+  betaDrapeIndex = -1
+  // 图例（legendLayers 在文件后段声明，运行时已初始化）
+  legendLayers.value = legendLayers.value.filter(l => l.id !== BETA_FLOW_LEGEND_ID)
+}
+
 function cleanupBetaRenderer() {
+  clearBetaDrape()
   if (betaFrameTimer) {
     clearTimeout(betaFrameTimer)
     betaFrameTimer = null
@@ -2078,8 +2117,11 @@ function getGroundHeightMeters(lon, lat, fallback = 3000) {
  * 把后端输出的 ASC 帧转成 DebrisFlow.dataSet 需要的 base64 PNG（24 位打包）。
  * 与 RiskInsight 的做法一致：一次性把全部帧交给渲染器，由 postRender 自动播放。
  */
-async function buildAvaflowDataSet(frameFiles, ascBase, maxDepth, outW, outH, onProgress) {
-  const { parseASC, resampleASCToSize, packNormalizedDepthToImageData } = await import('../utils/ascConverter.js')
+async function buildAvaflowDataSet(frameFiles, ascBase, maxDepth, outW, outH, onProgress, mode = 'packed') {
+  const { parseASC, resampleASCToSize, packNormalizedDepthToImageData, paintDepthToImageData } = await import('../utils/ascConverter.js')
+  // packed：24 位打包图（给 DebrisFlow BOX 着色器用）
+  // visual：带颜色的透明 PNG（给 Cesium 影像图层贴地用）
+  const painter = mode === 'visual' ? paintDepthToImageData : packNormalizedDepthToImageData
   const frames = []
   // 所有帧湿区的并集（输出网格坐标，行 0 = 北），用来给相机定位
   const wet = { row0: Infinity, row1: -1, col0: Infinity, col1: -1 }
@@ -2102,7 +2144,7 @@ async function buildAvaflowDataSet(frameFiles, ascBase, maxDepth, outW, outH, on
         }
       }
     }
-    const { canvas, ctx, imgData } = packNormalizedDepthToImageData(resampled, outW, outH, maxDepth)
+    const { canvas, ctx, imgData } = painter(resampled, outW, outH, maxDepth)
     ctx.putImageData(imgData, 0, 0)
     frames.push(canvas.toDataURL('image/png'))
     onProgress && onProgress(i + 1, frameFiles.length)
@@ -2164,7 +2206,8 @@ function computeBetaViewRect(meta, wetBbox, outW, outH, ncols, nrows, cellsize) 
   }
 }
 
-const betaLayers = async (payload, label = '山洪泥石流启动动力学模型_beta') => {
+const betaLayers = async (payload, label = '山洪泥石流启动动力学模型_beta', options = {}) => {
+  const useDrape = options.drape !== false
   const result = payload?.result
   if (!result || result.status !== 'ok') {
     cleanupBetaRenderer()
@@ -2214,6 +2257,107 @@ const betaLayers = async (payload, label = '山洪泥石流启动动力学模型
     }
     startHeatmapCycle()
     return
+  }
+
+  // ---- 贴地渲染分支（影像图层）----
+  // 背景：ASC 帧是整片栅格（本例 444x247），原先把它当成一个水平 BOX 渲染：
+  // 只取网格中心点的一处地面高度再整体抬高 ~30m，地形起伏几百米时必然
+  // 一边悬空、一边穿地，这就是“不贴地”的根因。
+  // 现在把每帧流深画成带透明度的 PNG，交给 Cesium 影像图层承载：
+  // 影像由 Cesium 自动贴合地形网格，天然贴地；无数据像元全透明。
+  // 若缺少 bbox 或出错，则回退到下面的 BOX 渲染分支。
+  if (useDrape) {
+    const rawBbox = Array.isArray(result.bbox) ? result.bbox.map(Number) : null
+    const hasBbox = !!(rawBbox && rawBbox.length === 4 && rawBbox.every(Number.isFinite))
+    if (hasBbox) {
+      let drapeOk = false
+      try {
+        cleanupBetaRenderer()
+        clearHeatmapPrimitive()
+        const runId = ++betaRunId
+
+        const [west, south, east, north] = rawBbox
+        const rect = Cesium.Rectangle.fromDegrees(west, south, east, north)
+        const maxDim = 1024
+        const scale = Math.max(1, Math.max(ncols, nrows) / maxDim)
+        const width = Math.max(2, Math.round(ncols / scale))
+        const height = Math.max(2, Math.round(nrows / scale))
+
+        const total = frameFiles.length
+        const { frames, wetBbox } = await buildAvaflowDataSet(
+          frameFiles,
+          result.ascBase,
+          globalMax,
+          width,
+          height,
+          done => {
+            if (done % 5 === 0 || done === total) {
+              ElMessage({ message: '帧转换中 ' + done + '/' + total, type: 'info', duration: 800 })
+            }
+          },
+          'visual',
+        )
+        if (runId !== betaRunId) return
+
+        const view = computeBetaViewRect(meta, wetBbox, width, height, ncols, nrows, cellsize)
+        viewer.value.camera.flyTo({ destination: view.rectangle, duration: 2.5 })
+
+        const layerCollection = viewer.value.scene.imageryLayers
+        frames.forEach(url => {
+          const layer = layerCollection.addImageryProvider(
+            new Cesium.SingleTileImageryProvider({
+              url,
+              rectangle: rect,
+              tileWidth: width,
+              tileHeight: height,
+            }),
+          )
+          layer.show = false
+          layer.alpha = 0.95
+          betaDrapeLayers.push(layer)
+        })
+        if (!betaDrapeLayers.length) throw new Error('未创建任何贴地图层')
+
+        // 时间轴动画：默认 400ms 一帧，循环播放
+        const showFrame = idx => {
+          betaDrapeIndex = idx
+          betaDrapeLayers.forEach((layer, i) => {
+            layer.show = i === idx
+          })
+        }
+        showFrame(0)
+        betaDrapeTimer = setInterval(() => {
+          if (!betaDrapeLayers.length) return
+          showFrame((betaDrapeIndex + 1) % betaDrapeLayers.length)
+        }, 400)
+
+        // 图例：流深色带（复用地图右下角图例组件）
+        const flowLegend = {
+          title: '流深',
+          unit: 'm',
+          stops: [0, 0.25, 0.5, 0.75, 1],
+          colors: ['#8C785A', '#A08250', '#8C6437', '#6E4623', '#462814'],
+          ticks: ['0', (globalMax / 2).toFixed(1), globalMax.toFixed(1)],
+        }
+        legendLayers.value = legendLayers.value.filter(l => l.id !== BETA_FLOW_LEGEND_ID)
+        legendLayers.value.push({ id: BETA_FLOW_LEGEND_ID, ...flowLegend, gradient: legendGradient(flowLegend) })
+
+        console.log(
+          '[betaLayers] 贴地渲染就绪:',
+          view.source,
+          width + 'x' + height,
+          frames.length + ' 帧',
+          'maxDepth=' + globalMax.toFixed(2) + 'm',
+        )
+        ElMessage.closeAll()
+        ElMessage({ message: label + ' 渲染完成（贴地）', type: 'success', duration: 2000 })
+        drapeOk = true
+      } catch (e) {
+        console.error('[betaLayers] 贴地渲染失败，回退 BOX 渲染:', e)
+        cleanupBetaRenderer()
+      }
+      if (drapeOk) return
+    }
   }
 
   cleanupBetaRenderer()
@@ -2779,6 +2923,57 @@ const renderDisplacementChart = chartData => {
     }
   }
 }
+// ===== 地形因子图层图例 =====
+const legendLayers = ref([])
+const LEGEND_PRESETS = {
+  dem: {
+    title: "高程",
+    unit: "m",
+    stops: [150, 1200, 2200, 3200, 4200, 5200, 6200, 7500],
+    colors: ["#1B7837", "#7FBF7B", "#E8E08E", "#D9B36C", "#B5794A", "#8C4A2F", "#E8E8E8", "#FFFFFF"],
+    ticks: ["150", "3800", "7500+"],
+  },
+  slope: {
+    title: "坡度",
+    unit: "°",
+    stops: [0, 5, 15, 25, 35, 45, 60],
+    colors: ["#1A9850", "#A6D96A", "#FEE08B", "#FDAE61", "#F46D43", "#D73027", "#7F0000"],
+    ticks: ["0", "30", "60+"],
+  },
+  aspect: {
+    title: "坡向",
+    unit: "°",
+    stops: [0, 45, 90, 135, 180, 225, 270, 315, 360],
+    colors: ["#FF2D2D", "#FF9900", "#FFFF00", "#33CC33", "#00E5E5", "#3399FF", "#6633CC", "#FF33CC", "#FF2D2D"],
+    ticks: ["0 (N)", "180 (S)", "360 (N)"],
+  },
+  relief: {
+    title: "地形起伏度",
+    unit: "m",
+    stops: [0, 30, 60, 100, 160, 300, 800],
+    colors: ["#FFFFE5", "#FEE391", "#FEC44F", "#FE9929", "#D95F0E", "#993404", "#662506"],
+    ticks: ["0", "400", "800+"],
+  },
+}
+const legendGradient = preset => {
+  const min = preset.stops[0]
+  const max = preset.stops[preset.stops.length - 1]
+  const parts = preset.stops.map((s, i) => {
+    const pct = ((s - min) / (max - min)) * 100
+    return `${preset.colors[i]} ${pct.toFixed(2)}%`
+  })
+  return `linear-gradient(90deg, ${parts.join(", ")})`
+}
+const setLegend = (key, visible) => {
+  const preset = LEGEND_PRESETS[key]
+  if (!preset) return
+  const exists = legendLayers.value.some(l => l.id === key)
+  if (visible) {
+    if (!exists) legendLayers.value.push({ id: key, ...preset, gradient: legendGradient(preset) })
+  } else if (exists) {
+    legendLayers.value = legendLayers.value.filter(l => l.id !== key)
+  }
+}
 //获取数据
 const addLayer1 = () => {
   //影像数据
@@ -2885,23 +3080,24 @@ const removeLayer2 = () => {
   }
 }
 const addLayer_dem = () => {
+  setLegend('dem', true)
   //影像数据
   const wmsImageryProvider = new Cesium.WebMapServiceImageryProvider({
-    url: '/native/geoserver/tif_0610/wms',
-    layers: 'tif_0610:dem_Level_16',
+    url: '/geoserver/ZHLXT/wms',
+    layers: 'ZHLXT:dem_Level_16',
     parameters: {
-      transparent: false,
-      format: 'image/jpeg',
+      transparent: true,
+      format: 'image/png',
       // format: 'application/openlayers',
       // srs: 'EPSG:4326',默认4326，并且此配置不起作用
     },
     tilingScheme: new Cesium.WebMercatorTilingScheme(), //添加墨卡托投影
     // 限制显示范围
     rectangle: Cesium.Rectangle.fromDegrees(
-      94.730835,
-      29.606009, // 西南经度, 西南纬度
-      95.417971,
-      29.959721, // 东北经度, 东北纬度
+      92.1655311831515,
+      27.55878578080392, // 西南经度, 西南纬度
+      98.753326319242,
+      30.663632897306222, // 东北经度, 东北纬度
     ),
   })
   const layers = viewer.value.scene.imageryLayers
@@ -2918,6 +3114,7 @@ const addLayer_dem = () => {
   })
 }
 const removeLayer_dem = () => {
+  setLegend('dem', false)
   // 假设 viewer 是您的 Cesium Viewer 对象
   const imageryLayers = viewer.value.scene.imageryLayers
 
@@ -2925,30 +3122,31 @@ const removeLayer_dem = () => {
   for (let i = 0; i < imageryLayers.length; i++) {
     const layer = imageryLayers.get(i)
 
-    if (layer.imageryProvider.layers === 'tif_0610:dem_Level_16') {
+    if (layer.imageryProvider.layers === 'ZHLXT:dem_Level_16') {
       imageryLayers.remove(layer)
       break // 移除后退出循环
     }
   }
 }
 const addLayer_slope = () => {
+  setLegend('slope', true)
   //影像数据
   const wmsImageryProvider = new Cesium.WebMapServiceImageryProvider({
-    url: '/native/geoserver/tif_0610/wms',
-    layers: 'tif_0610:slope_njbwf',
+    url: '/geoserver/ZHLXT/wms',
+    layers: 'ZHLXT:slope_njbwf',
     parameters: {
       transparent: true,
-      format: 'image/jpeg',
+      format: 'image/png',
       // format: 'application/openlayers',
       // srs: 'EPSG:4326',默认4326，并且此配置不起作用
     },
     tilingScheme: new Cesium.WebMercatorTilingScheme(), //添加墨卡托投影
     // 限制显示范围
     rectangle: Cesium.Rectangle.fromDegrees(
-      94.730835,
-      29.606009, // 西南经度, 西南纬度
-      95.417971,
-      29.959721, // 东北经度, 东北纬度
+      92.1655311831515,
+      27.55878578080392, // 西南经度, 西南纬度
+      98.753326319242,
+      30.663632897306222, // 东北经度, 东北纬度
     ),
   })
   const layers = viewer.value.scene.imageryLayers
@@ -2965,6 +3163,7 @@ const addLayer_slope = () => {
   })
 }
 const removeLayer_slope = () => {
+  setLegend('slope', false)
   // 假设 viewer 是您的 Cesium Viewer 对象
   const imageryLayers = viewer.value.scene.imageryLayers
 
@@ -2973,7 +3172,7 @@ const removeLayer_slope = () => {
     const layer = imageryLayers.get(i)
     if (
       layer.imageryProvider &&
-      layer.imageryProvider.layers === 'tif_0610:slope_njbwf'
+      layer.imageryProvider.layers === 'ZHLXT:slope_njbwf'
     ) {
       imageryLayers.remove(layer)
       break // 移除后退出循环
@@ -2981,23 +3180,24 @@ const removeLayer_slope = () => {
   }
 }
 const addLayer_aspect = () => {
+  setLegend('aspect', true)
   //影像数据
   const wmsImageryProvider = new Cesium.WebMapServiceImageryProvider({
-    url: '/native/geoserver/tif_0610/wms',
-    layers: 'tif_0610:aspect_njbwf',
+    url: '/geoserver/ZHLXT/wms',
+    layers: 'ZHLXT:aspect_njbwf',
     parameters: {
       transparent: true,
-      format: 'image/jpeg',
+      format: 'image/png',
       // format: 'application/openlayers',
       // srs: 'EPSG:4326',默认4326，并且此配置不起作用
     },
     tilingScheme: new Cesium.WebMercatorTilingScheme(), //添加墨卡托投影
     // 限制显示范围
     rectangle: Cesium.Rectangle.fromDegrees(
-      94.730835,
-      29.606009, // 西南经度, 西南纬度
-      95.417971,
-      29.959721, // 东北经度, 东北纬度
+      92.1655311831515,
+      27.55878578080392, // 西南经度, 西南纬度
+      98.753326319242,
+      30.663632897306222, // 东北经度, 东北纬度
     ),
   })
   const layers = viewer.value.scene.imageryLayers
@@ -3014,6 +3214,7 @@ const addLayer_aspect = () => {
   })
 }
 const removeLayer_aspect = () => {
+  setLegend('aspect', false)
   // 假设 viewer 是您的 Cesium Viewer 对象
   const imageryLayers = viewer.value.scene.imageryLayers
 
@@ -3022,7 +3223,7 @@ const removeLayer_aspect = () => {
     const layer = imageryLayers.get(i)
     if (
       layer.imageryProvider &&
-      layer.imageryProvider.layers === 'tif_0610:aspect_njbwf'
+      layer.imageryProvider.layers === 'ZHLXT:aspect_njbwf'
     ) {
       imageryLayers.remove(layer)
       break // 移除后退出循环
@@ -3030,23 +3231,24 @@ const removeLayer_aspect = () => {
   }
 }
 const addLayer_relief = () => {
+  setLegend('relief', true)
   //影像数据
   const wmsImageryProvider = new Cesium.WebMapServiceImageryProvider({
-    url: '/native/geoserver/tif_0610/wms',
-    layers: 'tif_0610:relief_njbwf',
+    url: '/geoserver/ZHLXT/wms',
+    layers: 'ZHLXT:relief_njbwf',
     parameters: {
       transparent: true,
-      format: 'image/jpeg',
+      format: 'image/png',
       // format: 'application/openlayers',
       // srs: 'EPSG:4326',默认4326，并且此配置不起作用
     },
     tilingScheme: new Cesium.WebMercatorTilingScheme(), //添加墨卡托投影
     // 限制显示范围
     rectangle: Cesium.Rectangle.fromDegrees(
-      94.730835,
-      29.606009, // 西南经度, 西南纬度
-      95.417971,
-      29.959721, // 东北经度, 东北纬度
+      92.1655311831515,
+      27.55878578080392, // 西南经度, 西南纬度
+      98.753326319242,
+      30.663632897306222, // 东北经度, 东北纬度
     ),
   })
   const layers = viewer.value.scene.imageryLayers
@@ -3063,6 +3265,7 @@ const addLayer_relief = () => {
   })
 }
 const removeLayer_relief = () => {
+  setLegend('relief', false)
   // 假设 viewer 是您的 Cesium Viewer 对象
   const imageryLayers = viewer.value.scene.imageryLayers
 
@@ -3071,7 +3274,7 @@ const removeLayer_relief = () => {
     const layer = imageryLayers.get(i)
     if (
       layer.imageryProvider &&
-      layer.imageryProvider.layers === 'tif_0610:relief_njbwf'
+      layer.imageryProvider.layers === 'ZHLXT:relief_njbwf'
     ) {
       imageryLayers.remove(layer)
       break // 移除后退出循环
@@ -6023,6 +6226,7 @@ function drawer_seismic(data) {
   drawSeismicChart(data)
 }
 onBeforeUnmount(() => {
+  cleanupBetaRenderer()
   if (forecastHandler) {
     forecastHandler.destroy()
     forecastHandler = null
@@ -6035,6 +6239,44 @@ onBeforeUnmount(() => {
 })
 </script>
 <style lang="scss" scoped>
+.map-legend {
+  position: absolute;
+  right: 372px;
+  bottom: 26px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 190px;
+  padding: 12px 14px;
+  background: rgba(8, 24, 46, 0.78);
+  border: 1px solid rgba(96, 156, 224, 0.45);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.map-legend .legend-title {
+  color: #e8f1fb;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.map-legend .legend-unit {
+  color: #9fb8d4;
+  font-size: 12px;
+}
+.map-legend .legend-bar {
+  width: 100%;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.map-legend .legend-ticks {
+  display: flex;
+  justify-content: space-between;
+  color: #b9cbe0;
+  font-size: 11px;
+  margin-top: 3px;
+}
+
 .flex-container {
   width: 300px;
   display: flex;

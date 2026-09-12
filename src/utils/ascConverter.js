@@ -175,3 +175,77 @@ export function ascToPackedDataUrl(text, outW, outH, maxClip) {
   ctx.putImageData(imgData, 0, 0)
   return canvas.toDataURL('image/png')
 }
+
+/**
+ * 流深（米）-> 可视化 RGBA（颜色 + 透明度）。
+ *
+ * 用于「贴地影像图层」渲染：把每帧流深画成带透明度的 PNG 交给 Cesium 的影像图层承载，
+ * 由 Cesium 自动把影像贴合到地形网格上；无数据像元 alpha=0，不会盖住底图。
+ * 色带与 DebrisFlow 着色器 getColorByValue 保持一致，保证两种渲染方式观感统一。
+ */
+const WATER_DEPTH_RAMP = [
+  [140, 120, 90],
+  [160, 130, 80],
+  [140, 100, 55],
+  [110, 70, 35],
+  [70, 40, 20],
+]
+
+function sampleWaterDepthColor(v) {
+  const last = WATER_DEPTH_RAMP.length - 1
+  const x = Math.min(Math.max(v, 0), 1) * last
+  const i = Math.min(Math.floor(x), last - 1)
+  const t = x - i
+  const c0 = WATER_DEPTH_RAMP[i]
+  const c1 = WATER_DEPTH_RAMP[i + 1]
+  return [
+    Math.round(c0[0] + (c1[0] - c0[0]) * t),
+    Math.round(c0[1] + (c1[1] - c0[1]) * t),
+    Math.round(c0[2] + (c1[2] - c0[2]) * t),
+  ]
+}
+
+/**
+ * 流深数组 -> 可视化 ImageData（颜色 + 透明度）。
+ * @param {Float32Array|number[]} values 流深（米）
+ * @param {number} width 输出宽（像素）
+ * @param {number} height 输出高（像素）
+ * @param {number} maxClip 全帧最大流深，用于归一化配色
+ * @param {{minDepth?: number, minAlpha?: number}} [options]
+ *        minDepth：小于该流深视为无数据（透明），默认 0.05m
+ *        minAlpha：湿区最小不透明度，默认 0.25，避免浅水看不到
+ */
+export function paintDepthToImageData(values, width, height, maxClip, options = {}) {
+  const w = Math.max(1, Math.round(width))
+  const h = Math.max(1, Math.round(height))
+  const minDepth = Number.isFinite(options.minDepth) ? Number(options.minDepth) : 0.05
+  const minAlpha = Number.isFinite(options.minAlpha) ? Number(options.minAlpha) : 0.25
+  const safeMax = maxClip > 0 ? maxClip : 1
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')
+  const imgData = ctx.createImageData(w, h)
+
+  for (let i = 0; i < w * h; i++) {
+    const idx = i * 4
+    const depth = i < values.length ? Number(values[i]) : 0
+    if (!Number.isFinite(depth) || depth < minDepth) {
+      imgData.data[idx] = 0
+      imgData.data[idx + 1] = 0
+      imgData.data[idx + 2] = 0
+      imgData.data[idx + 3] = 0
+      continue
+    }
+    const norm = Math.min(depth / safeMax, 1)
+    const vis = Math.pow(norm, 0.6) // 与着色器一致：浅水也能分辨层次
+    const smooth = vis * vis * (3 - 2 * vis) // smoothstep(0, 1, vis)
+    const alpha = Math.min(Math.max(minAlpha + (1 - minAlpha) * smooth, 0), 1)
+    const rgb = sampleWaterDepthColor(vis)
+    imgData.data[idx] = rgb[0]
+    imgData.data[idx + 1] = rgb[1]
+    imgData.data[idx + 2] = rgb[2]
+    imgData.data[idx + 3] = Math.round(alpha * 255)
+  }
+  return { canvas, ctx, imgData }
+}

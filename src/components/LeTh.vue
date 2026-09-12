@@ -3112,7 +3112,8 @@
             </el-form>
           </el-dialog>
         </div>
-        <div class="box box-used p_bottom">
+        <!-- 洪水泥石流启动动力学模型_beta：前端隐藏入口、逻辑保留；恢复时删除下方 v-if="false" -->
+        <div v-if="false" class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
           <el-button :plain="true" @click="dialogBeta = true"
             ><span>洪水泥石流启动动力学模型_beta</span></el-button
