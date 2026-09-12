@@ -19,28 +19,21 @@
           >
             <!--在title旁添加帮助问号（用slot="header"自定义弹窗头部） -->
             <template #header>
-              <div
-                style="
-                  display: flex;
-                  align-items: center;
-                  justify-content: space-between;
-                  width: 100%;
-                "
-              >
-                <span style="color: #ffffff; font-size: 24px"
-                  >风险源定量识别与表征模型</span
-                >
-                <!-- 问号容器：定位到关闭按钮左侧 -->
-                <div style="position: relative; right: 24px; top: -42px">
-                  <el-tooltip content="帮助" placement="top">
-                    <el-icon
-                      class="help-icon"
-                      @click="openHelpDialog_fxy = true"
-                    >
-                      <QuestionFilled />
-                    </el-icon>
-                  </el-tooltip>
+              <div class="model-dialog-header trigrs-header">
+                <div class="model-dialog-heading">
+                  <span class="model-dialog-title"
+                    >风险源定量识别与表征模型</span
+                  >
+                  <span class="model-dialog-subtitle">TRIGRS 参数配置</span>
                 </div>
+                <el-tooltip content="查看参数说明" placement="top">
+                  <el-icon
+                    class="help-icon"
+                    @click="openHelpDialog_fxy = true"
+                  >
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
               </div>
             </template>
             <el-dialog
@@ -576,13 +569,12 @@
                 />
               </div>
             </el-dialog>
-            <p id="name_par">模型参数</p>
+            <p id="name_par" class="trigrs-section-label">模型参数</p>
 
             <el-form
               :model="form"
-              label-width="auto"
-              style="max-width: 600px"
-              class="form_trigrs"
+              label-position="top"
+              class="form_trigrs trigrs-form"
             >
               <el-form-item label="地点" class="form1_trigrs">
                 <el-input v-model="form.name" placeholder="林芝市" />
@@ -595,7 +587,7 @@
                   <el-option label="红色渐变" value="redGradient" />
                 </el-select>
               </el-form-item>
-              <el-form-item label="预测时间" class="from3_trigrs">
+              <el-form-item label="预测时间" class="from3_trigrs trigrs-time-field">
                 <div>
                   <el-checkbox-group v-model="form.time">
                     <el-checkbox :label="'3h'" :value="10800">3h</el-checkbox>
@@ -621,7 +613,7 @@
                   </el-radio-group>
                 </div> -->
               </el-form-item>
-              <el-form-item label="入渗率" class="form4_trigrs">
+              <el-form-item label="入渗率" class="form4_trigrs trigrs-wide-field">
                 <el-input v-model="form.rsl" placeholder="1.0e-6" />
               </el-form-item>
               <el-form-item label="初始地下水位">
@@ -636,11 +628,13 @@
               <el-form-item label="饱和渗透系数">
                 <el-input v-model="form.ksat" placeholder="1.32e-5" />
               </el-form-item>
-              <el-form-item>
-                <el-button class="b_ex" type="primary" @click="onSubmit"
+              <el-form-item class="trigrs-actions">
+                <el-button class="trigrs-submit" type="primary" @click="onSubmit"
                   >运行</el-button
                 >
-                <el-button @click="dialogVisible = false">取消</el-button>
+                <el-button class="trigrs-cancel" @click="dialogVisible = false"
+                  >取消</el-button
+                >
               </el-form-item>
             </el-form>
           </el-dialog>
@@ -658,29 +652,21 @@
             class="dialog_lightGBM"
           >
             <template #header>
-              <div
-                style="
-                  display: flex;
-                  align-items: center;
-                  justify-content: space-between;
-                  width: 100%;
-                "
-              >
-                <span
-                  style="color: #ffffff; font-size: 21px; padding-left: 20px"
-                  >冰川泥石流易发性预测模型</span
-                >
-                <!-- 问号容器：定位到关闭按钮左侧 -->
-                <div style="position: relative; right: -4px; top: -11.5px">
-                  <el-tooltip content="帮助" placement="top">
-                    <el-icon
-                      class="help-icon"
-                      @click="openHelpDialog_gbm = true"
-                    >
-                      <QuestionFilled />
-                    </el-icon>
-                  </el-tooltip>
+              <div class="model-dialog-header gbm-header">
+                <div class="model-dialog-heading">
+                  <span class="model-dialog-title"
+                    >冰川泥石流易发性预测模型</span
+                  >
+                  <span class="model-dialog-subtitle">易发性参数配置</span>
                 </div>
+                <el-tooltip content="查看参数说明" placement="top">
+                  <el-icon
+                    class="help-icon"
+                    @click="openHelpDialog_gbm = true"
+                  >
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
               </div>
             </template>
             <el-dialog
@@ -1493,33 +1479,18 @@
                 />
               </div>
             </el-dialog>
-            <p
-              id="name_par_gbm"
-              style="
-                margin-left: 24px;
-                margin-top: -17px;
-                font-size: 18px;
-                color: #2763ca;
-              "
-            >
-              模型参数
-            </p>
+            <p id="name_par_gbm" class="gbm-section-label">模型参数</p>
 
             <el-form
               :model="formGBM"
-              label-width="auto"
-              style="max-width: 600px"
-              class="form_gbm"
+              label-position="top"
+              class="form_gbm gbm-form"
             >
-              <el-form-item
-                label="Shapefile"
-                label-position="right"
-                label-width="120px"
-              >
+              <el-form-item label="Shapefile" class="gbm-file-field">
                 <el-input
                   v-model="fileNameGBM"
-                  placeholder="上传shp文件"
-                  style="width: 160px"
+                  placeholder="上传 shp / dbf / shx / prj 文件"
+                  class="gbm-file-input"
                 >
                   <template #append>
                     <el-upload
@@ -1536,12 +1507,7 @@
                       @error="handleUploadErrorGBM"
                     >
                       <el-button
-                        style="
-                          border: none;
-                          color: white;
-                          padding: 0;
-                          margin-left: 8px;
-                        "
+                        class="gbm-upload-trigger"
                         @click.stop="triggerUploadGBM"
                       >
                         <i class="iconfont icon-daoru"></i>
@@ -1550,7 +1516,7 @@
                   </template>
                 </el-input>
               </el-form-item>
-              <div style="display: flex; justify-content: space-between">
+              <div class="gbm-param-row">
                 <el-form-item
                   label="坡向"
                   label-position="center"
@@ -1585,7 +1551,7 @@
                   />
                 </el-form-item>
               </div>
-              <div style="display: flex; justify-content: space-between">
+              <div class="gbm-param-row">
                 <el-form-item
                   label="NDVI"
                   label-position="center"
@@ -1621,14 +1587,18 @@
                 </el-form-item>
               </div>
 
-              <el-form-item>
+              <el-form-item class="gbm-actions">
                 <el-button
                   type="primary"
+                  class="gbm-submit"
                   @click="submitGBM"
-                  style="margin-left: 240px"
                   >上传并提交</el-button
                 >
-                <el-button @click="dialogVisibleGBM = false">取消</el-button>
+                <el-button
+                  class="gbm-cancel"
+                  @click="dialogVisibleGBM = false"
+                  >取消</el-button
+                >
               </el-form-item>
             </el-form>
           </el-dialog>
@@ -6391,5 +6361,343 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
   100% {
     transform: translateX(-100%);
   }
+}
+/* ===== Beautified input dialogs: risk source & glacier debris flow susceptibility ===== */
+:deep(.el-dialog.dialog_trigrs),
+:deep(.el-dialog.dialog_lightGBM) {
+  --el-dialog-bg-color: transparent;
+  margin-top: 7vh;
+  width: min(720px, calc(100vw - 32px)) !important;
+  height: auto !important;
+  max-height: 88vh;
+  border: 1px solid rgba(94, 178, 255, 0.35);
+  border-radius: 16px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  background-image: linear-gradient(180deg, rgba(5, 22, 40, 0.18), rgba(5, 22, 40, 0.72)), url('../assets/img/fz175.png');
+  background-size: 100% 100%;
+  overflow: hidden;
+}
+
+:deep(.el-dialog.dialog_lightGBM) {
+  width: min(660px, calc(100vw - 32px)) !important;
+}
+
+:deep(.el-dialog.dialog_trigrs .el-dialog__header),
+:deep(.el-dialog.dialog_lightGBM .el-dialog__header) {
+  padding: 18px 42px 0 22px;
+}
+
+:deep(.el-dialog.dialog_trigrs .el-dialog__headerbtn),
+:deep(.el-dialog.dialog_lightGBM .el-dialog__headerbtn) {
+  top: 14px;
+  right: 14px;
+  z-index: 5;
+}
+
+:deep(.el-dialog.dialog_trigrs .el-dialog__body),
+:deep(.el-dialog.dialog_lightGBM .el-dialog__body) {
+  max-height: calc(88vh - 84px);
+  padding: 8px 22px 20px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(96, 180, 255, 0.5) transparent;
+}
+
+:deep(.el-dialog.dialog_trigrs .el-dialog__body::-webkit-scrollbar),
+:deep(.el-dialog.dialog_lightGBM .el-dialog__body::-webkit-scrollbar) {
+  width: 6px;
+}
+
+:deep(.el-dialog.dialog_trigrs .el-dialog__body::-webkit-scrollbar-thumb),
+:deep(.el-dialog.dialog_lightGBM .el-dialog__body::-webkit-scrollbar-thumb) {
+  border-radius: 999px;
+  background: rgba(96, 180, 255, 0.45);
+}
+
+.model-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-right: 28px;
+}
+
+.model-dialog-heading {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-left: 14px;
+}
+
+.model-dialog-heading::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 3px;
+  width: 4px;
+  height: 40px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #35d5ff, #2f7cff 55%, rgba(47, 124, 255, 0));
+  box-shadow: 0 0 14px rgba(53, 213, 255, 0.6);
+}
+
+.model-dialog-title {
+  color: #f2f8ff;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0.5px;
+}
+
+.model-dialog-subtitle {
+  color: rgba(178, 210, 238, 0.72);
+  font-size: 12px;
+  letter-spacing: 1.2px;
+}
+
+.model-dialog-header .help-icon {
+  margin-top: 4px;
+  color: rgba(164, 214, 255, 0.85);
+  font-size: 19px;
+  cursor: pointer;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.model-dialog-header .help-icon:hover {
+  color: #ffffff;
+  transform: scale(1.08);
+}
+
+.trigrs-form,
+.gbm-form {
+  display: grid;
+  width: 100%;
+  margin: 6px 0 0;
+  column-gap: 18px;
+  row-gap: 14px;
+  align-items: start;
+}
+
+.trigrs-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.gbm-form {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.trigrs-form :deep(.el-form-item),
+.gbm-form :deep(.el-form-item) {
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.trigrs-form :deep(.el-form-item__label),
+.gbm-form :deep(.el-form-item__label) {
+  display: block;
+  float: none;
+  width: auto !important;
+  height: auto;
+  margin-bottom: 5px;
+  padding: 0;
+  color: #b9d6f1;
+  font-size: 12px;
+  line-height: 1.2;
+  text-align: left !important;
+}
+
+.trigrs-form :deep(.el-form-item__content),
+.gbm-form :deep(.el-form-item__content) {
+  width: 100%;
+  margin-left: 0 !important;
+}
+
+.trigrs-form :deep(.el-input),
+.gbm-form :deep(.el-input),
+.trigrs-form :deep(.el-select),
+.gbm-form :deep(.el-select) {
+  width: 100% !important;
+}
+
+.trigrs-form :deep(.el-input__wrapper),
+.trigrs-form :deep(.el-select__wrapper),
+.gbm-form :deep(.el-input__wrapper),
+.gbm-form :deep(.el-select__wrapper) {
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: rgba(5, 20, 36, 0.58);
+  box-shadow: inset 0 0 0 1px rgba(104, 181, 255, 0.24);
+  font-size: 14px;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.trigrs-form :deep(.el-input__wrapper:hover),
+.trigrs-form :deep(.el-select__wrapper:hover),
+.gbm-form :deep(.el-input__wrapper:hover),
+.gbm-form :deep(.el-select__wrapper:hover) {
+  box-shadow: inset 0 0 0 1px rgba(104, 181, 255, 0.42);
+}
+
+.trigrs-form :deep(.el-input__wrapper.is-focus),
+.trigrs-form :deep(.el-select__wrapper.is-focused),
+.gbm-form :deep(.el-input__wrapper.is-focus),
+.gbm-form :deep(.el-select__wrapper.is-focused) {
+  background: rgba(7, 28, 49, 0.82);
+  box-shadow: inset 0 0 0 1px rgba(91, 200, 255, 0.85), 0 0 0 3px rgba(55, 150, 255, 0.1);
+}
+
+.trigrs-form :deep(.el-input__inner),
+.gbm-form :deep(.el-input__inner) {
+  color: #eaf4ff;
+  font-size: 14px;
+}
+
+.trigrs-form :deep(.el-input__inner::placeholder),
+.gbm-form :deep(.el-input__inner::placeholder) {
+  color: rgba(150, 181, 210, 0.52);
+}
+
+.trigrs-form :deep(.el-select__placeholder),
+.gbm-form :deep(.el-select__placeholder) {
+  color: rgba(150, 181, 210, 0.62);
+}
+
+.trigrs-form :deep(.el-checkbox-group) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.trigrs-form :deep(.el-checkbox) {
+  margin-right: 0;
+  padding: 4px 10px;
+  border: 1px solid rgba(104, 181, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(5, 20, 36, 0.5);
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.trigrs-form :deep(.el-checkbox__label) {
+  padding-left: 4px;
+  color: #cfe6ff;
+  font-size: 13px;
+}
+
+.trigrs-form :deep(.el-checkbox.is-checked) {
+  border-color: rgba(83, 190, 255, 0.55);
+  background: linear-gradient(135deg, rgba(45, 160, 255, 0.32), rgba(53, 213, 255, 0.18));
+  box-shadow: inset 0 0 0 1px rgba(83, 190, 255, 0.35);
+}
+
+.trigrs-time-field,
+.trigrs-wide-field,
+.trigrs-actions,
+.gbm-file-field,
+.gbm-param-row,
+.gbm-actions {
+  grid-column: 1 / -1;
+}
+
+.gbm-param-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.gbm-param-row :deep(.el-form-item) {
+  width: 100%;
+}
+
+.trigrs-actions :deep(.el-form-item__content),
+.gbm-actions :deep(.el-form-item__content) {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.trigrs-actions,
+.gbm-actions {
+  padding-top: 4px;
+  border-top: 1px solid rgba(104, 181, 255, 0.15);
+}
+
+.trigrs-cancel,
+.gbm-cancel {
+  min-width: 78px;
+  color: #c9def3;
+  border-color: rgba(128, 181, 229, 0.45) !important;
+  background: rgba(9, 28, 47, 0.45) !important;
+}
+
+.trigrs-cancel:hover,
+.gbm-cancel:hover {
+  color: #ffffff;
+  border-color: rgba(128, 181, 229, 0.7) !important;
+  background: rgba(16, 46, 74, 0.68) !important;
+}
+
+.trigrs-submit,
+.gbm-submit {
+  min-width: 98px;
+  border: none !important;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #2f8cff, #24c6ff) !important;
+  box-shadow: 0 8px 20px rgba(31, 143, 255, 0.28);
+}
+
+.trigrs-submit:hover,
+.gbm-submit:hover {
+  background: linear-gradient(135deg, #3d98ff, #39d1ff) !important;
+  box-shadow: 0 10px 24px rgba(31, 143, 255, 0.4);
+}
+
+.gbm-file-field :deep(.el-input-group__append) {
+  padding: 0 !important;
+  border: none;
+  background: transparent;
+}
+
+.gbm-upload-trigger {
+  width: 38px;
+  height: 34px;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 8px 8px 0;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #2f8cff, #24c6ff) !important;
+}
+
+.gbm-upload-trigger:hover {
+  background: linear-gradient(135deg, #3d98ff, #39d1ff) !important;
+}
+
+.gbm-file-field :deep(.el-input__wrapper) {
+  border-radius: 8px 0 0 8px;
+}
+#name_par.trigrs-section-label,
+#name_par_gbm.gbm-section-label {
+  position: relative;
+  margin: 2px 0 0;
+  padding-left: 10px;
+  color: #d9ecff;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+}
+
+#name_par.trigrs-section-label::before,
+#name_par_gbm.gbm-section-label::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 12px;
+  margin-right: 8px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #35d5ff, #2f7cff);
+  box-shadow: 0 0 8px rgba(53, 213, 255, 0.55);
+  vertical-align: -1px;
 }
 </style>
