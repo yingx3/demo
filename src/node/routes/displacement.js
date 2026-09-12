@@ -519,29 +519,27 @@ router.get('/displ_file', async (req, res) => {
         console.log(`创建新监测点，ID: ${pointId}`)
       }
 
-      const insertDataQuery = `
-        INSERT INTO displacement_data (point_id, record_time, displacement)
-        VALUES ($1, $2, $3)
-        ON CONFLICT (point_id,record_time) DO UPDATE 
-        SET displacement = EXCLUDED.displacement
-      `
-
-      let insertedCount = 0
+      const rowsToInsert = []
       for (const row of timeSeriesData) {
         let recordTime
         if (typeof row.timestamp === 'number') {
-          recordTime = XLSX.SSF.parse_date_code(row.timestamp)
+          const d = XLSX.SSF.parse_date_code(row.timestamp)
+          if (!d) continue
+          recordTime = new Date(
+            Date.UTC(d.y, d.m - 1, d.d, d.H, d.M, Math.round(d.S || 0)),
+          )
         } else if (row.timestamp instanceof Date) {
           recordTime = row.timestamp
         } else if (typeof row.timestamp === 'string') {
-          try {
-            recordTime = new Date(row.timestamp)
-            if (isNaN(recordTime.getTime())) {
-              console.warn('无效的时间戳字符串，跳过:', row.timestamp)
-              continue
-            }
-          } catch (error) {
-            console.warn('解析时间字符串时出错，跳过:', row.timestamp, error)
+          const normalized = row.timestamp.trim().replace(' ', 'T')
+          const withZone = /(Z|[+-]\d{2}:?\d{2})$/.test(normalized)
+            ? normalized
+            : /T\d{2}:\d{2}:\d{2}/.test(normalized)
+              ? normalized + 'Z'
+              : normalized + ':00Z'
+          recordTime = new Date(withZone)
+          if (Number.isNaN(recordTime.getTime())) {
+            console.warn('无效的时间戳字符串，跳过:', row.timestamp)
             continue
           }
         } else {
@@ -549,14 +547,29 @@ router.get('/displ_file', async (req, res) => {
           continue
         }
 
-        await client.query(insertDataQuery, [
-          pointId,
-          recordTime,
-          parseFloat(row.displ),
-        ])
-        insertedCount++
+        const displacement = parseFloat(row.displ)
+        if (!Number.isFinite(displacement)) continue
+        rowsToInsert.push({ recordTime, displacement })
       }
 
+      const chunkSize = 500
+      for (let offset = 0; offset < rowsToInsert.length; offset += chunkSize) {
+        const chunk = rowsToInsert.slice(offset, offset + chunkSize)
+        const params = [pointId]
+        const values = chunk.map(item => {
+          params.push(item.recordTime, item.displacement)
+          return `($1, $${params.length - 1}, $${params.length})`
+        })
+        await client.query(
+          `INSERT INTO displacement_data (point_id, record_time, displacement)
+           VALUES ${values.join(',')}
+           ON CONFLICT (point_id,record_time) DO UPDATE
+           SET displacement = EXCLUDED.displacement`,
+          params,
+        )
+      }
+
+      const insertedCount = rowsToInsert.length
       await client.query('COMMIT')
 
       return res.json({
