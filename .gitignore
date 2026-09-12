@@ -30,3 +30,8 @@ public/tiff/
 
 # Large raster data (exceeds GitHub 100MB limit - excluded)
 CS/tiff/
+
+# 大体积压缩包 / 生成文件
+CS/CS.zip
+*.sr.lock
+vite.config.js.timestamp-*.mjs

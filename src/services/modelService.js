@@ -21,6 +21,27 @@ const modelService = {
       .get('/testapi/admin/user/yj_beta_status', { params: { jobId }, timeout: 30000 })
       .then(r => r.data)
   },
+  uploadProFiles(formData) {
+    return axios
+      .post('/testapi/admin/user/pro_upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 300000,
+      })
+      .then(r => r.data)
+  },
+  runProModel(payload) {
+    return axios
+      .post('/testapi/admin/user/pro_start', payload, { timeout: 60000 })
+      .then(r => r.data)
+  },
+  getProStatus(jobId) {
+    return axios
+      .get('/testapi/admin/user/pro_start_status', {
+        params: { jobId },
+        timeout: 30000,
+      })
+      .then(r => r.data)
+  },
   uploadAvaflowFiles(formData) {
     return axios
       .post('/testapi/admin/user/upload_avaflow', formData, {

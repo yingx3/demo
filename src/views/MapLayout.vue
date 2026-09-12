@@ -13,10 +13,13 @@
 </template>
 
 <script setup>
-import { ref, provide, onMounted, onBeforeUnmount } from 'vue'
+import { ref, shallowRef, provide, onMounted, onBeforeUnmount } from 'vue'
 import * as Cesium from 'cesium'
 
-const viewer = ref(null)
+// Cesium Viewer 及 scene/globe/terrainProvider 等内部对象绝不能被 Vue 深度响应式代理。
+// 否则 Cesium 内部（raw）与外部 viewer.value（Proxy）会混用同一棵 TileAvailability
+// 四叉树，触发 Cannot read properties of undefined (reading 'rectangles')。
+const viewer = shallowRef(null)
 
 provide('cesiumViewer', viewer)
 

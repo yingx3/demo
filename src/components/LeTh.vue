@@ -2262,9 +2262,9 @@
           <el-dialog
             v-model="dialogVisible2"
             title="洪水泥石流启动动力学模型"
-            width="500"
+            width="560"
             :close-on-click-modal="false"
-            class="dialog_flood"
+            class="dialog_quanyu"
           >
             <template #header>
               <div
@@ -2614,18 +2614,88 @@
                 </el-dialog>
               </div>
             </template>
+            <p id="name_par3">输入数据</p>
+            <el-form label-width="auto" style="width: 500px" class="form_flood">
+              <el-form-item
+                label="数据坐标系"
+                label-position="right"
+                label-width="110px"
+                style="flex: 1 1 100%; margin-bottom: 12px"
+              >
+                <el-input
+                  v-model="proSourceCrs"
+                  placeholder="EPSG:32646"
+                  style="width: 260px"
+                />
+              </el-form-item>
+              <el-form-item
+                label="网格中心"
+                label-position="right"
+                label-width="110px"
+                style="flex: 1 1 100%; margin-bottom: 12px"
+              >
+                <el-input
+                  v-model="proAnchorLon"
+                  placeholder="经度 94.9629943"
+                  style="width: 125px"
+                />
+                <el-input
+                  v-model="proAnchorLat"
+                  placeholder="纬度 30.1975837"
+                  style="width: 125px; margin-left: 10px"
+                />
+              </el-form-item>
+              <el-form-item
+                v-for="item in proFileItems"
+                :key="item.key"
+                :label="item.label"
+                label-position="right"
+                label-width="110px"
+                style="flex: 1 1 100%; margin-bottom: 12px"
+              >
+                <el-input
+                  v-model="proFileNames[item.key]"
+                  :placeholder="item.placeholder"
+                  style="width: 260px"
+                  readonly
+                >
+                  <template #append>
+                    <el-upload
+                      :ref="el => { if (el) proUploadRefs[item.key] = el }"
+                      :auto-upload="false"
+                      :show-file-list="false"
+                      accept=".tif,.tiff,.asc,.txt"
+                      @change="(f, fs) => handleProFile(item.key, f, fs)"
+                    >
+                      <el-button
+                        style="
+                          border: none;
+                          color: white;
+                          padding: 0;
+                          margin-left: 8px;
+                        "
+                        @click.stop="triggerProUpload(item.key)"
+                      >
+                        <i class="iconfont icon-daoru"></i>
+                      </el-button>
+                    </el-upload>
+                  </template>
+                </el-input>
+              </el-form-item>
+            </el-form>
+
             <p id="name_par3">模型参数</p>
             <el-form
               :model="form2"
               label-width="auto"
-              style="max-width: 600px"
+              style="width: 500px"
               class="form_flood"
             >
-              <el-form-item label="基底摩擦" class="form1_flood">
-                <el-input v-model="form2.bed" placeholder="20" />
+              <el-form-item label="基底摩擦角(rad)" class="form1_flood">
+                <el-input v-model="form2.bed" placeholder="0.2" />
               </el-form-item>
               <el-form-item label="曼宁摩擦系数" class="form1_flood">
-                <el-input v-model="form2.nn" placeholder="20" />
+                <el-input v-model="form2.nn" placeholder="0.0125" />
               </el-form-item>
               <el-form-item label="网格长度" class="form1_flood">
                 <el-input v-model="form2.dx" placeholder="20" />
@@ -2634,16 +2704,23 @@
                 <el-input v-model="form2.dy" placeholder="20" />
               </el-form-item>
               <el-form-item label="滑坡密度" class="form1_flood">
-                <el-input v-model="form2.rous" placeholder="20" />
+                <el-input v-model="form2.rous" placeholder="2700" />
               </el-form-item>
               <el-form-item label="河水密度" class="form1_flood">
-                <el-input v-model="form2.rouf" placeholder="20" />
+                <el-input v-model="form2.rouf" placeholder="1000" />
               </el-form-item>
               <el-form-item label="输出间距" class="form1_flood">
-                <el-input v-model="form2.interval" placeholder="20" />
+                <el-input v-model="form2.interval" placeholder="1" />
               </el-form-item>
               <el-form-item label="计算时间" class="form1_flood">
-                <el-input v-model="form2.Tmax" placeholder="20" />
+                <el-input v-model="form2.Tmax" placeholder="100" />
+              </el-form-item>
+
+              <el-form-item style="flex: 1 1 100%; margin-bottom: 12px">
+                <span style="color: #a6a6a6; font-size: 13px"
+                  >支持 .tif / .tiff / .txt / .asc（ESRI ASCII）；txt/asc <b>自带 xllcorner/yllcorner 头部</b>时按「数据坐标系」解释；
+                  无头部时必填「网格中心」经纬度（易贡示例 94.9629943, 30.1975837，坐标系 EPSG:32646）。zb / zl / hw 都不选时使用内置示例数据（suanfa/Pro/user1/task）</span
+                >
               </el-form-item>
 
               <el-form-item>
@@ -2658,8 +2735,8 @@
             </el-form>
           </el-dialog>
         </div>
-        <!-- 洪水泥石流启动动力学模型（测试） -->
-        <div class="box box-used p_bottom">
+        <!-- 洪水泥石流启动动力学模型（测试）：暂时隐藏，保留代码备查 -->
+        <div v-if="false" class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
           <el-button :plain="true" @click="dialogVisible2Test = true"
             ><span>洪水泥石流启动动力学模型（测试）</span></el-button
@@ -2725,52 +2802,54 @@
           <el-dialog
             v-model="dialog_avainit"
             title="冰岩崩起动模型"
-            width="500"
+            width="640"
             :close-on-click-modal="false"
             class="dialog_avainit"
           >
             <template #header>
-              <div
-                style="
-                  display: flex;
-                  align-items: center;
-                  justify-content: space-between;
-                  width: 100%;
-                "
-              >
-                <span style="color: #ffffff; font-size: 24px"
-                  >冰岩崩起动模型</span
-                >
-                <!-- 问号容器：定位到关闭按钮左侧 -->
-                <div style="position: relative; right: -3px; top: -28.5px">
-                  <el-tooltip content="帮助" placement="top">
-                    <el-icon
-                      class="help-icon"
-                      @click="openHelpDialog_flood = true"
-                    >
-                      <QuestionFilled />
-                    </el-icon>
-                  </el-tooltip>
+              <div class="avainit-header">
+                <div class="avainit-header-text">
+                  <span class="avainit-title">冰岩崩起动模型</span>
+                  <span class="avainit-subtitle">冰–岩崩启动参数配置</span>
                 </div>
+                <el-tooltip content="查看参数说明" placement="top">
+                  <el-icon
+                    class="help-icon"
+                    @click="openHelpDialog_flood = true"
+                  >
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
               </div>
             </template>
-            <div style="margin-left: 25px">
+            <div class="avainit-mode-row">
+              <span class="avainit-field-caption">破坏模式</span>
               <el-radio-group v-model="radio_avainit" size="large">
                 <el-radio :value="1">顺层</el-radio>
                 <el-radio :value="2">反倾</el-radio>
                 <el-radio :value="3">楔形</el-radio>
               </el-radio-group>
             </div>
-            <div style="margin-left:25px;margin-top:8px;display:flex;gap:12px;align-items:center;font-size:13px;color:#fff">
-              <span>定位</span>
-              <el-input v-model="form_avainit_location.longitude" placeholder="经度" style="width:150px" />
-              <el-input v-model="form_avainit_location.latitude" placeholder="纬度" style="width:150px" />
+            <div class="avainit-location">
+              <div class="avainit-location-head">
+                <span class="avainit-field-caption">源区定位</span>
+                <span class="avainit-location-hint">WGS84 · 十进制度</span>
+              </div>
+              <div class="avainit-location-grid">
+                <div class="avainit-location-item">
+                  <span>经度</span>
+                  <el-input v-model="form_avainit_location.longitude" placeholder="例如 95.0020" />
+                </div>
+                <div class="avainit-location-item">
+                  <span>纬度</span>
+                  <el-input v-model="form_avainit_location.latitude" placeholder="例如 30.2354" />
+                </div>
+              </div>
             </div>
             <el-form
               :model="form_avainit"
-              label-width="auto"
-              style="max-width: 600px"
-              class="form_flood"
+              label-position="top"
+              class="form_flood form_avainit"
               v-if="radio_avainit == 1"
             >
               <el-form-item label="融冰时长" class="form1_flood">
@@ -2825,21 +2904,20 @@
                 />
               </el-form-item>
 
-              <el-form-item>
+              <div class="avainit-actions">
+                <el-button class="avainit-cancel" @click="dialog_avainit = false">取消</el-button>
                 <el-button
                   type="primary"
-                  class="b_ex_avaflow"
+                  class="avainit-submit"
                   @click="sumbit_avainit"
                   >运行</el-button
                 >
-                <el-button @click="dialog_avainit = false">取消</el-button>
-              </el-form-item>
+              </div>
             </el-form>
             <el-form
               :model="form_bedding_inverted"
-              label-width="auto"
-              style="max-width: 600px"
-              class="form_flood"
+              label-position="top"
+              class="form_flood form_avainit"
               v-if="radio_avainit == 2"
             >
               <el-form-item label="融冰时长" class="form1_flood">
@@ -2903,21 +2981,20 @@
                 />
               </el-form-item>
 
-              <el-form-item>
+              <div class="avainit-actions">
+                <el-button class="avainit-cancel" @click="dialog_avainit = false">取消</el-button>
                 <el-button
                   type="primary"
-                  class="b_ex_avaflow"
+                  class="avainit-submit"
                   @click="sumbit_inverse"
                   >运行</el-button
                 >
-                <el-button @click="dialog_avainit = false">取消</el-button>
-              </el-form-item>
+              </div>
             </el-form>
             <el-form
               :model="form_bedding_wedget"
-              label-width="auto"
-              style="max-width: 600px"
-              class="form_flood"
+              label-position="top"
+              class="form_flood form_avainit"
               v-if="radio_avainit == 3"
             >
               <el-form-item label="融冰时长" class="form1_flood">
@@ -2984,18 +3061,15 @@
                 <el-input
                   v-model="form_bedding_wedget.permeability"
                   placeholder="20"
-                  style="width: 60px"
                 />
               </el-form-item>
 
-              <el-form-item>
-                <el-button type="primary" @click="sumbit_wedget"
+              <div class="avainit-actions">
+                <el-button class="avainit-cancel" @click="dialog_avainit = false">取消</el-button>
+                <el-button type="primary" class="avainit-submit" @click="sumbit_wedget"
                   >运行</el-button
                 >
-                <el-button @click="dialog_avainit = false"
-                  >取消</el-button
-                ></el-form-item
-              >
+              </div>
             </el-form>
           </el-dialog>
         </div>
@@ -4566,7 +4640,7 @@ const form_bedding_wedget = reactive({
   melt_duration: '240',
 })
 const form_avainit_location = reactive({ longitude: '95.0020', latitude: '30.2354' })
-const radio_avainit = ref('1')
+const radio_avainit = ref(1)
 const seismicModelType = ref('ml') // ml | dl
 const dialogVisibleSeismic = ref(false)
 const uploadRefSeismic = ref(null)
@@ -4678,6 +4752,7 @@ let $emit = defineEmits([
   'bedding_inverted',
   'bedding_wedget',
   'betaLayers',
+  'proLayers',
 ])
 // 获取 store 实例
 const squareStore = useSquareStore()
@@ -4745,15 +4820,45 @@ const handleFileChangeImpact = (uploadFile, uploadFiles) => {
   fileNameImpact.value = f?.name || ''
 }
 const form2 = reactive({
-  bed: '24',
+  bed: '0.2',
   nn: '0.0125',
   dx: '20',
   dy: '20',
   rous: '2700',
   rouf: '1000',
-  interval: '10',
+  // 输出间距=出图节拍（秒）；后端按「模拟时刻」抽帧，总帧数不超过 maxFrames
+  interval: '1',
   Tmax: '100',
 })
+// 洪水泥石流启动动力学模型（python_port）输入数据：zb 灾前地形 / zl 灾后地形 / hw 初始水深
+const proUploadRefs = reactive({})
+const proFiles = reactive({})
+const proFileNames = reactive({})
+const proFileItems = [
+  { key: 'zb', label: '灾前地形', placeholder: 'zb.tif / zb.txt（灾前 DEM）' },
+  { key: 'zl', label: '灾后地形', placeholder: 'zl.tif / zl.txt（灾后 DEM）' },
+  { key: 'hw', label: '初始水深', placeholder: 'hw.tif / hw.txt（堰塞湖水深）' },
+]
+// txt / asc（ESRI ASCII）输入不带坐标系，按此坐标系解释；tif 自带坐标系时以文件为准
+// 无 xllcorner/yllcorner 头部的 txt/asc：网格中心经纬度（WGS84），后端换算成 UTM 角点；有头部时忽略
+const proAnchorLon = ref('94.9629943')
+const proAnchorLat = ref('30.1975837')
+const proSourceCrs = ref('EPSG:32646')
+proFileItems.forEach(item => {
+  proFileNames[item.key] = ''
+  proFiles[item.key] = null
+})
+const handleProFile = (key, uploadFile, uploadFiles) => {
+  const f = (uploadFiles && uploadFiles[0]?.raw) || uploadFile.raw || uploadFile
+  proFiles[key] = f
+  proFileNames[key] = f?.name || ''
+}
+const triggerProUpload = key => {
+  const el = proUploadRefs[key]?.$el?.querySelector?.('input[type=file]')
+  if (el) el.click()
+}
+// 洪水泥石流启动动力学模型（python_port）运行状态
+const floodRunning = ref(false)
 // 洪水泥石流启动动力学模型（测试）
 const dialogVisible2Test = ref(false)
 const renderMethod = ref('debrisflow')
@@ -5046,14 +5151,172 @@ const subitForm1 = async () => {
   }
 }
 
-//洪水泥石流-flood
+// 洪水泥石流启动动力学模型（python_port 双层浅水流数值内核）
 function onSubmit2() {
   dialogVisible2.value = false
-  ElMessage({ message: '运行中!', type: 'success', duration: 1500 })
+  ElMessage({ message: '运行中，请稍候...', type: 'info', duration: 3000 })
   submitForm2()
 }
-const submitForm2 = () => {
-  $emit('floodLayers')
+
+function proNumber(value, fallback) {
+  const raw = String(value ?? '').trim()
+  if (raw === '') return fallback
+  const n = Number(raw)
+  return Number.isFinite(n) ? n : fallback
+}
+
+// 参数传回后端 -> 后端调用 suanfa/Pro/python_port 数值内核 -> 输出 ASC 帧 -> 前端渲染
+const submitForm2 = async () => {
+  if (floodRunning.value) {
+    ElMessage({ message: '正在计算中，请稍候...', type: 'info' })
+    return
+  }
+  floodRunning.value = true
+  ElMessage({ message: '数值计算启动中...', type: 'info', duration: 0 })
+  try {
+    // 选了三份输入数据就先上传（后端用上传数据计算）；都不选则用内置示例数据
+    const chosen = proFileItems.filter(item => proFiles[item.key])
+    if (chosen.length > 0 && chosen.length < proFileItems.length) {
+      ElMessage.closeAll()
+      ElMessage({
+        message: 'zb / zl / hw 三份数据要么都选，要么都不选（不选用内置示例数据）',
+        type: 'warning',
+        duration: 4000,
+      })
+      return
+    }
+    let jobId = ''
+    if (chosen.length === proFileItems.length) {
+      ElMessage.closeAll()
+      ElMessage({ message: '输入数据上传中...', type: 'info', duration: 0 })
+      const formData = new FormData()
+      const crs = String(proSourceCrs.value || '').trim()
+      const anchorLon = String(proAnchorLon.value || '').trim()
+      const anchorLat = String(proAnchorLat.value || '').trim()
+      if (crs) formData.append('sourceCrs', crs)
+      if (anchorLon) formData.append('anchorLon', anchorLon)
+      if (anchorLat) formData.append('anchorLat', anchorLat)
+      const keepExts = ['.tif', '.tiff', '.asc', '.txt']
+      for (const item of proFileItems) {
+        const f = proFiles[item.key]
+        const rawName = String((f && f.name) || '')
+        const dot = rawName.lastIndexOf('.')
+        const lowerExt = dot >= 0 ? rawName.slice(dot).toLowerCase() : ''
+        // 保留原始扩展名：txt / asc（ESRI ASCII）直接透传后端，不再强制改成 .tif
+        const ext = keepExts.includes(lowerExt) ? lowerExt : '.tif'
+        formData.append(
+          item.key,
+          new File([f], item.key + ext, {
+            type: f.type || 'application/octet-stream',
+          }),
+        )
+      }
+      const up = await modelService.uploadProFiles(formData)
+      if (!up || up.status !== 'ok' || !up.jobId) {
+        ElMessage.closeAll()
+        ElMessage({ message: up?.message || '输入数据上传失败', type: 'error' })
+        return
+      }
+      jobId = up.jobId
+    }
+
+    const anchorLonNum = proNumber(proAnchorLon.value, NaN)
+    const anchorLatNum = proNumber(proAnchorLat.value, NaN)
+    const accepted = await modelService.runProModel({
+      jobId,
+      sourceCrs: String(proSourceCrs.value || '').trim(),
+      ...(Number.isFinite(anchorLonNum) && Number.isFinite(anchorLatNum)
+        ? { anchorLon: anchorLonNum, anchorLat: anchorLatNum }
+        : {}),
+      params: {
+        bed: proNumber(form2.bed, 0.2),
+        nn: proNumber(form2.nn, 0.0125),
+        dx: proNumber(form2.dx, 0),
+        dy: proNumber(form2.dy, 0),
+        rous: proNumber(form2.rous, 2700),
+        rouf: proNumber(form2.rouf, 1000),
+        interval: proNumber(form2.interval, 1),
+        tmax: proNumber(form2.Tmax, 100),
+        maxFrames: 40,
+        field: 'total',
+      },
+    })
+    if (!accepted || accepted.status !== 'accepted') {
+      ElMessage.closeAll()
+      ElMessage({ message: accepted?.message || '启动计算失败', type: 'error' })
+      return
+    }
+    ElMessage.closeAll()
+    ElMessage({
+      message: '数值计算已启动（约需数分钟），请稍候...',
+      type: 'info',
+      duration: 0,
+    })
+
+    const startTs = Date.now()
+    while (true) {
+      await new Promise(r => setTimeout(r, 4000))
+      let st = null
+      try {
+        st = await modelService.getProStatus(accepted.jobId)
+      } catch (e) {
+        st = null
+      }
+      if (st && st.status === 'running') {
+        ElMessage.closeAll()
+        ElMessage({
+          message:
+            '计算中 ' + Math.round(st.progress ?? 0) + '%（已输出 ' +
+            (st.frames || 0) + ' 帧，已用 ' + (st.elapsedSeconds || 0) + 's）',
+          type: 'info',
+          duration: 0,
+        })
+        continue
+      }
+      if (st && st.status === 'done') {
+        ElMessage.closeAll()
+        ElMessage({
+          message: '洪水泥石流启动动力学模型完成，输出 ' + (st.frameCount || 0) + ' 帧',
+          type: 'success',
+          duration: 2500,
+        })
+        $emit('proLayers', {
+          result: {
+            status: 'ok',
+            outputBase: st.outputBase,
+            ascBase: st.ascBase,
+            frameFiles: st.frameFiles,
+            frameCount: st.frameCount,
+            bbox: st.bbox,
+            meta: st.meta,
+          },
+        })
+        return
+      }
+      if (st && st.status === 'error') {
+        ElMessage.closeAll()
+        ElMessage({ message: '模拟失败: ' + (st.message || '未知错误'), type: 'error' })
+        return
+      }
+      if (Date.now() - startTs > 60 * 60 * 1000) {
+        ElMessage.closeAll()
+        ElMessage({ message: '等待结果超时（60分钟）', type: 'error' })
+        return
+      }
+    }
+  } catch (error) {
+    ElMessage.closeAll()
+    const msg = error?.response?.data || error?.message || error
+    ElMessage({
+      message:
+        '洪水泥石流模拟失败: ' +
+        (typeof msg === 'string' ? msg : JSON.stringify(msg)),
+      type: 'error',
+    })
+    console.error('submitForm2 error:', error)
+  } finally {
+    floodRunning.value = false
+  }
 }
 
 // 关闭正方形的函数
@@ -5597,11 +5860,305 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
 }
 :deep(.el-dialog.dialog_avainit) {
   --el-dialog-bg-color: transparent;
-  margin-top: 14%;
-  width: 400px;
-  height: 482px;
-  background-image: url('../assets/img/fz175.png');
+  margin-top: 7vh;
+  width: min(640px, calc(100vw - 32px));
+  height: auto;
+  max-height: 88vh;
+  border-radius: 16px;
+  border: 1px solid rgba(94, 178, 255, 0.35);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  background-image: linear-gradient(180deg, rgba(5, 22, 40, 0.18), rgba(5, 22, 40, 0.72)), url('../assets/img/fz175.png');
   background-size: 100% 100%;
+  overflow: hidden;
+}
+
+:deep(.el-dialog.dialog_avainit .el-dialog__header) {
+  padding: 18px 42px 0 22px;
+}
+
+:deep(.el-dialog.dialog_avainit .el-dialog__body) {
+  max-height: calc(88vh - 84px);
+  padding: 6px 22px 20px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(96, 180, 255, 0.5) transparent;
+}
+
+:deep(.el-dialog.dialog_avainit .el-dialog__body::-webkit-scrollbar) {
+  width: 6px;
+}
+
+:deep(.el-dialog.dialog_avainit .el-dialog__body::-webkit-scrollbar-thumb) {
+  border-radius: 999px;
+  background: rgba(96, 180, 255, 0.45);
+}
+
+:deep(.el-dialog.dialog_avainit .el-dialog__headerbtn) {
+  top: 14px;
+  right: 14px;
+  z-index: 5;
+}
+
+.avainit-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-right: 30px;
+}
+
+.avainit-header-text {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-left: 14px;
+}
+
+.avainit-header-text::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 3px;
+  width: 4px;
+  height: 40px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #35d5ff, #2f7cff 55%, rgba(47, 124, 255, 0));
+  box-shadow: 0 0 14px rgba(53, 213, 255, 0.6);
+}
+
+.avainit-title {
+  color: #f2f8ff;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0.5px;
+}
+
+.avainit-subtitle {
+  color: rgba(178, 210, 238, 0.72);
+  font-size: 12px;
+  letter-spacing: 1.2px;
+}
+
+.avainit-header .help-icon {
+  margin-top: 4px;
+  color: rgba(164, 214, 255, 0.85);
+  font-size: 19px;
+  cursor: pointer;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.avainit-header .help-icon:hover {
+  color: #ffffff;
+  transform: scale(1.08);
+}
+
+.avainit-mode-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 6px;
+  padding: 8px 10px 8px 12px;
+  border: 1px solid rgba(93, 174, 255, 0.18);
+  border-radius: 12px;
+  background: rgba(8, 28, 48, 0.52);
+}
+
+.avainit-field-caption {
+  color: #d9ecff;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+}
+
+.avainit-mode-row :deep(.el-radio-group) {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 9px;
+  background: rgba(4, 18, 32, 0.55);
+}
+
+.avainit-mode-row :deep(.el-radio) {
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  margin-right: 0;
+  padding: 0 10px;
+  border-radius: 7px;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.avainit-mode-row :deep(.el-radio.is-checked) {
+  background: linear-gradient(135deg, rgba(45, 160, 255, 0.32), rgba(53, 213, 255, 0.18));
+  box-shadow: inset 0 0 0 1px rgba(83, 190, 255, 0.55);
+}
+
+.avainit-mode-row :deep(.el-radio__label) {
+  color: #cfe6ff;
+  font-size: 14px;
+  padding-left: 6px;
+}
+
+.avainit-mode-row :deep(.el-radio.is-checked .el-radio__label) {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.avainit-mode-row :deep(.el-radio__inner) {
+  border-color: rgba(150, 205, 255, 0.65);
+  background: transparent;
+}
+
+.avainit-mode-row :deep(.el-radio.is-checked .el-radio__inner) {
+  border-color: #63d7ff;
+  background: #63d7ff;
+  box-shadow: 0 0 10px rgba(99, 215, 255, 0.55);
+}
+
+.avainit-location {
+  margin-top: 10px;
+  padding: 10px 12px 12px;
+  border: 1px solid rgba(93, 174, 255, 0.18);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(8, 28, 48, 0.62), rgba(8, 28, 48, 0.4));
+}
+
+.avainit-location-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.avainit-location-hint {
+  color: rgba(160, 196, 226, 0.65);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.avainit-location-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.avainit-location-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: rgba(190, 218, 244, 0.8);
+  font-size: 12px;
+}
+
+.avainit-location-item :deep(.el-input__wrapper) {
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: rgba(5, 20, 36, 0.58);
+  box-shadow: inset 0 0 0 1px rgba(104, 181, 255, 0.24);
+  transition: box-shadow 0.2s, background 0.2s;
+}
+
+.avainit-location-item :deep(.el-input__wrapper:hover) {
+  box-shadow: inset 0 0 0 1px rgba(104, 181, 255, 0.42);
+}
+
+.avainit-location-item :deep(.el-input__wrapper.is-focus) {
+  background: rgba(7, 28, 49, 0.82);
+  box-shadow: inset 0 0 0 1px rgba(91, 200, 255, 0.85), 0 0 0 3px rgba(55, 150, 255, 0.1);
+}
+
+.avainit-location-item :deep(.el-input__inner) {
+  color: #eaf4ff;
+  font-size: 14px;
+}
+
+.avainit-location-item :deep(.el-input__inner::placeholder) {
+  color: rgba(150, 181, 210, 0.52);
+}
+
+.form_avainit {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 18px;
+  width: 100%;
+  margin: 12px 0 0;
+}
+
+.form_avainit :deep(.el-form-item) {
+  min-width: 0;
+  margin-bottom: 14px;
+}
+
+.form_avainit :deep(.el-form-item__label) {
+  height: auto;
+  margin-bottom: 3px;
+  padding: 0;
+  color: #b9d6f1;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.form_avainit :deep(.el-input__wrapper) {
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: rgba(5, 20, 36, 0.58);
+  box-shadow: inset 0 0 0 1px rgba(104, 181, 255, 0.24);
+  transition: box-shadow 0.2s, background 0.2s;
+}
+
+.form_avainit :deep(.el-input__wrapper:hover) {
+  box-shadow: inset 0 0 0 1px rgba(104, 181, 255, 0.42);
+}
+
+.form_avainit :deep(.el-input__wrapper.is-focus) {
+  background: rgba(7, 28, 49, 0.82);
+  box-shadow: inset 0 0 0 1px rgba(91, 200, 255, 0.85), 0 0 0 3px rgba(55, 150, 255, 0.1);
+}
+
+.form_avainit :deep(.el-input__inner) {
+  color: #eaf4ff;
+  font-size: 14px;
+}
+
+.form_avainit :deep(.el-input__inner::placeholder) {
+  color: rgba(150, 181, 210, 0.52);
+}
+
+.avainit-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(104, 181, 255, 0.15);
+}
+
+.avainit-actions .avainit-cancel {
+  min-width: 78px;
+  color: #c9def3;
+  border-color: rgba(128, 181, 229, 0.45);
+  background: rgba(9, 28, 47, 0.45);
+}
+
+.avainit-actions .avainit-submit {
+  min-width: 98px;
+  border: none;
+  color: #ffffff;
+  background: linear-gradient(135deg, #2f8cff, #24c6ff);
+  box-shadow: 0 8px 20px rgba(31, 143, 255, 0.28);
+}
+
+.avainit-actions .avainit-submit:hover {
+  background: linear-gradient(135deg, #3d98ff, #39d1ff);
+  box-shadow: 0 10px 24px rgba(31, 143, 255, 0.4);
 }
 
 :deep(.el-input__wrapper) {

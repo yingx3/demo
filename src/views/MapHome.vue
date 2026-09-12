@@ -6,6 +6,7 @@
       @timeSelected="handleTimeSelected"
       @yjLayers="yjLayers"
       @betaLayers="betaLayers"
+      @proLayers="proLayers"
       @floodLayers="floodLayers"
       @floodLayersTest="floodLayersTest"
       @forecast="foreCast"
@@ -2053,8 +2054,8 @@ function cleanupBetaRenderer() {
 
 /**
  * Light-weight ground height lookup for the beta renderer.
- * A single pick on the already-loaded globe instead of sampling the whole grid,
- * which used to flood Cesium terrain requests and break the tile availability tree.
+ * Reads the already-loaded globe instead of issuing a batch terrain request.
+ * The old rectangles crash was caused by Vue deeply proxying the Viewer (now shallowRef), not by sampleTerrain itself.
  */
 function frameUrlOf(ascBase, name) {
   return String(ascBase).replace(/\/$/, '') + '/' + encodeURIComponent(name)
@@ -2160,7 +2161,7 @@ function computeBetaViewRect(meta, wetBbox, outW, outH, ncols, nrows, cellsize) 
   }
 }
 
-const betaLayers = async payload => {
+const betaLayers = async (payload, label = '山洪泥石流启动动力学模型_beta') => {
   const result = payload?.result
   if (!result || result.status !== 'ok') {
     cleanupBetaRenderer()
@@ -2242,10 +2243,10 @@ const betaLayers = async payload => {
     if (runId !== betaRunId) return
 
     // ② 相机自动定位。
-    // 注意：这里绝对不能再调 Cesium.sampleTerrain —— 本工程的地形服务一旦被批量采样，
-    // Cesium 的 TileAvailability 四叉树会被打坏，紧接着 globe 渲染直接崩：
-    // "Cannot read properties of undefined (reading 'rectangles')"。
-    // 所以地面高度只读已经加载好的瓦片（globe.getHeight），叠加层本身已经关掉深度测试。
+    // 说明：sampleTerrain 本身不是根因；旧 rectangles 崩溃来自 Viewer 被 Vue 深度代理，
+    // raw/Proxy 引用混入同一棵 TileAvailability 四叉树（MapLayout 已改为 shallowRef）。
+    // 这里仍优先读已加载好的瓦片（globe.getHeight），避免相机尚未飞到该区域时产生大量地形请求。
+
     const view = computeBetaViewRect(meta, wetBbox, width, height, ncols, nrows, cellsize)
     const groundHeight = getGroundHeightMeters(view.centerLon, view.centerLat, 3000)
     console.log(
@@ -2301,14 +2302,17 @@ const betaLayers = async payload => {
     )
 
     ElMessage.closeAll()
-    ElMessage({ message: '山洪泥石流启动动力学模型_beta 渲染完成', type: 'success', duration: 2000 })
+    ElMessage({ message: label + ' 渲染完成', type: 'success', duration: 2000 })
   } catch (e) {
     cleanupBetaRenderer()
     console.error('[betaLayers] DebrisFlow render failed:', e)
     ElMessage.closeAll()
     ElMessage({ message: 'DebrisFlow 渲染失败: ' + (e.message || e), type: 'error' })
   }
+
 }
+// 洪水泥石流启动动力学模型（python_port）复用 beta 的 ASC 帧渲染链路
+const proLayers = payload => betaLayers(payload, '洪水泥石流启动动力学模型')
 
 const floodLayersTest = async payload => {
   const method = payload.renderMethod || 'debrisflow'

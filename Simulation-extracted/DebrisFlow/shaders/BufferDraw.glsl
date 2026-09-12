@@ -96,7 +96,34 @@ vec4 Render(in vec3 ro, in vec3 rd) {
   vec2 ret = hitBox(ro, rayDir);
   if(ret.x > ret.y)
     discard;
+  if(ret.y < 0.0)
+    discard;
   ret.x = max(ret.x, 0.0);
+
+  // ---- Pre-computed frame modes: sample the depth texture and return BEFORE the ----
+  // ---- terrain / water ray-march. The flat DEM used by initBoxFlat() has max == min, ----
+  // ---- so its normalised value is NaN; running the ray-march first makes wt NaN and ----
+  // ---- the "if(wt < ret.y)" test discards every fragment (frames load, nothing shows). ----
+  if(renderPackedFrames) {
+    vec3 ppos = clamp(ro + rd * ret.x, vec3(-0.5), vec3(0.5));
+    vec2 puv = clamp(ppos.xz + 0.5, vec2(0.0), vec2(1.0));
+    float packedV = unpackFloat(texture(waterHeightMap, puv));
+    if(packedV < 0.00001)
+      discard;
+    // 整个过程的最大流深远大于单帧最大流深，线性映射会几乎透明，这里抬一下低值可见度
+    float visV = pow(clamp(packedV, 0.0, 1.0), 0.6);
+    return vec4(getColorByValue(visV), smoothstep(0.0, 1.0, visV));
+  }
+  if(renderDirectFrames) {
+    vec3 dpos = clamp(ro + rd * ret.x, vec3(-0.5), vec3(0.5));
+    vec2 duv = (dpos.xz + 0.5) * vec2(float(textureSize)) / iResolution.xy;
+    duv = clamp(duv, vec2(0.0), vec2(1.0));
+    float directV = texture(waterHeightMap, duv).x;
+    if(directV < 0.00001)
+      discard;
+    return vec4(getColorByValue(directV), smoothstep(0.0, 1.0, directV));
+  }
+
   vec3 p = ro + ret.x * rayDir;
 
   if(ret.x > 0.0) {
@@ -174,29 +201,7 @@ vec4 Render(in vec3 ro, in vec3 rd) {
           //  if(heatV < 0.00001 ) discard;
       return vec4(vec3(heatV), 1.);
     }
-    if(renderDirectFrames) {
-      // Skip the ray-march entirely: read the depth map at this fragment's own cell.
-      // Normalise the box-local hit point to the grid aspect ratio, same as getHeight().
-      vec3 dpos = clamp(ro + rd * max(ret.x, 0.0), vec3(-0.5), vec3(0.5));
-      vec2 duv = (dpos.xz + 0.5) * vec2(float(textureSize)) / iResolution.xy;
-      duv = clamp(duv, vec2(0.0), vec2(1.0));
-      float directV = texture(waterHeightMap, clamp(duv, 0.0, 1.0)).x;
-      if(directV < 0.00001)
-        discard;
-      return vec4(getColorByValue(directV), smoothstep(0.0, 1.0, directV));
-    }
-    if(renderPackedFrames) {
-      // 纹理正好铺满整个 box，直接用 box 局部坐标当 uv（+x=东，+z=南）。
-      // 乘 textureSize/iResolution 只适合方形网格，非正方形时会把南北方向拉伸。
-      vec3 ppos = clamp(ro + rd * max(ret.x, 0.0), vec3(-0.5), vec3(0.5));
-      vec2 puv = clamp(ppos.xz + 0.5, vec2(0.0), vec2(1.0));
-      float packedV = unpackFloat(texture(waterHeightMap, puv));
-      if(packedV < 0.00001)
-        discard;
-      // 整个过程的最大流深远大于单帧最大流深，线性映射会几乎透明，这里抬一下低值可见度
-      float visV = pow(clamp(packedV, 0.0, 1.0), 0.6);
-      return vec4(getColorByValue(visV), smoothstep(0.0, 1.0, visV));
-    }
+    // 预计算帧分支已提前到光线步进之前（见 Render 开头）
 
 
     if(renderHeatMap) {

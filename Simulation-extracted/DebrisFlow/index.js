@@ -199,7 +199,9 @@ class DebrisFlow {
         let originalIndex = y * width + x
         let flippedIndex = (height - 1 - y) * width + x
 
-        const h = clamp((data[originalIndex].height - min) / (max - min), 0, 1)
+        // 平坦 DEM (max == min) 时 (h-min)/(max-min) 是 0/0=NaN，纹理会被污染；
+        const demSpan = max - min
+        const h = demSpan > 1e-6 ? clamp((data[originalIndex].height - min) / demSpan, 0, 1) : 0.5
         texData[originalIndex * 4] =
           texData[originalIndex * 4 + 1] =
           texData[originalIndex * 4 + 2] =
@@ -670,6 +672,9 @@ class DebrisFlow {
     const attributelocations = Cesium.GeometryPipeline.createAttributeLocations(geometry)
     this.fluidCommand = new CustomPrimitive({
       commandType: 'Draw',
+      // 预计算帧是贴在地形之上的叠加层：必须放在 TRANSLUCENT pass，
+      // 保证它在 OPAQUE（含地球瓦片）之后绘制，否则会被地形整片覆盖。
+      pass: (this.renderPackedFrames || this.renderDirectFrames) ? Cesium.Pass.TRANSLUCENT : Cesium.Pass.OPAQUE,
       uniformMap: {
         iTime: () => {
           return this.time
@@ -844,6 +849,8 @@ class DebrisFlow {
     if (!(dataSetIdx >= 0) || dataSetIdx >= this.dataSet.length) dataSetIdx = this.dataSet.length - 1
     const img = await base64ToImg(this.dataSet[dataSetIdx])
 
+    // 打包深度按字节存放在 RGB，线性插值/多级渐远会把整数字节混在一起，
+    // 解码出完全错误的值；这里必须用 NEAREST 采样且不生成 mipmap。
     const newTex = new Cesium.Texture({
       context: this._viewer.scene.frameState.context,
       source: img,
@@ -851,11 +858,10 @@ class DebrisFlow {
       sampler: new Cesium.Sampler({
         wrapS: Cesium.TextureWrap.REPEAT,
         wrapT: Cesium.TextureWrap.REPEAT,
-        magnificationFilter: Cesium.TextureMagnificationFilter.LINEAR,
-        minificationFilter: Cesium.TextureMinificationFilter.LINEAR_MIPMAP_LINEAR
+        magnificationFilter: Cesium.TextureMagnificationFilter.NEAREST,
+        minificationFilter: Cesium.TextureMinificationFilter.NEAREST
       })
     })
-    newTex.generateMipmap()
     let oldTex = this.waterHeightMap
     this.waterHeightMap = newTex
     oldTex.destroy()

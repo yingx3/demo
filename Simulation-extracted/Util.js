@@ -32,6 +32,9 @@ export class CustomPrimitive {
     this.preExecute = options.preExecute
 
     this.modelMatrix = options.modelMatrix ?? Cesium.Matrix4.IDENTITY
+    // OPAQUE(默认) / TRANSLUCENT：预计算帧的叠加层必须走 TRANSLUCENT，
+    // 否则没有 boundingVolume 的 DrawCommand 会在 OPAQUE 里最先绘制，被随后绘制的地球瓦片覆盖。
+    this.pass = options.pass ?? Cesium.Pass.OPAQUE
     this.show = true
     this.commandToExecute = undefined
     this.clearCommand = undefined
@@ -72,7 +75,7 @@ export class CustomPrimitive {
           shaderProgram: shaderProgram,
           framebuffer: this.framebuffer,
           renderState: renderState,
-          pass: Cesium.Pass.OPAQUE
+          pass: this.pass
         })
       }
       case 'Compute': {
