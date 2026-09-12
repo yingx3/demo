@@ -3634,7 +3634,6 @@
                     <el-upload
                       ref="uploadRef"
                       action="/node/displ"
-                      :on-success="handleUploadSuccess"
                       name="file"
                       :auto-upload="false"
                       :show-file-list="false"
@@ -4460,7 +4459,7 @@ const openHelpDialog_inverseV = ref(false)
 const openHelpDialog_gbm = ref(false)
 const openHelpDialog_seismic = ref(false)
 const uploadRef = ref(null)
-const uploadedFileId = ref('')
+const selectedDisplFile = ref(null)
 const fileName_inverseV = ref('')
 // --- GBM 上传相关 ---
 const uploadRefGBM = ref(null)
@@ -5354,15 +5353,8 @@ const triggerUpload = () => {
 }
 
 const handleFileChange = file => {
-  uploadedFileId.value = ''
+  selectedDisplFile.value = file.raw || file
   fileName_inverseV.value = file.name
-  uploadRef.value.submit()
-}
-
-const handleUploadSuccess = response => {
-  if (response?.code === 200 && response.fileId) {
-    uploadedFileId.value = response.fileId
-  }
 }
 const triggerUploadGBM = () => {
   // 打开文件选择
@@ -5451,11 +5443,19 @@ const handleUploadErrorGBM = (err, file, fileList) => {
 const submit_inverseV = async () => {
   try {
     ElMessage({ message: '运行中!', type: 'success' })
-    if (!uploadedFileId.value) {
-      ElMessage({ message: '请先选择并上传位移文件', type: 'warning' })
+    if (!selectedDisplFile.value) {
+      ElMessage({ message: '请先选择位移文件', type: 'warning' })
       return
     }
-    const params = { form_inverseV, fileId: uploadedFileId.value }
+
+    const formData = new FormData()
+    formData.append('file', selectedDisplFile.value)
+    const uploadResponse = await axios.post('/node/displ', formData, {
+      timeout: 300000,
+    })
+    const uploadedFileIdValue = uploadResponse.data?.fileId
+    const params = { form_inverseV }
+    if (uploadedFileIdValue) params.fileId = uploadedFileIdValue
     // await new Promise(resolve => setTimeout(resolve, 1000)) // 等待1秒
     const response = await axios.get('/node/displ_file', { params })
     console.log('执行结果:', response.data.rt_json)
