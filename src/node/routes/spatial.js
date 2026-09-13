@@ -37,7 +37,7 @@ router.get('/point', async (req, res) => {
     }
 
     const { rows } = await pool.query(
-      `SELECT name, dcmd, lssl, slope, hlxqsl, pthhsmj, elevation, scale, ST_X(geom) AS lng,ST_Y(geom) AS lat FROM point2 WHERE name = $1`,
+      `SELECT id, name, dcmd, lssl, slope, hlxqsl, pthhsmj, elevation, scale, ST_X(geom::geometry) AS lng,ST_Y(geom::geometry) AS lat FROM point2 WHERE name = $1`,
       [name],
     )
 
@@ -76,9 +76,9 @@ router.get('/point/attribute', async (req, res) => {
 
     const { rows } = await pool.query(
       `SELECT 
-        name, dcmd, lssl, slope, hlxqsl, 
+        id, name, dcmd, lssl, slope, hlxqsl, 
         pthhsmj, elevation, scale, 
-        ST_X(geom) AS lng, ST_Y(geom) AS lat 
+        ST_X(geom::geometry) AS lng, ST_Y(geom::geometry) AS lat 
        FROM point2 
        WHERE ${dbField} = $1
        LIMIT 100`,
@@ -130,7 +130,7 @@ router.get('/point/attribute_qxz', async (req, res) => {
 
     const { rows } = await pool.query(
       `SELECT 
-      z_name, jyl, wind, ST_X(geom) AS lng,ST_Y(geom) AS lat 
+      z_name, jyl, wind, ST_X(geom::geometry) AS lng,ST_Y(geom::geometry) AS lat 
       FROM point_qxz WHERE ${dbField} = $1 
       LIMIT 100`,
       [attribute_value],
@@ -165,7 +165,7 @@ router.get('/point_qxz', async (req, res) => {
     }
 
     const { rows } = await pool.query(
-      `SELECT z_name, jyl, wind, ST_X(geom) AS lng,ST_Y(geom) AS lat FROM point_qxz WHERE z_name = $1`,
+      `SELECT z_name, jyl, wind, ST_X(geom::geometry) AS lng,ST_Y(geom::geometry) AS lat FROM point_qxz WHERE z_name = $1`,
       [z_name],
     )
 
@@ -261,6 +261,43 @@ router.post('/point', async (req, res) => {
   } catch (error) {
     console.error(error)
     res.status(500).send('创建要素失败')
+  }
+})
+
+// [新增] 列出平台上所有灾害点（含用户新建的点），供“查看全部点”使用
+router.get('/point/all', async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 500, 1000)
+    const { rows } = await pool.query(
+      `SELECT id, name, dcmd, lssl, slope, hlxqsl, pthhsmj, elevation, scale,
+              ST_X(geom::geometry) AS lng, ST_Y(geom::geometry) AS lat
+       FROM point2
+       ORDER BY id DESC
+       LIMIT $1`,
+      [limit],
+    )
+    res.json({ count: rows.length, data: rows })
+  } catch (error) {
+    console.error('查询全部点失败:', error)
+    res.status(500).json({ error: '服务器内部错误', details: error.message })
+  }
+})
+
+// [新增] 按主键 id 删除单个灾害点
+router.delete('/point/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id)
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ error: 'id 不合法' })
+    }
+    const { rowCount } = await pool.query('DELETE FROM point2 WHERE id = $1', [id])
+    if (rowCount === 0) {
+      return res.status(404).json({ error: '未找到该点', id })
+    }
+    res.json({ code: 200, message: '删除成功', id })
+  } catch (error) {
+    console.error('删除点失败:', error)
+    res.status(500).json({ error: '服务器内部错误', details: error.message })
   }
 })
 

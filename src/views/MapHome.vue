@@ -23,6 +23,12 @@
           <span class="disaster-info-value">{{ row.value }}</span>
         </div>
       </div>
+      <!-- [新增] 已落库的点支持直接删除 -->
+      <div v-if="disasterInfoCanDelete" class="disaster-info-footer">
+        <el-button type="danger" size="small" @click="deleteCurrentPoint">
+          删除此点
+        </el-button>
+      </div>
     </div>
     <zh-jc></zh-jc>
     <le-th
@@ -181,6 +187,20 @@
           <a href="#" @click="cleanentity">
             <img src="../assets/img/clean.png" alt="" /></a
         ></a-popover>
+        <!-- [新增] 全部灾害点：查看平台中所有点（含用户新建的点），可逐条删除 -->
+        <a-popover
+          placement="left"
+          trigger="hover"
+          :open="popoverStatus_hover['popover_allpoints']"
+          @openChange="open => handleHoverChange('popover_allpoints', open)"
+          color="rgba(255, 255, 255, 0.4)"
+        >
+          <template #content>
+            <div>全部灾害点</div>
+          </template>
+          <a href="#" @click="showAllPoints">
+            <img src="../assets/img/global.png" alt="" /></a
+        ></a-popover>
         <!-- 重置 -->
         <!-- <a href="#"> <img src="./assets/img/roll.png" alt="" /></a> -->
 
@@ -265,14 +285,20 @@
                 ><el-button @click="attributesearch_disaster" v-on:click.middle="attributesearch_qxz" title="左键查询灾害点，中键查询气象站">查询</el-button>
               </div>
             </el-form-item>
-            <el-button style="margin-left: 284px" @click="clearSearchCondition">清空查询条件</el-button>
+            <!-- [新增] 查看全部点：含用户新建的点，并支持在属性表中删除 -->
+            <div style="display: flex; justify-content: flex-end; gap: 8px">
+              <el-button type="primary" plain @click="showAllPoints"
+                >查看全部点</el-button
+              >
+              <el-button @click="clearSearchCondition">清空查询条件</el-button>
+            </div>
           </el-form>
         </el-dialog>
 
         <el-dialog
           v-model="dialogVisible_checkattribute"
-          title="属性表"
-          width="860"
+          title="属性表（可删除点位）"
+          width="980"
         >
           <div class="dynamic-table-container">
             <!-- 搜索和过滤区域 -->
@@ -345,6 +371,14 @@
                 width="140"
                 align="center"
               />
+              <!-- [新增] 操作列：可删除平台中的灾害点（含用户新建的点） -->
+              <el-table-column label="操作" width="90" align="center" fixed="right">
+                <template #default="{ row }">
+                  <el-button type="danger" link @click="deletePoint(row)">
+                    删除
+                  </el-button>
+                </template>
+              </el-table-column>
             </el-table>
 
             <!-- 分页组件 -->
@@ -529,6 +563,7 @@ import {
   nextTick,
   ref,
   inject,
+  computed,
   onMounted,
   onUpdated,
   onBeforeUnmount,
@@ -724,6 +759,7 @@ const popoverStatus_hover = ref({
   popover_attribute: false,
   popover_searchattribute: false,
   popover_cleanentity: false,
+  popover_allpoints: false,
 })
 const popoverStatus_click = ref({
   popover_measure: false,
@@ -6246,7 +6282,7 @@ const submit_disaster = () => {
       // 后端返回 201 Created，按 2xx 统一判定成功
       if (res.status >= 200 && res.status < 300) {
         // 落库成功后再在地图上落点，避免失败时留下孤立标记
-        viewer.value.entities.add({
+        const pointEnt = viewer.value.entities.add({
           position: position_point.value,
           billboard: {
             image: '/ng/position.png',
@@ -6257,7 +6293,11 @@ const submit_disaster = () => {
           },
           // [新增] 点击该点可查看属性
           disasterInfo: pointInfo,
+          // [新增] 关联数据库主键，供“删除此点”使用
+          pointId: res.data?.id,
         })
+        // [新增] 登记到标记点集合，删除/清理时统一处理
+        searchMarkerEntities.push(pointEnt)
         ensureDisasterPickHandler()
         ElMessage({ message: '灾害点添加成功', type: 'success' })
         // 重置表单，便于继续添加下一个点
@@ -6300,6 +6340,8 @@ const clearSearchMarkers = () => {
 }
 const addSearchMarker = (lng, lat, info) => {
   const ent = viewer.value.entities.add({
+    // [新增] 关联数据库主键，供删除点时联动移除地图标记
+    pointId: info?.id,
     position: Cesium.Cartesian3.fromDegrees(lng, lat),
     billboard: {
       image: '/ng/position.png',
@@ -6318,12 +6360,119 @@ const addSearchMarker = (lng, lat, info) => {
   return ent
 }
 
+// [新增] 删除地图上指定 id 的标记点实体（数据库记录已由后端删除）
+const removeMarkerByPointId = id => {
+  if (!viewer.value) return
+  const target = Number(id)
+  for (let i = searchMarkerEntities.length - 1; i >= 0; i--) {
+    const ent = searchMarkerEntities[i]
+    if (Number(ent?.pointId) === target) {
+      try {
+        viewer.value.entities.remove(ent)
+      } catch (e) {}
+      searchMarkerEntities.splice(i, 1)
+    }
+  }
+}
+
+// [新增] 删除平台中的灾害点：数据库 + 属性表 + 地图标记三方同步
+const deletePoint = async row => {
+  const id = Number(row?.id)
+  if (!Number.isInteger(id) || id <= 0) {
+    ElMessage({ message: '该记录缺少唯一点位编号，无法删除', type: 'warning' })
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确定删除灾害点“${row.name || '未命名'}”吗？删除后不可恢复。`,
+      '删除确认',
+      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' },
+    )
+  } catch (e) {
+    return // 用户取消删除
+  }
+  try {
+    const res = await axios.delete(`/node/point/${id}`)
+    if (res.status >= 200 && res.status < 300) {
+      ElMessage({ message: '删除成功', type: 'success' })
+      tableData.value = tableData.value.filter(item => Number(item.id) !== id)
+      if (Number(disasterInfoEntity.value?.pointId) === id) hideDisasterInfo()
+      removeMarkerByPointId(id)
+    }
+  } catch (err) {
+    if (err?.response?.status === 404) {
+      // 库里已无该点，前端一并清掉，避免“删不掉”的错觉
+      tableData.value = tableData.value.filter(item => Number(item.id) !== id)
+      if (Number(disasterInfoEntity.value?.pointId) === id) hideDisasterInfo()
+      removeMarkerByPointId(id)
+      ElMessage({ message: '该点已不存在，已从列表移除', type: 'warning' })
+    } else {
+      ElMessage({ message: '删除失败：服务或网络错误', type: 'error' })
+      console.log(err)
+    }
+  }
+}
+
+// [新增] 信息卡片里的“删除此点”
+const deleteCurrentPoint = () => {
+  const ent = disasterInfoEntity.value
+  const id = Number(ent?.pointId)
+  if (!Number.isInteger(id) || id <= 0) {
+    ElMessage({ message: '该标记点未关联数据库记录，无法删除', type: 'warning' })
+    return
+  }
+  deletePoint({ id, name: ent?.disasterInfo?.name })
+}
+
+// [新增] 查看全部灾害点（含用户新建的点），并支持逐条删除
+const showAllPoints = () => {
+  dialogVisible_searchdisaster.value = false
+  loading.value = true
+  clearSearchMarkers()
+  axios
+    .get('/node/point/all', { params: { limit: 500 } })
+    .then(res => {
+      const data = res.data?.data || []
+      tableData.value = []
+      if (!data.length) {
+        ElMessage({ message: '平台中还没有灾害点', type: 'warning' })
+        return
+      }
+      data.forEach(item => {
+        addSearchMarker(item.lng, item.lat, item)
+        tableData.value.push({
+          id: item.id,
+          name: item.name || '--',
+          dcmd: item.dcmd || '--',
+          lssl: item.lssl || '--',
+          slope: item.slope ? `${item.slope}°` : '--',
+          hlxqsl: item.hlxqsl || '--',
+          pthhsmj: item.pthhsmj ? `${item.pthhsmj} m²` : '--',
+          elevation: item.elevation ? `${item.elevation} 米` : '--',
+          scale: item.scale || '--',
+          lng: item.lng,
+          lat: item.lat,
+        })
+      })
+      dialogVisible_checkattribute.value = true
+    })
+    .catch(err => handleQueryError(err, '灾害点数据'))
+    .finally(() => {
+      loading.value = false
+    })
+}
+
 // ===== [新增] 标记点信息卡片：点击地图上的点弹出属性 =====
 const disasterInfoVisible = ref(false)
 const disasterInfoPos = ref({ left: 0, top: 0 })
 const disasterInfoTitle = ref('')
 const disasterInfoRows = ref([])
 const disasterInfoEntity = ref(null)
+// [新增] 只有关联了数据库主键的点才显示“删除此点”
+const disasterInfoCanDelete = computed(() => {
+  const id = Number(disasterInfoEntity.value?.pointId)
+  return Number.isInteger(id) && id > 0
+})
 let disasterPickHandler = null
 let disasterInfoPostRenderHandler = null
 
@@ -6480,6 +6629,7 @@ const locationsearch = () => {
           addSearchMarker(item.lng, item.lat, item)
           // 2. 格式化表格数据
           tableData.value.push({
+            id: item.id, // [新增] 数据库主键，删除时定位记录
             name: item.name || '--', // 处理空值
             dcmd: item.dcmd || '--',
             lssl: item.lssl || '--',
@@ -6488,6 +6638,8 @@ const locationsearch = () => {
             pthhsmj: item.pthhsmj ? `${item.pthhsmj} m²` : '--',
             elevation: item.elevation ? `${item.elevation} 米` : '--',
             scale: item.scale || '--',
+            lng: item.lng, // [新增] 供删除时联动移除地图标记
+            lat: item.lat,
           })
         })
       } else {
@@ -6573,6 +6725,7 @@ const attributesearch_disaster = () => {
           addSearchMarker(item.lng, item.lat, item)
           // 2. 格式化表格数据
           tableData.value.push({
+            id: item.id, // [新增] 数据库主键，删除时定位记录
             name: item.name || '--', // 处理空值
             dcmd: item.dcmd || '--',
             lssl: item.lssl || '--',
@@ -6581,6 +6734,8 @@ const attributesearch_disaster = () => {
             pthhsmj: item.pthhsmj ? `${item.pthhsmj} m²` : '--',
             elevation: item.elevation ? `${item.elevation} 米` : '--',
             scale: item.scale || '--',
+            lng: item.lng, // [新增] 供删除时联动移除地图标记
+            lat: item.lat,
           })
         })
       } else {
@@ -7084,6 +7239,13 @@ onBeforeUnmount(() => {
   color: #ffffff;
   text-align: right;
   word-break: break-all;
+}
+.disaster-info-footer {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(90, 176, 255, 0.35);
+  display: flex;
+  justify-content: flex-end;
 }
 
 .map-home-overlay .control {
