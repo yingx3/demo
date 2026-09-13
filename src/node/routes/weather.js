@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * 气象数据采集与实时查询模块（新增）
+ * 气象数据采集与实时查询模块
  * ----------------------------------------------------------------------------
  * ⚠️ 旧逻辑保留说明（勿删）：
  *   平台原有气象链路保持原样、完全未改动，便于后续旧采集器恢复正常时复用：
@@ -12,10 +12,13 @@
  *        数据以幂等 upsert 写入 weather_obs 表，与自动采集数据共用同一张表；
  *     3) 若要整体恢复旧采集器的采集逻辑，见文末 [LEGACY-ADAPTER] 注释块。
  * ----------------------------------------------------------------------------
- * 采集策略（Open-Meteo 公共 API；实测其调用量按“坐标数”计，
- * 免费层每分钟约 600 次限制，超限返回 HTTP 429）：
- *   - 研究区站点（默认 92~99E, 27~32N）：每 30 分钟一轮（WEATHER_FOCUS_INTERVAL_MS）
- *   - 其余全国站点：每 6 小时一轮（WEATHER_NATIONAL_INTERVAL_MS）
+ * 采集范围：西藏林芝市站点（按 COUNTYNAME 匹配，见 LINZHI_COUNTIES）。
+ *   当前表中属于林芝市的站点：波密(56227)、林芝(56312)、察隅(56434)。
+ *   非林芝站点默认停采；如需恢复全国采集，设 WEATHER_NATIONAL_ENABLED=1。
+ * ----------------------------------------------------------------------------
+ * 采集策略（Open-Meteo 公共 API；调用量按“坐标数”计，免费层约 600 次/分钟）：
+ *   - 林芝站点：每 30 分钟一轮（WEATHER_FOCUS_INTERVAL_MS）
+ *   - 近 7 天逐小时历史回填：每 12 小时检查一次（WEATHER_BACKFILL_INTERVAL_MS）
  *   - 分钟级调用预算（默认 500 坐标/分钟）+ 429 自动等待重试
  * ============================================================================
  */
@@ -28,18 +31,30 @@ const router = express.Router()
 // ---------------------------------------------------------------------------
 // 采集配置（均可用环境变量覆盖）
 // ---------------------------------------------------------------------------
-const FOCUS_BBOX = {
-  lonMin: Number(process.env.WEATHER_FOCUS_LON_MIN || 92),
-  lonMax: Number(process.env.WEATHER_FOCUS_LON_MAX || 99),
-  latMin: Number(process.env.WEATHER_FOCUS_LAT_MIN || 27),
-  latMax: Number(process.env.WEATHER_FOCUS_LAT_MAX || 32),
-}
+// 林芝市（原林芝地区）行政区划白名单（历史表中为“林芝县/波密县/察隅县”写法）
+const LINZHI_COUNTIES = [
+  '林芝县',
+  '林芝市',
+  '巴宜区',
+  '工布江达县',
+  '米林县',
+  '米林市',
+  '墨脱县',
+  '波密县',
+  '察隅县',
+  '朗县',
+]
 const FOCUS_INTERVAL_MS = Number(
   process.env.WEATHER_FOCUS_INTERVAL_MS || 30 * 60 * 1000,
-) // 研究区：30 分钟
+) // 林芝站点：30 分钟
 const NATIONAL_INTERVAL_MS = Number(
   process.env.WEATHER_NATIONAL_INTERVAL_MS || 6 * 60 * 60 * 1000,
-) // 全国：6 小时
+) // 非林芝站点：6 小时（默认停用）
+const NATIONAL_ENABLED = process.env.WEATHER_NATIONAL_ENABLED === '1' // 默认只采林芝
+const BACKFILL_DAYS = Number(process.env.WEATHER_BACKFILL_DAYS || 7) // 回填近 7 天
+const BACKFILL_INTERVAL_MS = Number(
+  process.env.WEATHER_BACKFILL_INTERVAL_MS || 12 * 60 * 60 * 1000,
+) // 回填检查间隔：12 小时
 const BATCH_SIZE = Number(process.env.WEATHER_COLLECT_BATCH || 50) // 每批站点数
 const MAX_COORDS_PER_MINUTE = Number(
   process.env.WEATHER_MAX_COORDS_PER_MINUTE || 500,
@@ -87,11 +102,9 @@ function toTimestamptz(timeStr, utcOffsetSeconds) {
   return `${base}${sign}${hh}:${mm}`
 }
 
-const isFocusStation = s =>
-  s.lon >= FOCUS_BBOX.lonMin &&
-  s.lon <= FOCUS_BBOX.lonMax &&
-  s.lat >= FOCUS_BBOX.latMin &&
-  s.lat <= FOCUS_BBOX.latMax
+// 林芝市站点判断（按行政区划名匹配）
+const isLinzhiStation = s =>
+  LINZHI_COUNTIES.includes(String(s.county || '').trim())
 
 // ---------------------------------------------------------------------------
 // 建表（首次运行自动创建，幂等）
@@ -132,12 +145,13 @@ export async function ensureWeatherTable() {
 // ---------------------------------------------------------------------------
 async function loadStations() {
   const { rows } = await pool.query(
-    'SELECT "ID" AS id, "NAME" AS name, "LON" AS lon, "LAT" AS lat FROM weatherstation ORDER BY "ID"',
+    'SELECT "ID" AS id, "NAME" AS name, "COUNTYNAME" AS county, "LON" AS lon, "LAT" AS lat FROM weatherstation ORDER BY "ID"',
   )
   return rows
     .map(row => ({
       id: String(row.id ?? '').trim(),
       name: row.name,
+      county: row.county,
       lon: parseFloat(row.lon),
       lat: parseFloat(row.lat),
     }))
@@ -176,7 +190,7 @@ async function rateLimitCost(n) {
 }
 
 // ---------------------------------------------------------------------------
-// Open-Meteo 批量抓取（多坐标一次请求；429 等待窗口、网络错误重试）
+// Open-Meteo 实时批量抓取（多坐标一次请求；429 等待窗口、网络错误重试）
 // ---------------------------------------------------------------------------
 async function fetchBatch(batch) {
   const lats = batch.map(s => s.lat.toFixed(4)).join(',')
@@ -192,8 +206,41 @@ async function fetchBatch(batch) {
     try {
       const resp = await fetch(url, { signal: AbortSignal.timeout(20000) })
       if (resp.status === 429) {
-        // 公共 API 分钟限流：等待一个窗口后自动重试
         console.log('[weather] 遇到 429 限流，等待 61s 后重试')
+        await sleep(61000)
+        lastError = new Error('HTTP 429')
+        continue
+      }
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+      const data = await resp.json()
+      return Array.isArray(data) ? data : [data]
+    } catch (error) {
+      lastError = error
+      if (attempt < 4) await sleep(1200 * attempt)
+    }
+  }
+  throw lastError || new Error('请求失败')
+}
+
+// ---------------------------------------------------------------------------
+// Open-Meteo 历史抓取（近 N 天逐小时，用于回填与七日表格）
+// ---------------------------------------------------------------------------
+async function fetchHistoryBatch(batch, days) {
+  const lats = batch.map(s => s.lat.toFixed(4)).join(',')
+  const lons = batch.map(s => s.lon.toFixed(4)).join(',')
+  const url =
+    'https://api.open-meteo.com/v1/forecast' +
+    `?latitude=${lats}&longitude=${lons}` +
+    '&hourly=temperature_2m,precipitation,wind_speed_10m,wind_direction_10m,relative_humidity_2m,weather_code' +
+    `&past_days=${days}&forecast_days=0` +
+    '&wind_speed_unit=ms&timezone=Asia%2FShanghai'
+
+  let lastError = null
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    try {
+      const resp = await fetch(url, { signal: AbortSignal.timeout(30000) })
+      if (resp.status === 429) {
+        console.log('[weather] 回填遇到 429 限流，等待 61s 后重试')
         await sleep(61000)
         lastError = new Error('HTTP 429')
         continue
@@ -286,10 +333,10 @@ async function needCollect(scope, intervalMs) {
 
 // ---------------------------------------------------------------------------
 // 采集主流程
-//   scope: 'focus'（研究区）| 'national'（其余全国站点）| 'all'（全部）
+//   scope: 'focus'（林芝站点，默认）| 'national'（非林芝站点）| 'all'（全部）
 //   limit > 0 时仅采前 N 个站点，便于自测
 // ---------------------------------------------------------------------------
-export async function collectOnce({ limit = 0, scope = 'all' } = {}) {
+export async function collectOnce({ limit = 0, scope = 'focus' } = {}) {
   if (state.running) return { skipped: true, reason: '上一轮采集尚未结束' }
   state.running = true
   state.lastScope = scope
@@ -301,11 +348,15 @@ export async function collectOnce({ limit = 0, scope = 'all' } = {}) {
   try {
     await ensureWeatherTable()
     let stations = await loadStations()
-    if (scope === 'focus') stations = stations.filter(isFocusStation)
-    else if (scope === 'national') stations = stations.filter(s => !isFocusStation(s))
+    if (scope === 'focus') stations = stations.filter(isLinzhiStation)
+    else if (scope === 'national') stations = stations.filter(s => !isLinzhiStation(s))
     if (limit > 0) stations = stations.slice(0, limit)
     stationCount = stations.length
     state.lastStationCount = stationCount
+    if (!stationCount) {
+      console.log(`[weather] ${scope} 无匹配站点，跳过`)
+      return { success: 0, fail: 0, scope, stationCount: 0 }
+    }
 
     for (let i = 0; i < stations.length; i += BATCH_SIZE) {
       const batch = stations.slice(i, i + BATCH_SIZE)
@@ -358,7 +409,81 @@ export async function collectOnce({ limit = 0, scope = 'all' } = {}) {
       `[weather] 采集完成（${scope}）：成功 ${success} 站 / 失败 ${fail} 站，用时 ${(state.lastDurationMs / 1000).toFixed(1)}s`,
     )
   }
-  return { success, fail, scope }
+  return { success, fail, scope, stationCount }
+}
+
+// ---------------------------------------------------------------------------
+// 历史回填：近 N 天逐小时（默认 7 天，仅林芝站点）
+// ---------------------------------------------------------------------------
+export async function backfillOnce({ days = BACKFILL_DAYS } = {}) {
+  if (state.running) return { skipped: true, reason: '采集任务正在执行' }
+  state.running = true
+  state.lastScope = 'backfill'
+  state.lastStartAt = new Date().toISOString()
+  const startedAt = Date.now()
+  let success = 0
+  let fail = 0
+  let stationCount = 0
+  try {
+    await ensureWeatherTable()
+    const stations = (await loadStations()).filter(isLinzhiStation)
+    stationCount = stations.length
+    if (!stationCount) return { success: 0, fail: 0, scope: 'backfill' }
+    const nowLimit = Date.now() + 60 * 60 * 1000 // 允许当前时刻前后 1 小时
+
+    for (let i = 0; i < stations.length; i += BATCH_SIZE) {
+      const batch = stations.slice(i, i + BATCH_SIZE)
+      await rateLimitCost(batch.length)
+      try {
+        const results = await fetchHistoryBatch(batch, days)
+        const entries = []
+        batch.forEach((station, index) => {
+          const hourly = results[index]?.hourly
+          if (!hourly?.time?.length) return
+          const offset = results[index]?.utc_offset_seconds
+          for (let h = 0; h < hourly.time.length; h++) {
+            const ts = toTimestamptz(hourly.time[h], offset)
+            if (!ts) continue
+            if (new Date(ts).getTime() > nowLimit) continue // 过滤未来时刻
+            entries.push({
+              station_id: station.id,
+              obs_time: ts,
+              temperature_c: numOrNull(hourly.temperature_2m?.[h]),
+              precipitation_mm: numOrNull(hourly.precipitation?.[h]),
+              wind_speed_ms: numOrNull(hourly.wind_speed_10m?.[h]),
+              wind_direction_deg: numOrNull(hourly.wind_direction_10m?.[h]),
+              humidity_pct: numOrNull(hourly.relative_humidity_2m?.[h]),
+              weather_code: numOrNull(hourly.weather_code?.[h]),
+              source: SOURCE,
+              raw: null,
+            })
+          }
+        })
+        success += await saveObservations(entries)
+      } catch (error) {
+        fail += batch.length
+        state.lastError = `${new Date().toISOString()} ${error.message}`
+        console.error('[weather] 回填批次失败:', error.message)
+      }
+      await sleep(250)
+    }
+    await logCollect('backfill', stationCount, success, fail)
+  } catch (error) {
+    state.lastError = `${new Date().toISOString()} ${error.message}`
+    console.error('[weather] 回填任务失败:', error.message)
+  } finally {
+    state.running = false
+    state.totalRuns += 1
+    state.lastFinishAt = new Date().toISOString()
+    state.lastDurationMs = Date.now() - startedAt
+    state.lastStationCount = stationCount
+    state.lastSuccessCount = success
+    state.lastFailCount = fail
+    console.log(
+      `[weather] 回填完成：${days} 天逐小时，写入 ${success} 条（失败批次 ${fail}），用时 ${(state.lastDurationMs / 1000).toFixed(1)}s`,
+    )
+  }
+  return { success, fail, scope: 'backfill', stationCount }
 }
 
 // ---------------------------------------------------------------------------
@@ -380,9 +505,12 @@ router.get('/weather/status', async (req, res) => {
     ...state,
     focusIntervalMin: Math.round(FOCUS_INTERVAL_MS / 60000),
     nationalIntervalMin: Math.round(NATIONAL_INTERVAL_MS / 60000),
+    nationalEnabled: NATIONAL_ENABLED,
+    backfillIntervalMin: Math.round(BACKFILL_INTERVAL_MS / 60000),
+    backfillDays: BACKFILL_DAYS,
+    linzhiCounties: LINZHI_COUNTIES,
     batchSize: BATCH_SIZE,
     maxCoordsPerMinute: MAX_COORDS_PER_MINUTE,
-    focusBbox: FOCUS_BBOX,
     source: SOURCE,
     collectLog,
   })
@@ -396,13 +524,27 @@ router.post('/weather/collect-now', (req, res) => {
   const limit = Number(req.query.limit || 0)
   const scope = ['focus', 'national', 'all'].includes(req.query.scope)
     ? req.query.scope
-    : 'all'
+    : 'focus'
   collectOnce({ limit: Number.isFinite(limit) ? limit : 0, scope }).catch(
     error => {
       console.error('[weather] 手动采集失败:', error.message)
     },
   )
   res.json({ started: true, limit, scope })
+})
+
+// 手动触发历史回填（?days=7）
+router.post('/weather/backfill', (req, res) => {
+  if (state.running) {
+    return res.json({ started: false, message: '采集正在进行中' })
+  }
+  const days = Number(req.query.days || BACKFILL_DAYS)
+  backfillOnce({ days: Number.isFinite(days) && days > 0 ? days : BACKFILL_DAYS }).catch(
+    error => {
+      console.error('[weather] 手动回填失败:', error.message)
+    },
+  )
+  res.json({ started: true, days })
 })
 
 // 查询单站最新实时数据（前端气象站弹窗使用）
@@ -429,6 +571,44 @@ router.get('/weather/realtime', async (req, res) => {
     res.json({ found: true, observation: rows[0] })
   } catch (error) {
     console.error('[weather] 实时查询失败:', error.message)
+    res.status(500).json({ success: false, message: error.message })
+  }
+})
+
+// 查询近 N 天历史数据（默认 7 天，按 3 小时聚合；前端七日表格使用）
+router.get('/weather/history', async (req, res) => {
+  try {
+    const station = String(req.query.station || '').trim()
+    if (!station) {
+      return res
+        .status(400)
+        .json({ success: false, message: '缺少 station 参数' })
+    }
+    const days = Number(req.query.days || BACKFILL_DAYS)
+    const safeDays = Number.isFinite(days) && days > 0 && days <= 30 ? days : BACKFILL_DAYS
+    const { rows } = await pool.query(
+      `SELECT to_char(bucket, 'MM-DD HH24:00') AS time_label,
+              round(avg(temperature_c)::numeric, 1) AS temperature_c,
+              round(avg(wind_speed_ms)::numeric, 1) AS wind_speed_ms,
+              round(avg(humidity_pct)::numeric, 0) AS humidity_pct,
+              round(sum(precipitation_mm)::numeric, 1) AS precipitation_mm,
+              count(*)::int AS samples
+         FROM (
+           SELECT date_trunc('hour', obs_time AT TIME ZONE 'Asia/Shanghai')
+                    - (((extract(hour FROM (obs_time AT TIME ZONE 'Asia/Shanghai')))::int % 3) * interval '1 hour') AS bucket,
+                  temperature_c, wind_speed_ms, humidity_pct, precipitation_mm
+             FROM weather_obs
+            WHERE station_id = $1
+              AND obs_time >= now() - ($2::int * interval '1 day')
+              AND obs_time <= now() + interval '1 hour'
+         ) t
+        GROUP BY bucket
+        ORDER BY bucket`,
+      [station, safeDays],
+    )
+    res.json({ found: rows.length > 0, days: safeDays, bucketHours: 3, rows })
+  } catch (error) {
+    console.error('[weather] 历史查询失败:', error.message)
     res.status(500).json({ success: false, message: error.message })
   }
 })
@@ -483,10 +663,11 @@ router.post('/weather/ingest', async (req, res) => {
 })
 
 // ---------------------------------------------------------------------------
-// 定时调度（研究区高频 / 全国低频；启动时按上次采集时间决定是否补采）
+// 定时调度（林芝高频 / 非林芝可选 / 历史回填检查）
 // ---------------------------------------------------------------------------
 let timerFocus = null
 let timerNational = null
+let timerBackfill = null
 let kickoffTimer = null
 
 export function startWeatherScheduler() {
@@ -494,23 +675,33 @@ export function startWeatherScheduler() {
     console.log('[weather] 采集器已由 WEATHER_COLLECT_ENABLED=0 关闭')
     return
   }
-  if (timerFocus || timerNational) return
+  if (timerFocus || timerNational || timerBackfill) return
 
   const run = (scope, retryOnSkip) => {
-    collectOnce({ scope })
+    const exec =
+      scope === 'backfill'
+        ? backfillOnce()
+        : collectOnce({ scope })
+    exec
       .then(result => {
         if (result && result.skipped && retryOnSkip) {
           setTimeout(() => run(scope, retryOnSkip), 60000)
         }
       })
-      .catch(error => console.error('[weather] 定时采集失败:', error.message))
+      .catch(error => console.error('[weather] 定时任务失败:', error.message))
   }
 
   kickoffTimer = setTimeout(async () => {
     try {
       if (await needCollect('focus', FOCUS_INTERVAL_MS)) run('focus', true)
-      if (await needCollect('national', NATIONAL_INTERVAL_MS)) {
+      if (
+        NATIONAL_ENABLED &&
+        (await needCollect('national', NATIONAL_INTERVAL_MS))
+      ) {
         setTimeout(() => run('national', true), 20000)
+      }
+      if (await needCollect('backfill', BACKFILL_INTERVAL_MS)) {
+        setTimeout(() => run('backfill', true), 40000)
       }
     } catch (error) {
       console.error('[weather] 启动采集检查失败:', error.message)
@@ -518,9 +709,22 @@ export function startWeatherScheduler() {
   }, 8000)
 
   timerFocus = setInterval(() => run('focus', true), FOCUS_INTERVAL_MS)
-  timerNational = setInterval(() => run('national', true), NATIONAL_INTERVAL_MS)
+  if (NATIONAL_ENABLED) {
+    timerNational = setInterval(
+      () => run('national', true),
+      NATIONAL_INTERVAL_MS,
+    )
+  }
+  timerBackfill = setInterval(
+    () => run('backfill', true),
+    BACKFILL_INTERVAL_MS,
+  )
   console.log(
-    `[weather] 采集器已启动：研究区每 ${Math.round(FOCUS_INTERVAL_MS / 60000)} 分钟 / 全国每 ${Math.round(NATIONAL_INTERVAL_MS / 60000)} 分钟（Open-Meteo，批量 ${BATCH_SIZE} 站/请求，预算 ${MAX_COORDS_PER_MINUTE} 坐标/分钟）`,
+    `[weather] 采集器已启动：林芝站点每 ${Math.round(FOCUS_INTERVAL_MS / 60000)} 分钟` +
+      (NATIONAL_ENABLED
+        ? ` / 非林芝站点每 ${Math.round(NATIONAL_INTERVAL_MS / 60000)} 分钟`
+        : '（非林芝站点已停采）') +
+      `；历史回填每 ${Math.round(BACKFILL_INTERVAL_MS / 60000)} 分钟检查`,
   )
 }
 
@@ -537,6 +741,10 @@ export function stopWeatherScheduler() {
     clearInterval(timerNational)
     timerNational = null
   }
+  if (timerBackfill) {
+    clearInterval(timerBackfill)
+    timerBackfill = null
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -546,16 +754,18 @@ export function stopWeatherScheduler() {
  *      将旧格式转换为 { station_id, obs_time, temperature_c, ... } 条目即可；
  *   2) 若旧采集器以“HTTP 推送”方式恢复：保持本文件不变，直接调用
  *      POST /weather/ingest（请求头 x-ingest-token）推送；
- *   3) 平台前端与查询接口（GET /weather/realtime）对新旧数据源完全透明。
+ *   3) 平台前端与查询接口（GET /weather/realtime、/weather/history）
+ *      对新旧数据源完全透明。
  * ------------------------------------------------------------------------- */
 
 export default router
 
 // ---------------------------------------------------------------------------
 // 独立运行支持（Windows 计划任务 / 手动执行；不影响服务内嵌调度）
-//   node weather.js --once auto      按需采集（到间隔才采；计划任务使用此模式）
-//   node weather.js --once focus     强制采集研究区
-//   node weather.js --once national  强制采集全国
+//   node weather.js --once auto      按需采集（林芝到间隔才采 + 回填到期才跑）
+//   node weather.js --once focus     强制采集林芝站点
+//   node weather.js --once backfill  强制回填近 7 天逐小时
+//   node weather.js --once national  强制采集非林芝站点（需自行确认）
 //   node weather.js --once all       强制全量
 //   node weather.js --daemon         常驻调度（等价于服务内嵌调度器）
 // ---------------------------------------------------------------------------
@@ -578,14 +788,19 @@ if (isMainEntry) {
         } else {
           console.log('[weather] focus 未到采集间隔，跳过')
         }
-        if (await needCollect('national', NATIONAL_INTERVAL_MS)) {
+        if (NATIONAL_ENABLED && (await needCollect('national', NATIONAL_INTERVAL_MS))) {
           await collectOnce({ scope: 'national' })
-        } else {
-          console.log('[weather] national 未到采集间隔，跳过')
         }
+        if (await needCollect('backfill', BACKFILL_INTERVAL_MS)) {
+          await backfillOnce()
+        } else {
+          console.log('[weather] backfill 未到回填间隔，跳过')
+        }
+      } else if (target === 'backfill') {
+        await backfillOnce()
       } else {
         await collectOnce({
-          scope: ['focus', 'national', 'all'].includes(target) ? target : 'all',
+          scope: ['focus', 'national', 'all'].includes(target) ? target : 'focus',
         })
       }
       process.exit(0)

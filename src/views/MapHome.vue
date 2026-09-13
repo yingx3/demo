@@ -464,6 +464,29 @@
       <div class="legend-ticks"><span v-for="t in lg.ticks" :key="t">{{ t }}</span></div>
     </div>
   </div>
+  <!-- 气象站近 7 天气象数据表格弹窗（点击气象站时显示，3 小时间隔） -->
+  <el-dialog
+    v-model="weatherTableVisible"
+    :title="weatherTableTitle"
+    width="620px"
+    top="8vh"
+    append-to-body
+  >
+    <el-table
+      :data="weatherTableRows"
+      v-loading="weatherTableLoading"
+      max-height="420"
+      size="small"
+      stripe
+      empty-text="暂无历史数据（等待采集器回填）"
+    >
+      <el-table-column prop="time_label" label="时间" width="120" />
+      <el-table-column prop="temperature_c" label="温度(℃)" width="105" />
+      <el-table-column prop="wind_speed_ms" label="风速(m/s)" width="110" />
+      <el-table-column prop="humidity_pct" label="湿度(%)" width="100" />
+      <el-table-column prop="precipitation_mm" label="降水(mm)" width="105" />
+    </el-table>
+  </el-dialog>
 </template>
 <script setup>
 // import wkb from 'wkb'
@@ -536,6 +559,11 @@ const isChartVisible = ref(true) // 控制图表显示的标志
 
 const data = ref(null)
 const dialogs = ref()
+// 气象站近 7 天数据表格弹窗（新增）
+const weatherTableVisible = ref(false)
+const weatherTableLoading = ref(false)
+const weatherTableTitle = ref('近 7 天气象数据')
+const weatherTableRows = ref([])
 const dujiangImagePopup = ref(null) // 堵江点图片弹窗
 const dujiangClickHandler = ref(null) // 堵江点点击事件处理器
 // 获取 store 实例
@@ -4740,35 +4768,44 @@ const handleLayerwsClick = async event => {
     const value = entity.properties?.[key]?.getValue?.(currentTime)
     return value === undefined || value === null || value === '' ? '无数据' : value
   }
+  const stationName = getProp('NAME')
+  const stationId = getProp('ID') === '无数据' ? '' : String(getProp('ID'))
+  const fmtValue = (v, unit) =>
+    v === null || v === undefined ? '无数据' : `${v}${unit}`
 
-  // 实时气象数据（新增）：读取采集器写入 weather_obs 表的最新记录
-  let realtimeItems = []
-  try {
-    const stationId = getProp('ID') === '无数据' ? '' : String(getProp('ID'))
-    if (stationId) {
+  // 实时气象弹窗：按需求只保留 时间/站点名称/温度/风速/湿度/降水
+  let realtimeItems = [
+    { name: '时间', value: '无数据' },
+    { name: '站点名称', value: stationName },
+  ]
+  if (stationId) {
+    try {
       const resp = await axios.get('/node/weather/realtime', {
         params: { station: stationId },
       })
-      const fmtValue = (v, unit) =>
-        v === null || v === undefined ? '无数据' : `${v}${unit}`
       if (resp.data?.found) {
         const ob = resp.data.observation
         realtimeItems = [
-          { name: '实时时间', value: ob.obs_time_display || '无数据' },
-          { name: '实时气温', value: fmtValue(ob.temperature_c, '℃') },
-          { name: '实时降水', value: fmtValue(ob.precipitation_mm, 'mm') },
-          { name: '实时风速', value: fmtValue(ob.wind_speed_ms, 'm/s') },
-          { name: '实时湿度', value: fmtValue(ob.humidity_pct, '%') },
+          { name: '时间', value: ob.obs_time_display || '无数据' },
+          { name: '站点名称', value: stationName },
+          { name: '温度', value: fmtValue(ob.temperature_c, '℃') },
+          { name: '风速', value: fmtValue(ob.wind_speed_ms, 'm/s') },
+          { name: '湿度', value: fmtValue(ob.humidity_pct, '%') },
+          { name: '降水', value: fmtValue(ob.precipitation_mm, 'mm') },
         ]
       } else {
         realtimeItems = [
-          { name: '实时气象', value: '暂无数据（等待采集器运行）' },
+          { name: '时间', value: '暂无数据（等待采集器运行）' },
+          { name: '站点名称', value: stationName },
         ]
       }
+    } catch (error) {
+      console.error('获取实时气象数据失败:', error)
+      realtimeItems = [
+        { name: '时间', value: '获取失败' },
+        { name: '站点名称', value: stationName },
+      ]
     }
-  } catch (error) {
-    console.error('获取实时气象数据失败:', error)
-    realtimeItems = [{ name: '实时气象', value: '获取失败' }]
   }
 
   const opts = {
@@ -4778,19 +4815,8 @@ const handleLayerwsClick = async event => {
         entity.position?.getValue?.(currentTime) ??
         pickedFeature.primitive?.position,
     },
-    title: getProp('NAME'),
-    content: [
-      { name: '站名', value: getProp('NAME') },
-      { name: '区县', value: getProp('COUNTYNAME') },
-      { name: '海拔', value: getProp('HEIGHT') },
-      { name: '资料时段', value: getProp('TIMES') },
-      { name: '降水年数', value: getProp('RAIN') },
-      { name: '日照年数', value: getProp('SUN') },
-      { name: '气温年数', value: getProp('TEMPE') },
-      { name: '类型', value: getProp('TYPES') },
-      { name: '备注', value: getProp('COMMENT') },
-      ...realtimeItems,
-    ],
+    title: stationName,
+    content: realtimeItems,
   }
 
   // 关闭现有弹窗并打开新弹窗
@@ -4798,6 +4824,29 @@ const handleLayerwsClick = async event => {
     dialogs.value.windowClose()
   }
   dialogs.value = new Dialog(opts)
+
+  // 近 7 天气象数据表格弹窗（新增，3 小时间隔聚合）
+  openWeatherTable(stationId, stationName)
+}
+
+// 近 7 天气象数据表格弹窗（3 小时间隔聚合，数据来自采集器的 /weather/history）
+const openWeatherTable = async (stationId, stationName) => {
+  weatherTableTitle.value = `${stationName} · 近 7 天气象数据（3 小时间隔）`
+  weatherTableRows.value = []
+  weatherTableVisible.value = true
+  if (!stationId) return
+  weatherTableLoading.value = true
+  try {
+    const resp = await axios.get('/node/weather/history', {
+      params: { station: stationId, days: 7 },
+    })
+    weatherTableRows.value = resp.data?.rows || []
+  } catch (error) {
+    console.error('获取近 7 天气象数据失败:', error)
+    weatherTableRows.value = []
+  } finally {
+    weatherTableLoading.value = false
+  }
 }
 // 使用 utils/wkb.js 中的 parseWKB
 
