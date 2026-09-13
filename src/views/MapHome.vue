@@ -1,5 +1,29 @@
 <template>
   <div class="map-home-overlay">
+    <!-- [新增] 点击地图上的标记点弹出的信息卡片 -->
+    <div
+      v-if="disasterInfoVisible"
+      class="disaster-info-card"
+      :style="{
+        left: disasterInfoPos.left + 'px',
+        top: disasterInfoPos.top + 'px',
+      }"
+    >
+      <div class="disaster-info-header">
+        <span class="disaster-info-title">{{ disasterInfoTitle }}</span>
+        <span class="disaster-info-close" @click="hideDisasterInfo">×</span>
+      </div>
+      <div class="disaster-info-body">
+        <div
+          v-for="row in disasterInfoRows"
+          :key="row.label"
+          class="disaster-info-row"
+        >
+          <span class="disaster-info-label">{{ row.label }}</span>
+          <span class="disaster-info-value">{{ row.value }}</span>
+        </div>
+      </div>
+    </div>
     <zh-jc></zh-jc>
     <le-th
       ref="leThRef"
@@ -763,6 +787,8 @@ const submit_setPosition = () => {
   })
 }
 onMounted(() => {
+  // [新增] 注册"点击标记点查看属性"的拾取器
+  nextTick(() => ensureDisasterPickHandler())
   // viewer 由 MapLayout 初始化并通过 provide/inject 注入，此处无需再初始化 Cesium
   // 「冰川灾害链」模块已移除：不再初始化入口按钮（逻辑仍保留在 initChainButton/runChainCase 中）
   // initChainButton()
@@ -6185,6 +6211,19 @@ const submit_disaster = () => {
     ElMessage({ message: '请先在地图上点击选择位置', type: 'warning' })
     return
   }
+  // [新增] 属性快照：表单在成功后会被重置，先把数据固化下来供点击查看
+  const pointInfo = {
+    name: form.name,
+    dcmd: form.dcmd,
+    lssl: form.lssl,
+    slope: form.slope,
+    hlxqsl: form.hlxqsl,
+    pthhsmj: form.pthhsmj,
+    elevation: form.elevation,
+    scale: form.scale,
+    lng: form.longitude,
+    lat: form.latitude,
+  }
   dialogVisible_disaster.value = false
   // 1. 构建GeoJSON格式的空间数据
   const geoData = {
@@ -6216,7 +6255,10 @@ const submit_disaster = () => {
             width: 48,
             height: 48,
           },
+          // [新增] 点击该点可查看属性
+          disasterInfo: pointInfo,
         })
+        ensureDisasterPickHandler()
         ElMessage({ message: '灾害点添加成功', type: 'success' })
         // 重置表单，便于继续添加下一个点
         Object.assign(form, {
@@ -6256,7 +6298,7 @@ const clearSearchMarkers = () => {
     } catch (e) {}
   }
 }
-const addSearchMarker = (lng, lat) => {
+const addSearchMarker = (lng, lat, info) => {
   const ent = viewer.value.entities.add({
     position: Cesium.Cartesian3.fromDegrees(lng, lat),
     billboard: {
@@ -6266,9 +6308,109 @@ const addSearchMarker = (lng, lat) => {
       width: 48,
       height: 48,
     },
+    // [新增] 挂上属性数据，供点击标记点时弹出信息卡片
+    disasterInfo: info
+      ? { ...info, lng: info.lng ?? lng, lat: info.lat ?? lat }
+      : { lng, lat },
   })
   searchMarkerEntities.push(ent)
+  ensureDisasterPickHandler()
   return ent
+}
+
+// ===== [新增] 标记点信息卡片：点击地图上的点弹出属性 =====
+const disasterInfoVisible = ref(false)
+const disasterInfoPos = ref({ left: 0, top: 0 })
+const disasterInfoTitle = ref('')
+const disasterInfoRows = ref([])
+const disasterInfoEntity = ref(null)
+let disasterPickHandler = null
+let disasterInfoPostRenderHandler = null
+
+const DISASTER_FIELD_LABELS = {
+  name: '名称',
+  z_name: '站点名称',
+  dcmd: '断层密度',
+  lssl: '隆升速率',
+  slope: '坡度',
+  hlxqsl: '河流下切速率',
+  pthhsmj: '坡体后端汇水面积',
+  elevation: '高差',
+  scale: '规模',
+  jyl: '降雨量',
+  wind: '风速',
+  lng: '经度',
+  lat: '纬度',
+}
+const DISASTER_SCALE_TEXT = {
+  small: '小型',
+  middle: '中型',
+  big: '大型',
+  heavy: '特大型',
+}
+
+const buildDisasterInfoRows = info => {
+  const rows = []
+  Object.keys(info || {}).forEach(key => {
+    const label = DISASTER_FIELD_LABELS[key]
+    if (!label) return
+    let value = info[key]
+    if (value === null || value === undefined || value === '') return
+    if (key === 'scale') value = DISASTER_SCALE_TEXT[value] || value
+    rows.push({ label, value })
+  })
+  return rows
+}
+
+const updateDisasterInfoPosition = () => {
+  if (!disasterInfoVisible.value) return
+  const ent = disasterInfoEntity.value
+  const v = viewer.value
+  if (!ent || !v || !ent.position) return
+  const cartesian = ent.position.getValue(Cesium.JulianDate.now())
+  if (!cartesian) return
+  const win = v.scene.cartesianToCanvasCoordinates(cartesian)
+  if (!win) return
+  const rect = v.scene.canvas.getBoundingClientRect()
+  disasterInfoPos.value = {
+    left: Math.round(rect.left + win.x + 18),
+    top: Math.round(rect.top + win.y - 10),
+  }
+}
+
+const showDisasterInfo = (entity, info) => {
+  if (!entity || !info) return
+  const rows = buildDisasterInfoRows(info)
+  if (!rows.length) return
+  disasterInfoEntity.value = entity
+  disasterInfoRows.value = rows
+  disasterInfoTitle.value = info.name || info.z_name || '灾害点信息'
+  disasterInfoVisible.value = true
+  updateDisasterInfoPosition()
+}
+
+const hideDisasterInfo = () => {
+  disasterInfoVisible.value = false
+  disasterInfoEntity.value = null
+}
+
+// 只注册一次的地图左键拾取：点中标记点弹卡片，点空白处关闭
+const ensureDisasterPickHandler = () => {
+  const v = viewer.value
+  if (disasterPickHandler || !v || !v.scene) return
+  disasterPickHandler = new Cesium.ScreenSpaceEventHandler(v.scene.canvas)
+  disasterPickHandler.setInputAction(movement => {
+    // 测量/地形绘制等工具进行中时不干扰
+    if (activeMeasureTool.value || terrainDrawHandler) return
+    const picked = viewer.value.scene.pick(movement.position)
+    if (!Cesium.defined(picked) || !picked.id || !picked.id.disasterInfo) {
+      hideDisasterInfo()
+      return
+    }
+    showDisasterInfo(picked.id, picked.id.disasterInfo)
+  }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+  disasterInfoPostRenderHandler = updateDisasterInfoPosition
+  v.scene.postRender.addEventListener(disasterInfoPostRenderHandler)
 }
 
 // [新增] 清空查询条件
@@ -6335,7 +6477,7 @@ const locationsearch = () => {
       // console.log(typeof data[0].lng)
       if (data.length > 0) {
         data.forEach(item => {
-          addSearchMarker(item.lng, item.lat)
+          addSearchMarker(item.lng, item.lat, item)
           // 2. 格式化表格数据
           tableData.value.push({
             name: item.name || '--', // 处理空值
@@ -6382,7 +6524,7 @@ const locationsearchqxz = () => {
       // console.log(typeof data[0].lng)
       if (data.length > 0) {
         data.forEach(item => {
-          addSearchMarker(item.lng, item.lat)
+          addSearchMarker(item.lng, item.lat, item)
           // 2. 格式化表格数据
           tableData_qxz.value.push({
             z_name: item.z_name || '--', // 处理空值
@@ -6428,7 +6570,7 @@ const attributesearch_disaster = () => {
       // console.log(typeof data)
       if (data.length > 0) {
         data.forEach(item => {
-          addSearchMarker(item.lng, item.lat)
+          addSearchMarker(item.lng, item.lat, item)
           // 2. 格式化表格数据
           tableData.value.push({
             name: item.name || '--', // 处理空值
@@ -6478,7 +6620,7 @@ const attributesearch_qxz = () => {
       // console.log(typeof data)
       if (data.length > 0) {
         data.forEach(item => {
-          addSearchMarker(item.lng, item.lat)
+          addSearchMarker(item.lng, item.lat, item)
           // 2. 格式化表格数据
           tableData_qxz.value.push({
             z_name: item.z_name || '--', // 处理空值
@@ -6582,6 +6724,8 @@ const cleanentity = () => {
     try { attrPickHandler.destroy() } catch (e) {}
     attrPickHandler = null
   }
+  // 14. 关闭标记点信息卡片
+  hideDisasterInfo()
 }
 const handler_seismic = ref('')
 var echarts_data = ''
@@ -6811,6 +6955,19 @@ onBeforeUnmount(() => {
     forecastHandler.destroy()
     forecastHandler = null
   }
+  // [新增] 释放标记点信息相关监听与处理器
+  if (disasterPickHandler) {
+    try { disasterPickHandler.destroy() } catch (e) {}
+    disasterPickHandler = null
+  }
+  if (disasterInfoPostRenderHandler && viewer.value?.scene) {
+    try {
+      viewer.value.scene.postRender.removeEventListener(
+        disasterInfoPostRenderHandler
+      )
+    } catch (e) {}
+  }
+  disasterInfoPostRenderHandler = null
   forecastEntityId = null
   if (displacementChart) {
     displacementChart.dispose()
@@ -6873,6 +7030,60 @@ onBeforeUnmount(() => {
 }
 .map-home-overlay > * {
   pointer-events: auto;
+}
+
+/* [新增] 点击标记点弹出的信息卡片 */
+.disaster-info-card {
+  position: fixed;
+  z-index: 10000;
+  min-width: 230px;
+  max-width: 330px;
+  padding: 10px 12px 12px;
+  border-radius: 8px;
+  background: rgba(14, 30, 54, 0.94);
+  border: 1px solid rgba(90, 176, 255, 0.65);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+  font-size: 14px;
+  pointer-events: auto;
+}
+.disaster-info-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(90, 176, 255, 0.35);
+}
+.disaster-info-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #7ec1ff;
+}
+.disaster-info-close {
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: #cfe4ff;
+}
+.disaster-info-close:hover {
+  color: #409eff;
+}
+.disaster-info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  line-height: 22px;
+}
+.disaster-info-label {
+  color: #9db8d8;
+  white-space: nowrap;
+}
+.disaster-info-value {
+  color: #ffffff;
+  text-align: right;
+  word-break: break-all;
 }
 
 .map-home-overlay .control {
