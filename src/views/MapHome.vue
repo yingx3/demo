@@ -2663,10 +2663,6 @@ const startTerrainDraw = () => {
   clearTerrainDraw()
   const v = viewer.value
   if (!v) return
-  v.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(95.002, 30.2354, 15000),
-    duration: 1.2,
-  })
   ElMessage({ message: '左键逐点绘制，右键结束，Esc 取消', type: 'info', duration: 5000 })
   const handler = new Cesium.ScreenSpaceEventHandler(v.scene.canvas)
   terrainDrawHandler = handler
