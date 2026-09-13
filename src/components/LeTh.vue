@@ -16,6 +16,7 @@
             width="500"
             :close-on-click-modal="false"
             class="dialog_trigrs"
+            @open="resetTrigrsInputs"
           >
             <!--在title旁添加帮助问号（用slot="header"自定义弹窗头部） -->
             <template #header>
@@ -650,6 +651,7 @@
             width="500"
             :close-on-click-modal="false"
             class="dialog_lightGBM"
+            @open="resetGbmInputs"
           >
             <template #header>
               <div class="model-dialog-header gbm-header">
@@ -1619,6 +1621,7 @@
             style="width: 480px"
             :close-on-click-modal="false"
             class="dialog_avaflow"
+            @open="resetShanhongInputs"
           >
             <template #header>
               <div
@@ -2235,6 +2238,7 @@
             width="560"
             :close-on-click-modal="false"
             class="dialog_quanyu"
+            @open="resetFloodProInputs"
           >
             <template #header>
               <div
@@ -2717,6 +2721,7 @@
             width="500"
             :close-on-click-modal="false"
             class="dialog_flood"
+            @open="resetFloodTestInputs"
           >
             <template #header>
               <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
@@ -2775,6 +2780,7 @@
             width="640"
             :close-on-click-modal="false"
             class="dialog_avainit"
+            @open="resetAvainitInputs"
           >
             <template #header>
               <div class="avainit-header">
@@ -3055,6 +3061,7 @@
             :close-on-click-modal="false"
             class="dialog_avaflow"
             style="height:480px"
+            @open="resetSdpInputs"
           >
             <template #header>
               <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
@@ -3118,7 +3125,7 @@
           <el-button :plain="true" @click="dialogBeta = true"
             ><span>洪水泥石流启动动力学模型_beta</span></el-button
           >
-          <el-dialog v-model="dialogBeta" title="洪水泥石流启动动力学模型_beta" width="520" :close-on-click-modal="false" class="dialog_quanyu">
+          <el-dialog v-model="dialogBeta" title="洪水泥石流启动动力学模型_beta" width="520" :close-on-click-modal="false" class="dialog_quanyu" @open="resetBetaInputs">
             <template #header>
               <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
                 <span style="color:#ffffff;font-size:21px;padding-left:20px">洪水泥石流启动动力学模型_beta</span>
@@ -3162,6 +3169,7 @@
             width="560"
             :close-on-click-modal="false"
             class="dialog_quanyu dialog_fullRisk"
+            @open="resetQuanYuInputs"
           >
             <template #header>
               <div class="model-dialog-header quanyu-header">
@@ -3218,6 +3226,7 @@
             width="500"
             :close-on-click-modal="false"
             class="dialog_inverseV"
+            @open="resetInverseVInputs"
           >
             <template #header>
               <div class="model-dialog-header inverse-header">
@@ -3653,6 +3662,7 @@
             title="冰川泥石流监测预警模型"
             :close-on-click-modal="false"
             class="dialog_seismic"
+            @open="resetSeismicInputs"
           >
             <template #header>
               <div class="model-dialog-header seismic-header">
@@ -5704,6 +5714,217 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
   fileSeismic.value = null
   fileNameSeismic.value = ''
   uploadRefSeismic.value?.clearFiles()
+}
+
+// ============ [新增] 重新打开输入弹窗时自动重置表单，避免残留上一次提交的数据 ============
+// 说明：只在弹窗打开瞬间执行；若该模型正在计算中（loading/running）则跳过，不打断运行中的任务。
+// 如需关闭该行为：删除对应 <el-dialog> 上的 @open 绑定即可（函数可保留）。
+
+// 风险源定量识别与表征模型（TRIGRS）
+const resetTrigrsInputs = () => {
+  Object.assign(form, {
+    name: '',
+    color: 'dangerLevel',
+    time: [],
+    rsl: '1.0e-6',
+    depth: '3.0',
+    zmax: '2.4',
+    diffus: '1.32e-03',
+    ksat: '1.32e-05',
+  })
+}
+
+// 冰川泥石流易发性预测模型（LightGBM）
+const resetGbmInputs = () => {
+  Object.assign(form_BGM, {
+    aspect: '150',
+    curvature: '0.002',
+    fault_distance: '30000',
+    ndvi: '0.001',
+    rainfall: '700',
+    relief_amplitude: '250',
+  })
+  fileNameGBM.value = ''
+  fileGBM.value = null
+  uploadRefGBM.value?.clearFiles?.()
+}
+
+// 山洪泥石流启动动力学模型
+const resetShanhongInputs = () => {
+  Object.assign(form1, {
+    area: '巴宜区',
+    phases: '1',
+    cf: '35',
+    bf: '20',
+    ff: '0.05',
+  })
+  fileNameElev.value = ''
+  fileNameDebris.value = ''
+  fileNameImpact.value = ''
+  fileElev.value = null
+  fileDebris.value = null
+  fileImpact.value = null
+  uploadElevRef.value?.clearFiles?.()
+  uploadDebrisRef.value?.clearFiles?.()
+  uploadImpactRef.value?.clearFiles?.()
+}
+
+// 洪水泥石流启动动力学模型（Pro）
+const resetFloodProInputs = () => {
+  if (floodRunning.value) return
+  Object.assign(form2, {
+    bed: '0.2',
+    nn: '0.0125',
+    dx: '20',
+    dy: '20',
+    rous: '2700',
+    rouf: '1000',
+    interval: '1',
+    Tmax: '100',
+    field: 'solid',
+  })
+  new Set([...Object.keys(proFiles), ...Object.keys(proFileNames)]).forEach(key => {
+    delete proFiles[key]
+    delete proFileNames[key]
+  })
+  proAnchorLon.value = '95.0020'
+  proAnchorLat.value = '30.2354'
+  proSourceCrs.value = 'EPSG:32646'
+  Object.values(proUploadRefs).forEach(refItem => refItem?.clearFiles?.())
+}
+
+// 洪水泥石流启动动力学模型（测试，界面已隐藏）
+const resetFloodTestInputs = () => {
+  Object.assign(form2Test, {
+    bed: '24',
+    nn: '0.0125',
+    dx: '20',
+    dy: '20',
+    rous: '2700',
+    rouf: '1000',
+    interval: '10',
+    Tmax: '100',
+  })
+  renderMethod.value = 'debrisflow'
+}
+
+// 冰岩崩起动模型（默认 / 反演 / 楔形三种模式共用弹窗）
+const resetAvainitInputs = () => {
+  Object.assign(form_avainit, {
+    slope_angle: '60',
+    slide_angle: '15',
+    cohesion: '15',
+    friction_angle: '20',
+    rock_density: '20',
+    permeability: '0.0001',
+    ice_thickness: '4',
+    fissure_height: '10',
+    melt_duration: '240',
+    slide_length: '20',
+  })
+  Object.assign(form_bedding_inverted, {
+    melt_duration: '240',
+    slope_angle: '30',
+    inverse_angle: '70',
+    ice_thickness: '5',
+    slope_height: '10',
+    bedding_space: '20',
+    cohesion: '15',
+    friction_angle: '20',
+    rock_density: '20',
+    permeability: '0.0001',
+  })
+  Object.assign(form_bedding_wedget, {
+    slope_angle: '55',
+    normal_vector: '1,1,1',
+    cohesion: '15',
+    friction_angle: '20',
+    rock_density: '20',
+    permeability: '0.0001',
+    ice_thickness: '5',
+    slope_height: '10',
+    square: '200',
+    fracture: '0.5',
+    melt_duration: '240',
+  })
+  form_avainit_location.longitude = '95.0020'
+  form_avainit_location.latitude = '30.2354'
+  radio_avainit.value = 1
+}
+
+// 泥石流启动物源计算模型（SDP）
+const resetSdpInputs = () => {
+  if (sdpLoading.value) return
+  formSDP.ice_content = '0.2'
+  fileNameRain.value = ''
+  fileNameTemp.value = ''
+  fileNameOutput.value = ''
+  fileRainPath.value = ''
+  fileTempPath.value = ''
+  fileOutputPath.value = ''
+  uploadRainRef.value?.clearFiles?.()
+  uploadTempRef.value?.clearFiles?.()
+  uploadOutputRef.value?.clearFiles?.()
+}
+
+// 洪水泥石流启动动力学模型_beta
+const resetBetaInputs = () => {
+  if (isProcessing.value) return
+  new Set([...Object.keys(betaFiles), ...Object.keys(betaFileNames)]).forEach(key => {
+    delete betaFiles[key]
+    delete betaFileNames[key]
+  })
+  Object.values(betaUploadRefs).forEach(refItem => refItem?.clearFiles?.())
+}
+
+// 全域风险脆弱性分析
+const resetQuanYuInputs = () => {
+  if (quanYuLoading.value) return
+  new Set([...Object.keys(quanYuFiles), ...Object.keys(quanYuFileNames)]).forEach(key => {
+    delete quanYuFiles[key]
+    delete quanYuFileNames[key]
+  })
+  Object.values(uploadRefsQuanYu).forEach(refItem => refItem?.clearFiles?.())
+}
+
+// 基于位移监测滑坡预警（测试版）
+const resetInverseVInputs = () => {
+  Object.assign(form_inverseV, {
+    name: '',
+    longitude: '',
+    latitude: '',
+    file: '',
+  })
+  fileName_inverseV.value = ''
+  selectedDisplFile.value = null
+  uploadRef.value?.clearFiles?.()
+}
+
+// 冰川泥石流监测预警模型（机器学习 / 深度学习共用弹窗）
+const resetSeismicInputs = () => {
+  if (dlLoading.value) return
+  Object.assign(formSeismic, {
+    threshold: 2.5,
+    short_window: 30,
+    long_window: 240,
+    segment_duration: 10,
+    total_duration: 60,
+    sampling_rate: 100,
+    longitude: 97.5,
+    latitude: 31.0,
+  })
+  Object.assign(formSeismicDL, {
+    voltageColumn: 'Voltage_mV',
+    longitude: '97.5',
+    latitude: '31.0',
+  })
+  fileNameSeismic.value = ''
+  fileNameSeismicDL.value = ''
+  fileSeismic.value = null
+  fileSeismicDL.value = null
+  seismicModelType.value = 'ml'
+  uploadRefSeismic.value?.clearFiles?.()
+  uploadRefSeismicDL.value?.clearFiles?.()
 }
 </script>
 <style lang="scss" scoped>
