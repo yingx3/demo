@@ -468,23 +468,26 @@
   <el-dialog
     v-model="weatherTableVisible"
     :title="weatherTableTitle"
-    width="620px"
+    width="860px"
     top="8vh"
     append-to-body
+    @opened="onWeatherDialogOpened"
   >
+    <!-- [新增] 近 7 天气象趋势折线图（ECharts：温度/湿度/风速/降水） -->
+    <div ref="weatherChartRef" style="width: 100%; height: 280px; margin-bottom: 10px"></div>
     <el-table
       :data="weatherTableRows"
       v-loading="weatherTableLoading"
-      max-height="420"
+      max-height="300"
       size="small"
       stripe
       empty-text="暂无历史数据（等待采集器回填）"
     >
-      <el-table-column prop="time_label" label="时间" width="120" />
-      <el-table-column prop="temperature_c" label="温度(℃)" width="105" />
-      <el-table-column prop="wind_speed_ms" label="风速(m/s)" width="110" />
-      <el-table-column prop="humidity_pct" label="湿度(%)" width="100" />
-      <el-table-column prop="precipitation_mm" label="降水(mm)" width="105" />
+      <el-table-column prop="time_label" label="时间" min-width="130" />
+      <el-table-column prop="temperature_c" label="温度(℃)" min-width="105" />
+      <el-table-column prop="wind_speed_ms" label="风速(m/s)" min-width="110" />
+      <el-table-column prop="humidity_pct" label="湿度(%)" min-width="100" />
+      <el-table-column prop="precipitation_mm" label="降水(mm)" min-width="105" />
     </el-table>
   </el-dialog>
 </template>
@@ -564,6 +567,8 @@ const weatherTableVisible = ref(false)
 const weatherTableLoading = ref(false)
 const weatherTableTitle = ref('近 7 天气象数据')
 const weatherTableRows = ref([])
+const weatherChartRef = ref(null) // [新增] 近 7 天趋势图容器
+let weatherChartInstance = null // [新增] ECharts 实例
 const dujiangImagePopup = ref(null) // 堵江点图片弹窗
 const dujiangClickHandler = ref(null) // 堵江点点击事件处理器
 // 获取 store 实例
@@ -4846,7 +4851,10 @@ const openWeatherTable = async (stationId, stationName) => {
   weatherTableTitle.value = `${stationName} · 近 7 天气象数据（3 小时间隔）`
   weatherTableRows.value = []
   weatherTableVisible.value = true
-  if (!stationId) return
+  if (!stationId) {
+    renderWeatherChart()
+    return
+  }
   weatherTableLoading.value = true
   try {
     const resp = await axios.get('/node/weather/history', {
@@ -4859,6 +4867,95 @@ const openWeatherTable = async (stationId, stationName) => {
   } finally {
     weatherTableLoading.value = false
   }
+  await renderWeatherChart()
+}
+
+// [新增] 近 7 天气象趋势折线图：温度/风速（左轴）、湿度/降水（右轴）
+const renderWeatherChart = async () => {
+  await nextTick()
+  if (!weatherChartRef.value) {
+    // el-dialog 首次打开有过渡动画，容器可能稍晚挂载
+    await new Promise(resolve => setTimeout(resolve, 150))
+  }
+  const el = weatherChartRef.value
+  if (!el) return
+  if (!weatherChartInstance) {
+    weatherChartInstance = echarts.init(el)
+  }
+  const rows = weatherTableRows.value || []
+  const num = v => (v === null || v === undefined || v === '' ? null : Number(v))
+  const option = {
+    tooltip: { trigger: 'axis' },
+    legend: { top: 0, textStyle: { color: '#e8f1fb' } },
+    grid: { left: 48, right: 52, top: 36, bottom: 30 },
+    xAxis: {
+      type: 'category',
+      data: rows.map(r => r.time_label),
+      boundaryGap: false,
+      axisLabel: { color: '#a9bed4' },
+      axisLine: { lineStyle: { color: '#3c4f66' } },
+    },
+    yAxis: [
+      {
+        type: 'value',
+        name: '温度/风速',
+        nameTextStyle: { color: '#a9bed4' },
+        axisLabel: { color: '#a9bed4' },
+        splitLine: { lineStyle: { color: 'rgba(120,150,180,0.18)' } },
+      },
+      {
+        type: 'value',
+        name: '湿度/降水',
+        nameTextStyle: { color: '#a9bed4' },
+        axisLabel: { color: '#a9bed4' },
+        splitLine: { show: false },
+      },
+    ],
+    series: [
+      {
+        name: '温度(°C)',
+        type: 'line',
+        smooth: true,
+        symbolSize: 4,
+        data: rows.map(r => num(r.temperature_c)),
+        itemStyle: { color: '#ffb454' },
+      },
+      {
+        name: '湿度(%)',
+        type: 'line',
+        smooth: true,
+        symbolSize: 4,
+        yAxisIndex: 1,
+        data: rows.map(r => num(r.humidity_pct)),
+        itemStyle: { color: '#4fc3f7' },
+      },
+      {
+        name: '风速(m/s)',
+        type: 'line',
+        smooth: true,
+        symbolSize: 4,
+        data: rows.map(r => num(r.wind_speed_ms)),
+        itemStyle: { color: '#a29bfe' },
+      },
+      {
+        name: '降水(mm)',
+        type: 'line',
+        smooth: true,
+        symbolSize: 4,
+        yAxisIndex: 1,
+        data: rows.map(r => num(r.precipitation_mm)),
+        itemStyle: { color: '#5ee7a0' },
+        areaStyle: { opacity: 0.08 },
+      },
+    ],
+  }
+  weatherChartInstance.setOption(option, true)
+  weatherChartInstance.resize()
+}
+
+// [新增] 弹窗完全打开后再自适应一次尺寸
+const onWeatherDialogOpened = () => {
+  if (weatherChartInstance) weatherChartInstance.resize()
 }
 // 使用 utils/wkb.js 中的 parseWKB
 
@@ -6571,6 +6668,10 @@ function drawer_seismic(data) {
   drawSeismicChart(data)
 }
 onBeforeUnmount(() => {
+  if (weatherChartInstance) {
+    weatherChartInstance.dispose()
+    weatherChartInstance = null
+  }
   cleanupBetaRenderer()
   if (forecastHandler) {
     forecastHandler.destroy()
