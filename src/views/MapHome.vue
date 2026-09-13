@@ -4669,17 +4669,31 @@ const removeLayer_yigong_hazard = () => {
   ElMessage.success('点危险性评估已移除')
 }
 
-//加载全国气象站
-// [旧逻辑保留] 数据源与原调用方式不变（仍读取 weatherstation 表）；
-// 本次修复：WKB Point 解析、实体 properties 挂载、setInputAction 无返回值误用 .catch。
+//加载气象站（仅林芝市）
+// [旧逻辑保留] 原实现渲染全部站点（全国）；现按需求仅渲染林芝市站点，
+// 如需恢复全国渲染：删除下方 LINZHI_COUNTY_NAMES 判断即可（其余逻辑未变）。
+const LINZHI_COUNTY_NAMES = [
+  '林芝县',
+  '林芝市',
+  '巴宜区',
+  '工布江达县',
+  '米林县',
+  '米林市',
+  '墨脱县',
+  '波密县',
+  '察隅县',
+  '朗县',
+]
 const addLayer_weatherstation = () => {
   axios.get('/node/weatherstation').then(res => {
     const stations = res.data
     // 1. 创建数据源
     const stationDataSource = new Cesium.CustomDataSource('weatherStations')
     viewer.value.dataSources.add(stationDataSource)
-    // 2. 处理每个气象站
+    // 2. 处理每个气象站（仅保留林芝市站点）
     stations.forEach(station => {
+      // [旧逻辑保留] 原来此处直接渲染全部站点；现仅保留林芝市站点
+      if (!LINZHI_COUNTY_NAMES.includes(String(station.COUNTYNAME || '').trim())) return
       // 解析几何坐标（WKB Point），失败时回退使用 LON/LAT 字段
       let lon = parseFloat(station.LON)
       let lat = parseFloat(station.LAT)
@@ -4711,7 +4725,7 @@ const addLayer_weatherstation = () => {
           COMMENT: station.COMMENT,
         },
         point: {
-          pixelSize: 5,
+          pixelSize: 6,
           color: getColorByType(station.TYPES), // 按类型着色
           outlineColor: Cesium.Color.WHITE,
           outlineWidth: 1,
@@ -4719,7 +4733,7 @@ const addLayer_weatherstation = () => {
         },
         label: {
           text: station.NAME,
-          font: '10px sans-serif',
+          font: '12px sans-serif',
           style: Cesium.LabelStyle.FILL_AND_OUTLINE,
           outlineWidth: 2,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
@@ -4729,12 +4743,9 @@ const addLayer_weatherstation = () => {
       })
     })
 
+    // 相机飞到林芝市范围（[旧逻辑保留] 原为全国视角 109.54/32.90/10000000，恢复全国渲染时可改回）
     viewer.value.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(
-        109.543752,
-        32.898714,
-        10000000,
-      ),
+      destination: Cesium.Cartesian3.fromDegrees(95.9, 29.3, 450000),
       //相机的姿态
       orientation: {
         heading: Cesium.Math.toRadians(0), //朝向
