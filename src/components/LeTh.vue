@@ -4306,13 +4306,17 @@
       <div class="theme">
         <div class="title">断链防控</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
-        <div class="box regulation-entry" @click="openTerrainRegulation('chain')">
+        <div class="box box-used regulation-entry">
           <img src="../assets/img/云反射率.png" alt="" />
-          <span>灾害链断链调控技术</span>
+          <el-button :plain="true" @click="openTerrainRegulation('chain')"
+            ><span>灾害链断链调控技术</span></el-button
+          >
         </div>
-        <div class="box p_bottom regulation-entry" @click="openTerrainRegulation('along')">
+        <div class="box box-used p_bottom regulation-entry">
           <img src="../assets/img/云反射率.png" alt="" />
-          <span>冰川泥石流沿程调控技术</span>
+          <el-button :plain="true" @click="openTerrainRegulation('along')"
+            ><span>冰川泥石流沿程调控技术</span></el-button
+          >
         </div>
         <el-dialog
           v-for="cfg in terrainRegulationConfigs"
