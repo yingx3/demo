@@ -6058,7 +6058,16 @@ const measure = () => {
     areaMeasureInstance?.clear?.()
     activeMeasureTool.value = ''
   }
-  if (!md.value) md.value = new MeasureDistance(viewer.value)
+  if (!md.value) {
+    md.value = new MeasureDistance(viewer.value)
+    // [新增] 测量结束时提示总距离（事件只订阅一次，避免重复叠加）
+    md.value.MeasureEndEvent.addEventListener(distance => {
+      ElMessage({
+        message: '测量完成，总距离：' + md.value.formatDistance(distance),
+        type: 'success',
+      })
+    })
+  }
   md.value.clear?.()
   md.value.activate()
   activeMeasureTool.value = 'distance'
