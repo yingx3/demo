@@ -4,12 +4,16 @@ export default class MeasureManager {
   constructor(viewer) {
     this.viewer = viewer
     this.entityCollection = []
+    // [新增] 使用独立事件处理器，避免劫持 viewer 全局 screenSpaceEventHandler
+    this.handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas)
   }
   measurePolygon() {
+    // [新增] 再次激活前清理旧监听，避免重复绑定
+    this.deactivate()
     var positions = []
     var clickStatus = false
     var labelEntity = null
-    this.viewer.screenSpaceEventHandler.setInputAction(clickEvent => {
+    this.handler.setInputAction(clickEvent => {
       clickStatus = true
       var cartesian = this.viewer.scene.globe.pick(
         this.viewer.camera.getPickRay(clickEvent.position),
@@ -22,7 +26,7 @@ export default class MeasureManager {
         positions.push(cartesian.clone()) //鼠标左击 添加第1个点
         this.addPoint(cartesian)
 
-        this.viewer.screenSpaceEventHandler.setInputAction(moveEvent => {
+        this.handler.setInputAction(moveEvent => {
           var movePosition = this.viewer.scene.globe.pick(
             this.viewer.camera.getPickRay(moveEvent.endPosition),
             this.viewer.scene
@@ -71,7 +75,7 @@ export default class MeasureManager {
         this.addPolyGon(positions)
 
         // 右击结束
-        this.viewer.screenSpaceEventHandler.setInputAction(clickEvent => {
+        this.handler.setInputAction(clickEvent => {
           var clickPosition = this.viewer.scene.globe.pick(
             this.viewer.camera.getPickRay(clickEvent.position),
             this.viewer.scene
@@ -84,13 +88,13 @@ export default class MeasureManager {
           positions.push(positions[0]) // 闭合
           this.addPoint(clickPosition)
 
-          this.viewer.screenSpaceEventHandler.removeInputAction(
+          this.handler.removeInputAction(
             Cesium.ScreenSpaceEventType.LEFT_CLICK
           )
-          this.viewer.screenSpaceEventHandler.removeInputAction(
+          this.handler.removeInputAction(
             Cesium.ScreenSpaceEventType.MOUSE_MOVE
           )
-          this.viewer.screenSpaceEventHandler.removeInputAction(
+          this.handler.removeInputAction(
             Cesium.ScreenSpaceEventType.RIGHT_CLICK
           )
         }, Cesium.ScreenSpaceEventType.RIGHT_CLICK)
@@ -103,6 +107,26 @@ export default class MeasureManager {
         this.addPoint(cartesian)
       }
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+  }
+
+  // [新增] 停用事件监听（独立 handler，不影响 viewer 全局事件）
+  deactivate() {
+    if (!this.handler) return
+    try {
+      this.handler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK)
+      this.handler.removeInputAction(Cesium.ScreenSpaceEventType.MOUSE_MOVE)
+      this.handler.removeInputAction(Cesium.ScreenSpaceEventType.RIGHT_CLICK)
+    } catch (e) {}
+  }
+
+  // [新增] 清除绘制内容（点/线/面/标签）
+  clear() {
+    this.entityCollection.forEach(entity => {
+      try {
+        this.viewer.entities.remove(entity)
+      } catch (e) {}
+    })
+    this.entityCollection = []
   }
 
   // 添加点
@@ -123,15 +147,17 @@ export default class MeasureManager {
 
   // 添加线
   addLine(positions) {
-    this.viewer.entities.add(
-      new Cesium.Entity({
-        polyline: {
-          positions: new Cesium.CallbackProperty(() => positions, false),
-          width: 2,
-          material: Cesium.Color.YELLOW,
-          clampToGround: true,
-        },
-      })
+    this.entityCollection.push(
+      this.viewer.entities.add(
+        new Cesium.Entity({
+          polyline: {
+            positions: new Cesium.CallbackProperty(() => positions, false),
+            width: 2,
+            material: Cesium.Color.YELLOW,
+            clampToGround: true,
+          },
+        })
+      )
     )
   }
 

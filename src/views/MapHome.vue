@@ -220,6 +220,7 @@
                 ><el-button
                   @click="locationsearch"
                   v-on:click.middle="locationsearchqxz"
+                  title="左键查询灾害点，中键查询气象站"
                   >查询</el-button
                 >
               </div>
@@ -230,16 +231,16 @@
                   v-model="form_disastersearch.attribute"
                   teleport=".top-container"
                 >
-                  <el-option label="地点" value="location"></el-option
+                  <el-option label="地点" value="地点"></el-option
                   ><el-option label="坡度" value="slope"></el-option
                   ><el-option label="规模" value="scale"></el-option></el-select
                 ><el-input
                   v-model="form_disastersearch.attributevalue"
                 ></el-input
-                ><el-button @click="attributesearch">查询</el-button>
+                ><el-button @click="attributesearch_disaster" v-on:click.middle="attributesearch_qxz" title="左键查询灾害点，中键查询气象站">查询</el-button>
               </div>
             </el-form-item>
-            <el-button style="margin-left: 284px">清空查询条件</el-button>
+            <el-button style="margin-left: 284px" @click="clearSearchCondition">清空查询条件</el-button>
           </el-form>
         </el-dialog>
 
@@ -687,6 +688,9 @@ const boxStyle = ref({
 })
 
 const md = ref(null)
+// [新增] 测量工具状态：'' | 'distance' | 'area'；实例复用以避免事件/内存泄漏
+const activeMeasureTool = ref('')
+let areaMeasureInstance = null
 // const id =ref(null)
 const popoverStatus_hover = ref({
   popover_measure: false,
@@ -724,8 +728,14 @@ const handleClickChange = (popoverKey, visible) => {
   popoverStatus_click.value[popoverKey] = visible
 }
 const submit_setPosition = () => {
-  if (!form_setPosition.longitude || !form_setPosition.latitude) {
-    ElMessage.error('请输入完整信息')
+  const lon = Number(form_setPosition.longitude)
+  const lat = Number(form_setPosition.latitude)
+  if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
+    ElMessage.error('请输入有效的经纬度数字')
+    return
+  }
+  if (lon < -180 || lon > 180 || lat < -90 || lat > 90) {
+    ElMessage.error('经纬度超出范围（经度 -180~180，纬度 -90~90）')
     return
   }
   handleClickChange('popover_setPosition', false)
@@ -733,11 +743,7 @@ const submit_setPosition = () => {
   // 2. 正确设置相机位置 + 姿态（替换直接赋值的代码）
   viewer.value.camera.setView({
     // 位置：经纬度转笛卡尔坐标
-    destination: Cesium.Cartesian3.fromDegrees(
-      form_setPosition.longitude,
-      form_setPosition.latitude,
-      form_setPosition.height,
-    ),
+    destination: Cesium.Cartesian3.fromDegrees(lon, lat, form_setPosition.height),
     // 姿态：heading/pitch/roll（弧度值）
     orientation: {
       heading: Cesium.Math.toRadians(2.02), // 航向角
@@ -745,9 +751,10 @@ const submit_setPosition = () => {
       roll: Cesium.Math.toRadians(360.0), // 翻滚角
     },
   })
-  //关闭弹窗
-
-  // dialogVisible_setPosition.value = false
+  ElMessage({
+    message: `视角已定位到 ${lon.toFixed(5)}, ${lat.toFixed(5)}`,
+    type: 'success',
+  })
 }
 onMounted(() => {
   // viewer 由 MapLayout 初始化并通过 provide/inject 注入，此处无需再初始化 Cesium
@@ -6030,17 +6037,48 @@ const flyToShrinkView = rectangle => {
   })
 }
 
+// [新增] 距离测量：再次点击退出并清除；与面积测量互斥；实例复用避免事件泄漏
 const measure = () => {
-  // new MeasureDistance(viewer.value).activate()
-  md.value = new MeasureDistance(viewer.value)
-  if (md.value) {
-    md.value.activate()
+  if (!viewer.value) return
+  if (activeMeasureTool.value === 'distance') {
+    md.value?.deactivate?.()
+    md.value?.clear?.()
+    activeMeasureTool.value = ''
+    ElMessage({ message: '已退出距离测量并清除结果', type: 'info' })
+    return
   }
+  if (activeMeasureTool.value === 'area') {
+    areaMeasureInstance?.deactivate?.()
+    areaMeasureInstance?.clear?.()
+    activeMeasureTool.value = ''
+  }
+  if (!md.value) md.value = new MeasureDistance(viewer.value)
+  md.value.clear?.()
+  md.value.activate()
+  activeMeasureTool.value = 'distance'
+  ElMessage({ message: '距离测量已开启：左键加点，右键结束', type: 'success' })
 }
 
+// [新增] 面积测量：再次点击退出并清除；与距离测量互斥；实例复用避免事件泄漏
 const polygon = () => {
-  const measureManager = new MeasureManager(viewer.value)
-  measureManager.measurePolygon()
+  if (!viewer.value) return
+  if (activeMeasureTool.value === 'area') {
+    areaMeasureInstance?.deactivate?.()
+    areaMeasureInstance?.clear?.()
+    activeMeasureTool.value = ''
+    ElMessage({ message: '已退出面积测量并清除结果', type: 'info' })
+    return
+  }
+  if (activeMeasureTool.value === 'distance') {
+    md.value?.deactivate?.()
+    md.value?.clear?.()
+    activeMeasureTool.value = ''
+  }
+  if (!areaMeasureInstance) areaMeasureInstance = new MeasureManager(viewer.value)
+  areaMeasureInstance.clear?.()
+  areaMeasureInstance.measurePolygon()
+  activeMeasureTool.value = 'area'
+  ElMessage({ message: '面积测量已开启：左键加点，右键结束', type: 'success' })
 }
 
 const position = () => {
@@ -6091,41 +6129,48 @@ const position = () => {
 const position_point = ref(null)
 
 //添加灾害点属性
+// [新增] 复用拾取处理器：重复点击"添加属性"时销毁上一个，避免事件泄漏
+let attrPickHandler = null
 const addattribute = () => {
-  let position = null
+  if (!viewer.value) return
+  if (attrPickHandler) {
+    try { attrPickHandler.destroy() } catch (e) {}
+    attrPickHandler = null
+  }
+  ElMessage({ message: '请在地图上单击选择要添加属性的位置', type: 'info' })
   const handler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
+  attrPickHandler = handler
   handler.setInputAction(e => {
     //转换坐标到三维场景
     const ray = viewer.value.camera.getPickRay(e.position)
-
-    position = viewer.value.scene.globe.pick(ray, viewer.value.scene)
+    const position = ray ? viewer.value.scene.globe.pick(ray, viewer.value.scene) : null
+    if (!position) {
+      ElMessage({ message: '未拾取到地表位置，请在地球表面重新点击', type: 'warning' })
+      return
+    }
     const cart = Cesium.Cartographic.fromCartesian(position)
     //经纬度
     const longitude = Cesium.Math.toDegrees(cart.longitude)
     const latitude = Cesium.Math.toDegrees(cart.latitude)
-    form.longitude = longitude
-    form.latitude = latitude
-
-    // console.log(cartographic)
+    form.longitude = Number(longitude.toFixed(6))
+    form.latitude = Number(latitude.toFixed(6))
     position_point.value = position
-    ;((dialogVisible_disaster.value = true),
-      // 自动移除事件监听（单次点击模式）
-      handler.destroy())
+    // 自动移除事件监听（单次点击模式）
+    handler.destroy()
+    attrPickHandler = null
+    dialogVisible_disaster.value = true
   }, Cesium.ScreenSpaceEventType.LEFT_DOWN)
 }
 const submit_disaster = () => {
-  // console.log(form)
+  if (!String(form.name || '').trim()) {
+    ElMessage({ message: '请填写名称后再提交', type: 'warning' })
+    return
+  }
+  if (!position_point.value) {
+    ElMessage({ message: '请先在地图上点击选择位置', type: 'warning' })
+    return
+  }
   dialogVisible_disaster.value = false
-  viewer.value.entities.add({
-    position: position_point.value,
-    billboard: {
-      image: '/ng/position.png',
-      heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-      disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
-      width: 48,
-      height: 48,
-    },
-  })
   // 1. 构建GeoJSON格式的空间数据
   const geoData = {
     type: 'Point',
@@ -6144,14 +6189,104 @@ const submit_disaster = () => {
       geom: geoData,
     })
     .then(res => {
-      // console.log(res)
-      if (res.data.code === 200) {
-        console.log('提交成功')
+      // 后端返回 201 Created，按 2xx 统一判定成功
+      if (res.status >= 200 && res.status < 300) {
+        // 落库成功后再在地图上落点，避免失败时留下孤立标记
+        viewer.value.entities.add({
+          position: position_point.value,
+          billboard: {
+            image: '/ng/position.png',
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
+            width: 48,
+            height: 48,
+          },
+        })
+        ElMessage({ message: '灾害点添加成功', type: 'success' })
+        // 重置表单，便于继续添加下一个点
+        Object.assign(form, {
+          name: '',
+          dcmd: '',
+          lssl: '',
+          slope: '',
+          hlxqsl: '',
+          pthhsmj: '',
+          elevation: '',
+          scale: '',
+          longitude: '',
+          latitude: '',
+        })
+        position_point.value = null
+      } else {
+        ElMessage({
+          message: '添加失败：' + (res.data?.message || '未知错误'),
+          type: 'error',
+        })
       }
     })
     .catch(err => {
+      ElMessage({ message: '添加失败：网络或服务错误', type: 'error' })
       console.log(err)
     })
+}
+
+// [新增] 查询属性标记点管理：每次查询前清除上一次的标记，避免叠加
+const searchMarkerEntities = []
+const clearSearchMarkers = () => {
+  if (!viewer.value) return
+  while (searchMarkerEntities.length) {
+    const ent = searchMarkerEntities.pop()
+    try {
+      viewer.value.entities.remove(ent)
+    } catch (e) {}
+  }
+}
+const addSearchMarker = (lng, lat) => {
+  const ent = viewer.value.entities.add({
+    position: Cesium.Cartesian3.fromDegrees(lng, lat),
+    billboard: {
+      image: '/ng/position.png',
+      heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
+      width: 48,
+      height: 48,
+    },
+  })
+  searchMarkerEntities.push(ent)
+  return ent
+}
+
+// [新增] 清空查询条件
+const clearSearchCondition = () => {
+  form_disastersearch.location = '林芝市'
+  form_disastersearch.attribute = '地点'
+  form_disastersearch.attributevalue = ''
+}
+
+// [新增] 查询失败统一提示：404=无数据、400=参数不合法、其它=服务错误
+const handleQueryError = (err, label = '数据') => {
+  const status = err?.response?.status
+  if (status === 404) {
+    ElMessage({ message: `未查询到${label}`, type: 'warning' })
+  } else if (status === 400) {
+    ElMessage({ message: '查询条件不合法，请检查后重试', type: 'warning' })
+  } else {
+    ElMessage({ message: '查询失败：服务或网络错误', type: 'error' })
+  }
+  console.log(err)
+}
+
+// [新增] 属性查询前校验：必须选择属性并填写查询值
+const validateAttrSearch = () => {
+  if (!form_disastersearch.attribute) {
+    ElMessage({ message: '请选择查询属性', type: 'warning' })
+    return false
+  }
+  if (!String(form_disastersearch.attributevalue || '').trim()) {
+    ElMessage({ message: '请输入查询值', type: 'warning' })
+    return false
+  }
+  return true
 }
 
 //灾害点查询(打开属性框)
@@ -6162,6 +6297,7 @@ const searchdisaster = () => {
 //位置查询
 const locationsearch = () => {
   dialogVisible_searchdisaster.value = false
+  clearSearchMarkers()
   axios
     .get('/node/point', {
       params: {
@@ -6175,16 +6311,7 @@ const locationsearch = () => {
       // console.log(typeof data[0].lng)
       if (data.length > 0) {
         data.forEach(item => {
-          viewer.value.entities.add({
-            position: Cesium.Cartesian3.fromDegrees(item.lng, item.lat),
-            billboard: {
-              image: '/ng/position.png',
-              heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-              disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
-              width: 48,
-              height: 48,
-            },
-          })
+          addSearchMarker(item.lng, item.lat)
           // 2. 格式化表格数据
           tableData.value.push({
             name: item.name || '--', // 处理空值
@@ -6198,28 +6325,27 @@ const locationsearch = () => {
           })
         })
       } else {
-        console.log('未查询到数据')
+        ElMessage({ message: '未查询到数据', type: 'warning' })
       }
-      viewer.value.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(
-          data[0].lng,
-          data[0].lat,
-          50000,
-        ),
-      })
+      if (data.length > 0) {
+        viewer.value.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(
+            data[0].lng,
+            data[0].lat,
+            50000,
+          ),
+        })
+        dialogVisible_checkattribute.value = true
+      }
     })
-    .catch(err => {
-      console.log(err)
-    })
-  setTimeout(() => {
-    dialogVisible_checkattribute.value = true
-  }, 2000)
+    .catch(err => handleQueryError(err, '灾害点数据'))
 }
 const search_dis_location = () => {
   console.log(tableData.value)
 }
 const locationsearchqxz = () => {
   dialogVisible_searchdisaster.value = false
+  clearSearchMarkers()
   axios
     .get('/node/point_qxz', {
       params: {
@@ -6232,16 +6358,7 @@ const locationsearchqxz = () => {
       // console.log(typeof data[0].lng)
       if (data.length > 0) {
         data.forEach(item => {
-          viewer.value.entities.add({
-            position: Cesium.Cartesian3.fromDegrees(item.lng, item.lat),
-            billboard: {
-              image: '/ng/position.png',
-              heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-              disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
-              width: 48,
-              height: 48,
-            },
-          })
+          addSearchMarker(item.lng, item.lat)
           // 2. 格式化表格数据
           tableData_qxz.value.push({
             z_name: item.z_name || '--', // 处理空值
@@ -6250,26 +6367,26 @@ const locationsearchqxz = () => {
           })
         })
       } else {
-        console.log('未查询到数据')
+        ElMessage({ message: '未查询到数据', type: 'warning' })
       }
-      viewer.value.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(
-          data[0].lng,
-          data[0].lat,
-          50000,
-        ),
-      })
+      if (data.length > 0) {
+        viewer.value.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(
+            data[0].lng,
+            data[0].lat,
+            50000,
+          ),
+        })
+        dialogVisible_checkqxz.value = true
+      }
     })
-    .catch(err => {
-      console.log(err)
-    })
-  setTimeout(() => {
-    dialogVisible_checkqxz.value = true
-  }, 2000)
+    .catch(err => handleQueryError(err, '气象站数据'))
 }
 //属性查询
 const attributesearch_disaster = () => {
+  if (!validateAttrSearch()) return
   dialogVisible_searchdisaster.value = false
+  clearSearchMarkers()
   // console.log(form_disastersearch.attribute, form_disastersearch.attributevalue)
   const name = form_disastersearch.attribute
   const value = form_disastersearch.attributevalue
@@ -6287,16 +6404,7 @@ const attributesearch_disaster = () => {
       // console.log(typeof data)
       if (data.length > 0) {
         data.forEach(item => {
-          viewer.value.entities.add({
-            position: Cesium.Cartesian3.fromDegrees(item.lng, item.lat),
-            billboard: {
-              image: '/ng/position.png',
-              heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-              disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
-              width: 48,
-              height: 48,
-            },
-          })
+          addSearchMarker(item.lng, item.lat)
           // 2. 格式化表格数据
           tableData.value.push({
             name: item.name || '--', // 处理空值
@@ -6310,26 +6418,25 @@ const attributesearch_disaster = () => {
           })
         })
       } else {
-        console.log('未查询到数据')
+        ElMessage({ message: '未查询到数据', type: 'warning' })
       }
-      console.log(data[0])
-      viewer.value.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(
-          data[0].lng,
-          data[0].lat,
-          50000,
-        ),
-      })
+      if (data.length > 0) {
+        viewer.value.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(
+            data[0].lng,
+            data[0].lat,
+            50000,
+          ),
+        })
+        dialogVisible_checkattribute.value = true
+      }
     })
-    .catch(err => {
-      console.log(err)
-    })
-  setTimeout(() => {
-    dialogVisible_checkattribute.value = true
-  }, 2000)
+    .catch(err => handleQueryError(err, '灾害点数据'))
 }
 const attributesearch_qxz = () => {
+  if (!validateAttrSearch()) return
   dialogVisible_searchdisaster.value = false
+  clearSearchMarkers()
   // console.log(form_disastersearch.attribute, form_disastersearch.attributevalue)
   const name = form_disastersearch.attribute
   const value = form_disastersearch.attributevalue
@@ -6347,16 +6454,7 @@ const attributesearch_qxz = () => {
       // console.log(typeof data)
       if (data.length > 0) {
         data.forEach(item => {
-          viewer.value.entities.add({
-            position: Cesium.Cartesian3.fromDegrees(item.lng, item.lat),
-            billboard: {
-              image: '/ng/position.png',
-              heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-              disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
-              width: 48,
-              height: 48,
-            },
-          })
+          addSearchMarker(item.lng, item.lat)
           // 2. 格式化表格数据
           tableData_qxz.value.push({
             z_name: item.z_name || '--', // 处理空值
@@ -6365,23 +6463,20 @@ const attributesearch_qxz = () => {
           })
         })
       } else {
-        console.log('未查询到数据')
+        ElMessage({ message: '未查询到数据', type: 'warning' })
       }
-      console.log(data[0])
-      viewer.value.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(
-          data[0].lng,
-          data[0].lat,
-          50000,
-        ),
-      })
+      if (data.length > 0) {
+        viewer.value.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(
+            data[0].lng,
+            data[0].lat,
+            50000,
+          ),
+        })
+        dialogVisible_checkqxz.value = true
+      }
     })
-    .catch(err => {
-      console.log(err)
-    })
-  setTimeout(() => {
-    dialogVisible_checkqxz.value = true
-  }, 2000)
+    .catch(err => handleQueryError(err, '气象站数据'))
 }
 
 /** 一键清除所有灾害模拟结果（实体、图元、数据源、影像图层等），无需硬刷新 */
@@ -6448,6 +6543,21 @@ const cleanentity = () => {
   if (fosChartExpr) { fosChartExpr.dispose(); fosChartExpr = null }
   const bedE = viewer.value.entities.getById('bedding_avainit')
   if (bedE) viewer.value.entities.remove(bedE)
+  // 11. 停止测量工具并清除测量图形
+  try {
+    md.value?.deactivate?.()
+    md.value?.clear?.()
+    areaMeasureInstance?.deactivate?.()
+    areaMeasureInstance?.clear?.()
+  } catch (e) {}
+  activeMeasureTool.value = ''
+  // 12. 清除"查询属性"添加的标记点
+  clearSearchMarkers()
+  // 13. 销毁"添加属性"的拾取处理器
+  if (attrPickHandler) {
+    try { attrPickHandler.destroy() } catch (e) {}
+    attrPickHandler = null
+  }
 }
 const handler_seismic = ref('')
 var echarts_data = ''
