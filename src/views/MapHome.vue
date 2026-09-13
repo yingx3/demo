@@ -4642,21 +4642,46 @@ const removeLayer_yigong_hazard = () => {
 }
 
 //加载全国气象站
+// [旧逻辑保留] 数据源与原调用方式不变（仍读取 weatherstation 表）；
+// 本次修复：WKB Point 解析、实体 properties 挂载、setInputAction 无返回值误用 .catch。
 const addLayer_weatherstation = () => {
   axios.get('/node/weatherstation').then(res => {
     const stations = res.data
-    // console.log(data)
     // 1. 创建数据源
     const stationDataSource = new Cesium.CustomDataSource('weatherStations')
     viewer.value.dataSources.add(stationDataSource)
     // 2. 处理每个气象站
     stations.forEach(station => {
-      // 解析几何坐标（WKT格式转经纬度）
-      const [lon, lat] = parseWKB(station.geom) // 示例函数见下方
-      // 创建实体
-      const entity = stationDataSource.entities.add({
+      // 解析几何坐标（WKB Point），失败时回退使用 LON/LAT 字段
+      let lon = parseFloat(station.LON)
+      let lat = parseFloat(station.LAT)
+      try {
+        const geom = parseWKB(station.geom)
+        if (geom?.type === 'Point' && Array.isArray(geom.coordinates)) {
+          lon = geom.coordinates[0]
+          lat = geom.coordinates[1]
+        }
+      } catch (e) {
+        // geom 解析失败时保持使用 LON/LAT
+      }
+      if (!Number.isFinite(lon) || !Number.isFinite(lat)) return
+      // 创建实体（properties 供点击弹窗展示，字段与数据表一致）
+      stationDataSource.entities.add({
         name: station.NAME,
         position: Cesium.Cartesian3.fromDegrees(lon, lat),
+        properties: {
+          SID: station.SID,
+          ID: station.ID,
+          NAME: station.NAME,
+          COUNTYNAME: station.COUNTYNAME,
+          HEIGHT: station.HEIGHT,
+          TIMES: station.TIMES,
+          RAIN: station.RAIN,
+          SUN: station.SUN,
+          TEMPE: station.TEMPE,
+          TYPES: station.TYPES,
+          COMMENT: station.COMMENT,
+        },
         point: {
           pixelSize: 5,
           color: getColorByType(station.TYPES), // 按类型着色
@@ -4686,52 +4711,85 @@ const addLayer_weatherstation = () => {
       orientation: {
         heading: Cesium.Math.toRadians(0), //朝向
         pitch: Cesium.Math.toRadians(-90), //俯仰
-        // pitch: Cesium.Math.toRadians(-90), //俯仰
         roll: 0.0, //滚转
       },
     })
   })
 
-  // 3. 添加点击事件
+  // 3. 添加点击事件（setInputAction 返回 undefined，不能链式 .catch）
   const layerwsClickHandler = new Cesium.ScreenSpaceEventHandler(
     viewer.value.scene.canvas,
   )
-  layerwsClickHandler
-    .setInputAction(handleLayerwsClick, Cesium.ScreenSpaceEventType.LEFT_CLICK)
-    .catch(error => {
-      console.error('加载气象站数据失败:', error)
-    })
+  try {
+    layerwsClickHandler.setInputAction(
+      handleLayerwsClick,
+      Cesium.ScreenSpaceEventType.LEFT_CLICK,
+    )
+  } catch (error) {
+    console.error('注册气象站点击事件失败:', error)
+  }
 }
-const handleLayerwsClick = event => {
+const handleLayerwsClick = async event => {
   // 获取点击位置
   const pickedFeature = viewer.value.scene.pick(event.position)
-  // console.log(pickedFeature)
-  const getProperty = prop => {
-    return pickedFeature.id._properties[prop]?._value ?? '无数据'
+  if (!pickedFeature || !pickedFeature.id) return
+  const entity = pickedFeature.id
+  const currentTime = viewer.value.clock.currentTime
+  // 从实体 properties 读取字段（旧代码字段名与数据源不一致，此处已修正）
+  const getProp = key => {
+    const value = entity.properties?.[key]?.getValue?.(currentTime)
+    return value === undefined || value === null || value === '' ? '无数据' : value
   }
-  // console.log(getProperty('_OBJECTID'))
-  console.log(getProperty(''))
+
+  // 实时气象数据（新增）：读取采集器写入 weather_obs 表的最新记录
+  let realtimeItems = []
+  try {
+    const stationId = getProp('ID') === '无数据' ? '' : String(getProp('ID'))
+    if (stationId) {
+      const resp = await axios.get('/node/weather/realtime', {
+        params: { station: stationId },
+      })
+      const fmtValue = (v, unit) =>
+        v === null || v === undefined ? '无数据' : `${v}${unit}`
+      if (resp.data?.found) {
+        const ob = resp.data.observation
+        realtimeItems = [
+          { name: '实时时间', value: ob.obs_time_display || '无数据' },
+          { name: '实时气温', value: fmtValue(ob.temperature_c, '℃') },
+          { name: '实时降水', value: fmtValue(ob.precipitation_mm, 'mm') },
+          { name: '实时风速', value: fmtValue(ob.wind_speed_ms, 'm/s') },
+          { name: '实时湿度', value: fmtValue(ob.humidity_pct, '%') },
+        ]
+      } else {
+        realtimeItems = [
+          { name: '实时气象', value: '暂无数据（等待采集器运行）' },
+        ]
+      }
+    }
+  } catch (error) {
+    console.error('获取实时气象数据失败:', error)
+    realtimeItems = [{ name: '实时气象', value: '获取失败' }]
+  }
+
   const opts = {
     viewer,
     position: {
-      _value: pickedFeature.id.position || pickedFeature.primitive.position,
+      _value:
+        entity.position?.getValue?.(currentTime) ??
+        pickedFeature.primitive?.position,
     },
-    title: getProperty('_county'),
+    title: getProp('NAME'),
     content: [
-      { name: '名称', value: getProperty('_county') },
-      { name: '高度', value: getProperty('_height') },
-      { name: '服役时间', value: getProperty('_period') },
-      { name: '雨量', value: getProperty('_rain') },
-      { name: '日照', value: getProperty('_sunshine') },
-      { name: '温度', value: getProperty('_temperature') + '°' },
-      {
-        name: '类型',
-        value: getProperty('_type'),
-      },
-      {
-        name: '描述',
-        value: getProperty('comment'),
-      },
+      { name: '站名', value: getProp('NAME') },
+      { name: '区县', value: getProp('COUNTYNAME') },
+      { name: '海拔', value: getProp('HEIGHT') },
+      { name: '资料时段', value: getProp('TIMES') },
+      { name: '降水年数', value: getProp('RAIN') },
+      { name: '日照年数', value: getProp('SUN') },
+      { name: '气温年数', value: getProp('TEMPE') },
+      { name: '类型', value: getProp('TYPES') },
+      { name: '备注', value: getProp('COMMENT') },
+      ...realtimeItems,
     ],
   }
 
@@ -4752,6 +4810,7 @@ const getColorByType = type => {
     基本站: Cesium.Color.BLUE,
     一般站: Cesium.Color.GREEN,
     自动站: Cesium.Color.YELLOW,
+    撤消: Cesium.Color.GRAY, // 原表中存在的历史台站状态
   }
   return colors[type] || Cesium.Color.WHITE
 }

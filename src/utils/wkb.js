@@ -1,5 +1,6 @@
 /* WKB / EWKB parsing utilities
    支持:
+   - Point
    - LineString
    - MultiLineString
    - Polygon
@@ -100,6 +101,16 @@ function parseGeometry(reader) {
     }
 
     return [x, y]
+  }
+
+  if (baseType === 1) {
+    const coordinates = readPoint()
+
+    return {
+      type: 'Point',
+      coordinates,
+      srid,
+    }
   }
 
   if (baseType === 2) {
