@@ -183,7 +183,13 @@ router.get('/point_qxz', async (req, res) => {
 router.get('/weatherstation', async (req, res) => {
   try {
 
-    const { rows } = await pool.query('SELECT * FROM weatherstation')
+    // [兼容保留] 原逻辑：const { rows } = await pool.query('SELECT * FROM weatherstation')
+    // [新增] 支持 ?scope=linzhi：仅返回西藏林芝市站点；不带参数时仍返回全表（向后兼容）
+    const LINZHI_COUNTIES = ['林芝县', '林芝市', '巴宜区', '工布江达县', '米林县', '米林市', '墨脱县', '波密县', '察隅县', '朗县']
+    const scope = String(req.query.scope || '').toLowerCase()
+    const { rows } = scope === 'linzhi'
+      ? await pool.query('SELECT * FROM weatherstation WHERE trim("COUNTYNAME") = ANY($1)', [LINZHI_COUNTIES])
+      : await pool.query('SELECT * FROM weatherstation')
     res.send(rows)
   } catch (error) {
     console.error('数据库查询错误:', error)

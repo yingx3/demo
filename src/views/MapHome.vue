@@ -4685,7 +4685,8 @@ const LINZHI_COUNTY_NAMES = [
   '朗县',
 ]
 const addLayer_weatherstation = () => {
-  axios.get('/node/weatherstation').then(res => {
+  // [新增] 接口仅返回林芝市站点；下方白名单过滤保留作兜底
+  axios.get('/node/weatherstation?scope=linzhi').then(res => {
     const stations = res.data
     // 1. 创建数据源
     const stationDataSource = new Cesium.CustomDataSource('weatherStations')
