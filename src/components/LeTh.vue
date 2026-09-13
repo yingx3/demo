@@ -6012,13 +6012,10 @@ const resetSeismicInputs = () => {
   color: #606266;
 }
 
+/* [调整] hover 仅文字变蓝（由 el-button 自带样式提供），
+   不再出现背景光框/位移，与上方其它模型保持一致 */
 .regulation-entry {
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.regulation-entry:hover {
-  transform: translateX(2px);
-  box-shadow: 0 0 10px rgba(90, 176, 255, 0.55);
 }
 .terrain-dialog-header {
   display: flex;
