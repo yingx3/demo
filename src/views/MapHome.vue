@@ -236,6 +236,7 @@
                   ><el-option label="规模" value="scale"></el-option></el-select
                 ><el-input
                   v-model="form_disastersearch.attributevalue"
+                  :placeholder="attributeValueHint()"
                 ></el-input
                 ><el-button @click="attributesearch_disaster" v-on:click.middle="attributesearch_qxz" title="左键查询灾害点，中键查询气象站">查询</el-button>
               </div>
@@ -741,9 +742,14 @@ const submit_setPosition = () => {
   handleClickChange('popover_setPosition', false)
 
   // 2. 正确设置相机位置 + 姿态（替换直接赋值的代码）
+  const safeHeight = Number(form_setPosition.height)
   viewer.value.camera.setView({
     // 位置：经纬度转笛卡尔坐标
-    destination: Cesium.Cartesian3.fromDegrees(lon, lat, form_setPosition.height),
+    destination: Cesium.Cartesian3.fromDegrees(
+      lon,
+      lat,
+      Number.isFinite(safeHeight) && safeHeight > 0 ? safeHeight : 30000,
+    ),
     // 姿态：heading/pitch/roll（弧度值）
     orientation: {
       heading: Cesium.Math.toRadians(2.02), // 航向角
@@ -6274,6 +6280,15 @@ const handleQueryError = (err, label = '数据') => {
     ElMessage({ message: '查询失败：服务或网络错误', type: 'error' })
   }
   console.log(err)
+}
+
+// [新增] 属性查询输入提示：不同属性的取值示例不同
+const attributeValueHint = () => {
+  const a = form_disastersearch.attribute
+  if (a === '地点') return '请输入完整名称，如：林芝市'
+  if (a === 'slope') return '请输入坡度数值，如：35'
+  if (a === 'scale') return '请输入规模取值：small / middle / big / heavy'
+  return '请输入查询值'
 }
 
 // [新增] 属性查询前校验：必须选择属性并填写查询值
