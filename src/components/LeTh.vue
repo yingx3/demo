@@ -4296,14 +4296,67 @@
       <div class="theme">
         <div class="title">断链防控</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
-        <div class="box">
+        <div class="box regulation-entry" @click="openTerrainRegulation('chain')">
           <img src="../assets/img/云反射率.png" alt="" />
           <span>灾害链断链调控技术</span>
         </div>
-        <div class="box p_bottom">
+        <div class="box p_bottom regulation-entry" @click="openTerrainRegulation('along')">
           <img src="../assets/img/云反射率.png" alt="" />
           <span>冰川泥石流沿程调控技术</span>
         </div>
+        <el-dialog
+          v-for="cfg in terrainRegulationConfigs"
+          :key="cfg.kind"
+          v-model="cfg.visible"
+          :title="cfg.title"
+          width="560"
+          :close-on-click-modal="false"
+          class="dialog_quanyu"
+        >
+          <template #header>
+            <div class="terrain-dialog-header">
+              <span class="terrain-dialog-title">{{ cfg.title }}</span>
+              <span
+                class="terrain-dialog-tag"
+                :style="{ color: cfg.accent, borderColor: cfg.accent }"
+                >{{ cfg.tagline }}</span
+              >
+            </div>
+          </template>
+          <div class="terrain-panel">
+            <p class="terrain-desc" :style="{ borderLeftColor: cfg.accent }">
+              {{ cfg.desc }}
+            </p>
+            <div class="terrain-row">
+              <span class="terrain-label">{{ cfg.areaLabel }}</span>
+              <el-button size="small" type="primary" plain @click="startTerrainDraw(cfg.kind)"
+                >在地图上绘制</el-button
+              >
+              <el-button size="small" @click="clearTerrainDraw">清除绘制</el-button>
+              <span class="terrain-status">{{ terrainStatusText }}</span>
+            </div>
+            <el-form label-width="auto" class="terrain-form">
+              <el-form-item :label="cfg.raiseLabel">
+                <el-input
+                  v-model="terrainRaise"
+                  style="width: 160px"
+                  :placeholder="cfg.raisePlaceholder"
+                />
+                <span class="terrain-unit">米</span>
+              </el-form-item>
+            </el-form>
+            <p class="terrain-hint">{{ cfg.hint }}</p>
+            <div class="terrain-actions">
+              <el-button @click="cfg.visible = false">取消</el-button>
+              <el-button
+                type="primary"
+                :loading="terrainRunning"
+                @click="submitTerrainRegulation(cfg.kind)"
+                >{{ cfg.runText }}</el-button
+              >
+            </div>
+          </div>
+        </el-dialog>
       </div>
     </div>
 
@@ -4357,7 +4410,7 @@ import { QuestionFilled } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
 // import { UploadInstance } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { inject, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { reactive } from 'vue'
 import axios from 'axios'
 import modelService from '../services/modelService'
@@ -4670,6 +4723,8 @@ let $emit = defineEmits([
   'bedding_wedget',
   'betaLayers',
   'proLayers',
+  'terrainDrawStart',
+  'terrainDrawCancel',
 ])
 // 获取 store 实例
 const squareStore = useSquareStore()
@@ -5084,8 +5139,123 @@ function proNumber(value, fallback) {
   return Number.isFinite(n) ? n : fallback
 }
 
+// ===== 灾害链断链调控 / 冰川泥石流沿程调控 =====
+// 两个入口共用同一套「手绘范围 + 抬升底床 + Pro 动力学计算」实现，仅面板文案与主题按功能差异化。
+const terrainRegulationConfigs = reactive([
+  {
+    kind: 'chain',
+    visible: false,
+    title: '灾害链断链调控技术',
+    tagline: '关键链节阻截',
+    accent: '#5ab0ff',
+    desc:
+      '在物源启动—沟道输移的关键转换链节手绘阻截范围，抬高底床形成拦挡坝体，截断物源向下游的逐级放大。',
+    areaLabel: '拦挡范围',
+    raiseLabel: '坝体加高值',
+    raisePlaceholder: '例如 20',
+    runText: '执行断链调控计算',
+    hint: '运行前请先在「洪水泥石流启动动力学模型」中准备好输入数据（zb/zl/hw），未选择文件时使用内置示例数据。',
+  },
+  {
+    kind: 'along',
+    visible: false,
+    title: '冰川泥石流沿程调控技术',
+    tagline: '沿程护底消能',
+    accent: '#24c8a0',
+    desc:
+      '沿冰川泥石流运动路径手绘护底与消能范围，抬升床面削弱沿程侵蚀冲刷，控制泥石流规模的持续放大。',
+    areaLabel: '调控范围',
+    raiseLabel: '床面抬升高度',
+    raisePlaceholder: '例如 15',
+    runText: '执行沿程调控计算',
+    hint: '与断链调控共用同一套动力学内核与输入数据，区别在于调控范围沿沟道纵向布设。',
+  },
+])
+
+const terrainPolygon = ref([])
+const terrainKind = ref('')
+const terrainRaise = ref('20')
+const terrainDrawing = ref(false)
+const terrainRunning = ref(false)
+const terrainStatusText = computed(() => {
+  if (terrainDrawing.value) return '绘制中：左键逐点、右键结束'
+  const n = terrainPolygon.value.length
+  return n >= 3 ? '已绘制 ' + n + ' 个顶点' : '尚未绘制封闭范围'
+})
+
+const openTerrainRegulation = kind => {
+  const cfg = terrainRegulationConfigs.find(item => item.kind === kind)
+  if (!cfg) return
+  terrainPolygon.value = []
+  terrainDrawing.value = false
+  terrainKind.value = kind
+  terrainRaise.value = kind === 'chain' ? '20' : '15'
+  cfg.visible = true
+}
+
+const startTerrainDraw = kind => {
+  const cfg = terrainRegulationConfigs.find(item => item.kind === kind)
+  terrainKind.value = kind
+  terrainPolygon.value = []
+  terrainDrawing.value = true
+  if (cfg) cfg.visible = false
+  $emit('terrainDrawStart', { kind })
+  ElMessage({ message: '在地图上左键逐点绘制范围，右键结束，Esc 取消', type: 'info', duration: 5000 })
+}
+
+const clearTerrainDraw = () => {
+  terrainPolygon.value = []
+  terrainDrawing.value = false
+  $emit('terrainDrawCancel')
+}
+
+// MapHome 手绘结束后回传顶点（WGS84 经纬度数组）
+const onTerrainPolygonDrawn = points => {
+  terrainPolygon.value = Array.isArray(points) ? points : []
+  terrainDrawing.value = false
+  const cfg = terrainRegulationConfigs.find(item => item.kind === terrainKind.value)
+  if (cfg) cfg.visible = true
+}
+
+const onTerrainDrawCancelled = () => {
+  terrainDrawing.value = false
+  const cfg = terrainRegulationConfigs.find(item => item.kind === terrainKind.value)
+  if (cfg) cfg.visible = true
+}
+
+const submitTerrainRegulation = async kind => {
+  if (terrainPolygon.value.length < 3) {
+    ElMessage({ message: '请先在地图上手绘一个封闭范围（至少 3 个顶点）', type: 'warning', duration: 4000 })
+    return
+  }
+  const raise = proNumber(terrainRaise.value, NaN)
+  if (!Number.isFinite(raise) || raise <= 0) {
+    ElMessage({ message: '请输入大于 0 的加高值（米）', type: 'warning', duration: 4000 })
+    return
+  }
+  terrainRunning.value = true
+  try {
+    const ok = await submitForm2({
+      terrainEdits: [
+        {
+          polygon: terrainPolygon.value.map(p => [Number(p[0]), Number(p[1])]),
+          raise,
+        },
+      ],
+    })
+    if (ok === true) {
+      const cfg = terrainRegulationConfigs.find(item => item.kind === kind)
+      if (cfg) cfg.visible = false
+    }
+  } finally {
+    terrainRunning.value = false
+  }
+}
+
+defineExpose({ onTerrainPolygonDrawn, onTerrainDrawCancelled })
+
 // 参数传回后端 -> 后端调用 suanfa/Pro/python_port 数值内核 -> 输出 ASC 帧 -> 前端渲染
-const submitForm2 = async () => {
+const submitForm2 = async (extra = {}) => {
   if (floodRunning.value) {
     ElMessage({ message: '正在计算中，请稍候...', type: 'info' })
     return
@@ -5169,6 +5339,9 @@ const submitForm2 = async () => {
       ...(Number.isFinite(anchorLonNum) && Number.isFinite(anchorLatNum)
         ? { anchorLon: anchorLonNum, anchorLat: anchorLatNum }
         : {}),
+      ...(Array.isArray(extra.terrainEdits) && extra.terrainEdits.length
+        ? { terrainEdits: extra.terrainEdits }
+        : {}),
       params: {
         bed: proNumber(form2.bed, 0.2),
         nn: proNumber(form2.nn, 0.0125),
@@ -5230,7 +5403,7 @@ const submitForm2 = async () => {
             meta: st.meta,
           },
         })
-        return
+        return true
       }
       if (st && st.status === 'error') {
         ElMessage.closeAll()
@@ -5614,6 +5787,76 @@ const handleUploadErrorSeismic = (err, file, fileList) => {
   color: #606266;
 }
 
+.regulation-entry {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.regulation-entry:hover {
+  transform: translateX(2px);
+  box-shadow: 0 0 10px rgba(90, 176, 255, 0.55);
+}
+.terrain-dialog-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.terrain-dialog-title {
+  color: #ffffff;
+  font-size: 22px;
+  letter-spacing: 1px;
+}
+.terrain-dialog-tag {
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  border: 1px solid currentColor;
+  opacity: 0.9;
+}
+.terrain-panel {
+  padding: 2px 6px 0;
+}
+.terrain-desc {
+  margin: 0 0 14px;
+  padding: 8px 10px;
+  border-left: 3px solid #5ab0ff;
+  background: rgba(255, 255, 255, 0.06);
+  color: #dbe7ff;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.terrain-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.terrain-label {
+  color: #ffffff;
+  font-size: 14px;
+}
+.terrain-status {
+  color: #ffd166;
+  font-size: 12px;
+}
+.terrain-form {
+  margin-top: 14px;
+}
+.terrain-unit {
+  margin-left: 8px;
+  color: #9aa7c7;
+  font-size: 12px;
+}
+.terrain-hint {
+  margin: 0 0 14px;
+  color: #9aa7c7;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.terrain-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
 .box {
   height: 30px;
   font-weight: 500;

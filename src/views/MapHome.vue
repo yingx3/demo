@@ -2,11 +2,14 @@
   <div class="map-home-overlay">
     <zh-jc></zh-jc>
     <le-th
+      ref="leThRef"
       @openLayers="openLayers"
       @timeSelected="handleTimeSelected"
       @yjLayers="yjLayers"
       @betaLayers="betaLayers"
       @proLayers="proLayers"
+      @terrainDrawStart="startTerrainDraw"
+      @terrainDrawCancel="cancelTerrainDraw"
       @floodLayers="floodLayers"
       @floodLayersTest="floodLayersTest"
       @forecast="foreCast"
@@ -2527,6 +2530,165 @@ const betaLayers = async (payload, label = '山洪泥石流启动动力学模型
 }
 // 洪水泥石流启动动力学模型（python_port）复用 beta 的 ASC 帧渲染链路
 const proLayers = payload => betaLayers(payload, '洪水泥石流启动动力学模型')
+
+// ===== 断链 / 沿程调控：地图手绘封闭范围 =====
+// LeTh 面板点「在地图上绘制」后进入绘制模式：左键逐点、右键结束、Esc 取消；
+// 结束后把 WGS84 顶点数组回传给 LeTh 面板，随计算一起提交给后端做地形抬升。
+const leThRef = ref(null)
+let terrainDrawHandler = null
+let terrainDrawLonLat = []
+let terrainDrawEntities = []
+
+const removeTerrainDrawEntities = () => {
+  const v = viewer.value
+  if (v) {
+    terrainDrawEntities.forEach(entity => {
+      try {
+        v.entities.remove(entity)
+      } catch (e) {
+        /* ignore */
+      }
+    })
+  }
+  terrainDrawEntities = []
+}
+
+const destroyTerrainDrawHandler = () => {
+  if (terrainDrawHandler) {
+    try {
+      terrainDrawHandler.destroy()
+    } catch (e) {
+      /* ignore */
+    }
+    terrainDrawHandler = null
+  }
+  document.removeEventListener('keydown', terrainDrawKeyHandler)
+}
+
+const clearTerrainDraw = () => {
+  destroyTerrainDrawHandler()
+  terrainDrawLonLat = []
+  removeTerrainDrawEntities()
+}
+
+const renderTerrainDraw = () => {
+  removeTerrainDrawEntities()
+  const v = viewer.value
+  if (!v || terrainDrawLonLat.length === 0) return
+  const cartesians = terrainDrawLonLat.map(p => Cesium.Cartesian3.fromDegrees(p[0], p[1]))
+  terrainDrawLonLat.forEach((p, index) => {
+    terrainDrawEntities.push(
+      v.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(p[0], p[1]),
+        point: {
+          pixelSize: 8,
+          color: Cesium.Color.WHITE,
+          outlineColor: Cesium.Color.fromCssColorString('#ff9f1c'),
+          outlineWidth: 2,
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        },
+        label: {
+          text: String(index + 1),
+          font: '12px sans-serif',
+          fillColor: Cesium.Color.WHITE,
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 2,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          pixelOffset: new Cesium.Cartesian2(0, -16),
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        },
+      }),
+    )
+  })
+  if (cartesians.length >= 2) {
+    terrainDrawEntities.push(
+      v.entities.add({
+        polyline: {
+          positions: cartesians.length >= 3 ? cartesians.concat([cartesians[0]]) : cartesians,
+          width: 3,
+          material: Cesium.Color.fromCssColorString('#ffb703'),
+          clampToGround: true,
+        },
+      }),
+    )
+  }
+  if (cartesians.length >= 3) {
+    terrainDrawEntities.push(
+      v.entities.add({
+        polygon: {
+          hierarchy: new Cesium.PolygonHierarchy(cartesians),
+          material: Cesium.Color.fromCssColorString('#ffb703').withAlpha(0.35),
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        },
+      }),
+    )
+  }
+}
+
+const finishTerrainDraw = () => {
+  if (terrainDrawLonLat.length < 3) {
+    ElMessage({
+      message: '至少需要 3 个顶点才能封闭范围，请继续绘制或按 Esc 取消',
+      type: 'warning',
+      duration: 3500,
+    })
+    return
+  }
+  const points = terrainDrawLonLat.map(p => [Number(p[0].toFixed(7)), Number(p[1].toFixed(7))])
+  terrainDrawLonLat = points
+  destroyTerrainDrawHandler()
+  renderTerrainDraw()
+  terrainDrawLonLat = []
+  if (leThRef.value && leThRef.value.onTerrainPolygonDrawn) {
+    leThRef.value.onTerrainPolygonDrawn(points)
+  }
+  ElMessage({ message: '已绘制封闭范围（' + points.length + ' 个顶点）', type: 'success', duration: 3000 })
+}
+
+const terrainDrawKeyHandler = event => {
+  if (event.key === 'Escape') cancelTerrainDraw()
+}
+
+const cancelTerrainDraw = () => {
+  clearTerrainDraw()
+  if (leThRef.value && leThRef.value.onTerrainDrawCancelled) {
+    leThRef.value.onTerrainDrawCancelled()
+  }
+  ElMessage({ message: '已取消绘制', type: 'info', duration: 2000 })
+}
+
+const startTerrainDraw = () => {
+  clearTerrainDraw()
+  const v = viewer.value
+  if (!v) return
+  v.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(95.002, 30.2354, 15000),
+    duration: 1.2,
+  })
+  ElMessage({ message: '左键逐点绘制，右键结束，Esc 取消', type: 'info', duration: 5000 })
+  const handler = new Cesium.ScreenSpaceEventHandler(v.scene.canvas)
+  terrainDrawHandler = handler
+  const pickPosition = position => {
+    const ray = v.camera.getPickRay(position)
+    let cartesian = ray ? v.scene.globe.pick(ray, v.scene) : null
+    if (!cartesian) cartesian = v.camera.pickEllipsoid(position, v.scene.globe.ellipsoid)
+    return cartesian
+  }
+  handler.setInputAction(event => {
+    const cartesian = pickPosition(event.position)
+    if (!cartesian) return
+    const carto = Cesium.Cartographic.fromCartesian(cartesian)
+    terrainDrawLonLat.push([
+      Cesium.Math.toDegrees(carto.longitude),
+      Cesium.Math.toDegrees(carto.latitude),
+    ])
+    renderTerrainDraw()
+  }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+  handler.setInputAction(() => finishTerrainDraw(), Cesium.ScreenSpaceEventType.RIGHT_CLICK)
+  document.addEventListener('keydown', terrainDrawKeyHandler)
+}
 
 const floodLayersTest = async payload => {
   const method = payload.renderMethod || 'debrisflow'
