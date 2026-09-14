@@ -5217,6 +5217,9 @@ const resetSeismicInputs = () => {
   margin: 14px auto;
   border-radius: 10px;
   border: 1px solid rgba(96, 168, 255, 0.3);
+  /* 弹窗挂在 .box 内，父级 .box img{filter:grayscale(100%)} 会穿透进来把结果示例图变成黑白，这里强制恢复原色 */
+  filter: none !important;
+  -webkit-filter: none !important;
 }
 
 .model-help-dialog .help-body code,
