@@ -4791,6 +4791,8 @@ const addLayer_weatherstation = () => {
       // 创建实体（properties 供点击弹窗展示，字段与数据表一致）
       stationDataSource.entities.add({
         name: station.NAME,
+        // [新增] 标记为气象站点实体，供点击处理精确判定，避免影响其它实体
+        isWeatherStation: true,
         position: Cesium.Cartesian3.fromDegrees(lon, lat),
         properties: {
           SID: station.SID,
@@ -4854,6 +4856,8 @@ const handleLayerwsClick = async event => {
   const pickedFeature = viewer.value.scene.pick(event.position)
   if (!pickedFeature || !pickedFeature.id) return
   const entity = pickedFeature.id
+  // [新增] 只处理气象站点实体，其它实体点击不受本逻辑影响
+  if (!entity.isWeatherStation) return
   const currentTime = viewer.value.clock.currentTime
   // 从实体 properties 读取字段（旧代码字段名与数据源不一致，此处已修正）
   const getProp = key => {
@@ -4862,9 +4866,13 @@ const handleLayerwsClick = async event => {
   }
   const stationName = getProp('NAME')
   const stationId = getProp('ID') === '无数据' ? '' : String(getProp('ID'))
+
+  // [旧逻辑保留] 原实现点击气象站会弹出右下角“实时气象数据”小卡片，
+  // 现需求：所有气象站点均不再显示该卡片，仅保留“近 7 天气象数据”弹窗。
+  // 如需恢复该卡片：取消下面整段块注释，并恢复 dialogs.value = new Dialog(opts) 即可。
+  /*
   const fmtValue = (v, unit) =>
     v === null || v === undefined ? '无数据' : `${v}${unit}`
-
   // 实时气象弹窗：按需求只保留 时间/站点名称/温度/风速/湿度/降水
   let realtimeItems = [
     { name: '时间', value: '无数据' },
@@ -4910,14 +4918,18 @@ const handleLayerwsClick = async event => {
     title: stationName,
     content: realtimeItems,
   }
+  */
 
-  // 关闭现有弹窗并打开新弹窗
+  // [新增] 关闭可能已打开的站点小卡片（旧逻辑保留，避免残留）
   if (dialogs.value) {
     dialogs.value.windowClose()
+    dialogs.value = null
   }
-  dialogs.value = new Dialog(opts)
 
-  // 近 7 天气象数据表格弹窗（新增，3 小时间隔聚合）
+  // [新增] 关闭 Cesium 默认 InfoBox：点击气象站点不再弹出右上角信息框
+  viewer.value.selectedEntity = undefined
+
+  // 近 7 天气象数据表格弹窗（保留，3 小时间隔聚合）
   openWeatherTable(stationId, stationName)
 }
 
