@@ -55,7 +55,7 @@
                 class="help-body"
                 >
                 <h2>一、功能目的</h2>
-                <p>基于降雨入渗—边坡稳定性耦合模型（TRIGRS），逐网格计算降雨历时内的稳定性系数，定量识别滑坡、泥石流物源等风险源的位置与规模，输出不同降雨历时下的不稳定区分布，为灾害链风险源判识、预警与防治规划提供依据。</p>
+                <p>基于降雨入渗与边坡稳定性的耦合分析，逐网格计算降雨历时内的稳定性系数，定量识别滑坡、泥石流物源等风险源的位置与规模，输出不同降雨历时下的不稳定区分布，为灾害链风险源判识、预警与防治规划提供依据。</p>
                 <h2>二、界面输入参数</h2>
                 <table>
                   <tbody>
@@ -63,29 +63,29 @@
                     <tr><td>地点</td><td>文本</td><td>空（占位「林芝市」）</td><td>本次计算的地点名称，用于结果记录与图层对应，便于按流域区分成果</td></tr>
                     <tr><td>色带</td><td>危险等级 / 灰度 / 红绿蓝 / 红色渐变</td><td>危险等级</td><td>稳定性系数出图配色；「危险等级」按不稳定程度分级设色，其余为通用色带</td></tr>
                     <tr><td>预测时间</td><td>3h / 6h / 12h / 24h / 48h / 60h（可多选）</td><td>不选</td><td>降雨历时，对应 10800 / 21600 / 43200 / 86400 / 172800 / 216000 秒；勾选几个时段就输出几组结果，<strong>至少勾选一项</strong></td></tr>
-                    <tr><td>入渗率 rsl</td><td>m/s</td><td>1.0e-6</td><td>坡面入渗速率，控制雨水进入土体的快慢；值越大，土体饱和度上升越快、越易失稳</td></tr>
-                    <tr><td>初始地下水位 depth</td><td>m</td><td>3.0</td><td>计算初始时刻的地下水位埋深；埋深越浅，初始孔隙水压力越高、稳定性系数越低</td></tr>
-                    <tr><td>土壤最大深度 zmax</td><td>m</td><td>2.4</td><td>参与计算的土层最大厚度，决定潜在滑面的搜索深度</td></tr>
-                    <tr><td>水力扩散系数 diffus</td><td>m²/s</td><td>1.32e-3</td><td>孔隙水压力在土体内的扩散能力，越大则压力扰动传播越快</td></tr>
-                    <tr><td>饱和渗透系数 ksat</td><td>m/s</td><td>1.32e-5</td><td>土体饱和后的渗透能力，与入渗率共同控制降雨入渗与地下水位响应</td></tr>
+                    <tr><td>入渗率</td><td>m/s</td><td>1.0e-6</td><td>坡面入渗速率，控制雨水进入土体的快慢；值越大，土体饱和度上升越快、越易失稳</td></tr>
+                    <tr><td>初始地下水位</td><td>m</td><td>3.0</td><td>计算初始时刻的地下水位埋深；埋深越浅，初始孔隙水压力越高、稳定性系数越低</td></tr>
+                    <tr><td>土壤最大深度</td><td>m</td><td>2.4</td><td>参与计算的土层最大厚度，决定潜在滑面的搜索深度</td></tr>
+                    <tr><td>水力扩散系数</td><td>m²/s</td><td>1.32e-3</td><td>孔隙水压力在土体内的扩散能力，越大则压力扰动传播越快</td></tr>
+                    <tr><td>饱和渗透系数</td><td>m/s</td><td>1.32e-5</td><td>土体饱和后的渗透能力，与入渗率共同控制降雨入渗与地下水位响应</td></tr>
                   </tbody>
                 </table>
                 <p>说明：DEM、流向、网格行列数、粘聚力、内摩擦角、土容重等参数由后端工程内置文件提供，界面不暴露、无需填写。</p>
                 <h2>三、运行流程</h2>
                 <ol>
                   <li>填写地点、色带与 5 项水文／岩土参数，勾选需要评估的降雨历时；</li>
-                  <li>后端按勾选的每个时段依次调用 TRIGRS 计算（运行前自动备份参数文件，计算结束后还原）；</li>
+                  <li>后端按勾选的每个时段依次执行模拟计算（运行前自动备份参数文件，计算结束后还原）；</li>
                   <li>逐时段生成稳定性（易发性）栅格与网格详单，前端按顺序加载为地图专题图层。</li>
                 </ol>
                 <h2>四、结果与提示</h2>
                 <ul>
-                  <li><strong>TRfs_min 系列文件</strong>：易发性评估结果，0–1 为不稳定高风险区，1–10 为稳定区（值越大越稳定），可转 GIS 专题图；</li>
-                  <li><strong>TRlist 系列文件</strong>：逐网格详单，含土壤深度、孔隙水压力与稳定性系数，供量化分析；</li>
+                  <li><strong>易发性评估成果</strong>：0–1 为不稳定高风险区，1–10 为稳定区（值越大越稳定），可转 GIS 专题图；</li>
+                  <li><strong>逐网格详单成果</strong>：含土壤深度、孔隙水压力与稳定性系数，供量化分析；</li>
                   <li>结果按勾选的时段逐个输出，时段越多耗时越长，运行期间请勿关闭页面；</li>
-                  <li>成果默认写入后端 TRIGRS 工程目录，地图图层可在资源目录中开关与调节透明度。</li>
+                  <li>成果默认写入后端计算成果目录，地图图层可在资源目录中开关与调节透明度。</li>
                 </ul>
                 <h2>五、运行结果示例</h2>
-                <img src="/img/TRIGRS.png" alt="风险源定量识别与表征模型运行结果示例" />
+                <img :src="ASSET_BASE + 'img/demo-risk-source.png'" alt="风险源定量识别与表征模型运行结果示例" />
               </div>
             </el-dialog>
             <p id="name_par" class="trigrs-section-label">模型参数</p>
@@ -207,7 +207,7 @@
                 class="help-body"
                 >
                 <h2>一、功能目的</h2>
-                <p>调用已训练的 LightGBM 易发性模型对上传的流域因子 Shapefile 做推理，再用 Jenks 自然间断点法将易发性概率划分为 5 个等级，输出带概率与等级字段的 Shapefile，实现冰川泥石流易发性预测。</p>
+                <p>调用已训练的易发性预测模型对上传的流域因子数据进行推理，并将易发性概率划分为 5 个易发性等级，输出带概率与等级字段的 Shapefile，实现冰川泥石流易发性预测。</p>
                 <h2>二、界面输入参数</h2>
                 <table>
                   <tbody>
@@ -248,11 +248,11 @@
                 <ol>
                   <li>选择 Shapefile 相关文件 → 按需填写 6 个补值 → 点击「上传并提交」；</li>
                   <li>后端先落盘文件，再调用推理脚本完成列名映射、缺失值填充与标准化，并计算易发性概率；</li>
-                  <li>概率按 Jenks 自然间断点分为 5 级，结果保存为 Shapefile 并转换为 GeoJSON 返回前端；</li>
+                  <li>概率按自然间断点法分为 5 个易发性等级，结果保存为 Shapefile 并转换为 GeoJSON 返回前端；</li>
                   <li>前端加载分级图层并自动定位，可在资源目录中开关与调节透明度。</li>
                 </ol>
                 <h2>五、运行结果示例</h2>
-                <img src="/img/BCNSL_YC.png" alt="冰川泥石流易发性预测模型运行结果示例" />
+                <img :src="ASSET_BASE + 'img/demo-gbm.png'" alt="冰川泥石流易发性预测模型运行结果示例" />
               </div>
             </el-dialog>
             <p id="name_par_gbm" class="gbm-section-label">模型参数</p>
@@ -419,7 +419,7 @@
               </template>
               <div id="shanhong-model-info" class="help-body">
                 <h2>一、功能目的</h2>
-                <p>在 GRASS GIS 环境下调用 r.avaflow 4.0 内核，基于平均高程、物源启动区与影响范围栅格模拟山洪泥石流的启动与运动过程，输出泥石流层厚度栅格序列（hflow），用于评估运动路径、堆积范围与致灾强度。</p>
+                <p>采用二维流变动力学数值方法，基于平均高程、物源启动区与影响范围栅格模拟山洪泥石流的启动与运动过程，输出逐时刻的泥石流层厚度栅格序列，用于评估运动路径、堆积范围与致灾强度。</p>
                 <h2>二、界面输入参数</h2>
                 <table>
                   <tbody>
@@ -429,16 +429,16 @@
                     <tr><td>影响范围</td><td>.tif / .tiff（单文件）</td><td>必填</td><td>限定计算域，范围外的像元不参与演算（重命名为 impact_area.tif）</td></tr>
                   </tbody>
                 </table>
-                <p>说明：本模型没有可调的物理参数输入框，全部动力学参数由后端 r.avaflow 工程配置；三份栅格需覆盖同一范围，提交时缺项会逐项提示。</p>
+                <p>说明：本模型没有可调的物理参数输入框，全部动力学参数由后端模型统一配置；三份栅格需覆盖同一范围，提交时缺项会逐项提示。</p>
                 <h2>三、运行流程</h2>
                 <ol>
                   <li>依次选择并上传三份栅格数据（缺项会在提交时提示，无法启动计算）；</li>
-                  <li>后端在 GRASS 环境中导入栅格、执行 r.avaflow 计算，并按代表性时间节点抽取逐帧结果；</li>
+                  <li>后端导入栅格并执行数值计算，按代表性时间节点抽取逐帧结果；</li>
                   <li>结果由 tif 转换为 GeoJSON（EPSG:4326）与 bbox，前端按帧播放泥石流层厚度并自动定位相机。</li>
                 </ol>
                 <h2>四、结果与提示</h2>
                 <ul>
-                  <li>结果包含逐时刻 hflow 栅格序列与结果范围 bbox，<strong>默认渲染场为泥石流层厚度</strong>；</li>
+                  <li>结果包含逐时刻泥石流层厚度栅格序列与结果范围 bbox，<strong>默认渲染场为泥石流层厚度</strong>；</li>
                   <li>计算约需数分钟至十余分钟，进度会在提示消息中实时更新，等待超时为 30 分钟；</li>
                   <li>运行期间请勿关闭页面，完成后图层可在资源目录中开关与调节透明度；</li>
                   <li>若定位偏移，请检查输入栅格的坐标系与范围是否与案例区一致。</li>
@@ -543,7 +543,7 @@
                     class="help-body"
                     >
                     <h2>一、功能目的</h2>
-                    <p>采用泥石流—洪水耦合的浅水流数值内核（Euler 求解 + HLLC 格式），在灾后地形上模拟山洪泥石流的启动、输移与堆积过程，输出逐时刻的泥石流层厚度、水层厚度与流速，为堰塞湖溃决—洪水—泥石流灾害链的形成机制分析与风险评估提供量化支撑。</p>
+                    <p>采用泥石流—洪水耦合的浅水流数值方法，在灾后地形上模拟山洪泥石流的启动、输移与堆积过程，输出逐时刻的泥石流层厚度、水层厚度与流速，为堰塞湖溃决—洪水—泥石流灾害链的形成机制分析与风险评估提供量化支撑。</p>
                     <h2>二、界面输入参数（数据）</h2>
                     <table>
                       <tbody>
@@ -555,19 +555,19 @@
                         <tr><td>初始水深 hw</td><td>.tif / .tiff / .txt / .asc</td><td>不选（用内置示例数据）</td><td>初始水体（堰塞湖／河道）水深分布</td></tr>
                       </tbody>
                     </table>
-                    <p>说明：三份数据<strong>要么都上传、要么都不上传</strong>，只上传其中一部分会被拦截；不选文件时后端使用内置示例数据（suanfa/Pro/user1/task）。</p>
+                    <p>说明：三份数据<strong>要么都上传、要么都不上传</strong>，只上传其中一部分会被拦截；不选文件时后端使用内置示例数据。</p>
                     <h2>三、界面输入参数（模型参数）</h2>
                     <table>
                       <tbody>
                         <tr><td>参数</td><td>单位</td><td>默认值</td><td>说明</td></tr>
-                        <tr><td>基底摩擦角 bed</td><td>rad</td><td>0.2</td><td>底床摩擦角（以弧度输入，参与 tan 计算），数值越大底床阻力越强、运动越易停止</td></tr>
-                        <tr><td>曼宁摩擦系数 nn</td><td>—</td><td>0.0125</td><td>曼宁糙率，控制流速大小与下泄过程</td></tr>
-                        <tr><td>网格长度 dx</td><td>m</td><td>20</td><td>计算网格 x 方向尺寸，影响计算精度、稳定性与耗时</td></tr>
-                        <tr><td>网格宽度 dy</td><td>m</td><td>20</td><td>计算网格 y 方向尺寸</td></tr>
-                        <tr><td>滑坡密度 rous</td><td>kg/m³</td><td>2700</td><td>固相（滑坡／泥石流）密度</td></tr>
-                        <tr><td>河水密度 rouf</td><td>kg/m³</td><td>1000</td><td>液相（水）密度，与 rous 共同决定密度比 r = rouf / rous</td></tr>
-                        <tr><td>输出间距 interval</td><td>s</td><td>1</td><td>结果输出时间间隔（出图节拍），越小结果越密、数据量越大</td></tr>
-                        <tr><td>计算时间 Tmax</td><td>s</td><td>100</td><td>模拟总时长，需覆盖完整的启动—输移—堆积过程</td></tr>
+                        <tr><td>基底摩擦角</td><td>rad</td><td>0.2</td><td>底床摩擦角（以弧度输入，参与 tan 计算），数值越大底床阻力越强、运动越易停止</td></tr>
+                        <tr><td>曼宁摩擦系数</td><td>—</td><td>0.0125</td><td>曼宁糙率，控制流速大小与下泄过程</td></tr>
+                        <tr><td>网格长度</td><td>m</td><td>20</td><td>计算网格 x 方向尺寸，影响计算精度、稳定性与耗时</td></tr>
+                        <tr><td>网格宽度</td><td>m</td><td>20</td><td>计算网格 y 方向尺寸</td></tr>
+                        <tr><td>滑坡密度</td><td>kg/m³</td><td>2700</td><td>固相（滑坡／泥石流）密度</td></tr>
+                        <tr><td>河水密度</td><td>kg/m³</td><td>1000</td><td>液相（水）密度，与滑坡密度共同决定固液密度比</td></tr>
+                        <tr><td>输出间距</td><td>s</td><td>1</td><td>结果输出时间间隔（出图节拍），越小结果越密、数据量越大</td></tr>
+                        <tr><td>计算时间</td><td>s</td><td>100</td><td>模拟总时长，需覆盖完整的启动—输移—堆积过程</td></tr>
                       </tbody>
                     </table>
                     <h2>四、运行流程与结果</h2>
@@ -690,7 +690,7 @@
               <el-form-item style="flex: 1 1 100%; margin-bottom: 12px">
                 <span style="color: #a6a6a6; font-size: 13px"
                   >支持 .tif / .tiff / .txt / .asc（ESRI ASCII）；txt/asc <b>自带 xllcorner/yllcorner 头部</b>时按「数据坐标系」解释；
-                  无头部时必填「源区中心」经纬度（易贡示例 95.0020, 30.2354，坐标系 EPSG:32646）。zb / zl / hw 都不选时使用内置示例数据（suanfa/Pro/user1/task）。渲染场固定为泥石流层厚度（zB-zL）。</span
+                  无头部时必填「源区中心」经纬度（易贡示例 95.0020, 30.2354，坐标系 EPSG:32646）。zb / zl / hw 都不选时使用内置示例数据。渲染场固定为泥石流层厚度（zB-zL）。</span
                 >
               </el-form-item>
 
@@ -873,7 +873,7 @@
                   <h2>四、运行与结果</h2>
                   <ul>
                     <li>本模型无需上传文件，选择破坏模式、填写参数后点击「运行」即可；</li>
-                    <li>后端按所选模式调用对应冰岩崩启动算法（顺层 bedding_parallel、反倾 bedding_inverse、楔形 bedding_wedge 接口）；</li>
+                    <li>后端按所选破坏模式执行对应的稳定性判别与启动规模计算；</li>
                     <li>返回源区位置与启动规模，前端自动定位到源区并叠加显示；</li>
                     <li>上表默认值取自易贡扎木弄沟案例，可直接用于联调，也可按实际冰岩体条件调整。</li>
                   </ul>
@@ -1171,7 +1171,7 @@
               </template>
               <div id="sdp-model-info" class="help-body">
                 <h2>一、功能目的</h2>
-                <p>结合降雨、气温栅格序列与冰川区体积含冰量，计算流域尺度泥石流启动的物源量级与空间分布，识别物源启动区（ZMAX 分布），为后续启动—输移—堆积的链式动力学模拟提供物源输入。</p>
+                <p>结合降雨、气温栅格序列与冰川区体积含冰量，计算流域尺度泥石流启动的物源量级与空间分布，识别物源启动区与启动深度分布，为后续启动—输移—堆积的链式动力学模拟提供物源输入。</p>
                 <h2>二、界面输入参数</h2>
                 <table>
                   <tbody>
@@ -1181,19 +1181,19 @@
                     <tr><td>体积含冰量</td><td>0–1（无量纲）</td><td>0.2</td><td>冰川区冰体体积占比；含冰量越高，同等升温条件下的产流与启动物源量越大</td></tr>
                   </tbody>
                 </table>
-                <p>说明：当前版本前端选择的降雨／温度栅格路径仅作记录，计算由后端按 SDP_Start 接口的默认目录读取降雨与温度序列；<strong>实际生效并随请求提交的参数是体积含冰量</strong>。</p>
+                <p>说明：当前版本前端选择的降雨／温度栅格路径仅作记录，计算由后端按默认数据目录读取降雨与温度序列；<strong>实际生效并随请求提交的参数是体积含冰量</strong>。</p>
                 <h2>三、运行流程</h2>
                 <ol>
                   <li>填写体积含冰量（如需指定降雨／温度序列目录，请在部署端配置后端默认路径）；</li>
-                  <li>点击「运行」，后端调用 run.py 逐步计算各时段的物源启动量，输出 ZMAX_t&lt;time&gt;.tif 序列；</li>
-                  <li>取最后时间节点的 ZMAX 结果，经 GDAL 转换为 EPSG:4326 GeoJSON 后返回前端渲染并自动定位。</li>
+                  <li>点击「运行」，后端逐步计算各时段的物源启动量，输出分时段成果栅格序列；</li>
+                  <li>取最后时间节点的物源启动深度结果，转换为 EPSG:4326 地理要素数据后返回前端渲染并自动定位。</li>
                 </ol>
                 <h2>四、结果与提示</h2>
                 <ul>
-                  <li>结果为最后一帧的物源启动量级分布（ZMAX），渲染场不提供切换；</li>
+                  <li>结果为最后一帧的物源启动深度分布，渲染场不提供切换；</li>
                   <li>结果以 GeoJSON 加载，可在资源目录中开关图层、调节透明度；</li>
                   <li>计算耗时与降雨／温度序列长度有关，运行期间请勿关闭页面；</li>
-                  <li>若报错多为后端 Python 环境或结果目录缺失，可从提示消息中查看后端返回的详细原因。</li>
+                  <li>若报错多为后端运行环境或结果目录缺失，可从提示消息中查看后端返回的详细原因。</li>
                 </ul>
               </div>
             </el-dialog>
@@ -1462,7 +1462,7 @@
                         <tr><td>纬度</td><td>十进制度（WGS84）</td><td>空</td><td>预警点在地图上的纬度</td></tr>
                       </tbody>
                     </table>
-                    <p>说明：上传后后端按小时聚合（同一小时取最后一条记录）并排序，再交给 R 语言 PFTF 脚本（1_1_input.R、2_data-input.R、4_calculate_v-iv.R、6_OOA-detection_auto_2.R、7_calculate_tof.R）完成速度／逆速度计算、OOA 检测与破坏时间预测。</p>
+                    <p>说明：上传后后端按小时聚合（同一小时取最后一条记录）并排序，再由后端完成速度／逆速度计算、加速变形起点识别与破坏时间预测。</p>
                     <h2>三、运行流程</h2>
                     <ol>
                       <li>选择位移文件，填写地点与经度、纬度；</li>
@@ -1476,7 +1476,7 @@
                       <li>点击地图上的预警点可查看该监测点的位移数据。</li>
                     </ul>
                     <h2>五、运行结果示例</h2>
-                    <img src="/img/pftf.png" alt="基于位移监测滑坡预警运行结果示例" />
+                    <img :src="ASSET_BASE + 'img/demo-displacement.png'" alt="基于位移监测滑坡预警运行结果示例" />
                   </div>
                 </el-dialog>
               </div>
@@ -1590,13 +1590,13 @@
                     class="help-body"
                     >
                     <h2>一、功能目的</h2>
-                    <p>处理地震动传感器采集的振动／地声时序信号，自动识别泥石流事件并在地图上给出事件位置展示，支持 STA/LTA 机器学习识别与 Transformer1D 深度学习识别两种内核。</p>
+                    <p>处理地震动传感器采集的振动／地声时序信号，自动识别泥石流事件并在地图上给出事件位置展示，支持机器学习与深度学习两种识别内核。</p>
                     <h2>二、模型类型</h2>
                     <table>
                       <tbody>
                         <tr><td>模型类型</td><td>输入文件</td><td>说明</td></tr>
-                        <tr><td>机器学习（STA/LTA）</td><td>Excel（.xlsx）</td><td>基于短长时窗能量比识别事件，并通过分段趋势做二次校验以排除误报</td></tr>
-                        <tr><td>深度学习（Transformer1D）</td><td>CSV（.csv）</td><td>基于一维 Transformer 模型推理，适合按列组织的电压／振动信号</td></tr>
+                        <tr><td>机器学习</td><td>Excel（.xlsx）</td><td>基于短长时窗能量比识别事件，并通过分段趋势做二次校验以排除误报</td></tr>
+                        <tr><td>深度学习</td><td>CSV（.csv）</td><td>基于深度学习模型推理，适合按列组织的电压／振动信号</td></tr>
                       </tbody>
                     </table>
                     <h2>三、机器学习模式参数</h2>
@@ -1606,7 +1606,7 @@
                         <tr><td>Excel文件</td><td>.xlsx</td><td>必填</td><td>传感器波形数据，默认读取第 1 列作为信号数值</td></tr>
                         <tr><td>经度</td><td>十进制度（WGS84）</td><td>97.5</td><td>事件在地图上的经度，前端按输入值定位</td></tr>
                         <tr><td>纬度</td><td>十进制度（WGS84）</td><td>31.0</td><td>事件在地图上的纬度</td></tr>
-                        <tr><td>阈值 / threshold</td><td>—</td><td>2.5</td><td>STA/LTA 比值触发阈值，超过后进入二次校验</td></tr>
+                        <tr><td>阈值</td><td>—</td><td>2.5</td><td>能量比触发阈值（短时窗能量 / 长时窗能量），超过后进入二次校验</td></tr>
                         <tr><td>短时窗</td><td>s</td><td>30</td><td>计算瞬时能量变化，反映对信号的灵敏程度</td></tr>
                         <tr><td>长时窗</td><td>s</td><td>240</td><td>计算背景噪声水平，反映稳定基线</td></tr>
                         <tr><td>分段时长</td><td>s</td><td>10</td><td>触发后把后续时间窗切分的片段长度</td></tr>
@@ -1618,15 +1618,15 @@
                     <table>
                       <tbody>
                         <tr><td>参数</td><td>格式 / 取值</td><td>默认值</td><td>说明</td></tr>
-                        <tr><td>CSV数据文件</td><td>.csv</td><td>必填</td><td>按列组织的信号数据，默认取电压列 Voltage_mV 作为模型输入</td></tr>
+                        <tr><td>CSV数据文件</td><td>.csv</td><td>必填</td><td>按列组织的信号数据，默认取数据中的电压列作为模型输入</td></tr>
                         <tr><td>经度</td><td>十进制度（WGS84）</td><td>97.5</td><td>事件点位经度，推理完成后在地图上定位展示</td></tr>
                         <tr><td>纬度</td><td>十进制度（WGS84）</td><td>31.0</td><td>事件点位纬度</td></tr>
                       </tbody>
                     </table>
                     <h2>五、判定逻辑与结果</h2>
                     <ol>
-                      <li>机器学习模式：先计算 STA（短时平均能量）与 LTA（长时平均能量），当 Ratio = STA / LTA &gt; 阈值 时进入二次校验；锁定 LTA 背景值后把后续数据切分为若干片段，各片段比值均超过阈值且能量增长趋势达到要求次数，判定为泥石流事件；</li>
-                      <li>深度学习模式：CSV 信号标准化后送入 Transformer1D 模型推理，输出事件判定结果；</li>
+                      <li>机器学习模式：先计算短时窗与长时窗的平均能量，当两者能量比超过阈值时进入二次校验；锁定 LTA 背景值后把后续数据切分为若干片段，各片段比值均超过阈值且能量增长趋势达到要求次数，判定为泥石流事件；</li>
+                      <li>深度学习模式：CSV 信号经标准化后送入深度学习模型推理，输出事件判定结果；</li>
                       <li>两种模式均返回检测结论与波形信息，前端在指定经纬度落事件点展示，可点击查看结果详情。</li>
                     </ol>
                   </div>
@@ -1641,8 +1641,8 @@
             <div class="seismic-mode-switch">
               <span class="seismic-mode-label">模型类型</span>
               <el-radio-group v-model="seismicModelType" size="small">
-                <el-radio value="ml">机器学习 (STA/LTA)</el-radio>
-                <el-radio value="dl">深度学习 (Transformer1D)</el-radio>
+                <el-radio value="ml">机器学习</el-radio>
+                <el-radio value="dl">深度学习</el-radio>
               </el-radio-group>
             </div>
 
@@ -1719,7 +1719,7 @@
 
               <div class="seismic-row">
                 <el-form-item
-                  label="阈值/threshold"
+                  label="阈值"
                   label-width="187px"
                   label-position="right"
                 >
@@ -2346,6 +2346,8 @@ let $emit = defineEmits([
   'terrainDrawCancel',
 ])
 // 获取 store 实例
+// 静态资源前缀（跟随 vite base，用于参数说明里的示例图）
+const ASSET_BASE = String(import.meta.env.BASE_URL || '/').replace(/\/?$/, '/')
 const squareStore = useSquareStore()
 // function handleClose(done) {
 //   ElMessageBox.confirm('确定关闭吗?')
@@ -2479,7 +2481,7 @@ async function submitBeta() {
       ElMessage({ message: accepted?.message || '启动模拟失败', type: 'error' })
       return
     }
-    ElMessage({ message: 'r.avaflow 计算已启动，等待结果（约数分钟~十余分钟）...', type: 'info', duration: 0 })
+    ElMessage({ message: '模型计算已启动，等待结果（约数分钟~十余分钟）...', type: 'info', duration: 0 })
     const startTs = Date.now()
     while (true) {
       await new Promise(r => setTimeout(r, 5000))
@@ -2489,7 +2491,7 @@ async function submitBeta() {
         const phaseLabel =
           st.phase === 'converting'
             ? '\u7ed3\u679c\u8f6c\u6362\u4e2d'
-            : 'r.avaflow \u8ba1\u7b97\u4e2d'
+            : '\u6a21\u578b\u8ba1\u7b97\u4e2d'
         ElMessage.closeAll()
         ElMessage({ message: phaseLabel + '... ' + (st.progress ?? 0) + '%\uff08\u5df2\u4ea7\u51fa ' + (st.frames || 0) + ' \u5e27\uff09', type: 'info', duration: 0 })
       }
@@ -5189,7 +5191,10 @@ const resetSeismicInputs = () => {
 
 .model-help-dialog .help-body img {
   display: block;
+  width: auto;
+  height: auto;
   max-width: 100%;
+  max-height: 460px;
   margin: 14px auto;
   border-radius: 10px;
   border: 1px solid rgba(96, 168, 255, 0.3);

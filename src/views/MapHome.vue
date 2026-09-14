@@ -1887,7 +1887,7 @@ const openLayers = async params => {
         sdpLegendEl = document.createElement('div')
         sdpLegendEl.style.cssText = 'position:fixed;bottom:30px;left:30px;z-index:999;background:rgba(0,0,0,0.8);border:1px solid #38e1ff;border-radius:6px;padding:10px 14px;color:#fff;font-size:12px;'
         sdpLegendEl.innerHTML = `
-          <div style="font-weight:600;margin-bottom:6px;color:#38e1ff">ZMAX 物源深度</div>
+          <div style="font-weight:600;margin-bottom:6px;color:#38e1ff">物源深度</div>
           ${legendColors.map(c => `
             <div style="display:flex;align-items:center;gap:8px;margin:3px 0">
               <span style="width:20px;height:14px;background:${c.color};border-radius:2px;flex-shrink:0"></span>
@@ -1936,7 +1936,7 @@ function showSdpResultLayer(sdpResult) {
     const legendColors = [ { color: '#f5f0b0', label: '10–25 m', desc: '极少物源' }, { color: '#f0c030', label: '25–50 m', desc: '少量物源' }, { color: '#f08020', label: '50–80 m', desc: '中等物源' }, { color: '#d03010', label: '80–110 m', desc: '大量物源' }, { color: '#5c1010', label: '110–131 m', desc: '巨量物源' } ]
     sdpLegendEl = document.createElement('div')
     sdpLegendEl.style.cssText = 'position:fixed;bottom:30px;left:30px;z-index:999;background:rgba(0,0,0,0.8);border:1px solid #38e1ff;border-radius:6px;padding:10px 14px;color:#fff;font-size:12px;'
-    sdpLegendEl.innerHTML = `<div style="font-weight:600;margin-bottom:6px;color:#38e1ff">ZMAX 物源深度</div>` + legendColors.map(c => `<div style="display:flex;align-items:center;gap:8px;margin:3px 0"><span style="width:20px;height:14px;background:${c.color};border-radius:2px;flex-shrink:0"></span><span style="min-width:70px">${c.label}</span><span style="color:#999;font-size:11px">${c.desc}</span></div>`).join('')
+    sdpLegendEl.innerHTML = `<div style="font-weight:600;margin-bottom:6px;color:#38e1ff">物源深度</div>` + legendColors.map(c => `<div style="display:flex;align-items:center;gap:8px;margin:3px 0"><span style="width:20px;height:14px;background:${c.color};border-radius:2px;flex-shrink:0"></span><span style="min-width:70px">${c.label}</span><span style="color:#999;font-size:11px">${c.desc}</span></div>`).join('')
     document.body.appendChild(sdpLegendEl)
     ElMessage({ message: '泥石流起动区深度结果已加载', type: 'success' })
   }
