@@ -5346,15 +5346,8 @@ const renderDzdWaveChart = wave => {
   const y = (wave.value || []).map(v => Number(v))
   dzdWaveChart.setOption(
     {
-      title: {
-        text: `${wave.file || '波形'} · ${wave.direction || '-'} 方向 · ${
-          wave.sampleRate || DZD_SAMPLE_RATE
-        } Hz`,
-        left: 'center',
-        textStyle: { fontSize: 12 },
-      },
       tooltip: { trigger: 'axis' },
-      grid: { left: 64, right: 24, top: 42, bottom: 46 },
+      grid: { left: 64, right: 24, top: 34, bottom: 46 },
       xAxis: {
         type: 'category',
         data: x,
@@ -5388,15 +5381,14 @@ const updateDzdPredictText = result => {
   if (!el) return
   const probability = result?.probability
   if (probability === null || probability === undefined) {
-    el.innerHTML = `<span style="color:#c0392b">Transformer1D：识别失败（${
+    el.innerHTML = `<span style="color:#c0392b">识别失败：${
       result?.error || '无返回结果'
-    }）</span>`
+    }</span>`
     return
   }
-  const pct = (Number(probability) * 100).toFixed(2)
   el.innerHTML = result.detected
-    ? `<span style="color:#c0392b;font-weight:600">Transformer1D：检测到泥石流风险（概率 ${pct}%）</span>`
-    : `<span style="color:#1e7a37">Transformer1D：未检测到泥石流（概率 ${pct}%）</span>`
+    ? '<span style="color:#c0392b;font-weight:600">检测到泥石流风险</span>'
+    : '<span style="color:#1e7a37">未检测到泥石流</span>'
 }
 
 // 打开地震动弹窗：波形 + 模型识别结果
@@ -5409,8 +5401,7 @@ const openDzdPanel = async entity => {
     <p><strong>设备：</strong>${device.name || device.deviceId || '-'}（ID ${
       device.deviceId || '-'
     }）</p>
-    <p id="dzdWaveMeta">波形：加载中…</p>
-    <p id="dzdPredictStatus">Transformer1D 识别中…</p>
+    <p id="dzdPredictStatus">识别中…</p>
     <div id="chart" style="width: 520px; height: 320px;"></div>
     <button id="dzdCloseBtn">关闭</button>
   `
@@ -5419,17 +5410,10 @@ const openDzdPanel = async entity => {
 
   try {
     const status = await fetchDzdStatus()
-    const metaEl = document.getElementById('dzdWaveMeta')
     const latest = status?.latest
     if (!latest) {
-      if (metaEl) metaEl.textContent = `波形：未发现 wave_*.csv（目录 ${status?.waveDir || '-'}）`
       updateDzdPredictText({ probability: null, error: '无波形文件' })
       return
-    }
-    if (metaEl) {
-      metaEl.textContent = `波形：${latest.name} · 采样率 ${
-        status.sampleRate || DZD_SAMPLE_RATE
-      } Hz · 文件数 ${status.fileCount}`
     }
     const wave = await fetchDzdWave({ file: latest.name, max: 6000 })
     renderDzdWaveChart(wave)
@@ -5437,9 +5421,7 @@ const openDzdPanel = async entity => {
     updateDzdPredictText(result)
   } catch (error) {
     console.error('地震动波形加载失败:', error)
-    const metaEl = document.getElementById('dzdWaveMeta')
     const msg = error?.response?.data?.error || error.message
-    if (metaEl) metaEl.textContent = `波形：加载失败（${msg}）`
     updateDzdPredictText({ probability: null, error: msg })
   }
 }
