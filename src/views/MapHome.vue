@@ -1523,22 +1523,27 @@ function applySuscSymbology(dataSource) {
   const entities = dataSource.entities.values
   const now = Cesium.JulianDate.now()
 
-  // 同时支持中文和英文 key
+  // 与平台「风险图例」对齐的 5 级色带：极高=红、高=橙、中=黄、低=蓝（+极低=绿）
+  // 低等级透明度低、高等级透明度高，保留底图地形纹理的同时突出危险区
   const ramp = {
     // 英文下划线形式
-    very_low: { color: '#4caf50', alpha: 0.55 }, // 绿色
-    low: { color: '#2196f3', alpha: 0.65 }, // 蓝色
-    middle: { color: '#ffeb3b', alpha: 0.78 }, // 黄色
-    midlle: { color: '#ffeb3b', alpha: 0.78 }, // 容错拼写
-    high: { color: '#f44336', alpha: 0.88 }, // 红色
-    very_high: { color: '#8b0000', alpha: 0.95 }, // 红褐色
+    very_low: { color: '#43a047', alpha: 0.45 }, // 绿色
+    verylow: { color: '#43a047', alpha: 0.45 },
+    low: { color: '#2a82e4', alpha: 0.55 }, // 蓝色
+    middle: { color: '#e6c300', alpha: 0.68 }, // 黄色
+    midlle: { color: '#e6c300', alpha: 0.68 }, // 容错拼写
+    medium: { color: '#e6c300', alpha: 0.68 },
+    high: { color: '#e68d1a', alpha: 0.8 }, // 橙色
+    very_high: { color: '#d43030', alpha: 0.9 }, // 红色
+    veryhigh: { color: '#d43030', alpha: 0.9 },
 
     // 中文 key（根据 debug 输出）
-    极低: { color: '#4caf50', alpha: 0.55 },
-    低: { color: '#2196f3', alpha: 0.65 },
-    中等: { color: '#ffeb3b', alpha: 0.78 },
-    高: { color: '#f44336', alpha: 0.88 },
-    极高: { color: '#8b0000', alpha: 0.95 },
+    极低: { color: '#43a047', alpha: 0.45 },
+    低: { color: '#2a82e4', alpha: 0.55 },
+    中: { color: '#e6c300', alpha: 0.68 },
+    中等: { color: '#e6c300', alpha: 0.68 },
+    高: { color: '#e68d1a', alpha: 0.8 },
+    极高: { color: '#d43030', alpha: 0.9 },
   }
 
   // 优先查找的字段名（把 class 放首位）
@@ -1619,15 +1624,16 @@ function applySuscSymbology(dataSource) {
       if (e.polygon) {
         // 移除高度设置，保持 clampToGround 效果
         e.polygon.material = new Cesium.ColorMaterialProperty(color)
-        e.polygon.outline = true
         e.polygon.fill = true
+        // 不再逐块描黑边（子流域数量多时会呈碎片网格感）：
+        // 改用同色描边，既掩盖相邻色块之间的细缝，又保留等级边界
+        e.polygon.outline = true
+        const edgeColor = Cesium.Color.fromCssColorString(style.color)
         try {
-          e.polygon.outlineColor = new Cesium.ConstantProperty(
-            Cesium.Color.BLACK,
-          )
+          e.polygon.outlineColor = new Cesium.ConstantProperty(edgeColor)
         } catch (err) {
           try {
-            e.polygon.outlineColor = Cesium.Color.BLACK
+            e.polygon.outlineColor = edgeColor
           } catch (e) {}
         }
       } else if (e.polyline) {
