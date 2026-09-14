@@ -54,498 +54,38 @@
                 id="trigrs-model-info"
                 class="help-body"
                 >
-                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
-                  一、模型目的
-                </h2>
-                <p
-                  style="
-                    font-size: 16px;
-                    line-height: 1.5;
-                    color: #666;
-                    margin-bottom: 15px;
-                  "
-                >
-                  通过模拟降雨入渗与区域边坡稳定性，定量计算网格尺度的稳定性系数，划分滑坡泥石流不稳定/稳定区域，为灾害风险预警、防治规划提供支撑。
-                </p>
-
-                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
-                  二、所需参数及介绍
-                </h2>
-
-                <h3 style="font-size: 18px; color: #555; margin: 15px 0 8px">
-                  （一）前置参数
-                </h3>
-                <ul
-                  style="
-                    font-size: 16px;
-                    line-height: 1.6;
-                    color: #666;
-                    margin: 8px 0 15px;
-                    padding-left: 25px;
-                  "
-                >
-                  <li style="margin-bottom: 5px">
-                    <strong>输入</strong
-                    >：数字高程模型（DEM，反映地形起伏）、流向（水流方向）、网格行列数（与DEM匹配）；
-                  </li>
-                  <li>
-                    <strong>派生参数</strong
-                    >：imax（有效网格总数）、nwf（下坡关联网格数），供后续计算调用。
-                  </li>
-                </ul>
-
-                <h3 style="font-size: 18px; color: #555; margin: 15px 0 8px">
-                  （二）核心参数
-                </h3>
-                <table
-                  style="
-                    width: 100%;
-                    border-collapse: collapse;
-                    font-size: 16px;
-                    color: #666;
-                    margin: 8px 0 15px;
-                  "
-                >
+                <h2>一、功能目的</h2>
+                <p>基于降雨入渗—边坡稳定性耦合模型（TRIGRS），逐网格计算降雨历时内的稳定性系数，定量识别滑坡、泥石流物源等风险源的位置与规模，输出不同降雨历时下的不稳定区分布，为灾害链风险源判识、预警与防治规划提供依据。</p>
+                <h2>二、界面输入参数</h2>
+                <table>
                   <tbody>
-                    <tr style="background-color: transparent">
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                          font-weight: bold;
-                        "
-                      >
-                        类别
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                          font-weight: bold;
-                        "
-                      >
-                        参数
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                          font-weight: bold;
-                        "
-                      >
-                        单位
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                          font-weight: bold;
-                        "
-                      >
-                        说明
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        网格/周期
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        imax、nwf、行列数
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        -
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        取自前置环节，定网格规模
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      ></td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        nper（周期数）、time（步长）
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        -、s
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        控制降雨模拟时长与精度
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        土壤/水文
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        zmin/zmax（土厚）、depth（初始水位）
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        m
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        反映土壤与地下水位基础状态
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      ></td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        rizero（初入渗率）、K-sat（饱和渗率）
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        m/s
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        表征土壤水分入渗能力
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      ></td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        diffus（水力扩散系数）
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        m²/s
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        反映水分扩散效率
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      ></td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        uww（水容重）、uws（土容重）
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        N/m³
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        基础物理属性，通常uww取10000
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        岩土力学
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        cohesion（粘聚力）、phi（内摩擦角）
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        Pa、°
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        决定土壤抗剪强度的关键参数
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        降雨
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        cri（雨强）、capt（周期时长）
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        -、s
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        模拟降雨特征
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        基础文件
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        前置4类径流文件
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        -
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        地形相关的径流基础数据
-                      </td>
-                    </tr>
+                    <tr><td>参数</td><td>单位 / 取值</td><td>默认值</td><td>说明</td></tr>
+                    <tr><td>地点</td><td>文本</td><td>空（占位「林芝市」）</td><td>本次计算的地点名称，用于结果记录与图层对应，便于按流域区分成果</td></tr>
+                    <tr><td>色带</td><td>危险等级 / 灰度 / 红绿蓝 / 红色渐变</td><td>危险等级</td><td>稳定性系数出图配色；「危险等级」按不稳定程度分级设色，其余为通用色带</td></tr>
+                    <tr><td>预测时间</td><td>3h / 6h / 12h / 24h / 48h / 60h（可多选）</td><td>不选</td><td>降雨历时，对应 10800 / 21600 / 43200 / 86400 / 172800 / 216000 秒；勾选几个时段就输出几组结果，<strong>至少勾选一项</strong></td></tr>
+                    <tr><td>入渗率 rsl</td><td>m/s</td><td>1.0e-6</td><td>坡面入渗速率，控制雨水进入土体的快慢；值越大，土体饱和度上升越快、越易失稳</td></tr>
+                    <tr><td>初始地下水位 depth</td><td>m</td><td>3.0</td><td>计算初始时刻的地下水位埋深；埋深越浅，初始孔隙水压力越高、稳定性系数越低</td></tr>
+                    <tr><td>土壤最大深度 zmax</td><td>m</td><td>2.4</td><td>参与计算的土层最大厚度，决定潜在滑面的搜索深度</td></tr>
+                    <tr><td>水力扩散系数 diffus</td><td>m²/s</td><td>1.32e-3</td><td>孔隙水压力在土体内的扩散能力，越大则压力扰动传播越快</td></tr>
+                    <tr><td>饱和渗透系数 ksat</td><td>m/s</td><td>1.32e-5</td><td>土体饱和后的渗透能力，与入渗率共同控制降雨入渗与地下水位响应</td></tr>
                   </tbody>
                 </table>
-                <p
-                  style="
-                    font-size: 16px;
-                    line-height: 1.5;
-                    color: #666;
-                    margin-bottom: 15px;
-                    font-style: italic;
-                  "
-                >
-                  注：zmin、time、zmax等9个为暴露参数，可直接调整模拟不同场景。
-                </p>
-
-                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
-                  三、生成结果
-                </h2>
-                <ol
-                  style="
-                    font-size: 16px;
-                    line-height: 1.6;
-                    color: #666;
-                    margin: 8px 0 15px;
-                    padding-left: 25px;
-                  "
-                >
-                  <li style="margin-bottom: 5px">
-                    <strong>TRfs_min_tutorial_1.txt</strong
-                    >：易发性评估文件，0-1为高风险不稳定区，1-10为稳定区（值越大越稳），可转GIS专题图；
-                  </li>
-                  <li>
-                    <strong>TRlist_z_p_fs_tutorial.txt</strong
-                    >：网格详单，含土壤深度、孔隙水压力、稳定性系数，供量化分析。
-                  </li>
+                <p>说明：DEM、流向、网格行列数、粘聚力、内摩擦角、土容重等参数由后端工程内置文件提供，界面不暴露、无需填写。</p>
+                <h2>三、运行流程</h2>
+                <ol>
+                  <li>填写地点、色带与 5 项水文／岩土参数，勾选需要评估的降雨历时；</li>
+                  <li>后端按勾选的每个时段依次调用 TRIGRS 计算（运行前自动备份参数文件，计算结束后还原）；</li>
+                  <li>逐时段生成稳定性（易发性）栅格与网格详单，前端按顺序加载为地图专题图层。</li>
                 </ol>
-                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
-                  四、运行结果示例
-                </h2>
-                <p
-                  style="
-                    font-size: 16px;
-                    line-height: 1.5;
-                    color: #666;
-                    margin-bottom: 15px;
-                  "
-                >
-                  以下是模型运行后的示例输出结果：
-                </p>
-                <img
-                  src="/img/TRIGRS.png"
-                  alt="运行结果示例"
-                  style="
-                    width: 80%;
-                    height: auto;
-                    border: 1px solid #ddd;
-                    border-radius: 8px;
-                    margin: 10px 0;
-                    display: block;
-                    margin-left: auto;
-                    margin-right: auto;
-                    filter: none;
-                  "
-                />
+                <h2>四、结果与提示</h2>
+                <ul>
+                  <li><strong>TRfs_min 系列文件</strong>：易发性评估结果，0–1 为不稳定高风险区，1–10 为稳定区（值越大越稳定），可转 GIS 专题图；</li>
+                  <li><strong>TRlist 系列文件</strong>：逐网格详单，含土壤深度、孔隙水压力与稳定性系数，供量化分析；</li>
+                  <li>结果按勾选的时段逐个输出，时段越多耗时越长，运行期间请勿关闭页面；</li>
+                  <li>成果默认写入后端 TRIGRS 工程目录，地图图层可在资源目录中开关与调节透明度。</li>
+                </ul>
+                <h2>五、运行结果示例</h2>
+                <img src="/img/TRIGRS.png" alt="风险源定量识别与表征模型运行结果示例" />
               </div>
             </el-dialog>
             <p id="name_par" class="trigrs-section-label">模型参数</p>
@@ -666,539 +206,53 @@
                 id="glacier-hazard-chain-info"
                 class="help-body"
                 >
-                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
-                  一、脚本目的
-                </h2>
-                <p
-                  style="
-                    font-size: 16px;
-                    line-height: 1.5;
-                    color: #666;
-                    margin-bottom: 15px;
-                  "
-                >
-                  利用训练好的 LightGBM 机器学习模型，对 Shapefile
-                  格式的地理矢量数据进行预处理（列名映射、缺失值填充、标准化）后，计算冰川型灾害链易发性概率；通过
-                  Jenks 自然间断点法将概率划分为 5
-                  个易发性等级，最终输出包含分级结果的新 Shapefile
-                  文件，实现冰川型灾害链易发性预测。
-                </p>
-
-                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
-                  二、参数/配置内容
-                </h2>
-                
-                <h3 style="font-size: 18px; color: #555; margin: 15px 0 8px">
-                  输入数据字段（Shapefile 属性）
-                </h3>
-                <table
-                  style="
-                    width: 100%;
-                    border-collapse: collapse;
-                    font-size: 16px;
-                    color: #666;
-                    margin: 8px 0 15px;
-                  "
-                >
+                <h2>一、功能目的</h2>
+                <p>调用已训练的 LightGBM 易发性模型对上传的流域因子 Shapefile 做推理，再用 Jenks 自然间断点法将易发性概率划分为 5 个等级，输出带概率与等级字段的 Shapefile，实现冰川泥石流易发性预测。</p>
+                <h2>二、界面输入参数</h2>
+                <table>
                   <tbody>
-                    <tr style="background-color: #f5f5f5">
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                          font-weight: bold;
-                        "
-                      >
-                        Shapefile 输入字段
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                          font-weight: bold;
-                        "
-                      >
-                        模型特征全称
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                          font-weight: bold;
-                        "
-                      >
-                        说明
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Aspect
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Aspect
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        坡向
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Curvature
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Curvature
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        曲率
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Fault dist
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Fault distance
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        断层距离
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Glacier ar
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Glacier area ratio
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        冰川面积比
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Gully grad
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Gully gradient
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        沟谷坡度
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        NDVI
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        NDVI
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        植被覆盖指数
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Precipitat
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Precipitation
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        降雨量
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Relief amp
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Relief amplitude
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        地形起伏度
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Slope
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Slope
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        坡度
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Soil thick
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Soil thickness
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        土层厚度
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        SPI
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        SPI
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        沟壑功率指数
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Stream Dis
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Stream Distance
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        河流距离
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Surface ro
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Surface roughness
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        地表粗糙度
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Temperatur
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        Temperature
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        温度
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        TWI
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        TWI
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 8px;
-                          text-align: left;
-                        "
-                      >
-                        地形湿度指数
-                      </td>
-                    </tr>
+                    <tr><td>参数</td><td>格式 / 单位</td><td>默认值</td><td>说明</td></tr>
+                    <tr><td>Shapefile</td><td>.shp / .dbf / .shx / .prj，需一次多选上传</td><td>必填</td><td>待预测的矢量数据；同名的一组文件必须一起选中上传，缺少坐标系时后端按 EPSG:32646 处理</td></tr>
+                    <tr><td>坡向</td><td>°</td><td>150</td><td>坡面朝向，影响日照与融冰差异</td></tr>
+                    <tr><td>曲率</td><td>—（无量纲）</td><td>0.002</td><td>地形曲率，反映坡面汇流／发散与物质堆积条件</td></tr>
+                    <tr><td>断层距离</td><td>m</td><td>30000</td><td>距最近断层的距离，表征构造破碎带对物源的贡献</td></tr>
+                    <tr><td>NDVI</td><td>—（-1～1）</td><td>0.001</td><td>植被覆盖指数，值越低越易发生侵蚀与启动</td></tr>
+                    <tr><td>降雨量</td><td>mm</td><td>700</td><td>降雨驱动因子，是冰川泥石流启动的核心诱因</td></tr>
+                    <tr><td>起伏度</td><td>m</td><td>250</td><td>地形起伏幅度，控制势能与物质搬运能力</td></tr>
                   </tbody>
                 </table>
-
-                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
-                  三、运行结果示例
-                </h2>
-                <p
-                  style="
-                    font-size: 16px;
-                    line-height: 1.5;
-                    color: #666;
-                    margin-bottom: 15px;
-                  "
-                >
-                  以下是模型运行后的示例输出结果：
-                </p>
-                <img
-                  src="/img/BCNSL_YC.png"
-                  alt="运行结果示例"
-                  style="
-                    width: 80%;
-                    height: auto;
-                    border: 1px solid #ddd;
-                    border-radius: 8px;
-                    margin: 10px 0;
-                    display: block;
-                    margin-left: auto;
-                    margin-right: auto;
-                    filter: none;
-                  "
-                />
+                <p>说明：界面上这 6 个数值是<strong>缺失字段的补值</strong>——当上传的 Shapefile 缺少 Aspect / Curvature / Fault distance / NDVI / Precipitation / Relief amplitude 字段时，用这里填写的数值补齐；字段存在时以文件属性值为准。</p>
+                <h2>三、数据字段要求</h2>
+                <p>模型按训练时的 15 个特征推理，Shapefile 属性表建议包含以下字段（受字段名长度限制可用截断名）：</p>
+                <table>
+                  <tbody>
+                    <tr><td>属性字段（截断名）</td><td>模型特征</td><td>含义</td></tr>
+                    <tr><td>Aspect</td><td>Aspect</td><td>坡向</td></tr>
+                    <tr><td>Curvature</td><td>Curvature</td><td>曲率</td></tr>
+                    <tr><td>Fault dist</td><td>Fault distance</td><td>断层距离</td></tr>
+                    <tr><td>Glacier ar</td><td>Glacier area ratio</td><td>冰川面积比</td></tr>
+                    <tr><td>Gully grad</td><td>Gully gradient</td><td>沟谷坡度</td></tr>
+                    <tr><td>NDVI</td><td>NDVI</td><td>植被覆盖指数</td></tr>
+                    <tr><td>Precipitat</td><td>Precipitation</td><td>降雨量</td></tr>
+                    <tr><td>Relief amp</td><td>Relief amplitude</td><td>地形起伏度</td></tr>
+                    <tr><td>Slope</td><td>Slope</td><td>坡度</td></tr>
+                    <tr><td>Soil thick</td><td>Soil thickness</td><td>土层厚度</td></tr>
+                    <tr><td>SPI</td><td>SPI</td><td>沟壑功率指数</td></tr>
+                    <tr><td>Stream Dis</td><td>Stream Distance</td><td>距河流距离</td></tr>
+                    <tr><td>Surface ro</td><td>Surface roughness</td><td>地表粗糙度</td></tr>
+                    <tr><td>Temperatur</td><td>Temperature</td><td>温度</td></tr>
+                    <tr><td>TWI</td><td>TWI</td><td>地形湿度指数</td></tr>
+                  </tbody>
+                </table>
+                <h2>四、运行流程与结果</h2>
+                <ol>
+                  <li>选择 Shapefile 相关文件 → 按需填写 6 个补值 → 点击「上传并提交」；</li>
+                  <li>后端先落盘文件，再调用推理脚本完成列名映射、缺失值填充与标准化，并计算易发性概率；</li>
+                  <li>概率按 Jenks 自然间断点分为 5 级，结果保存为 Shapefile 并转换为 GeoJSON 返回前端；</li>
+                  <li>前端加载分级图层并自动定位，可在资源目录中开关与调节透明度。</li>
+                </ol>
+                <h2>五、运行结果示例</h2>
+                <img src="/img/BCNSL_YC.png" alt="冰川泥石流易发性预测模型运行结果示例" />
               </div>
             </el-dialog>
             <p id="name_par_gbm" class="gbm-section-label">模型参数</p>
@@ -1364,26 +418,30 @@
                 </div>
               </template>
               <div id="shanhong-model-info" class="help-body">
-                <h2>一、模型目的</h2>
-                <p>基于灾前/灾后地形与物源启动区、影响范围等栅格，调用 GRASS GIS 环境下的 r.avaflow 4.0 内核模拟山洪泥石流的启动与运动过程，输出逐时刻的泥石流层厚度栅格序列，用于评估运动路径、堆积范围与致灾强度。</p>
-                <h2>二、输入数据（.tif）</h2>
-                <table><tbody>
-                  <tr><td>参数</td><td>文件</td><td>说明</td></tr>
-                  <tr><td>平均高程</td><td>elevation.tif</td><td>地形基准面，作为流动计算的底床</td></tr>
-                  <tr><td>物源启动区</td><td>debris.tif</td><td>标记参与启动的物源分布范围</td></tr>
-                  <tr><td>影响范围</td><td>impact_area.tif</td><td>限定计算域，范围外的像元不参与演算</td></tr>
-                </tbody></table>
+                <h2>一、功能目的</h2>
+                <p>在 GRASS GIS 环境下调用 r.avaflow 4.0 内核，基于平均高程、物源启动区与影响范围栅格模拟山洪泥石流的启动与运动过程，输出泥石流层厚度栅格序列（hflow），用于评估运动路径、堆积范围与致灾强度。</p>
+                <h2>二、界面输入参数</h2>
+                <table>
+                  <tbody>
+                    <tr><td>参数</td><td>格式</td><td>默认值</td><td>说明</td></tr>
+                    <tr><td>平均高程</td><td>.tif / .tiff（单文件）</td><td>必填</td><td>地形基准面，作为流动计算的底床（上传后重命名为 elev.tif）</td></tr>
+                    <tr><td>物源启动区</td><td>.tif / .tiff（单文件）</td><td>必填</td><td>标记参与启动的物源分布范围，决定初始泥石流体的位置与体积（重命名为 debris.tif）</td></tr>
+                    <tr><td>影响范围</td><td>.tif / .tiff（单文件）</td><td>必填</td><td>限定计算域，范围外的像元不参与演算（重命名为 impact_area.tif）</td></tr>
+                  </tbody>
+                </table>
+                <p>说明：本模型没有可调的物理参数输入框，全部动力学参数由后端 r.avaflow 工程配置；三份栅格需覆盖同一范围，提交时缺项会逐项提示。</p>
                 <h2>三、运行流程</h2>
                 <ol>
-                  <li>选择并上传三份栅格数据（缺项会在提交时逐一提示）；</li>
-                  <li>后端在 GRASS 环境中导入栅格、执行 r.avaflow 计算并抽取逐帧结果；</li>
-                  <li>结果转换完成后，前端按帧播放泥石流层厚度并自动定位到结果范围。</li>
+                  <li>依次选择并上传三份栅格数据（缺项会在提交时提示，无法启动计算）；</li>
+                  <li>后端在 GRASS 环境中导入栅格、执行 r.avaflow 计算，并按代表性时间节点抽取逐帧结果；</li>
+                  <li>结果由 tif 转换为 GeoJSON（EPSG:4326）与 bbox，前端按帧播放泥石流层厚度并自动定位相机。</li>
                 </ol>
                 <h2>四、结果与提示</h2>
                 <ul>
-                  <li>结果包含逐时刻 hflow ASCII 栅格与结果范围 bbox，默认渲染场为泥石流层厚度；</li>
-                  <li>计算约需数分钟至十余分钟，进度在提示消息中实时更新，等待超时为 30 分钟；</li>
-                  <li>运行期间请勿关闭页面，完成后图层可在资源目录中开关与调节透明度。</li>
+                  <li>结果包含逐时刻 hflow 栅格序列与结果范围 bbox，<strong>默认渲染场为泥石流层厚度</strong>；</li>
+                  <li>计算约需数分钟至十余分钟，进度会在提示消息中实时更新，等待超时为 30 分钟；</li>
+                  <li>运行期间请勿关闭页面，完成后图层可在资源目录中开关与调节透明度；</li>
+                  <li>若定位偏移，请检查输入栅格的坐标系与范围是否与案例区一致。</li>
                 </ul>
               </div>
             </el-dialog>
@@ -1484,288 +542,45 @@
                     id="debris-flow-dynamics-model-info"
                     class="help-body"
                     >
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      一、模型目的
-                    </h2>
-                    <p
-                      style="
-                        font-size: 16px;
-                        line-height: 1.5;
-                        color: #666;
-                        margin-bottom: 15px;
-                      "
-                    >
-                      基于输入的灾前/灾后地形、水深分布及相关参数，数值模拟山洪泥石流启动过程，输出滑坡、堰塞湖、洪水的关键特征数据（厚度、速度、水深等），为山洪泥石流灾害的形成机制分析、风险评估提供量化支撑。
-                    </p>
-
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      二、所需参数及介绍
-                    </h2>
-
-                    <h3
-                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
-                    >
-                      （一）输入数据格式与路径
-                    </h3>
-                    <p
-                      style="
-                        font-size: 16px;
-                        line-height: 1.5;
-                        color: #666;
-                        margin-bottom: 10px;
-                      "
-                    >
-                      所有输入数据均以
-                      <strong>txt格式</strong>
-                      读取。
-                    </p>
-                    <table
-                      style="
-                        width: 100%;
-                        border-collapse: collapse;
-                        font-size: 16px;
-                        color: #666;
-                        margin: 8px 0 15px;
-                      "
-                    >
+                    <h2>一、功能目的</h2>
+                    <p>采用泥石流—洪水耦合的浅水流数值内核（Euler 求解 + HLLC 格式），在灾后地形上模拟山洪泥石流的启动、输移与堆积过程，输出逐时刻的泥石流层厚度、水层厚度与流速，为堰塞湖溃决—洪水—泥石流灾害链的形成机制分析与风险评估提供量化支撑。</p>
+                    <h2>二、界面输入参数（数据）</h2>
+                    <table>
                       <tbody>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                              font-weight: bold;
-                            "
-                          >
-                            变量/文件标识
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                              font-weight: bold;
-                            "
-                          >
-                            文件名称示例
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                              font-weight: bold;
-                            "
-                          >
-                            说明
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            zB
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            [basePath]\sufB.txt
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            灾前地形数据
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            zL
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            [basePath]\sufL.txt
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            灾后地形数据
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            hW
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            [basePath]\sufW.txt
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            水深分布数据
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            Par
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            [basePath]\sufP.txt
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            模型计算所需参数
-                          </td>
-                        </tr>
+                        <tr><td>参数</td><td>格式 / 取值</td><td>默认值</td><td>说明</td></tr>
+                        <tr><td>数据坐标系</td><td>EPSG 代码</td><td>EPSG:32646</td><td>txt / asc 输入不带坐标系时按此解释；带坐标系的 tif 以文件自身为准</td></tr>
+                        <tr><td>源区中心</td><td>十进制度（WGS84），经度 + 纬度</td><td>95.0020 / 30.2354</td><td>仅用于 txt / asc 无 xllcorner、yllcorner 头部时，把结果定位到地图上的实际位置（示例即易贡案例区）</td></tr>
+                        <tr><td>灾前地形 zb</td><td>.tif / .tiff / .txt / .asc</td><td>不选（用内置示例数据）</td><td>泥石流发生前的地形，作为计算初始底床</td></tr>
+                        <tr><td>灾后地形 zl</td><td>.tif / .tiff / .txt / .asc</td><td>不选（用内置示例数据）</td><td>泥石流发生后的地形，<strong>泥石流层厚度 = zB − zL</strong></td></tr>
+                        <tr><td>初始水深 hw</td><td>.tif / .tiff / .txt / .asc</td><td>不选（用内置示例数据）</td><td>初始水体（堰塞湖／河道）水深分布</td></tr>
                       </tbody>
                     </table>
-                    <p
-                      style="
-                        font-size: 16px;
-                        line-height: 1.5;
-                        color: #666;
-                        margin-bottom: 15px;
-                      "
-                    >
-                      <strong>路径说明</strong>：basePath 由
-                      userName（用户目录）、taskName（任务目录）拼接而成，文件路径拼接逻辑为：<br />
-                      <code
-                        style="
-                          background: #f0f0f0;
-                          padding: 2px 4px;
-                          border-radius: 2px;
-                        "
-                        >basePath = [userName, filesep, taskName,
-                        filesep];</code
-                      >
-                    </p>
-
-                    <h3
-                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
-                    >
-                      （二）核心输入数据类别
-                    </h3>
-                    <ul
-                      style="
-                        font-size: 16px;
-                        line-height: 1.6;
-                        color: #666;
-                        margin: 8px 0 15px;
-                        padding-left: 25px;
-                      "
-                    >
-                      <li style="margin-bottom: 5px">
-                        <strong>灾前地形（zB）</strong
-                        >：泥石流发生前的区域地形基础数据；
-                      </li>
-                      <li style="margin-bottom: 5px">
-                        <strong>灾后地形（zL）</strong
-                        >：泥石流发生后的区域地形变化数据；
-                      </li>
-                      <li style="margin-bottom: 5px">
-                        <strong>水深分布（hW）</strong
-                        >：研究区域内的水体深度空间分布数据；
-                      </li>
-                      <li>
-                        <strong>模型参数（Par）</strong
-                        >：支撑动力学模拟的核心参数（如物理力学参数、计算参数等）。
-                      </li>
-                    </ul>
-
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      三、生成结果
-                    </h2>
-                    <ol
-                      style="
-                        font-size: 16px;
-                        line-height: 1.6;
-                        color: #666;
-                        margin: 8px 0 15px;
-                        padding-left: 25px;
-                      "
-                    >
-                      <li style="margin-bottom: 5px">
-                        <strong>输出格式</strong>：所有模拟结果均以
-                        <strong>txt 格式</strong> 输出；
-                      </li>
-                      <li style="margin-bottom: 5px">
-                        <strong>滑坡特征数据</strong
-                        >：厚度分布（hS）、速度分布（uS）；
-                      </li>
-                      <li style="margin-bottom: 5px">
-                        <strong>堰塞湖特征数据</strong>：水深（hW）；
-                      </li>
-                      <li>
-                        <strong>洪水特征数据</strong
-                        >：水深（hW）、速度分布（uW）。
-                      </li>
+                    <p>说明：三份数据<strong>要么都上传、要么都不上传</strong>，只上传其中一部分会被拦截；不选文件时后端使用内置示例数据（suanfa/Pro/user1/task）。</p>
+                    <h2>三、界面输入参数（模型参数）</h2>
+                    <table>
+                      <tbody>
+                        <tr><td>参数</td><td>单位</td><td>默认值</td><td>说明</td></tr>
+                        <tr><td>基底摩擦角 bed</td><td>rad</td><td>0.2</td><td>底床摩擦角（以弧度输入，参与 tan 计算），数值越大底床阻力越强、运动越易停止</td></tr>
+                        <tr><td>曼宁摩擦系数 nn</td><td>—</td><td>0.0125</td><td>曼宁糙率，控制流速大小与下泄过程</td></tr>
+                        <tr><td>网格长度 dx</td><td>m</td><td>20</td><td>计算网格 x 方向尺寸，影响计算精度、稳定性与耗时</td></tr>
+                        <tr><td>网格宽度 dy</td><td>m</td><td>20</td><td>计算网格 y 方向尺寸</td></tr>
+                        <tr><td>滑坡密度 rous</td><td>kg/m³</td><td>2700</td><td>固相（滑坡／泥石流）密度</td></tr>
+                        <tr><td>河水密度 rouf</td><td>kg/m³</td><td>1000</td><td>液相（水）密度，与 rous 共同决定密度比 r = rouf / rous</td></tr>
+                        <tr><td>输出间距 interval</td><td>s</td><td>1</td><td>结果输出时间间隔（出图节拍），越小结果越密、数据量越大</td></tr>
+                        <tr><td>计算时间 Tmax</td><td>s</td><td>100</td><td>模拟总时长，需覆盖完整的启动—输移—堆积过程</td></tr>
+                      </tbody>
+                    </table>
+                    <h2>四、运行流程与结果</h2>
+                    <ol>
+                      <li>按需填写数据坐标系与源区中心，并上传 zb / zl / hw（不上传则使用内置示例数据）；</li>
+                      <li>填写模型参数后点击「运行」，后端按输出间距抽取逐时刻结果；</li>
+                      <li>返回逐帧栅格与 bbox，前端<strong>固定渲染泥石流层厚度（zB − zL）</strong>并自动定位相机、支持时间轴播放。</li>
                     </ol>
+                    <ul>
+                      <li>若上传的 zb 与 zl 完全相同，泥石流层厚度为 0，此时只能看到水层，建议提供真实的灾前／灾后地形；</li>
+                      <li>最大厚度较小时结果会接近「原地铺展」，运行前提示会给出本次物源最大厚度参考值；</li>
+                      <li>输出场还包含水层厚度与流速，前端默认只渲染泥石流层厚度。</li>
+                    </ul>
                   </div>
                 </el-dialog>
               </div>
@@ -1994,63 +809,73 @@
                   </div>
                 </template>
                 <div id="avainit-model-info" class="help-body">
-                  <h2>一、模型目的</h2>
-                  <p>针对冰川区冰–岩体失稳，在融冰入渗与自重作用下计算顺层滑移、反倾倾倒与楔形楔体三类破坏模式的稳定性，判断冰岩崩能否启动并估算启动规模，为下游泥石流、堰塞湖与洪水演算提供物源输入。</p>
-                  <h2>二、公共参数</h2>
-                  <table><tbody>
-                    <tr><td>参数</td><td>取值 / 格式</td><td>说明</td></tr>
-                    <tr><td>破坏模式</td><td>顺层 / 反倾 / 楔形</td><td>决定参与计算的力学参数组，切换后下方表单项同步变化</td></tr>
-                    <tr><td>经度、纬度</td><td>十进制度（WGS84）</td><td>源区定位，示例 95.0020、30.2354（易贡扎木弄沟）</td></tr>
-                  </tbody></table>
+                  <h2>一、功能目的</h2>
+                  <p>针对冰川区冰—岩组合边坡，按顺层滑移、反倾、楔形三类破坏模式分别计算冰岩崩的起动条件与启动规模，定量给出源区稳定性判断与崩落量级，为下游泥石流物源与灾害链演进提供启动条件。</p>
+                  <h2>二、通用参数</h2>
+                  <table>
+                    <tbody>
+                      <tr><td>参数</td><td>单位 / 取值</td><td>默认值</td><td>说明</td></tr>
+                      <tr><td>破坏模式</td><td>顺层 / 反倾 / 楔形</td><td>顺层</td><td>选择后下方参数表单随之切换，各模式的参数组合不同</td></tr>
+                      <tr><td>源区定位 · 经度</td><td>十进制度（WGS84）</td><td>95.0020</td><td>冰岩崩源区在地图上的经度，默认取易贡扎木弄沟案例</td></tr>
+                      <tr><td>源区定位 · 纬度</td><td>十进制度（WGS84）</td><td>30.2354</td><td>冰岩崩源区在地图上的纬度</td></tr>
+                    </tbody>
+                  </table>
                   <h2>三、分模式参数</h2>
                   <h3>（一）顺层滑移</h3>
-                  <table><tbody>
-                    <tr><td>参数</td><td>单位</td><td>示例</td><td>说明</td></tr>
-                    <tr><td>融冰时长</td><td>h</td><td>240</td><td>融冰期持续时间，决定入渗量与下滑力累积</td></tr>
-                    <tr><td>边坡角度</td><td>°</td><td>60</td><td>坡面倾角</td></tr>
-                    <tr><td>滑面角</td><td>°</td><td>15</td><td>潜在滑面与水平面的夹角</td></tr>
-                    <tr><td>冰层厚度</td><td>m</td><td>4</td><td>冰体平均厚度，参与自重计算</td></tr>
-                    <tr><td>裂隙高度</td><td>m</td><td>10</td><td>后缘张拉裂隙的充水高度</td></tr>
-                    <tr><td>滑面长度</td><td>m</td><td>20</td><td>滑面沿程长度</td></tr>
-                    <tr><td>内聚力</td><td>kPa</td><td>15</td><td>滑面黏聚力</td></tr>
-                    <tr><td>内摩擦角</td><td>°</td><td>20</td><td>滑面摩擦角</td></tr>
-                    <tr><td>岩体重度</td><td>kN/m³</td><td>20</td><td>冰–岩体平均重度</td></tr>
-                    <tr><td>渗透系数</td><td>m/s</td><td>0.0001</td><td>控制融水入渗与孔隙水压增长</td></tr>
-                  </tbody></table>
+                  <table>
+                    <tbody>
+                      <tr><td>参数</td><td>单位</td><td>默认值</td><td>说明</td></tr>
+                      <tr><td>融冰时长</td><td>h</td><td>240</td><td>融冰期持续时间，决定入渗量与下滑力的累积</td></tr>
+                      <tr><td>边坡角度</td><td>°</td><td>60</td><td>坡面倾角，控制自重沿滑面的分量</td></tr>
+                      <tr><td>滑面角</td><td>°</td><td>15</td><td>潜在滑面与水平面的夹角</td></tr>
+                      <tr><td>冰层厚度</td><td>m</td><td>4</td><td>冰体平均厚度，参与自重计算</td></tr>
+                      <tr><td>裂隙高度</td><td>m</td><td>10</td><td>后缘张拉裂隙的充水高度，决定静水压力</td></tr>
+                      <tr><td>滑面长度</td><td>m</td><td>20</td><td>滑面沿程长度，影响阻滑力</td></tr>
+                      <tr><td>内聚力</td><td>kPa</td><td>15</td><td>滑面黏聚力，控制抗滑能力</td></tr>
+                      <tr><td>内摩擦角</td><td>°</td><td>20</td><td>滑面摩擦角</td></tr>
+                      <tr><td>岩体重度</td><td>kN/m³</td><td>20</td><td>冰—岩体平均重度</td></tr>
+                      <tr><td>渗透系数</td><td>m/s</td><td>0.0001</td><td>控制融水入渗与孔隙水压增长</td></tr>
+                    </tbody>
+                  </table>
                   <h3>（二）反倾</h3>
-                  <table><tbody>
-                    <tr><td>参数</td><td>单位</td><td>示例</td><td>说明</td></tr>
-                    <tr><td>融冰时长</td><td>h</td><td>240</td><td>融水补给时长</td></tr>
-                    <tr><td>边坡角度</td><td>°</td><td>30</td><td>坡面倾角</td></tr>
-                    <tr><td>反倾角</td><td>°</td><td>70</td><td>岩层倾向与坡向相反时的层面倾角，反倾倾倒的主控量</td></tr>
-                    <tr><td>冰层厚度</td><td>m</td><td>5</td><td>冰体平均厚度</td></tr>
-                    <tr><td>边坡高度</td><td>m</td><td>10</td><td>坡体临空高度</td></tr>
-                    <tr><td>层面间隔</td><td>m</td><td>20</td><td>结构面间距，反映岩体完整性</td></tr>
-                    <tr><td>内聚力</td><td>kPa</td><td>15</td><td>结构面黏聚力</td></tr>
-                    <tr><td>内摩擦角</td><td>°</td><td>20</td><td>结构面摩擦角</td></tr>
-                    <tr><td>岩体重度</td><td>kN/m³</td><td>20</td><td>冰–岩体平均重度</td></tr>
-                    <tr><td>渗透系数</td><td>m/s</td><td>0.0001</td><td>融水入渗参数</td></tr>
-                  </tbody></table>
+                  <table>
+                    <tbody>
+                      <tr><td>参数</td><td>单位</td><td>默认值</td><td>说明</td></tr>
+                      <tr><td>融冰时长</td><td>h</td><td>240</td><td>融水补给时长</td></tr>
+                      <tr><td>边坡角度</td><td>°</td><td>30</td><td>坡面倾角</td></tr>
+                      <tr><td>反倾角</td><td>°</td><td>70</td><td>岩层倾向与坡向相反时的层面倾角，反倾倾倒的主控量</td></tr>
+                      <tr><td>冰层厚度</td><td>m</td><td>5</td><td>冰体平均厚度</td></tr>
+                      <tr><td>边坡高度</td><td>m</td><td>10</td><td>坡体临空高度</td></tr>
+                      <tr><td>层面间隔</td><td>m</td><td>20</td><td>结构面间距，反映岩体完整性</td></tr>
+                      <tr><td>内聚力</td><td>kPa</td><td>15</td><td>结构面黏聚力</td></tr>
+                      <tr><td>内摩擦角</td><td>°</td><td>20</td><td>结构面摩擦角</td></tr>
+                      <tr><td>岩体重度</td><td>kN/m³</td><td>20</td><td>冰—岩体平均重度</td></tr>
+                      <tr><td>渗透系数</td><td>m/s</td><td>0.0001</td><td>融水入渗参数</td></tr>
+                    </tbody>
+                  </table>
                   <h3>（三）楔形</h3>
-                  <table><tbody>
-                    <tr><td>参数</td><td>单位</td><td>示例</td><td>说明</td></tr>
-                    <tr><td>融冰时长</td><td>h</td><td>240</td><td>融水补给时长</td></tr>
-                    <tr><td>边坡角度</td><td>°</td><td>55</td><td>坡面倾角</td></tr>
-                    <tr><td>法向量</td><td>—</td><td>1,1,1</td><td>两组结构面交棱方向的法向量，决定楔体几何</td></tr>
-                    <tr><td>冰层厚度</td><td>m</td><td>5</td><td>冰体平均厚度</td></tr>
-                    <tr><td>面积</td><td>m²</td><td>200</td><td>楔体潜在滑面面积</td></tr>
-                    <tr><td>边坡高度</td><td>m</td><td>10</td><td>坡体临空高度</td></tr>
-                    <tr><td>裂隙/中线</td><td>m</td><td>0.5</td><td>后缘裂隙张开度或中线长度</td></tr>
-                    <tr><td>内聚力</td><td>kPa</td><td>15</td><td>结构面黏聚力</td></tr>
-                    <tr><td>内摩擦角</td><td>°</td><td>20</td><td>结构面摩擦角</td></tr>
-                    <tr><td>岩体重度</td><td>kN/m³</td><td>20</td><td>冰–岩体平均重度</td></tr>
-                    <tr><td>渗透系数</td><td>m/s</td><td>0.0001</td><td>融水入渗参数</td></tr>
-                  </tbody></table>
+                  <table>
+                    <tbody>
+                      <tr><td>参数</td><td>单位</td><td>默认值</td><td>说明</td></tr>
+                      <tr><td>融冰时长</td><td>h</td><td>240</td><td>融水补给时长</td></tr>
+                      <tr><td>边坡角度</td><td>°</td><td>55</td><td>坡面倾角</td></tr>
+                      <tr><td>法向量</td><td>—</td><td>1,1,1</td><td>两组结构面交棱方向的法向量，决定楔体几何（逗号分隔）</td></tr>
+                      <tr><td>冰层厚度</td><td>m</td><td>5</td><td>冰体平均厚度</td></tr>
+                      <tr><td>面积</td><td>m²</td><td>200</td><td>楔体潜在滑面面积</td></tr>
+                      <tr><td>边坡高度</td><td>m</td><td>10</td><td>坡体临空高度</td></tr>
+                      <tr><td>裂隙 / 中线</td><td>m</td><td>0.5</td><td>后缘裂隙张开度或中线长度</td></tr>
+                      <tr><td>内聚力</td><td>kPa</td><td>15</td><td>结构面黏聚力</td></tr>
+                      <tr><td>内摩擦角</td><td>°</td><td>20</td><td>结构面摩擦角</td></tr>
+                      <tr><td>岩体重度</td><td>kN/m³</td><td>20</td><td>冰—岩体平均重度</td></tr>
+                      <tr><td>渗透系数</td><td>m/s</td><td>0.0001</td><td>融水入渗参数</td></tr>
+                    </tbody>
+                  </table>
                   <h2>四、运行与结果</h2>
                   <ul>
-                    <li>点击「运行」后由后端冰岩崩启动算法计算，无需上传文件；</li>
-                    <li>返回源区位置与启动规模，前端自动在三维球面上定位并叠加显示；</li>
-                    <li>上表示例值即界面默认值，取自易贡扎木弄沟，可直接用于联调。</li>
+                    <li>本模型无需上传文件，选择破坏模式、填写参数后点击「运行」即可；</li>
+                    <li>后端按所选模式调用对应冰岩崩启动算法（顺层 bedding_parallel、反倾 bedding_inverse、楔形 bedding_wedge 接口）；</li>
+                    <li>返回源区位置与启动规模，前端自动定位到源区并叠加显示；</li>
+                    <li>上表默认值取自易贡扎木弄沟案例，可直接用于联调，也可按实际冰岩体条件调整。</li>
                   </ul>
                 </div>
               </el-dialog>
@@ -2345,24 +1170,30 @@
                 </div>
               </template>
               <div id="sdp-model-info" class="help-body">
-                <h2>一、模型目的</h2>
-                <p>结合降雨与气温栅格序列和冰川区体积含冰量，计算流域尺度泥石流启动的物源量级与空间分布，识别物源启动区，为后续启动—输移—堆积链式模拟提供物源输入。</p>
-                <h2>二、输入数据</h2>
-                <table><tbody>
-                  <tr><td>参数</td><td>格式</td><td>说明</td></tr>
-                  <tr><td>降雨栅格路径</td><td>.tif，可多选</td><td>多时相降雨量数据，用于入渗与产流计算</td></tr>
-                  <tr><td>温度栅格路径</td><td>.tif，可多选</td><td>与降雨数据时间序列对应，用于融冰量计算</td></tr>
-                  <tr><td>体积含冰量</td><td>0–1（无量纲）</td><td>冰川区冰体体积占比，默认 0.2；含冰量越高，同等升温条件下的产流与启动量越大</td></tr>
-                </tbody></table>
-                <h2>三、输出与渲染</h2>
+                <h2>一、功能目的</h2>
+                <p>结合降雨、气温栅格序列与冰川区体积含冰量，计算流域尺度泥石流启动的物源量级与空间分布，识别物源启动区（ZMAX 分布），为后续启动—输移—堆积的链式动力学模拟提供物源输入。</p>
+                <h2>二、界面输入参数</h2>
+                <table>
+                  <tbody>
+                    <tr><td>参数</td><td>格式 / 取值</td><td>默认值</td><td>说明</td></tr>
+                    <tr><td>降雨栅格路径</td><td>.tif / .tiff，可多选</td><td>不选</td><td>多时相降雨量数据，用于入渗与产流计算；多选时按同一时间序列顺序排列</td></tr>
+                    <tr><td>温度栅格路径</td><td>.tif / .tiff，可多选</td><td>不选</td><td>与降雨数据时间序列对应的气温数据，用于融冰量计算</td></tr>
+                    <tr><td>体积含冰量</td><td>0–1（无量纲）</td><td>0.2</td><td>冰川区冰体体积占比；含冰量越高，同等升温条件下的产流与启动物源量越大</td></tr>
+                  </tbody>
+                </table>
+                <p>说明：当前版本前端选择的降雨／温度栅格路径仅作记录，计算由后端按 SDP_Start 接口的默认目录读取降雨与温度序列；<strong>实际生效并随请求提交的参数是体积含冰量</strong>。</p>
+                <h2>三、运行流程</h2>
+                <ol>
+                  <li>填写体积含冰量（如需指定降雨／温度序列目录，请在部署端配置后端默认路径）；</li>
+                  <li>点击「运行」，后端调用 run.py 逐步计算各时段的物源启动量，输出 ZMAX_t&lt;time&gt;.tif 序列；</li>
+                  <li>取最后时间节点的 ZMAX 结果，经 GDAL 转换为 EPSG:4326 GeoJSON 后返回前端渲染并自动定位。</li>
+                </ol>
+                <h2>四、结果与提示</h2>
                 <ul>
-                  <li>由后端 SDP_Start 接口返回启动物源结果（含 ZMAX 分布），前端渲染最后一帧并自动定位到结果范围；</li>
-                  <li>结果以 GeoJSON 形式加载，可在资源目录中开关图层、调整透明度。</li>
-                </ul>
-                <h2>四、运行提示</h2>
-                <ul>
-                  <li>完整计算约需数分钟，运行期间请勿关闭页面；</li>
-                  <li>当前版本由后端使用默认数据路径计算，界面上的栅格选择入口为后续接入预留。</li>
+                  <li>结果为最后一帧的物源启动量级分布（ZMAX），渲染场不提供切换；</li>
+                  <li>结果以 GeoJSON 加载，可在资源目录中开关图层、调节透明度；</li>
+                  <li>计算耗时与降雨／温度序列长度有关，运行期间请勿关闭页面；</li>
+                  <li>若报错多为后端 Python 环境或结果目录缺失，可从提示消息中查看后端返回的详细原因。</li>
                 </ul>
               </div>
             </el-dialog>
@@ -2502,29 +1333,38 @@
                 </div>
               </template>
               <div id="quanyu-model-info" class="help-body">
-                <h2>一、模型目的</h2>
-                <p>以 12 项孕灾环境因子栅格为输入，统一重采样与归一化后按权重叠加，输出全域尺度的风险脆弱性分级结果，用于识别高风险区并支撑防治规划。</p>
-                <h2>二、输入因子（栅格 .tif）</h2>
-                <table><tbody>
-                  <tr><td>因子</td><td>说明</td></tr>
-                  <tr><td>平均高程</td><td>地形基准面，间接反映气温与冰川发育条件</td></tr>
-                  <tr><td>地形起伏度</td><td>高差变化，控制势能与物质搬运能力</td></tr>
-                  <tr><td>流域面积</td><td>汇水规模，影响径流与物源汇集</td></tr>
-                  <tr><td>地层岩性</td><td>岩性分类栅格，反映抗侵蚀能力</td></tr>
-                  <tr><td>断层密度</td><td>构造活动强度与岩体破碎程度</td></tr>
-                  <tr><td>土壤类型</td><td>土壤可蚀性差异</td></tr>
-                  <tr><td>距水系距离</td><td>距水系越近，承灾暴露度越高</td></tr>
-                  <tr><td>河网密度</td><td>汇流通道发育程度</td></tr>
-                  <tr><td>降雨数据</td><td>降水驱动因子</td></tr>
-                  <tr><td>土地利用</td><td>地表覆被与人类活动影响</td></tr>
-                  <tr><td>距公路距离</td><td>道路承灾体可达性与暴露度</td></tr>
-                  <tr><td>NDVI</td><td>植被覆盖度，影响水土保持能力</td></tr>
-                </tbody></table>
-                <h2>三、运行说明</h2>
+                <h2>一、功能目的</h2>
+                <p>以 12 项孕灾环境因子栅格为输入，统一重采样与归一化后按权重叠加，输出全域尺度的风险脆弱性分级结果，用于识别高风险区并支撑防治规划与重点区筛选。</p>
+                <h2>二、界面输入参数（栅格 .tif）</h2>
+                <table>
+                  <tbody>
+                    <tr><td>因子</td><td>默认文件</td><td>说明</td></tr>
+                    <tr><td>平均高程</td><td>elevation.tif</td><td>地形基准面，间接反映气温与冰川发育条件</td></tr>
+                    <tr><td>地形起伏度</td><td>relief.tif</td><td>高差变化，控制势能与物质搬运能力</td></tr>
+                    <tr><td>流域面积</td><td>watershed.tif</td><td>汇水规模，影响径流与物源汇集</td></tr>
+                    <tr><td>地层岩性</td><td>lithology.tif</td><td>岩性分类栅格，反映抗侵蚀能力</td></tr>
+                    <tr><td>断层密度</td><td>fault_density.tif</td><td>构造活动强度与岩体破碎程度</td></tr>
+                    <tr><td>土壤类型</td><td>soil_type.tif</td><td>土壤可蚀性差异</td></tr>
+                    <tr><td>距水系距离</td><td>water_dist.tif</td><td>距水系越近，承灾暴露度越高</td></tr>
+                    <tr><td>河网密度</td><td>drainage_density.tif</td><td>汇流通道发育程度</td></tr>
+                    <tr><td>降雨数据</td><td>rainfall.tif</td><td>降水驱动因子</td></tr>
+                    <tr><td>土地利用</td><td>land_use.tif</td><td>地表覆被与人类活动影响</td></tr>
+                    <tr><td>距公路距离</td><td>road_dist.tif</td><td>道路承灾体可达性与暴露度</td></tr>
+                    <tr><td>NDVI</td><td>ndvi.tif</td><td>植被覆盖度，影响水土保持能力</td></tr>
+                  </tbody>
+                </table>
+                <p>说明：12 项因子需全部选择，缺项在提交时会逐项提示因子名称；建议各因子使用同一空间范围与分辨率，坐标系不一致时由后端统一重采样。</p>
+                <h2>三、运行流程</h2>
+                <ol>
+                  <li>逐项选择 12 个因子栅格（点击每行的导入按钮从本地选取）；</li>
+                  <li>点击「运行」，后端完成重采样、归一化与加权叠加，约需 10 秒；</li>
+                  <li>计算完成后自动加载脆弱性分级图层并定位到成果范围。</li>
+                </ol>
+                <h2>四、结果与提示</h2>
                 <ul>
-                  <li>12 项因子需全部选择，缺项会在提交时逐一提示；</li>
-                  <li>提交后由后端完成重采样、归一化与加权叠加，约 10 秒；</li>
-                  <li>计算完成后自动加载脆弱性分级图层，可在资源目录中开关与调节透明度。</li>
+                  <li>结果为全域风险脆弱性分级专题图层，可在资源目录中开关与调节透明度；</li>
+                  <li>因子权重与分级阈值由后端模型配置，界面不暴露；</li>
+                  <li>如个别因子缺失，建议先用同范围的近似数据替代，以保证叠加结果完整。</li>
                 </ul>
               </div>
             </el-dialog>
@@ -2610,308 +1450,33 @@
                     id="landslide-warning-model-info"
                     class="help-body"
                     >
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      一、模型目的
-                    </h2>
-                    <p
-                      style="
-                        font-size: 16px;
-                        line-height: 1.5;
-                        color: #666;
-                        margin-bottom: 15px;
-                      "
-                    >
-                      基于位移传感器监测的时序数据，通过<strong>速度倒数法</strong>预测滑坡发生时间：将滑坡过程划分为恒速移动、变速移动、滑坡三阶段，检测变速起始点（OOA）到速度倒数为零的距离，判断滑坡发生时机，实现滑坡预警。
-                    </p>
-
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      二、所需数据/核心模块
-                    </h2>
-
-                    <h3
-                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
-                    >
-                      （一）核心输入数据
-                    </h3>
-                    <p
-                      style="
-                        font-size: 16px;
-                        line-height: 1.5;
-                        color: #666;
-                        margin-bottom: 8px;
-                      "
-                    >
-                      时序位移监测数据，包含两类字段：
-                    </p>
-                    <ul
-                      style="
-                        font-size: 16px;
-                        line-height: 1.6;
-                        color: #666;
-                        margin: 8px 0 15px;
-                        padding-left: 25px;
-                      "
-                    >
-                      <li style="margin-bottom: 5px">
-                        <strong>timestamp</strong>：时间戳（如 2022-01-01
-                        00:00:00）；
-                      </li>
-                      <li>
-                        <strong>displ</strong>：传感器检测到的位移值（数值型）。
-                      </li>
-                    </ul>
-
-                    <h3
-                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
-                    >
-                      （二）R语言核心脚本模块
-                    </h3>
-                    <table
-                      style="
-                        width: 100%;
-                        border-collapse: collapse;
-                        font-size: 16px;
-                        color: #666;
-                        margin: 8px 0 15px;
-                      "
-                    >
+                    <h2>一、功能目的</h2>
+                    <p>基于位移监测时序数据，采用速度倒数法预测滑坡失稳时间：自动识别加速变形起点（OOA），将速度倒数外推至零以估计破坏时刻，并按剩余时间分级给出预警。</p>
+                    <h2>二、界面输入参数</h2>
+                    <table>
                       <tbody>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                              font-weight: bold;
-                            "
-                          >
-                            脚本文件
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                              font-weight: bold;
-                            "
-                          >
-                            功能
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            1_1_input.R
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            主配置文件（参数入口）
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            2_data-input.R
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            数据读取与预处理
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            4_calculate_v-iv.R
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            计算速度/逆速度
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            6_OOA-detection_auto_2.R
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            自动检测加速起始点（OOA）
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            7_calculate_tof.R
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            计算破坏时间（滑坡发生时间）
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            plot7_combi.R
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            生成综合预测图表
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            99_1_new-iteration_run.R
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            增量更新预测（新数据到来时）
-                          </td>
-                        </tr>
+                        <tr><td>参数</td><td>格式 / 取值</td><td>默认值</td><td>说明</td></tr>
+                        <tr><td>地点</td><td>文本</td><td>空（占位「林芝」）</td><td>监测点名称，随结果写入数据库，用于地图点位与查询</td></tr>
+                        <tr><td>位移文件</td><td>Excel（.xlsx）</td><td>必填</td><td>监测时序数据，需包含两列：<strong>timestamp</strong>（时间，形如 2022-01-01 00:00）与 <strong>displ</strong>（位移数值）；结构相同的 .csv 也可被识别</td></tr>
+                        <tr><td>经度</td><td>十进制度（WGS84）</td><td>空</td><td>预警点在地图上的经度，缺失将无法定位结果点</td></tr>
+                        <tr><td>纬度</td><td>十进制度（WGS84）</td><td>空</td><td>预警点在地图上的纬度</td></tr>
                       </tbody>
                     </table>
-
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      三、生成结果
-                    </h2>
-                    <ol
-                      style="
-                        font-size: 16px;
-                        line-height: 1.6;
-                        color: #666;
-                        margin: 8px 0 15px;
-                        padding-left: 25px;
-                      "
-                    >
-                      <li style="margin-bottom: 5px">
-                        <strong>量化结果</strong
-                        >：滑坡破坏时间（失效时间）预测值、预测不确定性区间、速度/逆速度计算结果、OOA检测结果；
-                      </li>
-                      <li style="margin-bottom: 5px">
-                        <strong>可视化结果</strong>：
-                        <ul style="margin: 4px 0 0 20px; padding: 0">
-                          <li>
-                            综合预测图表：位移-时间曲线、逆速度曲线、OOA检测标记；
-                          </li>
-                          <li>
-                            统计图表：失效时间分布箱线图、预期寿命图表、速度区间可视化图；
-                          </li>
-                          <li>
-                            案例专项图：PFTF结果图（含失效窗口、速度区间、四分位距等）。
-                          </li>
-                        </ul>
-                      </li>
-                      <li>
-                        <strong>功能扩展</strong
-                        >：支持新数据增量更新预测，输出实时预警相关的时间轴、不确定性分析结果。
-                      </li>
+                    <p>说明：上传后后端按小时聚合（同一小时取最后一条记录）并排序，再交给 R 语言 PFTF 脚本（1_1_input.R、2_data-input.R、4_calculate_v-iv.R、6_OOA-detection_auto_2.R、7_calculate_tof.R）完成速度／逆速度计算、OOA 检测与破坏时间预测。</p>
+                    <h2>三、运行流程</h2>
+                    <ol>
+                      <li>选择位移文件，填写地点与经度、纬度；</li>
+                      <li>点击「运行」，后端先上传文件、再执行速度倒数法计算，返回预测失稳时间 rt（小时）、预测时间与状态；</li>
+                      <li>前端在经纬度位置落预警图标并自动飞行定位。</li>
                     </ol>
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      四、运行结果示例
-                    </h2>
-                    <p
-                      style="
-                        font-size: 16px;
-                        line-height: 1.5;
-                        color: #666;
-                        margin-bottom: 15px;
-                      "
-                    >
-                      以下是模型运行后的示例输出结果：
-                    </p>
-                    <img
-                      src="/img/pftf.png"
-                      alt="运行结果示例"
-                      style="
-                        width: 80%;
-                        height: auto;
-                        border: 1px solid #ddd;
-                        border-radius: 8px;
-                        margin: 10px 0;
-                        display: block;
-                        margin-left: auto;
-                        margin-right: auto;
-                        filter: none;
-                      "
-                    />
+                    <h2>四、结果与提示</h2>
+                    <ul>
+                      <li>预警分级：剩余时间 &lt; 24 h 红色、24–48 h 橙色、48–72 h 黄色、72–96 h 蓝色，超过 96 h 提示「预计失稳时间超过 96 小时」；</li>
+                      <li>未检测到加速变形（no_ooa）时提示「暂无法计算失稳时间」，此时应补充更长的监测序列；</li>
+                      <li>点击地图上的预警点可查看该监测点的位移数据。</li>
+                    </ul>
+                    <h2>五、运行结果示例</h2>
+                    <img src="/img/pftf.png" alt="基于位移监测滑坡预警运行结果示例" />
                   </div>
                 </el-dialog>
               </div>
@@ -3024,357 +1589,45 @@
                     id="debris-flow-signal-detection-info"
                     class="help-body"
                     >
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      一、脚本目的
-                    </h2>
-                    <p
-                      style="
-                        font-size: 16px;
-                        line-height: 1.5;
-                        color: #666;
-                        margin-bottom: 15px;
-                      "
-                    >
-                      处理传感器采集的地震波/地声/振动等时序信号，基于<strong>改进的STA/LTA（短长时窗平均比）算法</strong>自动识别泥石流事件；通过二次校验（分段趋势分析）排除误报，输出检测结果并可视化波形与检测状态。
-                    </p>
-
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      二、参数/环境/输入要求
-                    </h2>
-
-                    <h3
-                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
-                    >
-                      （一）环境依赖
-                    </h3>
-
-                    <ul
-                      style="
-                        font-size: 16px;
-                        line-height: 1.6;
-                        color: #666;
-                        margin: 8px 0 15px;
-                        padding-left: 25px;
-                      "
-                    >
-                      <li style="margin-bottom: 4px">
-                        numpy：高性能数值计算与数组操作
-                      </li>
-                      <li style="margin-bottom: 4px">
-                        pandas：读取Excel/CSV格式数据
-                      </li>
-                      <li style="margin-bottom: 4px">
-                        matplotlib：绘制波形与检测状态可视化图表
-                      </li>
-                      <li>openpyxl：pandas读取.xlsx文件的引擎</li>
-                    </ul>
-
-                    <h3
-                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
-                    >
-                      （二）关键参数（代码第39-45行）
-                    </h3>
-                    <table
-                      style="
-                        width: 100%;
-                        border-collapse: collapse;
-                        font-size: 16px;
-                        color: #666;
-                        margin: 8px 0 15px;
-                      "
-                    >
+                    <h2>一、功能目的</h2>
+                    <p>处理地震动传感器采集的振动／地声时序信号，自动识别泥石流事件并在地图上给出事件位置展示，支持 STA/LTA 机器学习识别与 Transformer1D 深度学习识别两种内核。</p>
+                    <h2>二、模型类型</h2>
+                    <table>
                       <tbody>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                              font-weight: bold;
-                            "
-                          >
-                            参数名
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                              font-weight: bold;
-                            "
-                          >
-                            默认值
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                              font-weight: bold;
-                            "
-                          >
-                            说明
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            threshold
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            2.5
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            触发阈值，STA/LTA比值超此值启动二次校验
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            short_window
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            30秒
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            短时窗，计算瞬时能量变化（反应灵敏）
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            long_window
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            240秒
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            长时窗，计算背景噪声水平（反应迟钝）
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            segment_duration
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            10秒
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            校验分段时长，触发后切分后续时间窗
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            total_duration
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            60秒
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            校验总时长，触发后向后检查的总时间
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            sampling_rate
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            100Hz
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            采样率，需与硬件采集参数一致
-                          </td>
-                        </tr>
+                        <tr><td>模型类型</td><td>输入文件</td><td>说明</td></tr>
+                        <tr><td>机器学习（STA/LTA）</td><td>Excel（.xlsx）</td><td>基于短长时窗能量比识别事件，并通过分段趋势做二次校验以排除误报</td></tr>
+                        <tr><td>深度学习（Transformer1D）</td><td>CSV（.csv）</td><td>基于一维 Transformer 模型推理，适合按列组织的电压／振动信号</td></tr>
                       </tbody>
                     </table>
-
-                    <h3
-                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
-                    >
-                      （三）输入数据要求
-                    </h3>
-                    <ul
-                      style="
-                        font-size: 16px;
-                        line-height: 1.6;
-                        color: #666;
-                        margin: 8px 0 15px;
-                        padding-left: 25px;
-                      "
-                    >
-                      <li style="margin-bottom: 5px">
-                        文件格式：Excel（.xlsx）格式的传感器波形数据；
-                      </li>
-                      <li style="margin-bottom: 5px">
-                        数据结构：默认跳过第一行表头，读取第1列作为信号数值；若第一列为时间戳，需修改代码列索引；
-                      </li>
-                      <li>
-                        使用前需修改代码第30行的
-                        <code>filepath</code>
-                        为实际数据文件路径。
-                      </li>
-                    </ul>
-
-                    <h3
-                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
-                    >
-                      （四）核心判定逻辑
-                    </h3>
-                    <ol
-                      style="
-                        font-size: 16px;
-                        line-height: 1.6;
-                        color: #666;
-                        margin: 8px 0 15px;
-                        padding-left: 25px;
-                      "
-                    >
-                      <li style="margin-bottom: 4px">
-                        能量计算：原始数据平方后，计算STA（短时平均能量）、LTA（长时平均能量）；
-                      </li>
-                      <li style="margin-bottom: 4px">
-                        初筛：Ratio=STA/LTA > threshold 时，进入二次校验；
-                      </li>
-                      <li style="margin-bottom: 4px">
-                        二次校验：锁定LTA背景值，截取后续60秒数据并切分为10秒片段，计算各片段均值与锁定LTA的比值；
-                      </li>
-                      <li>
-                        最终判定：所有片段比值>threshold
-                        <strong>且</strong> 片段能量增长趋势次数≥3次。
-                      </li>
-                    </ol>
-
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      三、生成结果
-                    </h2>
-                    <ol
-                      style="
-                        font-size: 16px;
-                        line-height: 1.6;
-                        color: #666;
-                        margin: 8px 0 15px;
-                        padding-left: 25px;
-                      "
-                    >
-                      <li style="margin-bottom: 5px">
-                        <strong>控制台输出</strong
-                        >：是否检测到泥石流、检测到的信号数据点索引；
-                      </li>
-                      <li>
-                        <strong>可视化结果</strong
-                        >：弹出波形与检测状态图表，其中灰色曲线为原始信号波形，红色脉冲为判定的泥石流时间段（值为1）。
-                      </li>
+                    <h2>三、机器学习模式参数</h2>
+                    <table>
+                      <tbody>
+                        <tr><td>参数</td><td>单位 / 格式</td><td>默认值</td><td>说明</td></tr>
+                        <tr><td>Excel文件</td><td>.xlsx</td><td>必填</td><td>传感器波形数据，默认读取第 1 列作为信号数值</td></tr>
+                        <tr><td>经度</td><td>十进制度（WGS84）</td><td>97.5</td><td>事件在地图上的经度，前端按输入值定位</td></tr>
+                        <tr><td>纬度</td><td>十进制度（WGS84）</td><td>31.0</td><td>事件在地图上的纬度</td></tr>
+                        <tr><td>阈值 / threshold</td><td>—</td><td>2.5</td><td>STA/LTA 比值触发阈值，超过后进入二次校验</td></tr>
+                        <tr><td>短时窗</td><td>s</td><td>30</td><td>计算瞬时能量变化，反映对信号的灵敏程度</td></tr>
+                        <tr><td>长时窗</td><td>s</td><td>240</td><td>计算背景噪声水平，反映稳定基线</td></tr>
+                        <tr><td>分段时长</td><td>s</td><td>10</td><td>触发后把后续时间窗切分的片段长度</td></tr>
+                        <tr><td>总时长</td><td>s</td><td>60</td><td>触发后向后检查的总时间长度</td></tr>
+                        <tr><td>采样率</td><td>Hz</td><td>100</td><td>需与硬件采集参数一致，否则时间窗换算不正确</td></tr>
+                      </tbody>
+                    </table>
+                    <h2>四、深度学习模式参数</h2>
+                    <table>
+                      <tbody>
+                        <tr><td>参数</td><td>格式 / 取值</td><td>默认值</td><td>说明</td></tr>
+                        <tr><td>CSV数据文件</td><td>.csv</td><td>必填</td><td>按列组织的信号数据，默认取电压列 Voltage_mV 作为模型输入</td></tr>
+                        <tr><td>经度</td><td>十进制度（WGS84）</td><td>97.5</td><td>事件点位经度，推理完成后在地图上定位展示</td></tr>
+                        <tr><td>纬度</td><td>十进制度（WGS84）</td><td>31.0</td><td>事件点位纬度</td></tr>
+                      </tbody>
+                    </table>
+                    <h2>五、判定逻辑与结果</h2>
+                    <ol>
+                      <li>机器学习模式：先计算 STA（短时平均能量）与 LTA（长时平均能量），当 Ratio = STA / LTA &gt; 阈值 时进入二次校验；锁定 LTA 背景值后把后续数据切分为若干片段，各片段比值均超过阈值且能量增长趋势达到要求次数，判定为泥石流事件；</li>
+                      <li>深度学习模式：CSV 信号标准化后送入 Transformer1D 模型推理，输出事件判定结果；</li>
+                      <li>两种模式均返回检测结论与波形信息，前端在指定经纬度落事件点展示，可点击查看结果详情。</li>
                     </ol>
                   </div>
                 </el-dialog>
@@ -3663,21 +1916,28 @@
             <div class="help-body">
               <h2>一、功能目的</h2>
               <p>{{ cfg.desc }}</p>
-              <h2>二、输入参数</h2>
-              <table><tbody>
-                <tr><td>参数</td><td>说明</td></tr>
-                <tr><td>{{ cfg.areaLabel }}</td><td>在三维地图上手绘闭合多边形作为调控范围：左键逐点落点，右键结束绘制，至少需要 3 个顶点</td></tr>
-                <tr><td>{{ cfg.raiseLabel }}</td><td>单位：米。将绘制范围内的底床整体抬升该高度，模拟坝体或护底高程</td></tr>
-                <tr><td>底床与水深数据</td><td>沿用「洪水泥石流启动动力学模型」的输入数据（zb / zl / hw），未选择文件时使用内置示例数据</td></tr>
-              </tbody></table>
+              <h2>二、界面输入参数</h2>
+              <table>
+                <tbody>
+                  <tr><td>参数</td><td>取值 / 单位</td><td>说明</td></tr>
+                  <tr><td>{{ cfg.areaLabel }}</td><td>手绘闭合多边形</td><td>在三维地图上左键逐点落点、右键结束绘制，至少需要 3 个顶点；绘制结果即为调控范围</td></tr>
+                  <tr><td>{{ cfg.raiseLabel }}</td><td>m（断链调控默认 20，沿程调控默认 15）</td><td>将绘制范围内的底床整体抬升该高度，模拟坝体或护底高程</td></tr>
+                  <tr><td>底床与水深数据</td><td>.tif / .tiff / .txt / .asc</td><td>沿用「洪水泥石流启动动力学模型」的输入数据（zb 灾前地形 / zl 灾后地形 / hw 初始水深），未选择文件时使用内置示例数据</td></tr>
+                  <tr><td>动力学参数</td><td>同洪水模型</td><td>基底摩擦角、曼宁摩擦系数、网格长宽、滑坡与河水密度、输出间距、计算时间沿用洪水泥石流模型的默认值</td></tr>
+                </tbody>
+              </table>
               <h2>三、运行流程</h2>
               <ol>
-                <li>点击「在地图上绘制」，沿目标沟道绘制闭合范围；</li>
+                <li>点击「在地图上绘制」，沿目标沟道绘制闭合范围（左键落点，右键结束，Esc 取消）；</li>
                 <li>填写{{ cfg.raiseLabel }}，点击「{{ cfg.runText }}」；</li>
-                <li>后端在抬升后的地形上重新执行动力学计算，前端加载结果图层供对比查看。</li>
+                <li>后端将范围内底床抬高指定高度后重新执行动力学计算，前端加载结果图层供对比查看。</li>
               </ol>
-              <h2>四、提示</h2>
-              <p>{{ cfg.hint }}</p>
+              <h2>四、结果与提示</h2>
+              <ul>
+                <li>结果渲染场为抬升地形后的泥石流层厚度，与未调控工况对比即可评估断链／沿程调控的削峰效果；</li>
+                <li>{{ cfg.hint }}</li>
+                <li>绘制范围应落在输入数据覆盖范围内，范围过小或偏离沟道会明显削弱调控效果。</li>
+              </ul>
             </div>
           </el-dialog>
           <div class="terrain-panel">
