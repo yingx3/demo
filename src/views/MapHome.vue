@@ -2375,7 +2375,7 @@ const PRO_FIELD_META = {
 }
 const proFieldMeta = field => PRO_FIELD_META[String(field || 'solid').toLowerCase()] || PRO_FIELD_META.solid
 
-const betaLayers = async (payload, label = '山洪泥石流启动动力学模型_beta', options = {}) => {
+const betaLayers = async (payload, label = '山洪泥石流启动动力学模型', options = {}) => {
   const useDrape = options.drape !== false
   const result = payload?.result
   if (!result || result.status !== 'ok') {

@@ -73,7 +73,7 @@
                 </h2>
 
                 <h3 style="font-size: 18px; color: #555; margin: 15px 0 8px">
-                  （一）前置参数（TopoIndex.exe用）
+                  （一）前置参数
                 </h3>
                 <ul
                   style="
@@ -95,7 +95,7 @@
                 </ul>
 
                 <h3 style="font-size: 18px; color: #555; margin: 15px 0 8px">
-                  （二）核心参数（TRIGRS.exe用）
+                  （二）核心参数
                 </h3>
                 <table
                   style="
@@ -687,202 +687,9 @@
                 <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
                   二、参数/配置内容
                 </h2>
-
+                
                 <h3 style="font-size: 18px; color: #555; margin: 15px 0 8px">
-                  （一）环境依赖（第三方库）
-                </h3>
-                <ul
-                  style="
-                    font-size: 16px;
-                    line-height: 1.6;
-                    color: #666;
-                    margin: 8px 0 15px;
-                    padding-left: 25px;
-                  "
-                >
-                  <li style="margin-bottom: 4px">
-                    geopandas：处理地理空间数据
-                  </li>
-                  <li style="margin-bottom: 4px">pandas：数据处理</li>
-                  <li style="margin-bottom: 4px">numpy：数值计算</li>
-                  <li style="margin-bottom: 4px">
-                    joblib：加载模型和标准化器（Scaler）
-                  </li>
-                  <li style="margin-bottom: 4px">
-                    jenkspy：计算 Jenks 自然间断点
-                  </li>
-                  <li style="margin-bottom: 4px">
-                    scikit-learn：特征数据标准化（StandardScaler）
-                  </li>
-                  <li>lightgbm：加载推理模型</li>
-                </ul>
-
-                <h3 style="font-size: 18px; color: #555; margin: 15px 0 8px">
-                  （二）文件路径配置
-                </h3>
-                <table
-                  style="
-                    width: 100%;
-                    border-collapse: collapse;
-                    font-size: 16px;
-                    color: #666;
-                    margin: 8px 0 15px;
-                  "
-                >
-                  <tbody>
-                    <tr style="background-color: #f5f5f5">
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                          font-weight: bold;
-                        "
-                      >
-                        变量名
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                          font-weight: bold;
-                        "
-                      >
-                        说明
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                          font-weight: bold;
-                        "
-                      >
-                        示例路径
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        MODEL_PATH
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        预训练 LightGBM 模型文件（.pkl）
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        E:\...\LightGBM.pkl
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        SCALER_PATH
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        标准化器文件（.pkl）
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        E:\...\standard_scaler.pkl
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        INPUT_SHP_PATH
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        待预测的输入 Shapefile 文件
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        E:\...\waternet_new.shp
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        OUTPUT_SHP_PATH
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        预测结果输出路径
-                      </td>
-                      <td
-                        style="
-                          border: 1px solid #ddd;
-                          padding: 10px;
-                          text-align: left;
-                        "
-                      >
-                        E:\...\output\result.shp
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                <h3 style="font-size: 18px; color: #555; margin: 15px 0 8px">
-                  （三）输入数据字段（Shapefile 属性）
+                  输入数据字段（Shapefile 属性）
                 </h3>
                 <table
                   style="
@@ -1363,51 +1170,9 @@
                     </tr>
                   </tbody>
                 </table>
-                <p
-                  style="
-                    font-size: 16px;
-                    line-height: 1.5;
-                    color: #666;
-                    margin-bottom: 15px;
-                    font-style: italic;
-                  "
-                >
-                  补充：特征列缺失值会自动用该列均值填充；路径配置需修改代码第26-33行，脚本会自动创建输出目录，且覆盖同名旧文件。
-                </p>
 
                 <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
-                  三、生成结果
-                </h2>
-                <ol
-                  style="
-                    font-size: 16px;
-                    line-height: 1.6;
-                    color: #666;
-                    margin: 8px 0 15px;
-                    padding-left: 25px;
-                  "
-                >
-                  <li style="margin-bottom: 5px">
-                    <strong>输出文件</strong>：在 OUTPUT_SHP_PATH 路径生成新的
-                    Shapefile 文件；
-                  </li>
-                  <li style="margin-bottom: 5px">
-                    <strong>文件结构</strong>：
-                    <ul style="margin: 4px 0 0 20px; padding: 0">
-                      <li>geometry：原始空间几何信息；</li>
-                      <li>
-                        susc_class：易发性等级（文本型：极低、低、中等、高、极高）；
-                      </li>
-                      <li>Id：原始数据ID（输入含Id列则保留）。</li>
-                    </ul>
-                  </li>
-                  <li>
-                    <strong>编码说明</strong>：属性表编码为 GBK，支持
-                    ArcGIS/QGIS 等软件正常显示中文字符。
-                  </li>
-                </ol>
-                <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
-                  四、运行结果示例
+                  三、运行结果示例
                 </h2>
                 <p
                   style="
@@ -1565,596 +1330,81 @@
       <div class="theme">
         <div class="title">灾害链模拟</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
+        <!-- 山洪泥石流启动动力学模型：r.avaflow 内核 + 逐帧渲染泥石流层厚度 -->
         <div class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
-          <el-button :plain="true" @click="dialogVisible1 = true"
+          <el-button :plain="true" @click="dialogBeta = true"
             ><span>山洪泥石流启动动力学模型</span></el-button
           >
-          <el-dialog
-            v-model="dialogVisible1"
-            title="山洪泥石流启动动力学模型"
-            style="width: 480px"
-            :close-on-click-modal="false"
-            class="dialog_avaflow"
-            @open="resetShanhongInputs"
-          >
+          <el-dialog v-model="dialogBeta" title="山洪泥石流启动动力学模型" width="520" :close-on-click-modal="false" class="dialog_quanyu" @open="resetBetaInputs">
             <template #header>
-              <div
-                style="
-                  display: flex;
-                  align-items: center;
-                  justify-content: space-between;
-                  width: 100%;
-                "
-              >
-                <span
-                  style="
-                    color: #ffffff;
-                    font-size: 24px;
-                    display: block;
-                    text-align: center;
-                  "
-                  >山洪泥石流启动动力学模型</span
-                >
-                <!-- 问号容器：定位到关闭按钮左侧 -->
-                <div style="position: relative; right: 23px; top: -7.5px">
-                  <el-tooltip content="帮助" placement="top">
-                    <el-icon
-                      class="help-icon"
-                      @click="openHelpDialog_sh = true"
-                    >
-                      <QuestionFilled />
-                    </el-icon>
-                  </el-tooltip>
+              <div class="model-dialog-header">
+                <div class="model-dialog-heading">
+                  <span class="model-dialog-title">山洪泥石流启动动力学模型</span>
+                  <span class="model-dialog-subtitle">启动动力学参数配置</span>
                 </div>
-                <el-dialog
-                  v-model="openHelpDialog_sh"
-                  class="model-help-dialog"
-                  width="1200px"
-                  :close-on-click-modal="false"
-                  top="70px"
-                  >
-                  <template #title>
-                    <div class="model-help-head">
-                      <span class="model-help-title">山洪泥石流启动动力学模型</span>
-                      <span class="model-help-subtitle">参数说明</span>
-                    </div>
-                  </template>
-                  <div
-                    id="r-avaflow-model-info"
-                    class="help-body"
-                    >
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      一、模型目的
-                    </h2>
-                    <p
-                      style="
-                        font-size: 16px;
-                        line-height: 1.5;
-                        color: #666;
-                        margin-bottom: 15px;
-                      "
-                    >
-                      用于模拟滑坡、泥石流等重力流灾害的运动过程，基于高程、释放高度、影响范围等地理栅格数据，结合摩擦力、时间、相数等参数量化分析灾害流动特征（如流量高度、路径）与影响范围，同时支持可视化参数配置生成灾害过程可视化结果，为重力流灾害风险评估、防治规划提供数据支撑（详细使用说明可参考官方手册：<a
-                        href="https://www.landslidemodels.org/r.avaflow/direct.php"
-                        target="_blank"
-                        style="color: #0066cc"
-                        >https://www.landslidemodels.org/r.avaflow/direct.php</a
-                      >）。
-                    </p>
-
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      二、所需参数及介绍
-                    </h2>
-
-                    <h3
-                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
-                    >
-                      （一）核心输入数据（栅格格式）
-                    </h3>
-                    <ul
-                      style="
-                        font-size: 16px;
-                        line-height: 1.6;
-                        color: #666;
-                        margin: 8px 0 15px;
-                        padding-left: 25px;
-                      "
-                    >
-                      <li style="margin-bottom: 5px">
-                        <strong>高程（elevation）</strong>：单位
-                        m，栅格（raster）数据，表征研究区域地形高程基础信息；
-                      </li>
-                      <li style="margin-bottom: 5px">
-                        <strong>释放高度（hrelease1）</strong>：单位
-                        m，栅格（raster）数据，表征灾害启动的初始释放高度；
-                      </li>
-                      <li>
-                        <strong>影响范围（impactarea）</strong
-                        >：栅格（raster）数据，定义模型模拟的灾害影响范围边界。
-                      </li>
-                    </ul>
-
-                    <h3
-                      style="font-size: 18px; color: #555; margin: 15px 0 8px"
-                    >
-                      （二）核心配置参数
-                    </h3>
-                    <table
-                      style="
-                        width: 100%;
-                        border-collapse: collapse;
-                        font-size: 16px;
-                        color: #666;
-                        margin: 8px 0 15px;
-                      "
-                    >
-                      <tbody>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                              font-weight: bold;
-                            "
-                          >
-                            参数名
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                              font-weight: bold;
-                            "
-                          >
-                            单位/取值范围
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                              font-weight: bold;
-                            "
-                          >
-                            说明
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            prefix
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            -
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            输出文件的前缀
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            cellsize
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            -
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            可选，无则从输入数据读取，建议去掉
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            phases
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            默认 3
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            相数（默认3：固体、细固体、流体），<strong
-                              >暴露参数</strong
-                            >
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            friction
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            内摩擦[0-90]、基底摩擦[0-90]、流体摩擦&gt;0
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            单相应含3类摩擦力，<strong>暴露参数</strong>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            time
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            -
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            2个时间值：①写入文件的时间间隔 ②模拟总时长
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            profile
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            m
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            流向坐标（从顶到底），x/y依次表示点位
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            visualization
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            -
-                          </td>
-                          <td
-                            style="
-                              border: 1px solid #ddd;
-                              padding: 10px;
-                              text-align: left;
-                            "
-                          >
-                            共18个参数，控制可视化效果（如等高线、透明度、颜色权重等）
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-
-                    <h4
-                      style="font-size: 17px; color: #555; margin: 12px 0 8px"
-                    >
-                      可视化参数（visualization）细分说明
-                    </h4>
-                    <p
-                      style="
-                        font-size: 16px;
-                        line-height: 1.5;
-                        color: #666;
-                        margin-bottom: 8px;
-                      "
-                    >
-                      包含18个配置项，核心作用如下：
-                    </p>
-                    <ul
-                      style="
-                        font-size: 16px;
-                        line-height: 1.6;
-                        color: #666;
-                        margin: 8px 0 15px;
-                        padding-left: 25px;
-                        column-count: 2;
-                        column-gap: 20px;
-                      "
-                    >
-                      <li>deform：控制正射影像变形（0关闭/1有/2无）</li>
-                      <li>hflowmin：可视化最小流量高度（m）</li>
-                      <li>hflowref：可视化参考高度（小流量高度透明）</li>
-                      <li>htsunref：大流量高度显示为纯白色</li>
-                      <li>hcontmin：水流等高线最低水位（整数）</li>
-                      <li>hcontmax：水流等高线最高水位</li>
-                      <li>hcontint：水流等高线间隔（整数）</li>
-                      <li>zcontmin：高程等高线最低值</li>
-                      <li>zcontmax：高程等高线最高值</li>
-                      <li>zcontint：高程等高线间隔</li>
-                      <li>pred/pgreen/pblue：红/绿/蓝权重（多相忽略）</li>
-                      <li>pexp：流动显示透明曲线指数</li>
-                      <li>phexagg：剖面中流动高度因素</li>
-                      <li>pvpath/rscriptpath/rlibspath：各类路径配置</li>
-                    </ul>
-
-                    <h2
-                      style="font-size: 20px; color: #444; margin: 18px 0 10px"
-                    >
-                      三、生成结果
-                    </h2>
-                    <p
-                      style="
-                        font-size: 16px;
-                        line-height: 1.5;
-                        color: #666;
-                        margin-bottom: 15px;
-                      "
-                    >
-                      模型输出包含两部分核心结果：<br />
-                      1.
-                      <strong>量化数据</strong
-                      >：重力流灾害的流动高度、速度、影响范围等数值模拟结果（以配置的
-                      prefix 为前缀输出）；<br />
-                      2. <strong>可视化结果</strong>：基于 visualization
-                      参数生成的灾害流动过程可视化图表（如等高线图、流动路径图、正射影像叠加图等）；<br />
-                      具体结果示例可参考官方使用手册或模型运行实测案例。
-                    </p>
-                  </div>
-                </el-dialog>
+                <el-tooltip content="查看参数说明" placement="top">
+                  <el-icon class="help-icon" @click="openHelpDialog_sh = true">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
               </div>
             </template>
-            <p id="name_par2">模型参数</p>
-            <el-form :model="form1" label-width="auto" class="form_avaflow">
-              <el-form-item
-                label="输入栅格文件"
-                label-position="left"
-                label-width="145px"
-                class="form_files_avaflow"
-                style="margin-bottom: 8px"
-              >
-                <div
-                  style="
-                    display: flex;
-                    gap: 8px;
-                    flex-wrap: wrap;
-                    align-items: center;
-                  "
-                >
-                  <el-input
-                    v-model="fileNameElev"
-                    placeholder="高程 (elev.tif)"
-                    readonly
-                    style="width: 180px"
-                  >
-                    <template #append>
-                      <el-upload
-                        ref="uploadElevRef"
-                        :auto-upload="false"
-                        :show-file-list="false"
-                        accept=".tif,.tiff"
-                        @change="handleFileChangeElev"
-                      >
-                        <el-button
-                          @click.stop="triggerUploadElev"
-                          style="
-                            border: none;
-                            color: white;
-                            padding: 0;
-                            margin-left: 8px;
-                          "
-                          ><i class="iconfont icon-daoru"></i
-                        ></el-button>
-                      </el-upload>
-                    </template>
-                  </el-input>
-
-                  <el-input
-                    v-model="fileNameDebris"
-                    placeholder="启动堆积 (debris.tif)"
-                    readonly
-                    style="width: 200px"
-                  >
-                    <template #append>
-                      <el-upload
-                        ref="uploadDebrisRef"
-                        :auto-upload="false"
-                        :show-file-list="false"
-                        accept=".tif,.tiff"
-                        @change="handleFileChangeDebris"
-                      >
-                        <el-button
-                          @click.stop="triggerUploadDebris"
-                          style="
-                            border: none;
-                            color: white;
-                            padding: 0;
-                            margin-left: 8px;
-                          "
-                          ><i class="iconfont icon-daoru"></i
-                        ></el-button>
-                      </el-upload>
-                    </template>
-                  </el-input>
-
-                  <el-input
-                    v-model="fileNameImpact"
-                    placeholder="影响范围 (impact_area.tif)"
-                    readonly
-                    style="width: 220px"
-                  >
-                    <template #append>
-                      <el-upload
-                        ref="uploadImpactRef"
-                        :auto-upload="false"
-                        :show-file-list="false"
-                        accept=".tif,.tiff"
-                        @change="handleFileChangeImpact"
-                      >
-                        <el-button
-                          @click.stop="triggerUploadImpact"
-                          style="
-                            border: none;
-                            color: white;
-                            padding: 0;
-                            margin-left: 8px;
-                          "
-                          ><i class="iconfont icon-daoru"></i
-                        ></el-button>
-                      </el-upload>
-                    </template>
-                  </el-input>
+            <el-dialog
+              v-model="openHelpDialog_sh"
+              class="model-help-dialog"
+              width="1200px"
+              :close-on-click-modal="false"
+              top="70px"
+            >
+              <template #title>
+                <div class="model-help-head">
+                  <span class="model-help-title">山洪泥石流启动动力学模型</span>
+                  <span class="model-help-subtitle">参数说明</span>
                 </div>
-              </el-form-item>
-              <div
-                style="
-                  display: flex;
-                  align-items: center;
-                  justify-content: space-between;
-                  height: 20px;
-                  margin-top: 15px;
-                "
-              >
-                <el-form-item
-                  label="相数"
-                  label-width="50px"
-                  label-position="left"
-                  class="form1_avaflow"
-                >
-                  <el-select
-                    v-model="form1.phases"
-                    placeholder="1"
-                    style="width: 90px"
-                  >
-                    <el-option label="单相" value="1" />
-                    <el-option label="双相" value="2" />
-                    <el-option label="多相" value="3" />
-                  </el-select>
-                </el-form-item>
-                <el-form-item
-                  label="内部摩擦"
-                  label-position="left"
-                  label-width="88px"
-                  class="form2_avaflow"
-                >
-                  <el-input v-model="form1.cf" placeholder="35" />
-                </el-form-item>
-                <el-form-item
-                  label="基底摩擦"
-                  label-position="left"
-                  label-width="88px"
-                  class="form3_avaflow"
-                >
-                  <el-input v-model="form1.bf" placeholder="20" />
-                </el-form-item>
+              </template>
+              <div id="shanhong-model-info" class="help-body">
+                <h2>一、模型目的</h2>
+                <p>基于灾前/灾后地形与物源启动区、影响范围等栅格，调用 GRASS GIS 环境下的 r.avaflow 4.0 内核模拟山洪泥石流的启动与运动过程，输出逐时刻的泥石流层厚度栅格序列，用于评估运动路径、堆积范围与致灾强度。</p>
+                <h2>二、输入数据（.tif）</h2>
+                <table><tbody>
+                  <tr><td>参数</td><td>文件</td><td>说明</td></tr>
+                  <tr><td>平均高程</td><td>elevation.tif</td><td>地形基准面，作为流动计算的底床</td></tr>
+                  <tr><td>物源启动区</td><td>debris.tif</td><td>标记参与启动的物源分布范围</td></tr>
+                  <tr><td>影响范围</td><td>impact_area.tif</td><td>限定计算域，范围外的像元不参与演算</td></tr>
+                </tbody></table>
+                <h2>三、运行流程</h2>
+                <ol>
+                  <li>选择并上传三份栅格数据（缺项会在提交时逐一提示）；</li>
+                  <li>后端在 GRASS 环境中导入栅格、执行 r.avaflow 计算并抽取逐帧结果；</li>
+                  <li>结果转换完成后，前端按帧播放泥石流层厚度并自动定位到结果范围。</li>
+                </ol>
+                <h2>四、结果与提示</h2>
+                <ul>
+                  <li>结果包含逐时刻 hflow ASCII 栅格与结果范围 bbox，默认渲染场为泥石流层厚度；</li>
+                  <li>计算约需数分钟至十余分钟，进度在提示消息中实时更新，等待超时为 30 分钟；</li>
+                  <li>运行期间请勿关闭页面，完成后图层可在资源目录中开关与调节透明度。</li>
+                </ul>
               </div>
-
+            </el-dialog>
+            <p id="name_par_gbm" style="margin-left:24px;margin-top:8px;font-size:18px;color:#2763ca">输入数据</p>
+            <el-form label-width="auto" style="max-width:600px" class="form_gbm">
+              <el-form-item v-for="item in betaFileItems" :key="item.key" :label="item.label" label-position="right" label-width="130px">
+                <el-input v-model="betaFileNames[item.key]" :placeholder="item.placeholder" style="width:200px" readonly>
+                  <template #append>
+                    <el-upload :ref="el => { if (el) betaUploadRefs[item.key] = el }" :auto-upload="false" :show-file-list="false" accept=".tif,.tiff" @change="(f,fs) => handleBetaFile(item.key, f, fs)">
+                      <el-button style="border:none;color:white;padding:0;margin-left:8px" @click.stop="triggerBetaUpload(item.key)">
+                        <i class="iconfont icon-daoru"></i>
+                      </el-button>
+                    </el-upload>
+                  </template>
+                </el-input>
+              </el-form-item>
               <el-form-item>
-                <el-button
-                  type="primary"
-                  @click="onSubmit1"
-                  class="b_ex_avaflow"
-                  >运行</el-button
-                >
-                <el-button @click="dialogVisible1 = false">取消</el-button>
+                <div style="display:flex;justify-content:center;gap:12px;width:100%">
+                  <el-button type="primary" @click="submitBeta">运行</el-button>
+                  <el-button @click="dialogBeta = false">取消</el-button>
+                </div>
               </el-form-item>
             </el-form>
           </el-dialog>
@@ -3142,40 +2392,6 @@
                     {{ sdpLoading ? '计算中...' : '运行' }}
                   </el-button>
                   <el-button @click="dialogVisibleSDP = false">取消</el-button>
-                </div>
-              </el-form-item>
-            </el-form>
-          </el-dialog>
-        </div>
-        <!-- 洪水泥石流启动动力学模型_beta：前端隐藏入口、逻辑保留；恢复时删除下方 v-if="false" -->
-        <div v-if="false" class="box box-used p_bottom">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <el-button :plain="true" @click="dialogBeta = true"
-            ><span>洪水泥石流启动动力学模型_beta</span></el-button
-          >
-          <el-dialog v-model="dialogBeta" title="洪水泥石流启动动力学模型_beta" width="520" :close-on-click-modal="false" class="dialog_quanyu" @open="resetBetaInputs">
-            <template #header>
-              <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-                <span style="color:#ffffff;font-size:21px;padding-left:20px">洪水泥石流启动动力学模型_beta</span>
-              </div>
-            </template>
-            <p id="name_par_gbm" style="margin-left:24px;margin-top:8px;font-size:18px;color:#2763ca">输入数据</p>
-            <el-form label-width="auto" style="max-width:600px" class="form_gbm">
-              <el-form-item v-for="item in betaFileItems" :key="item.key" :label="item.label" label-position="right" label-width="130px">
-                <el-input v-model="betaFileNames[item.key]" :placeholder="item.placeholder" style="width:200px" readonly>
-                  <template #append>
-                    <el-upload :ref="el => { if (el) betaUploadRefs[item.key] = el }" :auto-upload="false" :show-file-list="false" accept=".tif,.tiff" @change="(f,fs) => handleBetaFile(item.key, f, fs)">
-                      <el-button style="border:none;color:white;padding:0;margin-left:8px" @click.stop="triggerBetaUpload(item.key)">
-                        <i class="iconfont icon-daoru"></i>
-                      </el-button>
-                    </el-upload>
-                  </template>
-                </el-input>
-              </el-form-item>
-              <el-form-item>
-                <div style="display:flex;justify-content:center;gap:12px;width:100%">
-                  <el-button type="primary" @click="submitBeta">运行</el-button>
-                  <el-button @click="dialogBeta = false">取消</el-button>
                 </div>
               </el-form-item>
             </el-form>
@@ -4497,7 +3713,6 @@ import axios from 'axios'
 import modelService from '../services/modelService'
 // import { exec } from 'child_process'
 const dialogVisible = ref(false)
-const dialogVisible1 = ref(false)
 const dialogVisibleGBM = ref(false)
 const dialogVisible2 = ref(false)
 const dialog_inverseV = ref(false)
@@ -4832,49 +4047,6 @@ const form = reactive({
   diffus: '1.32e-03',
   ksat: '1.32e-05',
 })
-const form1 = reactive({
-  area: '巴宜区',
-  phases: '1',
-  cf: '35',
-  bf: '20',
-  ff: '0.05',
-})
-// avaflow 上传文件 refs
-const uploadElevRef = ref(null)
-const uploadDebrisRef = ref(null)
-const uploadImpactRef = ref(null)
-const fileElev = ref(null)
-const fileDebris = ref(null)
-const fileImpact = ref(null)
-const fileNameElev = ref('')
-const fileNameDebris = ref('')
-const fileNameImpact = ref('')
-
-const triggerUploadElev = () => {
-  uploadElevRef.value?.$el.querySelector('input[type=file]').click()
-}
-const triggerUploadDebris = () => {
-  uploadDebrisRef.value?.$el.querySelector('input[type=file]').click()
-}
-const triggerUploadImpact = () => {
-  uploadImpactRef.value?.$el.querySelector('input[type=file]').click()
-}
-
-const handleFileChangeElev = (uploadFile, uploadFiles) => {
-  const f = (uploadFiles && uploadFiles[0]?.raw) || uploadFile.raw || uploadFile
-  fileElev.value = f
-  fileNameElev.value = f?.name || ''
-}
-const handleFileChangeDebris = (uploadFile, uploadFiles) => {
-  const f = (uploadFiles && uploadFiles[0]?.raw) || uploadFile.raw || uploadFile
-  fileDebris.value = f
-  fileNameDebris.value = f?.name || ''
-}
-const handleFileChangeImpact = (uploadFile, uploadFiles) => {
-  const f = (uploadFiles && uploadFiles[0]?.raw) || uploadFile.raw || uploadFile
-  fileImpact.value = f
-  fileNameImpact.value = f?.name || ''
-}
 const form2 = reactive({
   bed: '0.2',
   nn: '0.0125',
@@ -5003,7 +4175,7 @@ async function submitBeta() {
       }
       if (st && st.status === 'done') {
         ElMessage.closeAll()
-        ElMessage({ message: '洪水泥石流启动动力学模型_beta 完成，输出 ' + (st.frameCount || 0) + ' 帧', type: 'success', duration: 2500 })
+        ElMessage({ message: '山洪泥石流启动动力学模型 完成，输出 ' + (st.frameCount || 0) + ' 帧', type: 'success', duration: 2500 })
         $emit('betaLayers', {
           result: {
             status: 'ok',
@@ -5139,76 +4311,6 @@ const subitForm = () => {
       // 处理错误
     })
 }
-//演进模型-avaflow
-function onSubmit1() {
-  dialogVisible1.value = false
-  ElMessage({ message: '运行中，请稍候...', type: 'info', duration: 3000 })
-  subitForm1()
-}
-const subitForm1 = async () => {
-  try {
-    // 如果有上传文件，优先上传并按指定名字重命名
-    if (fileElev.value || fileDebris.value || fileImpact.value) {
-      const formData = new FormData()
-      // append renamed files if present
-      if (fileElev.value) {
-        const f = new File([fileElev.value], 'elev.tif', {
-          type: fileElev.value.type || 'application/octet-stream',
-        })
-        formData.append('files', f)
-      }
-      if (fileDebris.value) {
-        const f = new File([fileDebris.value], 'debris.tif', {
-          type: fileDebris.value.type || 'application/octet-stream',
-        })
-        formData.append('files', f)
-      }
-      if (fileImpact.value) {
-        const f = new File([fileImpact.value], 'impact_area.tif', {
-          type: fileImpact.value.type || 'application/octet-stream',
-        })
-        formData.append('files', f)
-      }
-
-      ElMessage({ message: '文件上传中，请稍候...', type: 'info', duration: 0 })
-      const upResp = await modelService.uploadAvaflowFiles(formData)
-      ElMessage.closeAll()
-      if (!upResp || upResp?.status !== 'ok') {
-        ElMessage({ message: upResp?.message || '文件上传失败', type: 'error' })
-        return
-      }
-      ElMessage({
-        message: '文件上传成功，开始启动模拟',
-        type: 'success',
-        duration: 1500,
-      })
-    }
-
-    const data = await modelService.runAvaflow(form1)
-    if (data && data.status === 'ok') {
-      ElMessage({
-        message:
-          data?.message || '山洪泥石流模拟已启动（按 start1.sh 默认参数执行）',
-        type: 'success',
-        duration: 2500,
-      })
-      $emit('yjLayers', { area: form1.area, result: data })
-    } else {
-      ElMessage({ message: data?.message || '模拟失败', type: 'error' })
-    }
-  } catch (error) {
-    console.error('山洪泥石流模拟请求失败:', error)
-    ElMessage({
-      message:
-        error?.response?.data?.message ||
-        error?.message ||
-        '请求失败，请检查后端服务',
-      type: 'error',
-    })
-    $emit('yjLayers', { area: form1.area, result: null })
-  }
-}
-
 // 洪水泥石流启动动力学模型（python_port 双层浅水流数值内核）
 function onSubmit2() {
   dialogVisible2.value = false
@@ -5825,26 +4927,6 @@ const resetGbmInputs = () => {
   uploadRefGBM.value?.clearFiles?.()
 }
 
-// 山洪泥石流启动动力学模型
-const resetShanhongInputs = () => {
-  Object.assign(form1, {
-    area: '巴宜区',
-    phases: '1',
-    cf: '35',
-    bf: '20',
-    ff: '0.05',
-  })
-  fileNameElev.value = ''
-  fileNameDebris.value = ''
-  fileNameImpact.value = ''
-  fileElev.value = null
-  fileDebris.value = null
-  fileImpact.value = null
-  uploadElevRef.value?.clearFiles?.()
-  uploadDebrisRef.value?.clearFiles?.()
-  uploadImpactRef.value?.clearFiles?.()
-}
-
 // 洪水泥石流启动动力学模型（Pro）
 const resetFloodProInputs = () => {
   if (floodRunning.value) return
@@ -5943,7 +5025,7 @@ const resetSdpInputs = () => {
   uploadOutputRef.value?.clearFiles?.()
 }
 
-// 洪水泥石流启动动力学模型_beta
+// 山洪泥石流启动动力学模型（r.avaflow beta 内核，逐帧输出 hflow）
 const resetBetaInputs = () => {
   if (isProcessing.value) return
   new Set([...Object.keys(betaFiles), ...Object.keys(betaFileNames)]).forEach(key => {
