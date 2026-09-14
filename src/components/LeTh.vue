@@ -25,7 +25,7 @@
                   <span class="model-dialog-title"
                     >风险源定量识别与表征模型</span
                   >
-                  <span class="model-dialog-subtitle">TRIGRS 参数配置</span>
+                  <span class="model-dialog-subtitle">参数配置</span>
                 </div>
                 <el-tooltip content="查看参数说明" placement="top">
                   <el-icon
@@ -39,43 +39,21 @@
             </template>
             <el-dialog
               v-model="openHelpDialog_fxy"
+              class="model-help-dialog"
               width="1200px"
-              max-height="600px"
               :close-on-click-modal="false"
-              position="absolute"
               top="70px"
-              style="
-                background-image: url('./CS/src/assets/img/fz174.png');
-                background-size: cover; /* 让背景图铺满对话框 */
-                background-position: center; /* 背景图居中 */
-                background-color: rgba(0, 0, 130, 0.5);
-              "
-            >
+              >
               <template #title>
-                <span
-                  style="
-                    color: white;
-                    font-size: 26px;
-                    display: block;
-                    text-align: center;
-                  "
-                  >风险源定量识别与表征模型核心信息</span
-                >
+                <div class="model-help-head">
+                  <span class="model-help-title">风险源定量识别与表征模型</span>
+                  <span class="model-help-subtitle">参数说明</span>
+                </div>
               </template>
               <div
                 id="trigrs-model-info"
-                style="
-                  width: 100%;
-                  max-width: 1000px;
-                  margin: 0 auto;
-                  padding: 20px;
-                  font-family: Arial, sans-serif;
-                  max-height: 600px;
-                  overflow-y: auto;
-                  -ms-overflow-style: none;
-                  scrollbar-width: none;
-                "
-              >
+                class="help-body"
+                >
                 <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
                   一、模型目的
                 </h2>
@@ -673,44 +651,21 @@
             </template>
             <el-dialog
               v-model="openHelpDialog_gbm"
+              class="model-help-dialog"
               width="1200px"
-              max-height="600px"
               :close-on-click-modal="false"
-              position="absolute"
               top="70px"
-              style="
-                background-image: url('./CS/src/assets/img/fz174.png');
-                background-size: cover; /* 让背景图铺满对话框 */
-                background-position: center; /* 背景图居中 */
-                background-color: rgba(0, 0, 130, 0.5);
-              "
-            >
+              >
               <template #title>
-                <span
-                  style="
-                    color: white;
-                    font-size: 26px;
-                    display: block;
-                    text-align: center;
-                  "
-                >
-                  冰川泥石流易发性预测模型说明文档</span
-                >
+                <div class="model-help-head">
+                  <span class="model-help-title">冰川泥石流易发性预测模型</span>
+                  <span class="model-help-subtitle">参数说明</span>
+                </div>
               </template>
               <div
                 id="glacier-hazard-chain-info"
-                style="
-                  width: 100%;
-                  max-width: 1000px;
-                  margin: 0 auto;
-                  padding: 20px;
-                  font-family: Arial, sans-serif;
-                  max-height: 600px;
-                  overflow-y: auto;
-                  -ms-overflow-style: none;
-                  scrollbar-width: none;
-                "
-              >
+                class="help-body"
+                >
                 <h2 style="font-size: 20px; color: #444; margin: 18px 0 10px">
                   一、脚本目的
                 </h2>
@@ -1654,43 +1609,21 @@
                 </div>
                 <el-dialog
                   v-model="openHelpDialog_sh"
+                  class="model-help-dialog"
                   width="1200px"
-                  max-height="600px"
                   :close-on-click-modal="false"
-                  position="absolute"
                   top="70px"
-                  style="
-                    background-image: url('./CS/src/assets/img/fz174.png');
-                    background-size: cover; /* 让背景图铺满对话框 */
-                    background-position: center; /* 背景图居中 */
-                    background-color: rgba(0, 0, 130, 0.5);
-                  "
-                >
+                  >
                   <template #title>
-                    <span
-                      style="
-                        color: white;
-                        font-size: 26px;
-                        display: block;
-                        text-align: center;
-                      "
-                      >山洪泥石流启动动力学模型说明文档</span
-                    >
+                    <div class="model-help-head">
+                      <span class="model-help-title">山洪泥石流启动动力学模型</span>
+                      <span class="model-help-subtitle">参数说明</span>
+                    </div>
                   </template>
                   <div
                     id="r-avaflow-model-info"
-                    style="
-                      width: 100%;
-                      max-width: 1000px;
-                      margin: 0 auto;
-                      padding: 20px;
-                      font-family: Arial, sans-serif;
-                      max-height: 600px;
-                      overflow-y: auto;
-                      -ms-overflow-style: none;
-                      scrollbar-width: none;
-                    "
-                  >
+                    class="help-body"
+                    >
                     <h2
                       style="font-size: 20px; color: #444; margin: 18px 0 10px"
                     >
@@ -2265,43 +2198,21 @@
                 </div>
                 <el-dialog
                   v-model="openHelpDialog_flood"
+                  class="model-help-dialog"
                   width="1200px"
-                  max-height="600px"
                   :close-on-click-modal="false"
-                  position="absolute"
                   top="70px"
-                  style="
-                    background-image: url('./CS/src/assets/img/fz174.png');
-                    background-size: cover; /* 让背景图铺满对话框 */
-                    background-position: center; /* 背景图居中 */
-                    background-color: rgba(0, 0, 130, 0.5);
-                  "
-                >
+                  >
                   <template #title>
-                    <span
-                      style="
-                        color: white;
-                        font-size: 26px;
-                        display: block;
-                        text-align: center;
-                      "
-                      >洪水泥石流启动动力学模型说明文档</span
-                    >
+                    <div class="model-help-head">
+                      <span class="model-help-title">洪水泥石流启动动力学模型</span>
+                      <span class="model-help-subtitle">参数说明</span>
+                    </div>
                   </template>
                   <div
                     id="debris-flow-dynamics-model-info"
-                    style="
-                      width: 100%;
-                      max-width: 1000px;
-                      margin: 0 auto;
-                      padding: 20px;
-                      font-family: Arial, sans-serif;
-                      max-height: 600px;
-                      overflow-y: auto;
-                      -ms-overflow-style: none;
-                      scrollbar-width: none;
-                    "
-                  >
+                    class="help-body"
+                    >
                     <h2
                       style="font-size: 20px; color: #444; margin: 18px 0 10px"
                     >
@@ -2791,13 +2702,87 @@
                 <el-tooltip content="查看参数说明" placement="top">
                   <el-icon
                     class="help-icon"
-                    @click="openHelpDialog_flood = true"
+                    @click="openHelpDialog_avainit = true"
                   >
                     <QuestionFilled />
                   </el-icon>
                 </el-tooltip>
               </div>
             </template>
+              <el-dialog
+                v-model="openHelpDialog_avainit"
+                class="model-help-dialog"
+                width="1200px"
+                :close-on-click-modal="false"
+                top="70px"
+              >
+                <template #title>
+                  <div class="model-help-head">
+                    <span class="model-help-title">冰岩崩起动模型</span>
+                    <span class="model-help-subtitle">参数说明</span>
+                  </div>
+                </template>
+                <div id="avainit-model-info" class="help-body">
+                  <h2>一、模型目的</h2>
+                  <p>针对冰川区冰–岩体失稳，在融冰入渗与自重作用下计算顺层滑移、反倾倾倒与楔形楔体三类破坏模式的稳定性，判断冰岩崩能否启动并估算启动规模，为下游泥石流、堰塞湖与洪水演算提供物源输入。</p>
+                  <h2>二、公共参数</h2>
+                  <table><tbody>
+                    <tr><td>参数</td><td>取值 / 格式</td><td>说明</td></tr>
+                    <tr><td>破坏模式</td><td>顺层 / 反倾 / 楔形</td><td>决定参与计算的力学参数组，切换后下方表单项同步变化</td></tr>
+                    <tr><td>经度、纬度</td><td>十进制度（WGS84）</td><td>源区定位，示例 95.0020、30.2354（易贡扎木弄沟）</td></tr>
+                  </tbody></table>
+                  <h2>三、分模式参数</h2>
+                  <h3>（一）顺层滑移</h3>
+                  <table><tbody>
+                    <tr><td>参数</td><td>单位</td><td>示例</td><td>说明</td></tr>
+                    <tr><td>融冰时长</td><td>h</td><td>240</td><td>融冰期持续时间，决定入渗量与下滑力累积</td></tr>
+                    <tr><td>边坡角度</td><td>°</td><td>60</td><td>坡面倾角</td></tr>
+                    <tr><td>滑面角</td><td>°</td><td>15</td><td>潜在滑面与水平面的夹角</td></tr>
+                    <tr><td>冰层厚度</td><td>m</td><td>4</td><td>冰体平均厚度，参与自重计算</td></tr>
+                    <tr><td>裂隙高度</td><td>m</td><td>10</td><td>后缘张拉裂隙的充水高度</td></tr>
+                    <tr><td>滑面长度</td><td>m</td><td>20</td><td>滑面沿程长度</td></tr>
+                    <tr><td>内聚力</td><td>kPa</td><td>15</td><td>滑面黏聚力</td></tr>
+                    <tr><td>内摩擦角</td><td>°</td><td>20</td><td>滑面摩擦角</td></tr>
+                    <tr><td>岩体重度</td><td>kN/m³</td><td>20</td><td>冰–岩体平均重度</td></tr>
+                    <tr><td>渗透系数</td><td>m/s</td><td>0.0001</td><td>控制融水入渗与孔隙水压增长</td></tr>
+                  </tbody></table>
+                  <h3>（二）反倾</h3>
+                  <table><tbody>
+                    <tr><td>参数</td><td>单位</td><td>示例</td><td>说明</td></tr>
+                    <tr><td>融冰时长</td><td>h</td><td>240</td><td>融水补给时长</td></tr>
+                    <tr><td>边坡角度</td><td>°</td><td>30</td><td>坡面倾角</td></tr>
+                    <tr><td>反倾角</td><td>°</td><td>70</td><td>岩层倾向与坡向相反时的层面倾角，反倾倾倒的主控量</td></tr>
+                    <tr><td>冰层厚度</td><td>m</td><td>5</td><td>冰体平均厚度</td></tr>
+                    <tr><td>边坡高度</td><td>m</td><td>10</td><td>坡体临空高度</td></tr>
+                    <tr><td>层面间隔</td><td>m</td><td>20</td><td>结构面间距，反映岩体完整性</td></tr>
+                    <tr><td>内聚力</td><td>kPa</td><td>15</td><td>结构面黏聚力</td></tr>
+                    <tr><td>内摩擦角</td><td>°</td><td>20</td><td>结构面摩擦角</td></tr>
+                    <tr><td>岩体重度</td><td>kN/m³</td><td>20</td><td>冰–岩体平均重度</td></tr>
+                    <tr><td>渗透系数</td><td>m/s</td><td>0.0001</td><td>融水入渗参数</td></tr>
+                  </tbody></table>
+                  <h3>（三）楔形</h3>
+                  <table><tbody>
+                    <tr><td>参数</td><td>单位</td><td>示例</td><td>说明</td></tr>
+                    <tr><td>融冰时长</td><td>h</td><td>240</td><td>融水补给时长</td></tr>
+                    <tr><td>边坡角度</td><td>°</td><td>55</td><td>坡面倾角</td></tr>
+                    <tr><td>法向量</td><td>—</td><td>1,1,1</td><td>两组结构面交棱方向的法向量，决定楔体几何</td></tr>
+                    <tr><td>冰层厚度</td><td>m</td><td>5</td><td>冰体平均厚度</td></tr>
+                    <tr><td>面积</td><td>m²</td><td>200</td><td>楔体潜在滑面面积</td></tr>
+                    <tr><td>边坡高度</td><td>m</td><td>10</td><td>坡体临空高度</td></tr>
+                    <tr><td>裂隙/中线</td><td>m</td><td>0.5</td><td>后缘裂隙张开度或中线长度</td></tr>
+                    <tr><td>内聚力</td><td>kPa</td><td>15</td><td>结构面黏聚力</td></tr>
+                    <tr><td>内摩擦角</td><td>°</td><td>20</td><td>结构面摩擦角</td></tr>
+                    <tr><td>岩体重度</td><td>kN/m³</td><td>20</td><td>冰–岩体平均重度</td></tr>
+                    <tr><td>渗透系数</td><td>m/s</td><td>0.0001</td><td>融水入渗参数</td></tr>
+                  </tbody></table>
+                  <h2>四、运行与结果</h2>
+                  <ul>
+                    <li>点击「运行」后由后端冰岩崩启动算法计算，无需上传文件；</li>
+                    <li>返回源区位置与启动规模，前端自动在三维球面上定位并叠加显示；</li>
+                    <li>上表示例值即界面默认值，取自易贡扎木弄沟，可直接用于联调。</li>
+                  </ul>
+                </div>
+              </el-dialog>
             <div class="avainit-mode-row">
               <span class="avainit-field-caption">破坏模式</span>
               <el-radio-group v-model="radio_avainit" size="large">
@@ -3064,10 +3049,53 @@
             @open="resetSdpInputs"
           >
             <template #header>
-              <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-                <span style="color:#ffffff;font-size:24px;display:block;text-align:center">泥石流启动物源计算模型</span>
+              <div class="model-dialog-header sdp-header">
+                <div class="model-dialog-heading">
+                  <span class="model-dialog-title">泥石流启动物源计算模型</span>
+                  <span class="model-dialog-subtitle">启动物源参数配置</span>
+                </div>
+                <el-tooltip content="查看参数说明" placement="top">
+                  <el-icon class="help-icon" @click="openHelpDialog_sdp = true">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
               </div>
             </template>
+            <el-dialog
+              v-model="openHelpDialog_sdp"
+              class="model-help-dialog"
+              width="1200px"
+              :close-on-click-modal="false"
+              top="70px"
+            >
+              <template #title>
+                <div class="model-help-head">
+                  <span class="model-help-title">泥石流启动物源计算模型</span>
+                  <span class="model-help-subtitle">参数说明</span>
+                </div>
+              </template>
+              <div id="sdp-model-info" class="help-body">
+                <h2>一、模型目的</h2>
+                <p>结合降雨与气温栅格序列和冰川区体积含冰量，计算流域尺度泥石流启动的物源量级与空间分布，识别物源启动区，为后续启动—输移—堆积链式模拟提供物源输入。</p>
+                <h2>二、输入数据</h2>
+                <table><tbody>
+                  <tr><td>参数</td><td>格式</td><td>说明</td></tr>
+                  <tr><td>降雨栅格路径</td><td>.tif，可多选</td><td>多时相降雨量数据，用于入渗与产流计算</td></tr>
+                  <tr><td>温度栅格路径</td><td>.tif，可多选</td><td>与降雨数据时间序列对应，用于融冰量计算</td></tr>
+                  <tr><td>体积含冰量</td><td>0–1（无量纲）</td><td>冰川区冰体体积占比，默认 0.2；含冰量越高，同等升温条件下的产流与启动量越大</td></tr>
+                </tbody></table>
+                <h2>三、输出与渲染</h2>
+                <ul>
+                  <li>由后端 SDP_Start 接口返回启动物源结果（含 ZMAX 分布），前端渲染最后一帧并自动定位到结果范围；</li>
+                  <li>结果以 GeoJSON 形式加载，可在资源目录中开关图层、调整透明度。</li>
+                </ul>
+                <h2>四、运行提示</h2>
+                <ul>
+                  <li>完整计算约需数分钟，运行期间请勿关闭页面；</li>
+                  <li>当前版本由后端使用默认数据路径计算，界面上的栅格选择入口为后续接入预留。</li>
+                </ul>
+              </div>
+            </el-dialog>
             <p id="name_par_gbm" style="margin-left:28px;margin-top:30px;font-size:18px;color:#2763ca">模型参数</p>
             <el-form :model="formSDP" label-width="auto" style="max-width:600px" class="form_avaflow">
               <el-form-item label="降雨栅格路径" label-position="right" label-width="140px">
@@ -3177,8 +3205,53 @@
                   <span class="model-dialog-title">全域风险脆弱性分析</span>
                   <span class="model-dialog-subtitle">全域风险评估参数配置</span>
                 </div>
+                <el-tooltip content="查看参数说明" placement="top">
+                  <el-icon class="help-icon" @click="openHelpDialog_quanyu = true">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
               </div>
             </template>
+            <el-dialog
+              v-model="openHelpDialog_quanyu"
+              class="model-help-dialog"
+              width="1200px"
+              :close-on-click-modal="false"
+              top="70px"
+            >
+              <template #title>
+                <div class="model-help-head">
+                  <span class="model-help-title">全域风险脆弱性分析</span>
+                  <span class="model-help-subtitle">参数说明</span>
+                </div>
+              </template>
+              <div id="quanyu-model-info" class="help-body">
+                <h2>一、模型目的</h2>
+                <p>以 12 项孕灾环境因子栅格为输入，统一重采样与归一化后按权重叠加，输出全域尺度的风险脆弱性分级结果，用于识别高风险区并支撑防治规划。</p>
+                <h2>二、输入因子（栅格 .tif）</h2>
+                <table><tbody>
+                  <tr><td>因子</td><td>说明</td></tr>
+                  <tr><td>平均高程</td><td>地形基准面，间接反映气温与冰川发育条件</td></tr>
+                  <tr><td>地形起伏度</td><td>高差变化，控制势能与物质搬运能力</td></tr>
+                  <tr><td>流域面积</td><td>汇水规模，影响径流与物源汇集</td></tr>
+                  <tr><td>地层岩性</td><td>岩性分类栅格，反映抗侵蚀能力</td></tr>
+                  <tr><td>断层密度</td><td>构造活动强度与岩体破碎程度</td></tr>
+                  <tr><td>土壤类型</td><td>土壤可蚀性差异</td></tr>
+                  <tr><td>距水系距离</td><td>距水系越近，承灾暴露度越高</td></tr>
+                  <tr><td>河网密度</td><td>汇流通道发育程度</td></tr>
+                  <tr><td>降雨数据</td><td>降水驱动因子</td></tr>
+                  <tr><td>土地利用</td><td>地表覆被与人类活动影响</td></tr>
+                  <tr><td>距公路距离</td><td>道路承灾体可达性与暴露度</td></tr>
+                  <tr><td>NDVI</td><td>植被覆盖度，影响水土保持能力</td></tr>
+                </tbody></table>
+                <h2>三、运行说明</h2>
+                <ul>
+                  <li>12 项因子需全部选择，缺项会在提交时逐一提示；</li>
+                  <li>提交后由后端完成重采样、归一化与加权叠加，约 10 秒；</li>
+                  <li>计算完成后自动加载脆弱性分级图层，可在资源目录中开关与调节透明度。</li>
+                </ul>
+              </div>
+            </el-dialog>
             <p id="name_par_gbm" class="quanyu-section-label">栅格数据</p>
             <el-form label-position="top" class="form_gbm quanyu-form">
               <el-form-item v-for="item in quanyuFileItems" :key="item.key" :label="item.label" label-position="top" class="quanyu-file-field">
@@ -3246,43 +3319,21 @@
                 </div>
                 <el-dialog
                   v-model="openHelpDialog_inverseV"
+                  class="model-help-dialog"
                   width="1200px"
-                  max-height="600px"
                   :close-on-click-modal="false"
-                  position="absolute"
                   top="70px"
-                  style="
-                    background-image: url('./CS/src/assets/img/fz174.png');
-                    background-size: cover; /* 让背景图铺满对话框 */
-                    background-position: center; /* 背景图居中 */
-                    background-color: rgba(0, 0, 130, 0.5);
-                  "
-                >
+                  >
                   <template #title>
-                    <span
-                      style="
-                        color: white;
-                        font-size: 26px;
-                        display: block;
-                        text-align: center;
-                      "
-                      >基于位移监测滑坡预警说明文档</span
-                    >
+                    <div class="model-help-head">
+                      <span class="model-help-title">基于位移监测滑坡预警</span>
+                      <span class="model-help-subtitle">参数说明</span>
+                    </div>
                   </template>
                   <div
                     id="landslide-warning-model-info"
-                    style="
-                      width: 100%;
-                      max-width: 1000px;
-                      margin: 0 auto;
-                      padding: 20px;
-                      font-family: Arial, sans-serif;
-                      max-height: 600px;
-                      overflow-y: auto;
-                      -ms-overflow-style: none;
-                      scrollbar-width: none;
-                    "
-                  >
+                    class="help-body"
+                    >
                     <h2
                       style="font-size: 20px; color: #444; margin: 18px 0 10px"
                     >
@@ -3682,43 +3733,21 @@
                 </div>
                 <el-dialog
                   v-model="openHelpDialog_seismic"
+                  class="model-help-dialog"
                   width="1200px"
-                  max-height="600px"
                   :close-on-click-modal="false"
-                  position="absolute"
                   top="70px"
-                  style="
-                    background-image: url('./CS/src/assets/img/fz174.png');
-                    background-size: cover; /* 让背景图铺满对话框 */
-                    background-position: center; /* 背景图居中 */
-                    background-color: rgba(0, 0, 130, 0.5);
-                  "
-                >
+                  >
                   <template #title>
-                    <span
-                      style="
-                        color: white;
-                        font-size: 26px;
-                        display: block;
-                        text-align: center;
-                      "
-                      >冰川泥石流监测预警模型说明文档</span
-                    >
+                    <div class="model-help-head">
+                      <span class="model-help-title">冰川泥石流监测预警模型</span>
+                      <span class="model-help-subtitle">参数说明</span>
+                    </div>
                   </template>
                   <div
                     id="debris-flow-signal-detection-info"
-                    style="
-                      width: 100%;
-                      max-width: 1000px;
-                      margin: 0 auto;
-                      padding: 20px;
-                      font-family: Arial, sans-serif;
-                      max-height: 600px;
-                      overflow-y: auto;
-                      -ms-overflow-style: none;
-                      scrollbar-width: none;
-                    "
-                  >
+                    class="help-body"
+                    >
                     <h2
                       style="font-size: 20px; color: #444; margin: 18px 0 10px"
                     >
@@ -4335,8 +4364,46 @@
                 :style="{ color: cfg.accent, borderColor: cfg.accent }"
                 >{{ cfg.tagline }}</span
               >
+              <el-tooltip content="查看参数说明" placement="top">
+                <el-icon class="help-icon" @click="cfg.helpVisible = true">
+                  <QuestionFilled />
+                </el-icon>
+              </el-tooltip>
             </div>
           </template>
+          <el-dialog
+            v-model="cfg.helpVisible"
+            class="model-help-dialog"
+            width="1200px"
+            :close-on-click-modal="false"
+            top="70px"
+          >
+            <template #title>
+              <div class="model-help-head">
+                <span class="model-help-title">{{ cfg.title }}</span>
+                <span class="model-help-subtitle">参数说明</span>
+              </div>
+            </template>
+            <div class="help-body">
+              <h2>一、功能目的</h2>
+              <p>{{ cfg.desc }}</p>
+              <h2>二、输入参数</h2>
+              <table><tbody>
+                <tr><td>参数</td><td>说明</td></tr>
+                <tr><td>{{ cfg.areaLabel }}</td><td>在三维地图上手绘闭合多边形作为调控范围：左键逐点落点，右键结束绘制，至少需要 3 个顶点</td></tr>
+                <tr><td>{{ cfg.raiseLabel }}</td><td>单位：米。将绘制范围内的底床整体抬升该高度，模拟坝体或护底高程</td></tr>
+                <tr><td>底床与水深数据</td><td>沿用「洪水泥石流启动动力学模型」的输入数据（zb / zl / hw），未选择文件时使用内置示例数据</td></tr>
+              </tbody></table>
+              <h2>三、运行流程</h2>
+              <ol>
+                <li>点击「在地图上绘制」，沿目标沟道绘制闭合范围；</li>
+                <li>填写{{ cfg.raiseLabel }}，点击「{{ cfg.runText }}」；</li>
+                <li>后端在抬升后的地形上重新执行动力学计算，前端加载结果图层供对比查看。</li>
+              </ol>
+              <h2>四、提示</h2>
+              <p>{{ cfg.hint }}</p>
+            </div>
+          </el-dialog>
           <div class="terrain-panel">
             <p class="terrain-desc" :style="{ borderLeftColor: cfg.accent }">
               {{ cfg.desc }}
@@ -4441,6 +4508,9 @@ const openHelpDialog_flood = ref(false)
 const openHelpDialog_inverseV = ref(false)
 const openHelpDialog_gbm = ref(false)
 const openHelpDialog_seismic = ref(false)
+const openHelpDialog_avainit = ref(false)
+const openHelpDialog_sdp = ref(false)
+const openHelpDialog_quanyu = ref(false)
 const uploadRef = ref(null)
 const selectedDisplFile = ref(null)
 const fileName_inverseV = ref('')
@@ -5159,6 +5229,7 @@ const terrainRegulationConfigs = reactive([
   {
     kind: 'chain',
     visible: false,
+    helpVisible: false,
     title: '灾害链断链调控技术',
     tagline: '关键链节阻截',
     accent: '#5ab0ff',
@@ -5173,6 +5244,7 @@ const terrainRegulationConfigs = reactive([
   {
     kind: 'along',
     visible: false,
+    helpVisible: false,
     title: '冰川泥石流沿程调控技术',
     tagline: '沿程护底消能',
     accent: '#24c8a0',
@@ -7539,6 +7611,208 @@ const resetSeismicInputs = () => {
 
   .model-dialog-title {
     font-size: 19px;
+  }
+}
+</style>
+<style>
+/* ===== 数值计算模型「查看参数说明」弹窗统一样式 ===== */
+.model-help-dialog {
+  max-width: 94vw;
+  border-radius: 14px;
+  overflow: hidden;
+  background-color: rgba(5, 15, 44, 0.98) !important;
+  background-image: linear-gradient(180deg, rgba(12, 34, 88, 0.94), rgba(4, 11, 32, 0.98)),
+    url('../assets/img/fz174.png') !important;
+  background-size: cover, cover !important;
+  background-position: center, center !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(90, 176, 255, 0.35) !important;
+}
+
+.model-help-dialog .el-dialog__header {
+  margin: 0;
+  padding: 16px 24px 12px;
+  border-bottom: 1px solid rgba(96, 168, 255, 0.28);
+  background: linear-gradient(90deg, rgba(24, 78, 170, 0.55), rgba(10, 30, 80, 0.05));
+}
+
+.model-help-dialog .el-dialog__headerbtn {
+  top: 14px;
+  right: 14px;
+  font-size: 18px;
+}
+
+.model-help-dialog .el-dialog__headerbtn .el-dialog__close {
+  color: #cfe6ff;
+}
+
+.model-help-dialog .el-dialog__body {
+  padding: 0;
+}
+
+.model-help-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-right: 34px;
+}
+
+.model-help-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #eaf4ff;
+  letter-spacing: 0.5px;
+}
+
+.model-help-subtitle {
+  font-size: 12px;
+  line-height: 18px;
+  color: #7fd4ff;
+  border: 1px solid rgba(127, 212, 255, 0.55);
+  border-radius: 999px;
+  padding: 1px 10px;
+  background: rgba(20, 90, 170, 0.25);
+  white-space: nowrap;
+}
+
+.model-help-dialog .help-body {
+  max-height: 62vh;
+  overflow-y: auto;
+  padding: 8px 26px 26px;
+  font-family: 'Microsoft YaHei', Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.8;
+  color: #cfdcf2;
+  scrollbar-width: thin;
+  scrollbar-color: #3c8dff rgba(8, 20, 50, 0.6);
+}
+
+.model-help-dialog .help-body::-webkit-scrollbar {
+  width: 10px;
+}
+
+.model-help-dialog .help-body::-webkit-scrollbar-track {
+  background: rgba(8, 20, 50, 0.6);
+  border-radius: 8px;
+}
+
+.model-help-dialog .help-body::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #3c8dff, #1b5fd0);
+  border-radius: 8px;
+  border: 2px solid rgba(5, 15, 44, 0.9);
+}
+
+/* 正文统一覆盖原先写死在标签里的浅色主题颜色 */
+.model-help-dialog .help-body *:not(a) {
+  color: #cfdcf2 !important;
+}
+
+.model-help-dialog .help-body p {
+  margin: 10px 0 16px;
+}
+
+.model-help-dialog .help-body h2 {
+  font-size: 18px !important;
+  color: #9fe0ff !important;
+  margin: 22px 0 10px !important;
+  padding: 6px 0 6px 12px;
+  border-left: 3px solid #35a8ff;
+  background: linear-gradient(90deg, rgba(36, 110, 200, 0.28), rgba(36, 110, 200, 0));
+  border-radius: 0 6px 6px 0;
+}
+
+.model-help-dialog .help-body h3 {
+  font-size: 16px !important;
+  color: #b8e6ff !important;
+  margin: 16px 0 8px !important;
+}
+
+.model-help-dialog .help-body h4 {
+  font-size: 15px !important;
+  color: #b8e6ff !important;
+}
+
+.model-help-dialog .help-body strong {
+  color: #ffd98a !important;
+  font-weight: 600;
+}
+
+.model-help-dialog .help-body a {
+  color: #7fd4ff !important;
+  text-decoration: underline;
+}
+
+.model-help-dialog .help-body ul,
+.model-help-dialog .help-body ol {
+  margin: 8px 0 16px;
+  padding-left: 24px;
+}
+
+.model-help-dialog .help-body li {
+  margin-bottom: 6px;
+}
+
+.model-help-dialog .help-body li::marker {
+  color: #4fb2ff !important;
+}
+
+.model-help-dialog .help-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0 20px;
+  font-size: 14px;
+  background: rgba(8, 22, 58, 0.72);
+}
+
+.model-help-dialog .help-body th,
+.model-help-dialog .help-body td {
+  border: 1px solid rgba(96, 168, 255, 0.28) !important;
+  padding: 9px 12px !important;
+  text-align: left;
+  vertical-align: top;
+}
+
+.model-help-dialog .help-body tr {
+  background: transparent !important;
+}
+
+.model-help-dialog .help-body tbody tr:first-child td {
+  background: rgba(40, 110, 205, 0.38) !important;
+  color: #eaf4ff !important;
+  font-weight: 600 !important;
+}
+
+.model-help-dialog .help-body tbody tr:nth-child(even) td {
+  background: rgba(16, 40, 92, 0.4) !important;
+}
+
+.model-help-dialog .help-body img {
+  display: block;
+  max-width: 100%;
+  margin: 14px auto;
+  border-radius: 10px;
+  border: 1px solid rgba(96, 168, 255, 0.3);
+}
+
+.model-help-dialog .help-body code,
+.model-help-dialog .help-body pre {
+  font-family: Consolas, 'Courier New', monospace;
+  background: rgba(8, 20, 50, 0.85) !important;
+  border: 1px solid rgba(96, 168, 255, 0.25);
+  border-radius: 6px;
+}
+
+.model-help-dialog .help-body code {
+  padding: 1px 6px;
+}
+
+.model-help-dialog .help-body pre {
+  padding: 12px 14px;
+  overflow-x: auto;
+}
+
+@media (max-width: 1360px) {
+  .model-help-dialog .help-body {
+    max-height: 58vh;
   }
 }
 </style>
