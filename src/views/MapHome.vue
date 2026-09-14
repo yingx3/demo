@@ -1508,6 +1508,43 @@ async function loadShpFromBackend({
   }
 }
 
+// 易发性结果地图图例 DOM（与 applySuscSymbology 的配色一一对应）
+let suscLegendEl = null
+
+function renderSuscLegend(counts, total) {
+  if (suscLegendEl) {
+    suscLegendEl.remove()
+    suscLegendEl = null
+  }
+  const items = Object.values(counts || {}).sort((a, b) => b.order - a.order)
+  if (!items.length || !total) return
+
+  const el = document.createElement('div')
+  el.style.cssText =
+    'position:fixed;bottom:30px;left:30px;z-index:999;background:rgba(0,0,0,0.8);border:1px solid #38e1ff;border-radius:6px;padding:10px 14px;color:#fff;font-size:12px;'
+  el.innerHTML = `
+    <div style="font-weight:600;margin-bottom:6px;color:#38e1ff">易发性等级（子流域）</div>
+    ${items
+      .map(
+        it => `
+      <div style="display:flex;align-items:center;gap:8px;margin:3px 0">
+        <span style="width:20px;height:14px;background:${it.color};border-radius:2px;flex-shrink:0"></span>
+        <span style="min-width:34px">${it.label}</span>
+        <span style="color:#999;font-size:11px">${it.count} 块 · ${((it.count / total) * 100).toFixed(1)}%</span>
+      </div>
+    `,
+      )
+      .join('')}
+    <div id="susc-legend-close" style="position:absolute;top:2px;right:8px;cursor:pointer;color:#999">×</div>
+  `
+  document.body.appendChild(el)
+  el.querySelector('#susc-legend-close').onclick = () => {
+    el.remove()
+    if (suscLegendEl === el) suscLegendEl = null
+  }
+  suscLegendEl = el
+}
+
 function applySuscSymbology(dataSource) {
   console.log(
     'applySuscSymbology: called',
@@ -1526,24 +1563,25 @@ function applySuscSymbology(dataSource) {
   // 与平台「风险图例」对齐的 5 级色带：极高=红、高=橙、中=黄、低=蓝（+极低=绿）
   // 低等级透明度低、高等级透明度高，保留底图地形纹理的同时突出危险区
   const ramp = {
+    // label/order 供地图图例显示与排序使用
     // 英文下划线形式
-    very_low: { color: '#43a047', alpha: 0.45 }, // 绿色
-    verylow: { color: '#43a047', alpha: 0.45 },
-    low: { color: '#2a82e4', alpha: 0.55 }, // 蓝色
-    middle: { color: '#e6c300', alpha: 0.68 }, // 黄色
-    midlle: { color: '#e6c300', alpha: 0.68 }, // 容错拼写
-    medium: { color: '#e6c300', alpha: 0.68 },
-    high: { color: '#e68d1a', alpha: 0.8 }, // 橙色
-    very_high: { color: '#d43030', alpha: 0.9 }, // 红色
-    veryhigh: { color: '#d43030', alpha: 0.9 },
+    very_low: { color: '#43a047', alpha: 0.45, label: '极低', order: 1 }, // 绿色
+    verylow: { color: '#43a047', alpha: 0.45, label: '极低', order: 1 },
+    low: { color: '#2a82e4', alpha: 0.55, label: '低', order: 2 }, // 蓝色
+    middle: { color: '#e6c300', alpha: 0.68, label: '中', order: 3 }, // 黄色
+    midlle: { color: '#e6c300', alpha: 0.68, label: '中', order: 3 }, // 容错拼写
+    medium: { color: '#e6c300', alpha: 0.68, label: '中', order: 3 },
+    high: { color: '#e68d1a', alpha: 0.8, label: '高', order: 4 }, // 橙色
+    very_high: { color: '#d43030', alpha: 0.9, label: '极高', order: 5 }, // 红色
+    veryhigh: { color: '#d43030', alpha: 0.9, label: '极高', order: 5 },
 
     // 中文 key（根据 debug 输出）
-    极低: { color: '#43a047', alpha: 0.45 },
-    低: { color: '#2a82e4', alpha: 0.55 },
-    中: { color: '#e6c300', alpha: 0.68 },
-    中等: { color: '#e6c300', alpha: 0.68 },
-    高: { color: '#e68d1a', alpha: 0.8 },
-    极高: { color: '#d43030', alpha: 0.9 },
+    极低: { color: '#43a047', alpha: 0.45, label: '极低', order: 1 },
+    低: { color: '#2a82e4', alpha: 0.55, label: '低', order: 2 },
+    中: { color: '#e6c300', alpha: 0.68, label: '中', order: 3 },
+    中等: { color: '#e6c300', alpha: 0.68, label: '中', order: 3 },
+    高: { color: '#e68d1a', alpha: 0.8, label: '高', order: 4 },
+    极高: { color: '#d43030', alpha: 0.9, label: '极高', order: 5 },
   }
 
   // 优先查找的字段名（把 class 放首位）
@@ -1600,6 +1638,20 @@ function applySuscSymbology(dataSource) {
   }
 
   let applied = 0
+  // 各等级块数统计（用于生成地图图例）
+  const counts = {}
+  const bumpCount = style => {
+    const key = style.label
+    if (!counts[key]) {
+      counts[key] = {
+        label: style.label,
+        color: style.color,
+        order: style.order,
+        count: 0,
+      }
+    }
+    counts[key].count++
+  }
   for (const e of entities) {
     try {
       const rawVal = getClassValue(e)
@@ -1616,6 +1668,8 @@ function applySuscSymbology(dataSource) {
         // console.debug('applySuscSymbology: 未匹配等级 key', rawVal, { rawTrim, rawLower, keyNorm });
         continue
       }
+
+      bumpCount(style)
 
       const color = Cesium.Color.fromCssColorString(style.color).withAlpha(
         style.alpha,
@@ -1659,6 +1713,8 @@ function applySuscSymbology(dataSource) {
   console.log(
     `applySuscSymbology: success, applied ${applied} / ${entities.length}`,
   )
+  // 与配色一一对应的地图图例（显示各等级块数与占比）
+  renderSuscLegend(counts, applied)
   return applied
 }
 
@@ -7078,6 +7134,8 @@ const cleanentity = () => {
     }
   }
   if (sdpLegendEl) { sdpLegendEl.remove(); sdpLegendEl = null }
+  // 移除易发性结果图例
+  if (suscLegendEl) { suscLegendEl.remove(); suscLegendEl = null }
   // 9. 移除全域风险结果图层及图例
   if (fullRiskResultLayer && !fullRiskResultLayer.isDestroyed?.()) {
     try { viewer.value.scene.imageryLayers.remove(fullRiskResultLayer) } catch (e) {}
