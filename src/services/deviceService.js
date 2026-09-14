@@ -160,3 +160,27 @@ export const calculateDebrisFlow = (
   const detected = result.some(x => x === 1)
   return { resultArray: result, detected }
 }
+
+// ===== [新增] 地震动（DZD）波形接口 =====
+// 数据源：TCPClient.java 输出的 wave_<X|Y|Z>_*.csv（250Hz / 每文件 30000 点）
+// 经 node 服务 /dzd/* 桥接，字段与 TCPClient 的 CSV 表头保持一致
+export async function fetchDzdStatus() {
+  const res = await axios.get('/node/dzd/status')
+  return res.data
+}
+
+export async function fetchDzdFiles(params = {}) {
+  const res = await axios.get('/node/dzd/files', { params })
+  return res.data
+}
+
+export async function fetchDzdWave(params = {}) {
+  const res = await axios.get('/node/dzd/wave', { params })
+  return res.data
+}
+
+export async function predictDzd(payload = {}) {
+  const res = await axios.post('/node/dzd/predict', payload)
+  return res.data
+}
+

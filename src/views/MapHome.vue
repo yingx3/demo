@@ -605,6 +605,11 @@ import {
   calculateDebrisFlow,
   addLayerDZDdevice,
   removeLayerDZDdevice,
+  // [新增] 地震动波形接口（数据源与 TCPClient.java 的 CSV 输出一致）
+  fetchDzdStatus,
+  fetchDzdFiles,
+  fetchDzdWave,
+  predictDzd,
 } from '../services/deviceService.js'
 import { ElMessageBox } from 'element-plus'
 // import { Popover } from 'ant-design-vue'
@@ -5215,7 +5220,10 @@ const showWaveform = (records, resultArray) => {
 
 // `calculateDebrisFlow` 已提取到 `services/deviceService.js`
 
-const addlayer_DZDdevice = async () => {
+// [旧逻辑保留] 原实现依赖已停止服务的 /device/all、/device/latest（localhost:3001）
+// 与数据库表 dzd_device_data 的历史数据（2025-11-08 的三个设备）。
+// 现改由 TCPClient.java 输出的 wave_*.csv 驱动，函数体保留以备回退。
+const addlayer_DZDdevice_legacy = async () => {
   try {
     const targetIds = [41109656, 41126040, 41158808]
 
@@ -5308,6 +5316,230 @@ const addlayer_DZDdevice = async () => {
     // })
   } catch (err) {
     console.error('加载地震监测设备失败:', err)
+  }
+}
+
+// ===== [新增] 地震动设备：与 TCPClient.java 的输出保持一致 =====
+// TCPClient.java（backend/hd-mao_0322/src/main/java/com/tcp/client/TCPClient.java）：
+//   · 采样率 250 Hz（SAMPLE_RATE=250，采样间隔 4ms）
+//   · 每个文件最多 30000 点（tcp.wave.maxPointsPerFile）
+//   · CSV 表头：Timestamp,Direction,Voltage_mV（早期样例为 Index,Voltage_mV）
+//   · 设备 ID 默认 5200369（可在 src/node/dzd-devices.json 中维护）
+// 平台侧链路：wave_*.csv → /dzd/status|files|wave → 波形展示
+//                        → /dzd/predict → suanfa/dzd 的 Transformer1D 识别
+const DZD_SAMPLE_RATE = 250
+
+let dzdPickHandler = null
+let dzdWaveChart = null
+
+// 渲染波形（X 轴为相对秒数，Y 轴为电压 mV，与 CSV 的 Voltage_mV 对应）
+const renderDzdWaveChart = wave => {
+  const dom = document.getElementById('chart')
+  if (!dom || !wave) return null
+  if (dzdWaveChart && dzdWaveChart.getDom() !== dom) {
+    dzdWaveChart.dispose()
+    dzdWaveChart = null
+  }
+  if (!dzdWaveChart) dzdWaveChart = echarts.init(dom)
+  const start = Number(wave.startTime) || 0
+  const x = (wave.time || []).map(t => ((Number(t) - start) / 1000).toFixed(2))
+  const y = (wave.value || []).map(v => Number(v))
+  dzdWaveChart.setOption(
+    {
+      title: {
+        text: `${wave.file || '波形'} · ${wave.direction || '-'} 方向 · ${
+          wave.sampleRate || DZD_SAMPLE_RATE
+        } Hz`,
+        left: 'center',
+        textStyle: { fontSize: 12 },
+      },
+      tooltip: { trigger: 'axis' },
+      grid: { left: 64, right: 24, top: 42, bottom: 46 },
+      xAxis: {
+        type: 'category',
+        data: x,
+        name: '时间(s)',
+        axisLabel: { show: false },
+      },
+      yAxis: { type: 'value', name: '电压(mV)' },
+      dataZoom: [
+        { type: 'slider', start: 0, end: 100 },
+        { type: 'inside' },
+      ],
+      series: [
+        {
+          name: 'Voltage_mV',
+          type: 'line',
+          data: y,
+          showSymbol: false,
+          lineStyle: { width: 1 },
+        },
+      ],
+    },
+    true,
+  )
+  dzdWaveChart.resize()
+  return dzdWaveChart
+}
+
+// 更新识别结果文案（Transformer1D 二分类 + Sigmoid 概率）
+const updateDzdPredictText = result => {
+  const el = document.getElementById('dzdPredictStatus')
+  if (!el) return
+  const probability = result?.probability
+  if (probability === null || probability === undefined) {
+    el.innerHTML = `<span style="color:#c0392b">Transformer1D：识别失败（${
+      result?.error || '无返回结果'
+    }）</span>`
+    return
+  }
+  const pct = (Number(probability) * 100).toFixed(2)
+  el.innerHTML = result.detected
+    ? `<span style="color:#c0392b;font-weight:600">Transformer1D：检测到泥石流风险（概率 ${pct}%）</span>`
+    : `<span style="color:#1e7a37">Transformer1D：未检测到泥石流（概率 ${pct}%）</span>`
+}
+
+// 打开地震动弹窗：波形 + 模型识别结果
+const openDzdPanel = async entity => {
+  const device = entity?.dzdDevice || {}
+  popup.style.left = `${viewer.value.canvas.clientWidth / 2 + 100}px`
+  popup.style.top = `${viewer.value.canvas.clientHeight / 2 - 180}px`
+  popup.style.display = 'block'
+  popup.innerHTML = `
+    <p><strong>设备：</strong>${device.name || device.deviceId || '-'}（ID ${
+      device.deviceId || '-'
+    }）</p>
+    <p id="dzdWaveMeta">波形：加载中…</p>
+    <p id="dzdPredictStatus">Transformer1D 识别中…</p>
+    <div id="chart" style="width: 520px; height: 320px;"></div>
+    <button id="dzdCloseBtn">关闭</button>
+  `
+  const closeBtn = document.getElementById('dzdCloseBtn')
+  if (closeBtn) closeBtn.addEventListener('click', hidePopup)
+
+  try {
+    const status = await fetchDzdStatus()
+    const metaEl = document.getElementById('dzdWaveMeta')
+    const latest = status?.latest
+    if (!latest) {
+      if (metaEl) metaEl.textContent = `波形：未发现 wave_*.csv（目录 ${status?.waveDir || '-'}）`
+      updateDzdPredictText({ probability: null, error: '无波形文件' })
+      return
+    }
+    if (metaEl) {
+      metaEl.textContent = `波形：${latest.name} · 采样率 ${
+        status.sampleRate || DZD_SAMPLE_RATE
+      } Hz · 文件数 ${status.fileCount}`
+    }
+    const wave = await fetchDzdWave({ file: latest.name, max: 6000 })
+    renderDzdWaveChart(wave)
+    const result = await predictDzd({ file: latest.name })
+    updateDzdPredictText(result)
+  } catch (error) {
+    console.error('地震动波形加载失败:', error)
+    const metaEl = document.getElementById('dzdWaveMeta')
+    const msg = error?.response?.data?.error || error.message
+    if (metaEl) metaEl.textContent = `波形：加载失败（${msg}）`
+    updateDzdPredictText({ probability: null, error: msg })
+  }
+}
+
+// 只注册一次的拾取器：仅响应本图层（isDzdDevice）的点击
+const ensureDzdPickHandler = () => {
+  const v = viewer.value
+  if (dzdPickHandler || !v || !v.scene) return
+  dzdPickHandler = new Cesium.ScreenSpaceEventHandler(v.scene.canvas)
+  dzdPickHandler.setInputAction(async movement => {
+    if (activeMeasureTool.value || terrainDrawHandler) return
+    const picked = v.scene.pick(movement.position)
+    if (!Cesium.defined(picked) || !picked.id || !picked.id.isDzdDevice) return
+    // 关闭 Cesium 默认 InfoBox，只保留本模块弹窗
+    viewer.value.selectedEntity = undefined
+    await openDzdPanel(picked.id)
+  }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+}
+
+// 加载地震动设备：设备与坐标来自 src/node/dzd-devices.json，
+// 波形与识别结果来自 TCPClient 的输出目录（/dzd/*）
+const addlayer_DZDdevice = async () => {
+  try {
+    const status = await fetchDzdStatus()
+    const devices = Array.isArray(status?.devices) ? status.devices : []
+    if (!devices.length) {
+      ElMessage({ message: '未配置地震动设备（src/node/dzd-devices.json）', type: 'warning' })
+      return
+    }
+
+    const old = viewer.value.dataSources._dataSources.find(
+      d => d.guid === layer17_guid.value,
+    )
+    if (old) viewer.value.dataSources.remove(old)
+
+    layer17_guid.value = Cesium.createGuid()
+    const dataSource = new Cesium.CustomDataSource('DZDdevice')
+    dataSource.guid = layer17_guid.value
+    viewer.value.dataSources.add(dataSource)
+
+    devices.forEach(device => {
+      const lng = Number(device.lng)
+      const lat = Number(device.lat)
+      if (!Number.isFinite(lng) || !Number.isFinite(lat)) return
+      dataSource.entities.add({
+        id: `dzd_${device.deviceId}`,
+        name: device.name || `地震动设备 ${device.deviceId}`,
+        // [新增] 本图层标记，供拾取器精确识别
+        isDzdDevice: true,
+        dzdDevice: device,
+        position: Cesium.Cartesian3.fromDegrees(lng, lat, Number(device.height) || 0),
+        billboard: {
+          // [修正] /ng/position.png 当前返回 500，改用站点图钉图标
+          image: '/CS/img/positionBlue.png',
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          width: 32,
+          height: 32,
+        },
+        label: {
+          text: device.name || `设备 ${device.deviceId}`,
+          font: '12px sans-serif',
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          outlineWidth: 2,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          pixelOffset: new Cesium.Cartesian2(0, -34),
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        },
+      })
+    })
+
+    const first = devices[0]
+    // [修正] 竖直俯视：保证设备落在屏幕中央（斜视时设备会被投影到视口外）
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(
+        Number(first.lng),
+        Number(first.lat),
+        20000,
+      ),
+      orientation: {
+        heading: Cesium.Math.toRadians(0),
+        pitch: Cesium.Math.toRadians(-90),
+        roll: 0,
+      },
+    })
+
+    ensureDzdPickHandler()
+    ElMessage({
+      message: `地震动设备已加载（波形文件 ${status.fileCount} 个，采样率 ${
+        status.sampleRate || DZD_SAMPLE_RATE
+      } Hz）`,
+      type: 'success',
+    })
+  } catch (err) {
+    console.error('加载地震动设备失败:', err)
+    ElMessage({
+      message: '加载地震动设备失败：' + (err?.response?.data?.error || err.message),
+      type: 'error',
+    })
   }
 }
 

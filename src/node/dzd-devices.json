@@ -1,0 +1,13 @@
+{
+  "_comment": "地震动设备配置：TCPClient.java 采集程序只输出波形 CSV（无坐标），设备在地图上的位置需在此维护；deviceId 默认与 TCPClient.DEFAULT_DEVICE_ID 保持一致",
+  "devices": [
+    {
+      "deviceId": 5200369,
+      "name": "地震动监测站",
+      "lng": 102.092337,
+      "lat": 30.054334,
+      "height": 0,
+      "directions": ["X", "Y", "Z"]
+    }
+  ]
+}
