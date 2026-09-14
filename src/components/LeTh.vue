@@ -2577,6 +2577,11 @@ async function sumbit_wedget() {
   }
 }
 function onSubmit() {
+  // 未选择预测时间时，后端不会生成任何结果图，先在前端拦截并提示
+  if (!Array.isArray(form.time) || form.time.length === 0) {
+    ElMessage({ message: '请至少选择一个预测时间', type: 'warning' })
+    return
+  }
   dialogVisible.value = false
   ElMessage({ message: '运行中!', type: 'success', duration: 40000 })
   subitForm()
@@ -2585,52 +2590,66 @@ function onSubmit() {
   $emit('timeSelected', form.time)
 }
 const subitForm = () => {
+  // 双保险：没有勾选预测时间时不发起请求
+  if (!Array.isArray(form.time) || form.time.length === 0) {
+    ElMessage({ message: '请至少选择一个预测时间', type: 'warning' })
+    return
+  }
   axios
     .post('/testapi/admin/user/fx', form, { timeout: 400000 })
     .then(response => {
-      const text = response.data
-      // console.log(text)
+      const text =
+        typeof response.data === 'string'
+          ? response.data
+          : JSON.stringify(response.data ?? '')
 
-      // 匹配字符串中的经纬度和图片名称
-      // console.log(form.time.length)
-
-      // 构建图片名称部分的正则表达式
-      let imageNameRegex = ''
-      for (let i = 1; i <= form.time.length; i++) {
-        imageNameRegex += `,图片名称${i}:(\\S+\\.png)`
-      }
-      console.log(imageNameRegex)
-      // 动态构建完整的正则表达式
-      const regex = new RegExp(
-        `左下经度:([\\d.]+),左下纬度:([\\d.]+),右上经度:([\\d.]+),右上纬度:([\\d.]+)` +
-          imageNameRegex,
+      // 经纬度范围与图片名称分开解析（非贪婪）：
+      // 后端返回「左下经度:..,左下纬度:..,右上经度:..,右上纬度:..,图片名称N:xxx.png」
+      // 图片数量与勾选时间数不一致（个别时段失败）时也能拿到已生成的结果图
+      const boxMatch = text.match(
+        /左下经度:([\d.]+),左下纬度:([\d.]+),右上经度:([\d.]+),右上纬度:([\d.]+)/,
       )
+      const pnames = [...text.matchAll(/图片名称\d*:([^\s,]+\.png)/g)].map(m => m[1])
 
-      // 使用构建的正则表达式进行匹配
-      const matches = text.match(regex)
-
-      // console.log(matches)
-
-      if (matches) {
-        const leftlong = Number(matches[1])
-        const leftlat = Number(matches[2])
-        const rightlong = Number(matches[3])
-        const rightlat = Number(matches[4])
-
-        // 提取 pname 参数（从索引 5 开始）
-        const pnames = matches.slice(5)
-        // console.log(pnames)
-
-        // 传递参数给父组件
-        const params = { leftlat, leftlong, rightlat, rightlong, pnames }
+      if (boxMatch && pnames.length > 0) {
+        const params = {
+          leftlat: Number(boxMatch[2]),
+          leftlong: Number(boxMatch[1]),
+          rightlat: Number(boxMatch[4]),
+          rightlong: Number(boxMatch[3]),
+          pnames,
+        }
+        ElMessage.closeAll()
+        ElMessage({
+          message: `计算完成，加载 ${pnames.length} 张结果图...`,
+          type: 'success',
+          duration: 3000,
+        })
         $emit('openLayers', params)
       } else {
-        console.error('没有找到匹配的数据！')
+        // 不再静默失败：把后端原始返回展示出来，便于定位问题
+        ElMessage.closeAll()
+        ElMessage({
+          message: '未获取到结果图：' + (text || '后端返回为空').slice(0, 300),
+          type: 'error',
+          duration: 8000,
+          showClose: true,
+        })
+        console.error('风险源模型未获取到结果图，后端返回:', text)
       }
     })
     .catch(error => {
-      console.error(error)
-      // 处理错误
+      ElMessage.closeAll()
+      const emsg = error.response?.data ?? error.message ?? error
+      ElMessage({
+        message:
+          '风险源模型请求失败: ' +
+          (typeof emsg === 'string' ? emsg : JSON.stringify(emsg)).slice(0, 300),
+        type: 'error',
+        duration: 8000,
+        showClose: true,
+      })
+      console.error('subitForm error:', error)
     })
 }
 // 洪水泥石流启动动力学模型（python_port 双层浅水流数值内核）
