@@ -1336,7 +1336,7 @@
           <el-button :plain="true" @click="dialogBeta = true"
             ><span>山洪泥石流启动动力学模型</span></el-button
           >
-          <el-dialog v-model="dialogBeta" title="山洪泥石流启动动力学模型" width="520" :close-on-click-modal="false" class="dialog_quanyu" @open="resetBetaInputs">
+          <el-dialog v-model="dialogBeta" title="山洪泥石流启动动力学模型" width="520" :close-on-click-modal="false" class="dialog_quanyu dialog_fullRisk" @open="resetBetaInputs">
             <template #header>
               <div class="model-dialog-header">
                 <div class="model-dialog-heading">
@@ -1387,24 +1387,45 @@
                 </ul>
               </div>
             </el-dialog>
-            <p id="name_par_gbm" style="margin-left:24px;margin-top:8px;font-size:18px;color:#2763ca">输入数据</p>
-            <el-form label-width="auto" style="max-width:600px" class="form_gbm">
-              <el-form-item v-for="item in betaFileItems" :key="item.key" :label="item.label" label-position="right" label-width="130px">
-                <el-input v-model="betaFileNames[item.key]" :placeholder="item.placeholder" style="width:200px" readonly>
+            <p class="quanyu-section-label">输入数据</p>
+            <el-form label-position="top" class="quanyu-form">
+              <el-form-item
+                v-for="item in betaFileItems"
+                :key="item.key"
+                :label="item.label"
+                label-position="top"
+                class="quanyu-file-field"
+              >
+                <el-input
+                  v-model="betaFileNames[item.key]"
+                  :placeholder="item.placeholder"
+                  readonly
+                >
                   <template #append>
-                    <el-upload :ref="el => { if (el) betaUploadRefs[item.key] = el }" :auto-upload="false" :show-file-list="false" accept=".tif,.tiff" @change="(f,fs) => handleBetaFile(item.key, f, fs)">
-                      <el-button style="border:none;color:white;padding:0;margin-left:8px" @click.stop="triggerBetaUpload(item.key)">
+                    <el-upload
+                      :ref="el => { if (el) betaUploadRefs[item.key] = el }"
+                      :auto-upload="false"
+                      :show-file-list="false"
+                      accept=".tif,.tiff"
+                      @change="(f, fs) => handleBetaFile(item.key, f, fs)"
+                    >
+                      <el-button
+                        class="quanyu-upload-trigger"
+                        @click.stop="triggerBetaUpload(item.key)"
+                      >
                         <i class="iconfont icon-daoru"></i>
                       </el-button>
                     </el-upload>
                   </template>
                 </el-input>
               </el-form-item>
-              <el-form-item>
-                <div style="display:flex;justify-content:center;gap:12px;width:100%">
-                  <el-button type="primary" @click="submitBeta">运行</el-button>
-                  <el-button @click="dialogBeta = false">取消</el-button>
-                </div>
+              <el-form-item class="quanyu-actions">
+                <el-button class="quanyu-submit" type="primary" @click="submitBeta"
+                  >运行</el-button
+                >
+                <el-button class="quanyu-cancel" @click="dialogBeta = false"
+                  >取消</el-button
+                >
               </el-form-item>
             </el-form>
           </el-dialog>
@@ -2294,8 +2315,7 @@
             title="泥石流启动物源计算模型"
             width="520"
             :close-on-click-modal="false"
-            class="dialog_avaflow"
-            style="height:480px"
+            class="dialog_quanyu dialog_fullRisk"
             @open="resetSdpInputs"
           >
             <template #header>
@@ -2346,24 +2366,54 @@
                 </ul>
               </div>
             </el-dialog>
-            <p id="name_par_gbm" style="margin-left:28px;margin-top:30px;font-size:18px;color:#2763ca">模型参数</p>
-            <el-form :model="formSDP" label-width="auto" style="max-width:600px" class="form_avaflow">
-              <el-form-item label="降雨栅格路径" label-position="right" label-width="140px">
-                <el-input v-model="fileNameRain" placeholder="选择降雨 tif 文件（可多选）" readonly style="width:220px">
+            <p class="quanyu-section-label">模型参数</p>
+            <el-form :model="formSDP" label-position="top" class="quanyu-form">
+              <el-form-item
+                label="降雨栅格路径"
+                label-position="top"
+                class="quanyu-file-field"
+              >
+                <el-input
+                  v-model="fileNameRain"
+                  placeholder="选择降雨 tif 文件（可多选）"
+                  readonly
+                >
                   <template #append>
-                    <el-upload ref="uploadRainRef" :auto-upload="false" :show-file-list="false" :multiple="true" accept=".tif,.tiff" @change="handleFileRain">
-                      <el-button @click.stop="triggerUploadRain" style="border:none;color:white;padding:0;margin-left:8px">
+                    <el-upload
+                      ref="uploadRainRef"
+                      :auto-upload="false"
+                      :show-file-list="false"
+                      :multiple="true"
+                      accept=".tif,.tiff"
+                      @change="handleFileRain"
+                    >
+                      <el-button class="quanyu-upload-trigger" @click.stop="triggerUploadRain">
                         <i class="iconfont icon-daoru"></i>
                       </el-button>
                     </el-upload>
                   </template>
                 </el-input>
               </el-form-item>
-              <el-form-item label="温度栅格路径" label-position="right" label-width="140px">
-                <el-input v-model="fileNameTemp" placeholder="选择温度 tif 文件（可多选）" readonly style="width:220px">
+              <el-form-item
+                label="温度栅格路径"
+                label-position="top"
+                class="quanyu-file-field"
+              >
+                <el-input
+                  v-model="fileNameTemp"
+                  placeholder="选择温度 tif 文件（可多选）"
+                  readonly
+                >
                   <template #append>
-                    <el-upload ref="uploadTempRef" :auto-upload="false" :show-file-list="false" :multiple="true" accept=".tif,.tiff" @change="handleFileTemp">
-                      <el-button @click.stop="triggerUploadTemp" style="border:none;color:white;padding:0;margin-left:8px">
+                    <el-upload
+                      ref="uploadTempRef"
+                      :auto-upload="false"
+                      :show-file-list="false"
+                      :multiple="true"
+                      accept=".tif,.tiff"
+                      @change="handleFileTemp"
+                    >
+                      <el-button class="quanyu-upload-trigger" @click.stop="triggerUploadTemp">
                         <i class="iconfont icon-daoru"></i>
                       </el-button>
                     </el-upload>
@@ -2371,11 +2421,11 @@
                 </el-input>
               </el-form-item>
               <!-- 输出目录 暂时注释
-              <el-form-item label="输出目录" label-position="right" label-width="140px">
-                <el-input v-model="fileNameOutput" placeholder="选择输出文件（可多选）" readonly style="width:220px">
+              <el-form-item label="输出目录" label-position="top" class="quanyu-file-field">
+                <el-input v-model="fileNameOutput" placeholder="选择输出文件（可多选）" readonly>
                   <template #append>
                     <el-upload ref="uploadOutputRef" :auto-upload="false" :show-file-list="false" :multiple="true" @change="handleFileOutput">
-                      <el-button @click.stop="triggerUploadOutput" style="border:none;color:white;padding:0;margin-left:8px">
+                      <el-button class="quanyu-upload-trigger" @click.stop="triggerUploadOutput">
                         <i class="iconfont icon-daoru"></i>
                       </el-button>
                     </el-upload>
@@ -2383,16 +2433,26 @@
                 </el-input>
               </el-form-item>
               -->
-              <el-form-item label="体积含冰量" label-position="right" label-width="140px">
-                <el-input v-model="formSDP.ice_content" type="number" step="0.01" placeholder="0.2" style="width:160px" />
+              <el-form-item label="体积含冰量" label-position="top">
+                <el-input
+                  v-model="formSDP.ice_content"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.2"
+                />
               </el-form-item>
-              <el-form-item style="margin-top:-12px">
-                <div style="display:flex;justify-content:center;gap:12px;width:100%">
-                  <el-button type="primary" @click="submitSDP" :loading="sdpLoading">
-                    {{ sdpLoading ? '计算中...' : '运行' }}
-                  </el-button>
-                  <el-button @click="dialogVisibleSDP = false">取消</el-button>
-                </div>
+              <el-form-item class="quanyu-actions">
+                <el-button
+                  class="quanyu-submit"
+                  type="primary"
+                  @click="submitSDP"
+                  :loading="sdpLoading"
+                >
+                  {{ sdpLoading ? '计算中...' : '运行' }}
+                </el-button>
+                <el-button class="quanyu-cancel" @click="dialogVisibleSDP = false"
+                  >取消</el-button
+                >
               </el-form-item>
             </el-form>
           </el-dialog>
