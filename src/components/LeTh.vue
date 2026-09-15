@@ -569,6 +569,7 @@
                         <tr><td>河水密度</td><td>kg/m³</td><td>1000</td><td>液相（水）密度，与滑坡密度共同决定固液密度比</td></tr>
                         <tr><td>输出间距</td><td>s</td><td>10</td><td>结果输出时间间隔（出图节拍），越小结果越密、数据量越大</td></tr>
                         <tr><td>计算时间</td><td>s</td><td>200</td><td>模拟总时长，需覆盖完整的启动—输移—堆积过程</td></tr>
+                        <tr><td>物源厚度比例</td><td>%</td><td>30</td><td>初始物源层厚度（zB − zL）的保留比例：100 表示不削薄，数值越小初始物源越薄、启动后下泄规模与堆积范围越小；物源层过厚时可调小该值</td></tr>
                       </tbody>
                     </table>
                     <h2>四、运行流程与结果</h2>
@@ -659,6 +660,9 @@
                 <el-form-item label="计算时间 (s)">
                   <el-input v-model="form2.Tmax" placeholder="200" />
                 </el-form-item>
+                <el-form-item label="物源厚度比例 (%)">
+                  <el-input v-model="form2.depthScale" placeholder="30" />
+                </el-form-item>
               </div>
 
               <el-form-item class="quanyu-note">
@@ -668,6 +672,8 @@
                   >时按「数据坐标系」解释；无头部时必填「源区中心」经纬度（易贡示例
                   95.0020, 30.2354，坐标系 EPSG:32646）。zb / zl / hw
                   都不选时使用内置示例数据。渲染场固定为泥石流层厚度（zB-zL）。
+                  「物源厚度比例」按比例削薄初始物源（zB−zL）：100 = 不削薄，默认 30
+                  表示只保留 30% 厚度，数值越小启动越弱、下泄与堆积规模越小。
                 </span>
               </el-form-item>
 
@@ -2383,6 +2389,8 @@ const form2 = reactive({
   // 输出间距=出图节拍（秒）；后端按「模拟时刻」抽帧，总帧数不超过 maxFrames
   interval: '10',
   Tmax: '200',
+  // 物源层厚度比例（%）：把初始物源 zB-zL 按该比例削薄，100 = 不削薄；越小启动越弱
+  depthScale: '30',
   // 渲染场固定为泥石流层厚度 solid=zB-zL（后端仍支持 total/water/speed）：旧语义 total=泥石流层+水层 / water=水层 / solid=泥石流层(zB-zL) / speed=流速
   field: 'solid',
 })
@@ -2884,6 +2892,8 @@ const submitForm2 = async (extra = {}) => {
         rouf: proNumber(form2.rouf, 1000),
         interval: proNumber(form2.interval, 10),
         tmax: proNumber(form2.Tmax, 200),
+        // 物源层厚度比例（% -> 0~1）：100 = 不削薄
+        depthScale: Math.min(1, Math.max(0, proNumber(form2.depthScale, 30) / 100)),
         maxFrames: 40,
         field: 'solid',
       },
@@ -3373,6 +3383,7 @@ const resetFloodProInputs = () => {
     rouf: '1000',
     interval: '10',
     Tmax: '200',
+    depthScale: '30',
     field: 'solid',
   })
   new Set([...Object.keys(proFiles), ...Object.keys(proFileNames)]).forEach(key => {
