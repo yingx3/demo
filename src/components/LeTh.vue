@@ -2886,8 +2886,24 @@ const submitForm2 = async (extra = {}) => {
       return
     }
     ElMessage.closeAll()
+    // 长时段模拟（Tmax 大）墙钟耗时成倍增长：按「约 9 秒墙钟 / 1 秒模拟」估算前端等待上限，
+    // 最少 60 分钟、最多 4 小时，避免结果还没出来就先报「等待超时」。
+    const proTmaxHint = proNumber(form2.Tmax, 200)
+    const proWaitLimitMs = Math.min(
+      4 * 60 * 60 * 1000,
+      Math.max(60 * 60 * 1000, Math.round(proTmaxHint * 9) * 1000),
+    )
     ElMessage({
-      message: '数值计算已启动（约需数分钟），请稍候...',
+      message:
+        proTmaxHint > 300
+          ? '数值计算已启动：模拟 ' +
+            proTmaxHint +
+            ' s 预计约 ' +
+            Math.max(1, Math.round((proTmaxHint * 6) / 60)) +
+            ' 分钟（最长等待 ' +
+            Math.round(proWaitLimitMs / 60000) +
+            ' 分钟），请保持页面打开'
+          : '数值计算已启动（约需数分钟），请稍候...',
       type: 'info',
       duration: 0,
     })
@@ -2935,9 +2951,15 @@ const submitForm2 = async (extra = {}) => {
         ElMessage({ message: '模拟失败: ' + (st.message || '未知错误'), type: 'error' })
         return
       }
-      if (Date.now() - startTs > 60 * 60 * 1000) {
+      if (Date.now() - startTs > proWaitLimitMs) {
         ElMessage.closeAll()
-        ElMessage({ message: '等待结果超时（60分钟）', type: 'error' })
+        ElMessage({
+          message:
+            '等待结果超时（' +
+            Math.round(proWaitLimitMs / 60000) +
+            '分钟），后端计算可能仍在继续，可稍后重新运行或调小「计算时间」',
+          type: 'error',
+        })
         return
       }
     }
