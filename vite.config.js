@@ -85,11 +85,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: path => path.replace(/^\/tianditu/, ''),
       },
+      // 地震动设备数据（迁移自 E:\Project_GS\解析\api.js，现由 src/node 服务提供）
+      // 注意：保留 /device 前缀不 rewrite，直接对应 node 服务上的 /device/*
       '/device': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3000',
         secure: false,
         changeOrigin: true,
-        rewrite: path => path.replace(/^\/device/, ''),
       },
       '/node': {
         target: 'http://localhost:3000', //需代理的后端接口

@@ -23,6 +23,8 @@ import crackRouter from './routes/crack.js'
 import weatherRouter, { startWeatherScheduler } from './routes/weather.js'
 // 地震动波形路由（新增；数据源为 TCPClient.java 输出的 wave_*.csv）
 import dzdRouter from './routes/dzd.js'
+// 地震动设备数据路由（迁移自 E:\Project_GS\解析\api.js；数据源为 PGSQL 表 dzd_device_data）
+import deviceRouter from './routes/device.js'
 
 // 使用路由
 app.use('/', displacementRouter)
@@ -33,6 +35,8 @@ app.use('/', crackRouter)
 app.use('/', weatherRouter)
 // 地震动波形路由（新增；与 TCPClient.java 的 CSV 输出保持一致）
 app.use('/', dzdRouter)
+// 地震动设备数据路由（PGSQL dzd_device_data；替代原 3001 独立服务）
+app.use('/', deviceRouter)
 
 // 启动服务器
 const PORT = process.env.PORT || 3000
