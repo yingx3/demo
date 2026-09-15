@@ -7100,6 +7100,11 @@ const cleanentity = () => {
   clearHeatmapPrimitive()
   // 3. 移除洪水图层
   removeFloodPrimitive()
+  // 3.1 移除山洪/洪水泥石流启动动力学结果（贴地影像图层 + 帧动画 + 图例 + 渲染器）
+  // 说明：该结果由 Cesium 影像图层承载，既不是 DataSource/Entity，也不带 sdpResultTag，
+  // 之前的清理链路都没有覆盖到，导致「清除实体」后结果图层仍残留在地图上。
+  betaRunId++ // 先让仍在转换中的异步帧失效，避免清理完成后又被补画回来
+  cleanupBetaRenderer()
   // 4. 移除旧式图层
   removeLayer1()
   removeLayer2()
