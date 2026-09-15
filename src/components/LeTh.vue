@@ -582,7 +582,65 @@
                       <li>若上传的 zb 与 zl 完全相同，泥石流层厚度为 0，此时只能看到水层，建议提供真实的灾前／灾后地形；</li>
                       <li>最大厚度较小时结果会接近「原地铺展」，运行前提示会给出本次物源最大厚度参考值；</li>
                       <li>输出场还包含水层厚度与流速，前端默认只渲染泥石流层厚度。</li>
+                      <li>点击弹窗下方的<strong>「历史模拟」</strong>可查看并回放此前的运行结果（含基准、物源削薄与地形调控工况）。</li>
                     </ul>
+                  </div>
+                </el-dialog>
+                <el-dialog
+                  v-model="proHistoryVisible"
+                  class="model-help-dialog"
+                  width="1020px"
+                  :close-on-click-modal="false"
+                  top="80px"
+                >
+                  <template #title>
+                    <div class="model-help-head">
+                      <span class="model-help-title">历史模拟记录</span>
+                      <span class="model-help-subtitle"
+                        >选择任意一次运行结果，直接在三维场景中回放</span
+                      >
+                    </div>
+                  </template>
+                  <div class="help-body">
+                    <p v-if="proHistoryLoading" style="margin: 6px 0">
+                      历史记录读取中...
+                    </p>
+                    <p v-else-if="!proHistoryItems.length" style="margin: 6px 0">
+                      暂无可回放的历史模拟记录。
+                    </p>
+                    <table v-else class="pro-history-table">
+                      <thead>
+                        <tr>
+                          <th>运行时间</th>
+                          <th>任务号</th>
+                          <th>帧数</th>
+                          <th>最大厚度 (m)</th>
+                          <th>时长 (s)</th>
+                          <th>间隔 (s)</th>
+                          <th>工况</th>
+                          <th>操作</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="item in proHistoryItems" :key="item.jobId">
+                          <td>{{ item.createdAtText }}</td>
+                          <td class="history-jobid">{{ item.jobId }}</td>
+                          <td>{{ item.frameCount }}</td>
+                          <td>{{ Number(item.globalMax || 0).toFixed(1) }}</td>
+                          <td>{{ item.tmax }}</td>
+                          <td>{{ item.interval }}</td>
+                          <td>{{ proHistoryCondition(item) }}</td>
+                          <td>
+                            <el-button
+                              link
+                              type="primary"
+                              @click="loadProHistory(item)"
+                              >加载</el-button
+                            >
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </el-dialog>
               </div>
@@ -683,6 +741,9 @@
                   class="quanyu-submit"
                   @click="onSubmit2"
                   >运行</el-button
+                >
+                <el-button class="quanyu-cancel" @click="openProHistory"
+                  >历史模拟</el-button
                 >
                 <el-button class="quanyu-cancel" @click="dialogVisible2 = false"
                   >取消</el-button
@@ -3372,6 +3433,53 @@ const resetGbmInputs = () => {
 }
 
 // 洪水泥石流启动动力学模型（Pro）
+// 洪水泥石流启动动力学模型：历史模拟记录（静态目录里的历次运行结果）
+const proHistoryVisible = ref(false)
+const proHistoryLoading = ref(false)
+const proHistoryItems = ref([])
+
+/** 历史记录的工况描述：地形调控 / 物源削薄比例 / 基准工况 */
+const proHistoryCondition = item => {
+  const parts = []
+  if (item && item.terrainEdited) parts.push('地形调控')
+  const scale = item && item.depthScale != null ? Number(item.depthScale) : NaN
+  if (Number.isFinite(scale) && scale < 1) {
+    parts.push('物源 ' + Math.round(scale * 100) + '%')
+  }
+  if (!parts.length) parts.push('基准工况')
+  return parts.join(' + ')
+}
+
+/** 打开历史记录列表（后端扫描 nginx 静态目录下的 pro 输出） */
+const openProHistory = async () => {
+  proHistoryVisible.value = true
+  proHistoryLoading.value = true
+  try {
+    const resp = await modelService.getProHistory({ limit: 50 })
+    proHistoryItems.value = Array.isArray(resp && resp.items) ? resp.items : []
+  } catch (e) {
+    proHistoryItems.value = []
+    ElMessage({ message: '历史记录读取失败: ' + (e?.message || e), type: 'error' })
+  } finally {
+    proHistoryLoading.value = false
+  }
+}
+
+/** 加载某条历史记录：复用实时计算的渲染链路（proLayers） */
+const loadProHistory = item => {
+  if (!item || !item.result || !(Number(item.frameCount) > 0)) {
+    ElMessage({ message: '该记录没有可用的结果帧', type: 'warning' })
+    return
+  }
+  proHistoryVisible.value = false
+  $emit('proLayers', { result: { status: 'ok', ...item.result } })
+  ElMessage({
+    message: '已加载 ' + (item.createdAtText || item.jobId) + ' 的模拟结果',
+    type: 'success',
+    duration: 2500,
+  })
+}
+
 const resetFloodProInputs = () => {
   if (floodRunning.value) return
   Object.assign(form2, {
@@ -5329,6 +5437,24 @@ const resetSeismicInputs = () => {
 
 .model-help-dialog .help-body tbody tr:nth-child(even) td {
   background: rgba(16, 40, 92, 0.4) !important;
+}
+
+/* 历史模拟记录表：表头单独着色（边框/字号沿用 help-body 的表格样式） */
+.model-help-dialog .help-body .pro-history-table thead th {
+  background: rgba(40, 110, 205, 0.45) !important;
+  color: #eaf4ff !important;
+  font-weight: 600 !important;
+}
+
+.model-help-dialog .help-body .pro-history-table th,
+.model-help-dialog .help-body .pro-history-table td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.model-help-dialog .help-body .pro-history-table .history-jobid {
+  font-size: 12px;
+  opacity: 0.75;
 }
 
 .model-help-dialog .help-body img {

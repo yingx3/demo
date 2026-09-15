@@ -42,6 +42,12 @@ const modelService = {
       })
       .then(r => r.data)
   },
+  // 历史模拟记录（静态目录里保留下来的历次运行结果，可直接回放）
+  getProHistory(params) {
+    return axios
+      .get('/testapi/admin/user/pro_history', { params, timeout: 30000 })
+      .then(r => r.data)
+  },
   uploadAvaflowFiles(formData) {
     return axios
       .post('/testapi/admin/user/upload_avaflow', formData, {
