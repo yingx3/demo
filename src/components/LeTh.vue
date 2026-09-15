@@ -561,14 +561,14 @@
                     <table>
                       <tbody>
                         <tr><td>参数</td><td>单位</td><td>默认值</td><td>说明</td></tr>
-                        <tr><td>基底摩擦角</td><td>rad</td><td>0.2</td><td>底床摩擦角（以弧度输入，参与 tan 计算），数值越大底床阻力越强、运动越易停止</td></tr>
+                        <tr><td>基底摩擦角</td><td>rad</td><td>0.05</td><td>有效基底摩擦角（弧度，参与 tan 计算），数值越大阻力越强、运动越易停止；水饱和的冰川型泥石流有效摩阻偏低，取 0.05（约 2.9°）时易贡 BH02 物源在 200 s 内基本入湖，是本案例运动速度的主控参数</td></tr>
                         <tr><td>曼宁摩擦系数</td><td>—</td><td>0.0125</td><td>曼宁糙率，控制流速大小与下泄过程</td></tr>
                         <tr><td>网格长度</td><td>m</td><td>20</td><td>计算网格 x 方向尺寸，影响计算精度、稳定性与耗时</td></tr>
                         <tr><td>网格宽度</td><td>m</td><td>20</td><td>计算网格 y 方向尺寸</td></tr>
                         <tr><td>滑坡密度</td><td>kg/m³</td><td>2700</td><td>固相（滑坡／泥石流）密度</td></tr>
                         <tr><td>河水密度</td><td>kg/m³</td><td>1000</td><td>液相（水）密度，与滑坡密度共同决定固液密度比</td></tr>
-                        <tr><td>输出间距</td><td>s</td><td>1</td><td>结果输出时间间隔（出图节拍），越小结果越密、数据量越大</td></tr>
-                        <tr><td>计算时间</td><td>s</td><td>100</td><td>模拟总时长，需覆盖完整的启动—输移—堆积过程</td></tr>
+                        <tr><td>输出间距</td><td>s</td><td>10</td><td>结果输出时间间隔（出图节拍），越小结果越密、数据量越大</td></tr>
+                        <tr><td>计算时间</td><td>s</td><td>200</td><td>模拟总时长，需覆盖完整的启动—输移—堆积过程</td></tr>
                       </tbody>
                     </table>
                     <h2>四、运行流程与结果</h2>
@@ -636,7 +636,7 @@
             <el-form :model="form2" label-position="top" class="quanyu-form">
               <div class="quanyu-param-grid">
                 <el-form-item label="基底摩擦角 (rad)">
-                  <el-input v-model="form2.bed" placeholder="0.2" />
+                  <el-input v-model="form2.bed" placeholder="0.05" />
                 </el-form-item>
                 <el-form-item label="曼宁摩擦系数">
                   <el-input v-model="form2.nn" placeholder="0.0125" />
@@ -654,10 +654,10 @@
                   <el-input v-model="form2.rouf" placeholder="1000" />
                 </el-form-item>
                 <el-form-item label="输出间距 (s)">
-                  <el-input v-model="form2.interval" placeholder="1" />
+                  <el-input v-model="form2.interval" placeholder="10" />
                 </el-form-item>
                 <el-form-item label="计算时间 (s)">
-                  <el-input v-model="form2.Tmax" placeholder="100" />
+                  <el-input v-model="form2.Tmax" placeholder="200" />
                 </el-form-item>
               </div>
 
@@ -2366,15 +2366,15 @@ const form = reactive({
   ksat: '1.32e-05',
 })
 const form2 = reactive({
-  bed: '0.2',
+  bed: '0.05',
   nn: '0.0125',
   dx: '20',
   dy: '20',
   rous: '2700',
   rouf: '1000',
   // 输出间距=出图节拍（秒）；后端按「模拟时刻」抽帧，总帧数不超过 maxFrames
-  interval: '1',
-  Tmax: '100',
+  interval: '10',
+  Tmax: '200',
   // 渲染场固定为泥石流层厚度 solid=zB-zL（后端仍支持 total/water/speed）：旧语义 total=泥石流层+水层 / water=水层 / solid=泥石流层(zB-zL) / speed=流速
   field: 'solid',
 })
@@ -2868,14 +2868,14 @@ const submitForm2 = async (extra = {}) => {
         ? { terrainEdits: extra.terrainEdits }
         : {}),
       params: {
-        bed: proNumber(form2.bed, 0.2),
+        bed: proNumber(form2.bed, 0.05),
         nn: proNumber(form2.nn, 0.0125),
         dx: proNumber(form2.dx, 0),
         dy: proNumber(form2.dy, 0),
         rous: proNumber(form2.rous, 2700),
         rouf: proNumber(form2.rouf, 1000),
-        interval: proNumber(form2.interval, 1),
-        tmax: proNumber(form2.Tmax, 100),
+        interval: proNumber(form2.interval, 10),
+        tmax: proNumber(form2.Tmax, 200),
         maxFrames: 40,
         field: 'solid',
       },
@@ -3268,14 +3268,14 @@ const resetGbmInputs = () => {
 const resetFloodProInputs = () => {
   if (floodRunning.value) return
   Object.assign(form2, {
-    bed: '0.2',
+    bed: '0.05',
     nn: '0.0125',
     dx: '20',
     dy: '20',
     rous: '2700',
     rouf: '1000',
-    interval: '1',
-    Tmax: '100',
+    interval: '10',
+    Tmax: '200',
     field: 'solid',
   })
   new Set([...Object.keys(proFiles), ...Object.keys(proFileNames)]).forEach(key => {
