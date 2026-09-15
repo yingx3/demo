@@ -632,11 +632,13 @@
                           <td>{{ proHistoryCondition(item) }}</td>
                           <td>
                             <el-button
+                              v-if="proHistoryPlayable(item)"
                               link
                               type="primary"
                               @click="loadProHistory(item)"
                               >加载</el-button
                             >
+                            <span v-else style="opacity: 0.55">缺少坐标</span>
                           </td>
                         </tr>
                       </tbody>
@@ -3450,6 +3452,23 @@ const proHistoryCondition = item => {
   return parts.join(' + ')
 }
 
+/** 该记录是否可回放：需要帧文件 + 网格尺寸 + 中心经纬度（老任务可能缺少坐标） */
+const proHistoryPlayable = item => {
+  const meta = (item && item.result && item.result.meta) || {}
+  const lon = meta.centerLon
+  const lat = meta.centerLat
+  return (
+    Number(item && item.frameCount) > 0 &&
+    Number(meta.ncols) > 0 &&
+    Number(meta.nrows) > 0 &&
+    Number(meta.cellsize) > 0 &&
+    lon != null &&
+    lat != null &&
+    Number.isFinite(Number(lon)) &&
+    Number.isFinite(Number(lat))
+  )
+}
+
 /** 打开历史记录列表（后端扫描 nginx 静态目录下的 pro 输出） */
 const openProHistory = async () => {
   proHistoryVisible.value = true
@@ -3467,8 +3486,11 @@ const openProHistory = async () => {
 
 /** 加载某条历史记录：复用实时计算的渲染链路（proLayers） */
 const loadProHistory = item => {
-  if (!item || !item.result || !(Number(item.frameCount) > 0)) {
-    ElMessage({ message: '该记录没有可用的结果帧', type: 'warning' })
+  if (!proHistoryPlayable(item)) {
+    ElMessage({
+      message: '该记录缺少网格坐标信息，无法在三维场景中回放',
+      type: 'warning',
+    })
     return
   }
   proHistoryVisible.value = false
