@@ -509,32 +509,23 @@
             title="洪水泥石流启动动力学模型"
             width="560"
             :close-on-click-modal="false"
-            class="dialog_quanyu"
+            class="dialog_quanyu dialog_fullRisk"
             @open="resetFloodProInputs"
           >
             <template #header>
-              <div
-                style="
-                  display: flex;
-                  align-items: center;
-                  justify-content: space-between;
-                  width: 100%;
-                "
-              >
-                <span style="color: #ffffff; font-size: 24px"
-                  >洪水泥石流启动动力学模型</span
-                >
-                <!-- 问号容器：定位到关闭按钮左侧 -->
-                <div style="position: relative; right: -3px; top: -28.5px">
-                  <el-tooltip content="帮助" placement="top">
-                    <el-icon
-                      class="help-icon"
-                      @click="openHelpDialog_flood = true"
-                    >
-                      <QuestionFilled />
-                    </el-icon>
-                  </el-tooltip>
+              <div class="model-dialog-header">
+                <div class="model-dialog-heading">
+                  <span class="model-dialog-title">洪水泥石流启动动力学模型</span>
+                  <span class="model-dialog-subtitle">洪水—泥石流耦合参数配置</span>
                 </div>
+                <el-tooltip content="查看参数说明" placement="top">
+                  <el-icon
+                    class="help-icon"
+                    @click="openHelpDialog_flood = true"
+                  >
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
                 <el-dialog
                   v-model="openHelpDialog_flood"
                   class="model-help-dialog"
@@ -595,49 +586,30 @@
                 </el-dialog>
               </div>
             </template>
-            <p id="name_par3">输入数据</p>
-            <el-form label-width="auto" style="width: 500px" class="form_flood">
-              <el-form-item
-                label="数据坐标系"
-                label-position="right"
-                label-width="110px"
-                style="flex: 1 1 100%; margin-bottom: 12px"
-              >
-                <el-input
-                  v-model="proSourceCrs"
-                  placeholder="EPSG:32646"
-                  style="width: 260px"
-                />
+            <p class="quanyu-section-label">输入数据</p>
+            <el-form label-position="top" class="quanyu-form">
+              <el-form-item label="数据坐标系" label-position="top">
+                <el-input v-model="proSourceCrs" placeholder="EPSG:32646" />
               </el-form-item>
               <el-form-item
-                label="源区中心"
-                label-position="right"
-                label-width="110px"
-                style="flex: 1 1 100%; margin-bottom: 12px"
+                label="源区中心（经度 / 纬度）"
+                label-position="top"
               >
-                <el-input
-                  v-model="proAnchorLon"
-                  placeholder="经度 95.0020"
-                  style="width: 125px"
-                />
-                <el-input
-                  v-model="proAnchorLat"
-                  placeholder="纬度 30.2354"
-                  style="width: 125px; margin-left: 10px"
-                />
+                <div class="quanyu-row-2">
+                  <el-input v-model="proAnchorLon" placeholder="经度 95.0020" />
+                  <el-input v-model="proAnchorLat" placeholder="纬度 30.2354" />
+                </div>
               </el-form-item>
               <el-form-item
                 v-for="item in proFileItems"
                 :key="item.key"
                 :label="item.label"
-                label-position="right"
-                label-width="110px"
-                style="flex: 1 1 100%; margin-bottom: 12px"
+                label-position="top"
+                class="quanyu-file-field"
               >
                 <el-input
                   v-model="proFileNames[item.key]"
                   :placeholder="item.placeholder"
-                  style="width: 260px"
                   readonly
                 >
                   <template #append>
@@ -649,12 +621,7 @@
                       @change="(f, fs) => handleProFile(item.key, f, fs)"
                     >
                       <el-button
-                        style="
-                          border: none;
-                          color: white;
-                          padding: 0;
-                          margin-left: 8px;
-                        "
+                        class="quanyu-upload-trigger"
                         @click.stop="triggerProUpload(item.key)"
                       >
                         <i class="iconfont icon-daoru"></i>
@@ -665,53 +632,55 @@
               </el-form-item>
             </el-form>
 
-            <p id="name_par3">模型参数</p>
-            <el-form
-              :model="form2"
-              label-width="auto"
-              style="width: 500px"
-              class="form_flood"
-            >
-              <el-form-item label="基底摩擦角(rad)" class="form1_flood">
-                <el-input v-model="form2.bed" placeholder="0.2" />
-              </el-form-item>
-              <el-form-item label="曼宁摩擦系数" class="form1_flood">
-                <el-input v-model="form2.nn" placeholder="0.0125" />
-              </el-form-item>
-              <el-form-item label="网格长度" class="form1_flood">
-                <el-input v-model="form2.dx" placeholder="20" />
-              </el-form-item>
-              <el-form-item label="网格宽度" class="form1_flood">
-                <el-input v-model="form2.dy" placeholder="20" />
-              </el-form-item>
-              <el-form-item label="滑坡密度" class="form1_flood">
-                <el-input v-model="form2.rous" placeholder="2700" />
-              </el-form-item>
-              <el-form-item label="河水密度" class="form1_flood">
-                <el-input v-model="form2.rouf" placeholder="1000" />
-              </el-form-item>
-              <el-form-item label="输出间距" class="form1_flood">
-                <el-input v-model="form2.interval" placeholder="1" />
-              </el-form-item>
-              <el-form-item label="计算时间" class="form1_flood">
-                <el-input v-model="form2.Tmax" placeholder="100" />
+            <p class="quanyu-section-label">模型参数</p>
+            <el-form :model="form2" label-position="top" class="quanyu-form">
+              <div class="quanyu-param-grid">
+                <el-form-item label="基底摩擦角 (rad)">
+                  <el-input v-model="form2.bed" placeholder="0.2" />
+                </el-form-item>
+                <el-form-item label="曼宁摩擦系数">
+                  <el-input v-model="form2.nn" placeholder="0.0125" />
+                </el-form-item>
+                <el-form-item label="网格长度 (m)">
+                  <el-input v-model="form2.dx" placeholder="20" />
+                </el-form-item>
+                <el-form-item label="网格宽度 (m)">
+                  <el-input v-model="form2.dy" placeholder="20" />
+                </el-form-item>
+                <el-form-item label="滑坡密度 (kg/m³)">
+                  <el-input v-model="form2.rous" placeholder="2700" />
+                </el-form-item>
+                <el-form-item label="河水密度 (kg/m³)">
+                  <el-input v-model="form2.rouf" placeholder="1000" />
+                </el-form-item>
+                <el-form-item label="输出间距 (s)">
+                  <el-input v-model="form2.interval" placeholder="1" />
+                </el-form-item>
+                <el-form-item label="计算时间 (s)">
+                  <el-input v-model="form2.Tmax" placeholder="100" />
+                </el-form-item>
+              </div>
+
+              <el-form-item class="quanyu-note">
+                <span>
+                  支持 .tif / .tiff / .txt / .asc（ESRI ASCII）；txt/asc
+                  <b>自带 xllcorner/yllcorner 头部</b
+                  >时按「数据坐标系」解释；无头部时必填「源区中心」经纬度（易贡示例
+                  95.0020, 30.2354，坐标系 EPSG:32646）。zb / zl / hw
+                  都不选时使用内置示例数据。渲染场固定为泥石流层厚度（zB-zL）。
+                </span>
               </el-form-item>
 
-              <el-form-item style="flex: 1 1 100%; margin-bottom: 12px">
-                <span style="color: #a6a6a6; font-size: 13px"
-                  >支持 .tif / .tiff / .txt / .asc（ESRI ASCII）；txt/asc <b>自带 xllcorner/yllcorner 头部</b>时按「数据坐标系」解释；
-                  无头部时必填「源区中心」经纬度（易贡示例 95.0020, 30.2354，坐标系 EPSG:32646）。zb / zl / hw 都不选时使用内置示例数据。渲染场固定为泥石流层厚度（zB-zL）。</span
-                >
-              </el-form-item>
-
-              <el-form-item>
+              <el-form-item class="quanyu-actions">
                 <el-button
                   type="primary"
+                  class="quanyu-submit"
                   @click="onSubmit2"
-                  class="b_ex_avaflow"
                   >运行</el-button
                 >
-                <el-button @click="dialogVisible2 = false">取消</el-button>
+                <el-button class="quanyu-cancel" @click="dialogVisible2 = false"
+                  >取消</el-button
+                >
               </el-form-item>
             </el-form>
           </el-dialog>
@@ -4763,6 +4732,25 @@ const resetSeismicInputs = () => {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   row-gap: 14px;
+}
+
+.quanyu-row-2,
+.quanyu-param-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+  width: 100%;
+}
+
+.quanyu-note {
+  color: rgba(166, 196, 224, 0.78);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.quanyu-note b {
+  color: #cfe4ff;
+  font-weight: 600;
 }
 
 .inverse-form {
