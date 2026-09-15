@@ -2049,6 +2049,14 @@ const fileName_inverseV = ref('')
 const uploadRefGBM = ref(null)
 const fileNameGBM = ref('')
 const fileGBM = ref()
+// shp/dbf/shx/prj 一次选中会触发多次上传回调，这里按批次归并，全部上传完成后只发起一次推理
+const gbmSubmitting = ref(false)
+const gbmUploadBatch = reactive({
+  active: false,
+  total: 0,
+  succeeded: 0,
+  savedFiles: [],
+})
 const formGBM = reactive({
   name: '',
   // 前端不用把 targetFolder 强行传死，若后端需要可以传；这里演示也可以传
@@ -3027,6 +3035,19 @@ const handleFileChangeGBM = (uploadFile, uploadFiles) => {
   fileNameGBM.value = uploadFiles.map(f => f.name).join(', ')
 }
 
+const resetGbmUploadBatch = () => {
+  gbmUploadBatch.active = false
+  gbmUploadBatch.total = 0
+  gbmUploadBatch.succeeded = 0
+  gbmUploadBatch.savedFiles = []
+}
+
+const clearGbmUpload = () => {
+  fileGBM.value = []
+  fileNameGBM.value = ''
+  uploadRefGBM.value?.clearFiles()
+}
+
 const submitGBM = async () => {
   if (!fileGBM.value || fileGBM.value.length === 0) {
     ElMessage({
@@ -3035,7 +3056,25 @@ const submitGBM = async () => {
     })
     return
   }
+  if (gbmSubmitting.value) {
+    ElMessage({ message: '模型正在计算中，请稍候...', type: 'warning' })
+    return
+  }
+  if (!fileGBM.value.some(f => /\.shp$/i.test(f?.name || ''))) {
+    ElMessage({
+      message: '请把 shp / dbf / shx / prj 一起选中后再提交',
+      type: 'warning',
+    })
+    return
+  }
+
   dialogVisibleGBM.value = false
+  gbmSubmitting.value = true
+  gbmUploadBatch.active = true
+  gbmUploadBatch.total = fileGBM.value.length
+  gbmUploadBatch.succeeded = 0
+  gbmUploadBatch.savedFiles = []
+
   ElMessage({ message: '上传中，请稍候...', type: 'info', duration: 0 })
   try {
     //element封装的submit方法
@@ -3043,63 +3082,97 @@ const submitGBM = async () => {
   } catch (err) {
     ElMessage.closeAll()
     ElMessage({ message: '上传失败：' + (err.message || err), type: 'error' })
+    resetGbmUploadBatch()
+    gbmSubmitting.value = false
   }
 }
-// el-upload 成功回调
+
+// el-upload 成功回调：每个文件各回调一次，等这一批全部上传完成后只推理一次
 const handleUploadSuccessGBM = async (response, file, fileList) => {
-  ElMessage.closeAll()
+  if (!gbmUploadBatch.active) return
+
   if (response?.code !== 200) {
+    ElMessage.closeAll()
     ElMessage({
       message: '上传失败：' + (response?.message || '未知错误'),
       type: 'error',
     })
+    resetGbmUploadBatch()
+    clearGbmUpload()
+    gbmSubmitting.value = false
     return
   }
 
-  ElMessage({
-    message: '上传成功，正在请求后端处理...',
-    type: 'info',
-    duration: 0,
-  })
+  if (Array.isArray(response.files)) {
+    gbmUploadBatch.savedFiles.push(...response.files)
+  }
+  gbmUploadBatch.succeeded += 1
+  // 还有文件没上传完，先不发起推理
+  if (gbmUploadBatch.succeeded < gbmUploadBatch.total) return
+
+  const shpEntry = gbmUploadBatch.savedFiles.find(f =>
+    /\.shp$/i.test(f?.savedPath || ''),
+  )
+  if (!shpEntry) {
+    ElMessage.closeAll()
+    ElMessage({
+      message: '未检测到 .shp 文件，请重新选择 shp / dbf / shx / prj',
+      type: 'error',
+    })
+    resetGbmUploadBatch()
+    clearGbmUpload()
+    gbmSubmitting.value = false
+    return
+  }
+
+  ElMessage.closeAll()
+  ElMessage({ message: '上传完成，正在计算...', type: 'info', duration: 0 })
   console.log('GBM upload success resp:', response)
 
-  const savedFiles = response.files || []
   try {
-    const resp = await modelService.postGBM(savedFiles, form_BGM)
+    const resp = await modelService.postGBM([shpEntry], form_BGM)
 
     ElMessage.closeAll()
     ElMessage({ message: '后端处理完成，正在加载图层', type: 'success' })
     $emit('openLayers', {
       gbmUpload: true,
-      uploadResp: response,
+      uploadResp: { files: gbmUploadBatch.savedFiles },
       processResp: resp.data,
     })
   } catch (err) {
+    const detail = err?.response?.data ?? err?.message ?? '网络或服务错误'
     ElMessage.closeAll()
     ElMessage({
-      message: '后端处理失败：' + (err?.message || '网络或服务错误'),
+      message:
+        '后端处理失败：' +
+        (typeof detail === 'string'
+          ? detail
+          : JSON.stringify(detail)
+        ).slice(0, 200),
       type: 'error',
     })
     console.error('调用 Spring Boot 处理 shp 失败', err)
   } finally {
-    fileGBM.value = []
-    fileNameGBM.value = ''
-    uploadRefGBM.value?.clearFiles()
+    resetGbmUploadBatch()
+    clearGbmUpload()
+    gbmSubmitting.value = false
   }
 }
 
 // el-upload 错误回调
 const handleUploadErrorGBM = (err, file, fileList) => {
+  if (!gbmUploadBatch.active) return
+  resetGbmUploadBatch()
   ElMessage.closeAll()
   ElMessage({
     message: '上传失败：' + (err?.message || '网络或后端错误'),
     type: 'error',
   })
   console.error('GBM upload error:', err)
-  fileGBM.value = null
-  fileNameGBM.value = ''
-  uploadRefGBM.value?.clearFiles()
+  clearGbmUpload()
+  gbmSubmitting.value = false
 }
+
 const submit_inverseV = async () => {
   try {
     ElMessage({ message: '运行中!', type: 'success' })

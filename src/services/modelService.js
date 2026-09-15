@@ -52,10 +52,11 @@ const modelService = {
   },
   postGBM(savedFiles, form) {
     // 返回完整 response 以保留 uploadResp/processResp 语义
+    // 推理脚本为串行执行，超时与后端 process-timeout 对齐（5 分钟）
     return axios.post(
       '/testapi/admin/user/GBM',
       { files: savedFiles, form },
-      { timeout: 120000 },
+      { timeout: 300000 },
     )
   },
   postSeismic(savedFile, params) {
