@@ -2888,10 +2888,12 @@ const submitForm2 = async (extra = {}) => {
     ElMessage.closeAll()
     // 长时段模拟（Tmax 大）墙钟耗时成倍增长：按「约 9 秒墙钟 / 1 秒模拟」估算前端等待上限，
     // 最少 60 分钟、最多 4 小时，避免结果还没出来就先报「等待超时」。
+    // 后端同口径（12*Tmax+300s）会先一步终止进程并把原因写进 message，因此前端再多留 300s，
+    // 让用户看到的是「后端为何没算完」，而不是笼统的「等待结果超时」。
     const proTmaxHint = proNumber(form2.Tmax, 200)
     const proWaitLimitMs = Math.min(
       4 * 60 * 60 * 1000,
-      Math.max(60 * 60 * 1000, Math.round(proTmaxHint * 9) * 1000),
+      Math.max(60 * 60 * 1000, (Math.round(proTmaxHint * 12) + 600) * 1000),
     )
     ElMessage({
       message:
@@ -2899,7 +2901,7 @@ const submitForm2 = async (extra = {}) => {
           ? '数值计算已启动：模拟 ' +
             proTmaxHint +
             ' s 预计约 ' +
-            Math.max(1, Math.round((proTmaxHint * 6) / 60)) +
+            Math.max(1, Math.round((proTmaxHint * 9) / 60)) +
             ' 分钟（最长等待 ' +
             Math.round(proWaitLimitMs / 60000) +
             ' 分钟），请保持页面打开'
