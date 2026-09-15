@@ -85,7 +85,12 @@
                   <li>成果默认写入后端计算成果目录，地图图层可在资源目录中开关与调节透明度。</li>
                 </ul>
                 <h2>五、运行结果示例</h2>
-                <img :src="ASSET_BASE + 'img/demo-risk-source.png'" alt="风险源定量识别与表征模型运行结果示例" />
+                <img
+                  :src="ASSET_BASE + 'img/demo-risk-source.png'"
+                  alt="风险源定量识别与表征模型运行结果示例"
+                  title="点击查看大图"
+                  @click="previewSrc = $event.target.src"
+                />
               </div>
             </el-dialog>
             <p id="name_par" class="trigrs-section-label">模型参数</p>
@@ -252,7 +257,12 @@
                   <li>前端加载分级图层并自动定位，可在资源目录中开关与调节透明度。</li>
                 </ol>
                 <h2>五、运行结果示例</h2>
-                <img :src="ASSET_BASE + 'img/demo-gbm.png'" alt="冰川泥石流易发性预测模型运行结果示例" />
+                <img
+                  :src="ASSET_BASE + 'img/demo-gbm.png'"
+                  alt="冰川泥石流易发性预测模型运行结果示例"
+                  title="点击查看大图"
+                  @click="previewSrc = $event.target.src"
+                />
               </div>
             </el-dialog>
             <p id="name_par_gbm" class="gbm-section-label">模型参数</p>
@@ -1476,7 +1486,12 @@
                       <li>点击地图上的预警点可查看该监测点的位移数据。</li>
                     </ul>
                     <h2>五、运行结果示例</h2>
-                    <img :src="ASSET_BASE + 'img/demo-displacement.png'" alt="基于位移监测滑坡预警运行结果示例" />
+                    <img
+                  :src="ASSET_BASE + 'img/demo-displacement.png'"
+                  alt="基于位移监测滑坡预警运行结果示例"
+                  title="点击查看大图"
+                  @click="previewSrc = $event.target.src"
+                />
                   </div>
                 </el-dialog>
               </div>
@@ -2020,6 +2035,16 @@
         </div>
       </div>
     </transition>
+    <!-- 结果示例图全屏预览（点击任意位置关闭） -->
+    <Teleport to="body">
+      <div
+        v-if="previewSrc"
+        class="help-image-preview"
+        @click="previewSrc = ''"
+      >
+        <img :src="previewSrc" alt="结果示例大图" />
+      </div>
+    </Teleport>
   </div>
 </template>
 <script setup>
@@ -2038,6 +2063,8 @@ const dialogVisible2 = ref(false)
 const dialog_inverseV = ref(false)
 const dialog_avainit = ref(false)
 const openHelpDialog_fxy = ref(false)
+// 参数说明里结果示例图的全屏预览地址
+const previewSrc = ref('')
 const openHelpDialog_sh = ref(false)
 const openHelpDialog_flood = ref(false)
 const openHelpDialog_inverseV = ref(false)
@@ -5210,16 +5237,40 @@ const resetSeismicInputs = () => {
 
 .model-help-dialog .help-body img {
   display: block;
-  width: auto;
+  /* 结果示例图占满弹窗宽度，高度只做视口级保护（原来限死 460px，示例图显得偏小） */
+  width: 100%;
   height: auto;
   max-width: 100%;
-  max-height: 460px;
+  /* 与正文可视高度（62vh）一致，避免图片被截断 */
+  max-height: 62vh;
+  cursor: zoom-in;
   margin: 14px auto;
   border-radius: 10px;
   border: 1px solid rgba(96, 168, 255, 0.3);
   /* 弹窗挂在 .box 内，父级 .box img{filter:grayscale(100%)} 会穿透进来把结果示例图变成黑白，这里强制恢复原色 */
   filter: none !important;
   -webkit-filter: none !important;
+}
+
+/* 结果示例图点击后的全屏预览层 */
+.help-image-preview {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2vh 2vw;
+  background: rgba(2, 8, 24, 0.92);
+  cursor: zoom-out;
+}
+
+.help-image-preview img {
+  max-width: 96vw;
+  max-height: 96vh;
+  border-radius: 10px;
+  border: 1px solid rgba(96, 168, 255, 0.35);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
 }
 
 .model-help-dialog .help-body code,
