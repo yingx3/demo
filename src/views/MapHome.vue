@@ -750,25 +750,26 @@ const upsertSetPositionMarker = (lon, lat) => {
   }
   setPositionEntity = v.entities.add({
     id: SET_POSITION_MARKER_ID,
+    name: '目标位置 ' + lon.toFixed(5) + ', ' + lat.toFixed(5),
     position: Cesium.Cartesian3.fromDegrees(lon, lat),
-    point: {
-      pixelSize: 12,
-      color: Cesium.Color.fromCssColorString('#ff4d4f'),
-      outlineColor: Cesium.Color.WHITE,
-      outlineWidth: 3,
+    // 图钉样式与「历史堵江点 / 历史未堵江点 / 地震动设备」完全一致（同一张 positionBlue.png、同样 32px、底部锚点、贴地）
+    billboard: {
+      image: '/CS/img/positionBlue.png',
       heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+      verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      width: 32,
+      height: 32,
     },
+    // 文字沿用「地震动设备」的标签样式，保证整个平台标注风格统一
     label: {
-      text: '目标位置\n' + lon.toFixed(5) + ', ' + lat.toFixed(5),
-      font: '13px sans-serif',
-      fillColor: Cesium.Color.WHITE,
-      outlineColor: Cesium.Color.fromCssColorString('#8b0000'),
-      outlineWidth: 3,
+      text: '目标位置 ' + lon.toFixed(5) + ', ' + lat.toFixed(5),
+      font: '12px sans-serif',
       style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-      pixelOffset: new Cesium.Cartesian2(0, -22),
+      outlineWidth: 2,
+      verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+      pixelOffset: new Cesium.Cartesian2(0, -34),
       heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-      disableDepthTestDistance: Number.POSITIVE_INFINITY,
     },
   })
 }
