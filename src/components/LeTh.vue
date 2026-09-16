@@ -389,6 +389,93 @@
             </el-form>
           </el-dialog>
         </div>
+        <!-- 静态数据卡片：区域灾害本底数据点位（与资源目录勾选同源） -->
+        <div class="box box-used p_bottom">
+          <img src="../assets/img/table.png" alt="" />
+          <el-popover width="290" trigger="click" placement="right-start" popper-class="data-layer-popover">
+            <template #reference>
+              <el-button :plain="true"
+                ><span>区域灾害本底数据点位</span>
+                <span v-if="dataLayerCount([611, 612, 613])" class="data-layer-count"
+                  >{{ dataLayerCount([611, 612, 613]) }}/3</span
+                ></el-button
+              >
+            </template>
+            <div class="data-layer-panel">
+              <div class="data-layer-panel-head">
+                <span>区域灾害本底数据点位</span>
+                <span class="data-layer-panel-actions">
+                  <a href="#" @click.prevent="selectAllDataLayers([611, 612, 613], true)">全选</a>
+                  <a href="#" @click.prevent="selectAllDataLayers([611, 612, 613], false)">清空</a>
+                </span>
+              </div>
+              <p class="data-layer-panel-hint">
+                勾选即在地图上加载，与「资源目录」勾选状态同步
+              </p>
+              <el-checkbox
+                v-for="item in dataLayerGroups.riskBase"
+                :key="item.id"
+                :model-value="isDataLayerChecked(item.id)"
+                @change="v => toggleDataLayerItem(item.id, v)"
+                >{{ item.label }}</el-checkbox
+              >
+              <div v-if="isDataLayerChecked(611)" class="data-layer-time">
+                <span>时间 / 降雨历时</span>
+                <el-select
+                  size="small"
+                  style="width: 100%"
+                  placeholder="选择时段"
+                  :model-value="
+                    dangerLevelSelected ||
+                    (dangerLevelFiles[0] && dangerLevelFiles[0].file) ||
+                    ''
+                  "
+                  @change="dangerLevelFileChange"
+                >
+                  <el-option
+                    v-for="f in dangerLevelFiles"
+                    :key="f.file"
+                    :label="f.timeText + (f.durationText ? ' · ' + f.durationText : '')"
+                    :value="f.file"
+                  />
+                </el-select>
+              </div>
+            </div>
+          </el-popover>
+        </div>
+        <!-- 静态数据卡片：冰川泥石流风险源（与资源目录勾选同源） -->
+        <div class="box box-used p_bottom">
+          <img src="../assets/img/table.png" alt="" />
+          <el-popover width="290" trigger="click" placement="right-start" popper-class="data-layer-popover">
+            <template #reference>
+              <el-button :plain="true"
+                ><span>冰川泥石流风险源</span>
+                <span v-if="dataLayerCount([621, 622, 623])" class="data-layer-count"
+                  >{{ dataLayerCount([621, 622, 623]) }}/3</span
+                ></el-button
+              >
+            </template>
+            <div class="data-layer-panel">
+              <div class="data-layer-panel-head">
+                <span>冰川泥石流风险源</span>
+                <span class="data-layer-panel-actions">
+                  <a href="#" @click.prevent="selectAllDataLayers([621, 622, 623], true)">全选</a>
+                  <a href="#" @click.prevent="selectAllDataLayers([621, 622, 623], false)">清空</a>
+                </span>
+              </div>
+              <p class="data-layer-panel-hint">
+                勾选即在地图上加载，与「资源目录」勾选状态同步
+              </p>
+              <el-checkbox
+                v-for="item in dataLayerGroups.glacierSource"
+                :key="item.id"
+                :model-value="isDataLayerChecked(item.id)"
+                @change="v => toggleDataLayerItem(item.id, v)"
+                >{{ item.label }}</el-checkbox
+              >
+            </div>
+          </el-popover>
+        </div>
       </div>
       <!-- 灾害链模拟模块  -->
       <div class="theme">
@@ -1506,6 +1593,135 @@
             </el-form>
           </el-dialog>
         </div>
+        <!-- 静态数据卡片：人口分布（与资源目录勾选同源） -->
+        <div class="box box-used p_bottom">
+          <img src="../assets/img/table.png" alt="" />
+          <el-popover width="290" trigger="click" placement="right-start" popper-class="data-layer-popover">
+            <template #reference>
+              <el-button :plain="true"
+                ><span>人口分布</span>
+                <span v-if="dataLayerCount([732])" class="data-layer-count"
+                  >{{ dataLayerCount([732]) }}/1</span
+                ></el-button
+              >
+            </template>
+            <div class="data-layer-panel">
+              <div class="data-layer-panel-head">
+                <span>人口分布</span>
+                <span class="data-layer-panel-actions">
+                  <a href="#" @click.prevent="selectAllDataLayers([732], true)">全选</a>
+                  <a href="#" @click.prevent="selectAllDataLayers([732], false)">清空</a>
+                </span>
+              </div>
+              <el-checkbox
+                v-for="item in dataLayerGroups.population"
+                :key="item.id"
+                :model-value="isDataLayerChecked(item.id)"
+                @change="v => toggleDataLayerItem(item.id, v)"
+                >{{ item.label }}</el-checkbox
+              >
+            </div>
+          </el-popover>
+        </div>
+        <!-- 静态数据卡片：脆弱性结果（与资源目录勾选同源） -->
+        <div class="box box-used p_bottom">
+          <img src="../assets/img/table.png" alt="" />
+          <el-popover width="290" trigger="click" placement="right-start" popper-class="data-layer-popover">
+            <template #reference>
+              <el-button :plain="true"
+                ><span>脆弱性结果</span>
+                <span v-if="dataLayerCount([711, 712, 713])" class="data-layer-count"
+                  >{{ dataLayerCount([711, 712, 713]) }}/3</span
+                ></el-button
+              >
+            </template>
+            <div class="data-layer-panel">
+              <div class="data-layer-panel-head">
+                <span>脆弱性结果</span>
+                <span class="data-layer-panel-actions">
+                  <a href="#" @click.prevent="selectAllDataLayers([711, 712, 713], true)">全选</a>
+                  <a href="#" @click.prevent="selectAllDataLayers([711, 712, 713], false)">清空</a>
+                </span>
+              </div>
+              <p class="data-layer-panel-hint">
+                勾选即在地图上加载，与「资源目录」勾选状态同步
+              </p>
+              <el-checkbox
+                v-for="item in dataLayerGroups.vulnerability"
+                :key="item.id"
+                :model-value="isDataLayerChecked(item.id)"
+                @change="v => toggleDataLayerItem(item.id, v)"
+                >{{ item.label }}</el-checkbox
+              >
+            </div>
+          </el-popover>
+        </div>
+        <!-- 静态数据卡片：危险性评估结果（与资源目录勾选同源） -->
+        <div class="box box-used p_bottom">
+          <img src="../assets/img/table.png" alt="" />
+          <el-popover width="290" trigger="click" placement="right-start" popper-class="data-layer-popover">
+            <template #reference>
+              <el-button :plain="true"
+                ><span>危险性评估结果</span>
+                <span v-if="dataLayerCount([721, 722, 723, 781, 782])" class="data-layer-count"
+                  >{{ dataLayerCount([721, 722, 723, 781, 782]) }}/5</span
+                ></el-button
+              >
+            </template>
+            <div class="data-layer-panel">
+              <div class="data-layer-panel-head">
+                <span>危险性评估结果</span>
+                <span class="data-layer-panel-actions">
+                  <a href="#" @click.prevent="selectAllDataLayers([721, 722, 723, 781, 782], true)">全选</a>
+                  <a href="#" @click.prevent="selectAllDataLayers([721, 722, 723, 781, 782], false)">清空</a>
+                </span>
+              </div>
+              <p class="data-layer-panel-hint">
+                勾选即在地图上加载，与「资源目录」勾选状态同步
+              </p>
+              <el-checkbox
+                v-for="item in dataLayerGroups.danger"
+                :key="item.id"
+                :model-value="isDataLayerChecked(item.id)"
+                @change="v => toggleDataLayerItem(item.id, v)"
+                >{{ item.label }}</el-checkbox
+              >
+            </div>
+          </el-popover>
+        </div>
+        <!-- 静态数据卡片：风险评估结果（与资源目录勾选同源） -->
+        <div class="box box-used p_bottom">
+          <img src="../assets/img/table.png" alt="" />
+          <el-popover width="290" trigger="click" placement="right-start" popper-class="data-layer-popover">
+            <template #reference>
+              <el-button :plain="true"
+                ><span>风险评估结果</span>
+                <span v-if="dataLayerCount([741, 742, 743, 744, 745, 751, 752, 753, 754, 761, 762, 763, 77])" class="data-layer-count"
+                  >{{ dataLayerCount([741, 742, 743, 744, 745, 751, 752, 753, 754, 761, 762, 763, 77]) }}/13</span
+                ></el-button
+              >
+            </template>
+            <div class="data-layer-panel">
+              <div class="data-layer-panel-head">
+                <span>风险评估结果</span>
+                <span class="data-layer-panel-actions">
+                  <a href="#" @click.prevent="selectAllDataLayers([741, 742, 743, 744, 745, 751, 752, 753, 754, 761, 762, 763, 77], true)">全选</a>
+                  <a href="#" @click.prevent="selectAllDataLayers([741, 742, 743, 744, 745, 751, 752, 753, 754, 761, 762, 763, 77], false)">清空</a>
+                </span>
+              </div>
+              <p class="data-layer-panel-hint">
+                勾选即在地图上加载，与「资源目录」勾选状态同步
+              </p>
+              <el-checkbox
+                v-for="item in dataLayerGroups.risk"
+                :key="item.id"
+                :model-value="isDataLayerChecked(item.id)"
+                @change="v => toggleDataLayerItem(item.id, v)"
+                >{{ item.label }}</el-checkbox
+              >
+            </div>
+          </el-popover>
+        </div>
       </div>
       <!-- 监测预警模块 -->
       <div class="theme">
@@ -2285,6 +2501,13 @@ import { computed, inject, ref } from 'vue'
 import { reactive } from 'vue'
 import axios from 'axios'
 import modelService from '../services/modelService'
+
+// 「数值计算模型集」里的静态数据卡片：勾选状态与可用时段由 MapHome（资源目录同一套管线）下传
+const props = defineProps({
+  dataLayerChecked: { type: Array, default: () => [] },
+  dangerLevelFiles: { type: Array, default: () => [] },
+  dangerLevelSelected: { type: String, default: '' },
+})
 // import { exec } from 'child_process'
 const dialogVisible = ref(false)
 const dialogVisibleGBM = ref(false)
@@ -2608,7 +2831,61 @@ let $emit = defineEmits([
   'proLayers',
   'terrainDrawStart',
   'terrainDrawCancel',
+  'dataLayerToggle',
+  'dangerLevelFileChange',
 ])
+// ===== 模型集里的静态数据卡片（与资源目录同源）=====
+// 每个卡片对应资源目录里的一组叶子节点，勾选即调用资源目录同一条加载管线
+const dataLayerGroups = {
+  riskBase: [
+    { id: 611, label: '灾害危险区划' },
+    { id: 612, label: '历史灾害点' },
+    { id: 613, label: '古灾害链' },
+  ],
+  glacierSource: [
+    { id: 621, label: '历史数据模拟' },
+    { id: 622, label: '历史未堵江点' },
+    { id: 623, label: '历史堵江点' },
+  ],
+  population: [{ id: 732, label: '人口提取' }],
+  vulnerability: [
+    { id: 711, label: '滑坡人口脆弱性' },
+    { id: 712, label: '泥石流人口脆弱性' },
+    { id: 713, label: '山洪人口脆弱性' },
+  ],
+  danger: [
+    { id: 721, label: '滑坡危险性' },
+    { id: 722, label: '泥石流危险性' },
+    { id: 723, label: '山洪危险性' },
+    { id: 781, label: '区域危险性评估' },
+    { id: 782, label: '点危险性评估' },
+  ],
+  risk: [
+    { id: 741, label: '1 层建筑物脆弱性' },
+    { id: 742, label: '2 层建筑物脆弱性' },
+    { id: 743, label: '3 层建筑物脆弱性' },
+    { id: 744, label: '砌体建筑物脆弱性' },
+    { id: 745, label: '总体建筑物脆弱性' },
+    { id: 751, label: '高等级道路' },
+    { id: 752, label: '次等级道路' },
+    { id: 753, label: '简单道路' },
+    { id: 754, label: '总体道路' },
+    { id: 761, label: '双柱式桥梁脆弱性' },
+    { id: 762, label: '单柱式桥梁脆弱性' },
+    { id: 763, label: '总体桥梁脆弱性' },
+    { id: 77, label: '人口风险评估' },
+  ],
+}
+const isDataLayerChecked = id => (props.dataLayerChecked || []).includes(id)
+const dataLayerCount = ids => (ids || []).filter(id => isDataLayerChecked(id)).length
+const toggleDataLayerItem = (id, checked) => $emit('dataLayerToggle', { id, checked })
+const selectAllDataLayers = (ids, checked) => {
+  ;(ids || []).forEach(id => {
+    if (isDataLayerChecked(id) !== checked) toggleDataLayerItem(id, checked)
+  })
+}
+const dangerLevelFileChange = value => $emit('dangerLevelFileChange', value)
+
 // 获取 store 实例
 // 静态资源前缀（跟随 vite base，用于参数说明里的示例图）
 const ASSET_BASE = String(import.meta.env.BASE_URL || '/').replace(/\/?$/, '/')
@@ -4194,6 +4471,44 @@ const resetSeismicInputs = () => {
 }
 </script>
 <style lang="scss" scoped>
+/* 模型集里的静态数据卡片（勾选UI） */
+.data-layer-count {
+  margin-left: 6px;
+  color: #38e1ff;
+  font-size: 12px;
+}
+.data-layer-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.data-layer-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  color: #303133;
+}
+.data-layer-panel-actions a {
+  margin-left: 10px;
+  font-size: 12px;
+  color: #409eff;
+  text-decoration: none;
+}
+.data-layer-panel-hint {
+  margin: 2px 0 4px;
+  font-size: 12px;
+  color: #909399;
+}
+.data-layer-time {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #606266;
+}
+
 :deep(.el-button.is-plain) {
   --el-fill-color-blank: transparent;
   --el-border-color: transparent;

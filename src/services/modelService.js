@@ -21,6 +21,12 @@ const modelService = {
       .get('/testapi/admin/user/yj_beta_status', { params: { jobId }, timeout: 30000 })
       .then(r => r.data)
   },
+  // 「灾害危险区划」静态图层列表（风险源模型输出的 dangerLevel_*.png，含时间/降雨历时/地理范围）
+  getDangerLevelList(params) {
+    return axios
+      .get('/testapi/admin/user/danger_level_list', { params, timeout: 30000 })
+      .then(r => r.data)
+  },
   // 冰川泥石流动力学模型历史模拟记录（静态目录里保留下来的历次运行结果，可直接回放）
   getAvaflowBetaHistory(params) {
     return axios

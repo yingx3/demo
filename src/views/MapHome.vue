@@ -48,6 +48,11 @@
       @bedding_parallel="showBeddingFos"
       @bedding_inverted="showBeddingFos"
       @bedding_wedget="showBeddingFos"
+      @dataLayerToggle="toggleDataLayer"
+      @dangerLevelFileChange="changeDangerLevelFile"
+      :data-layer-checked="dataLayerIds"
+      :danger-level-files="dangerLevelFiles"
+      :danger-level-selected="selectedDangerLevelFile"
     ></le-th>
     <zy-ml
       :time="selectedTime"
@@ -659,6 +664,34 @@ const rgb = ref('')
 const redGradient = ref('')
 const dangerLevel = ref('')
 const pname = ref([])
+
+// ---- 「数值计算模型集」里的静态数据卡片：与资源目录共用同一套加载逻辑 ----
+// 卡片管辖的叶子节点（区域灾害本底数据点位 / 冰川泥石流风险源 / 人口分布 / 脆弱性 / 危险性 / 风险评估）
+const DATA_LAYER_IDS = [
+  611, 612, 613, 621, 622, 623, 732,
+  711, 712, 713, 721, 722, 723, 781, 782,
+  741, 742, 743, 744, 745, 751, 752, 753, 754, 761, 762, 763, 77,
+]
+// 父节点 -> 子节点：取消父节点勾选时一并卸载
+const CATALOG_PARENT_CHILDREN = {
+  6: [611, 612, 613, 621, 622, 623],
+  61: [611, 612, 613],
+  62: [621, 622, 623],
+  7: [711, 712, 713, 721, 722, 723, 731, 732, 733, 741, 742, 743, 744, 745,
+      751, 752, 753, 754, 761, 762, 763, 77, 781, 782],
+  71: [711, 712, 713],
+  72: [721, 722, 723],
+  73: [731, 732, 733],
+  74: [741, 742, 743, 744, 745],
+  75: [751, 752, 753, 754],
+  76: [761, 762, 763],
+  78: [781, 782],
+}
+const dataLayerIds = ref([]) // 卡片当前勾选的叶子节点
+// 灾害危险区划（风险源模型输出的 dangerLevel PNG）列表与当前选中项
+const dangerLevelFiles = ref([])
+const selectedDangerLevelFile = ref('')
+let dangerLevelLayer = null
 // 假设已处理的 p 值集合
 const processedPValues = ref([])
 
@@ -891,6 +924,8 @@ const submit_setPosition = () => {
 onMounted(() => {
   // [新增] 注册"点击标记点查看属性"的拾取器
   nextTick(() => ensureDisasterPickHandler())
+  // 预先读取「灾害危险区划」静态图层列表（模型集数据卡片使用）
+  loadDangerLevelFiles()
   // viewer 由 MapLayout 初始化并通过 provide/inject 注入，此处无需再初始化 Cesium
   // 「冰川灾害链」模块已移除：不再初始化入口按钮（逻辑仍保留在 initChainButton/runChainCase 中）
   // initChainButton()
@@ -899,13 +934,29 @@ onMounted(() => {
 //选中与未选中图层
 const checkedLayers = (ps, node) => {
   console.log('[checkedLayers] ps:', ps, 'node:', node)
-  //移除取消勾选的图层
-  switch (node) {
+  // 与「数值计算模型集」数据卡片同步：卡片只管这些叶子节点
+  dataLayerIds.value = ps.filter(id => DATA_LAYER_IDS.includes(id))
+  // 取消勾选：叶子节点直接卸载；父节点（如「灾害链风险源数据」「风险评估数据」）一并卸载其下所有子图层
+  const offIds =
+    node === null || node === undefined
+      ? []
+      : [node, ...(CATALOG_PARENT_CHILDREN[node] || [])]
+  offIds.forEach(offId => {
+    switch (offId) {
     case 16:
       removeLayer_river()
       break
     case 17:
       removeLayer_glacier()
+      break
+    case 611:
+      removeLayer_dangerLevel()
+      break
+    case 612:
+      removeLayer4()
+      break
+    case 613:
+      removeLayer5()
       break
     case 131:
       viewer.value.entities.removeById('2')
@@ -1038,13 +1089,14 @@ const checkedLayers = (ps, node) => {
     case 782:
       removeLayer_yigong_hazard()
       break
-    default:
-      break
-  }
+      default:
+        break
+    }
+  })
 
-  // 取消勾选时从已处理集合中移除该节点ID，确保重新勾选时可再次加载
-  if (node !== null) {
-    processedPValues.value = processedPValues.value.filter(id => id !== node)
+  // 取消勾选时从已处理集合中移除这些节点ID，确保重新勾选时可再次加载
+  if (offIds.length) {
+    processedPValues.value = processedPValues.value.filter(id => !offIds.includes(id))
   }
 
   // 计算差集：当前循环中新增的 p 值
@@ -1244,6 +1296,15 @@ const checkedLayers = (ps, node) => {
           break
         case 116:
           addLayer_tianditu_road()
+          break
+        case 611:
+          addLayer_dangerLevel()
+          break
+        case 612:
+          addLayer4()
+          break
+        case 613:
+          addLayer5()
           break
         case 621:
           addLayer_621()
@@ -1448,21 +1509,88 @@ const checkedLayers = (ps, node) => {
         // console.log('111')
         viewer.value.entities.removeById('7')
       }
-      if (p === 612) {
-        addLayer4()
-      }
-      if (p !== 612) {
-        removeLayer4()
-      }
-      if (p === 613) {
-        addLayer5()
-      }
-      if (p !== 613) {
-        removeLayer5()
-      }
     }
   }
 }
+// ---- 灾害危险区划（风险源模型输出的 dangerLevel_*.png，静态图层）----
+/** 读取可用列表（后端扫描静态目录，返回时间、降雨历时与地理范围） */
+const loadDangerLevelFiles = async () => {
+  try {
+    const resp = await modelService.getDangerLevelList({ limit: 40 })
+    dangerLevelFiles.value = Array.isArray(resp?.items) ? resp.items : []
+    if (!selectedDangerLevelFile.value && dangerLevelFiles.value.length) {
+      selectedDangerLevelFile.value = dangerLevelFiles.value[0].file
+    }
+  } catch (e) {
+    console.warn('[dangerLevel] 灾害危险区划列表读取失败:', e)
+  }
+}
+
+const removeLayer_dangerLevel = () => {
+  const layers = viewer.value?.scene?.imageryLayers
+  if (layers) {
+    for (let i = layers.length - 1; i >= 0; i--) {
+      const layer = layers.get(i)
+      if (layer.dangerLevelTag) {
+        try {
+          layers.remove(layer, true)
+        } catch (e) {
+          console.warn('[dangerLevel] 移除图层失败:', e)
+        }
+      }
+    }
+  }
+  dangerLevelLayer = null
+}
+
+const addLayer_dangerLevel = fileName => {
+  const name = fileName || selectedDangerLevelFile.value
+  const meta = dangerLevelFiles.value.find(item => item.file === name)
+  if (!meta) {
+    ElMessage({
+      message: '暂无可用的灾害危险区划结果（运行「风险源定量识别与表征模型」后自动生成）',
+      type: 'warning',
+    })
+    return
+  }
+  removeLayer_dangerLevel()
+  const [west, south, east, north] = meta.bbox
+  const rectangle = Cesium.Rectangle.fromDegrees(west, south, east, north)
+  const layer = viewer.value.scene.imageryLayers.addImageryProvider(
+    new Cesium.SingleTileImageryProvider({ url: meta.url, rectangle }),
+  )
+  layer.dangerLevelTag = true
+  dangerLevelLayer = layer
+  selectedDangerLevelFile.value = name
+  flyToResultRect(rectangle, 2000, 1.5)
+  ElMessage({
+    message: '已加载灾害危险区划：' + meta.timeText + (meta.durationText ? ' · ' + meta.durationText : ''),
+    type: 'success',
+    duration: 2500,
+  })
+}
+
+/**
+ * 「数值计算模型集」数据卡片的勾选开关：与资源目录勾选走同一条管线
+ * （同一个 checkedLayers → 同一套 addLayer_xxx / removeLayer_xxx）。
+ */
+const toggleDataLayer = ({ id, checked }) => {
+  if (!DATA_LAYER_IDS.includes(id)) return
+  const next = checked
+    ? [...new Set([...dataLayerIds.value, id])]
+    : dataLayerIds.value.filter(x => x !== id)
+  dataLayerIds.value = next
+  const ps = [...new Set([...selectedIds.value, ...next])]
+  // ps 为空时补一个无意义 id，避免触发「清空全部图层」分支
+  checkedLayers(ps.length ? ps : [0], checked ? null : id)
+}
+
+/** 危险区划切换时间/降雨历时：未加载时只记录选择，加载中则立即换图 */
+const changeDangerLevelFile = fileName => {
+  selectedDangerLevelFile.value = fileName
+  if (dangerLevelLayer) addLayer_dangerLevel(fileName)
+}
+
 // 范围检测逻辑
 function flyToWithRangeCheck(
   viewer,
@@ -7263,6 +7391,8 @@ const cleanentity = () => {
       imLayers.remove(layer)
     }
   }
+  // 7.1 移除「灾害危险区划」静态图层
+  removeLayer_dangerLevel()
   // 8. 移除 SDP 结果图层
   const imLayers2 = viewer.value.scene.imageryLayers
   for (let i = imLayers2.length - 1; i >= 0; i--) {
