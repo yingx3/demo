@@ -113,17 +113,21 @@
           >
             <template #content>
               <div>
-                <el-form :model="form_setPosition">
+                <el-form :model="form_setPosition" style="width: 240px">
                   <el-form-item label="经度" style="margin-bottom: 5px"
                     ><el-input
                       v-model.number="form_setPosition.longitude"
+                      placeholder="十进制度，如 94.65348"
                     ></el-input></el-form-item
                   ><el-form-item label="纬度" style="margin-bottom: 5px"
                     ><el-input
                       v-model.number="form_setPosition.latitude"
+                      placeholder="十进制度，如 29.83353"
                     ></el-input></el-form-item
-                  ><el-form-item></el-form-item
-                  ><el-form-item style="margin-top: 10px">
+                  ><div style="font-size: 12px; line-height: 16px; color: #8a8a8a; margin-bottom: 6px">
+                    坐标采用十进制度（WGS84）：经度 -180~180，纬度 -90~90。确认后在地图上生成定位点并跳转。
+                  </div>
+                  <el-form-item style="margin-top: 10px">
                     <el-button type="primary" @click="submit_setPosition"
                       >确认</el-button
                     >
@@ -725,6 +729,49 @@ const form_setPosition = reactive({
   latitude: 29.833531,
   height: 29515,
 })
+//「设置位置」的定位点实体：同一时间只保留最新一次确认生成的点位
+const SET_POSITION_MARKER_ID = 'setPositionMarker'
+let setPositionEntity = null
+
+/**
+ * 在地图上生成/刷新「设置位置」定位点（十进制度 WGS84，经度在前）。
+ * 重复确认时先移除上一个点，避免点位越点越多；「清除实体」也会一并清掉。
+ */
+const upsertSetPositionMarker = (lon, lat) => {
+  const v = viewer.value
+  if (!v || !v.entities) return
+  const exists = setPositionEntity || v.entities.getById(SET_POSITION_MARKER_ID)
+  if (exists) {
+    try {
+      v.entities.remove(exists)
+    } catch (e) {
+      console.warn('[setPosition] 移除旧定位点失败:', e)
+    }
+  }
+  setPositionEntity = v.entities.add({
+    id: SET_POSITION_MARKER_ID,
+    position: Cesium.Cartesian3.fromDegrees(lon, lat),
+    point: {
+      pixelSize: 12,
+      color: Cesium.Color.fromCssColorString('#ff4d4f'),
+      outlineColor: Cesium.Color.WHITE,
+      outlineWidth: 3,
+      heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+    },
+    label: {
+      text: '目标位置\n' + lon.toFixed(5) + ', ' + lat.toFixed(5),
+      font: '13px sans-serif',
+      fillColor: Cesium.Color.WHITE,
+      outlineColor: Cesium.Color.fromCssColorString('#8b0000'),
+      outlineWidth: 3,
+      style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+      pixelOffset: new Cesium.Cartesian2(0, -22),
+      heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+    },
+  })
+}
 const loading = ref(false)
 const errorMessage = ref('')
 const searchKeyword = ref('')
@@ -797,7 +844,7 @@ const submit_setPosition = () => {
   const lon = Number(form_setPosition.longitude)
   const lat = Number(form_setPosition.latitude)
   if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
-    ElMessage.error('请输入有效的经纬度数字')
+    ElMessage.error('请输入十进制度（WGS84）的经纬度数字，例如 94.65348 / 29.83353')
     return
   }
   if (lon < -180 || lon > 180 || lat < -90 || lat > 90) {
@@ -806,24 +853,37 @@ const submit_setPosition = () => {
   }
   handleClickChange('popover_setPosition', false)
 
-  // 2. 正确设置相机位置 + 姿态（替换直接赋值的代码）
-  const safeHeight = Number(form_setPosition.height)
+  // 确认后：在地图上生成定位点（取消则不生成）
+  upsertSetPositionMarker(lon, lat)
+
+  // 2. 相机跳转到目标区域：保留原来的斜俯视姿态，但把相机沿视线反方向后退，
+  //    让「输入的经纬度」正好落在视野中心。
+  //    原因：原来把相机直接放在该点上，俯角 -48.92°、垂直视场角 60°，
+  //    相机正下方（-90°）落在取景范围之外，跳过去反而看不到这个点。
+  const camAlt = Number(form_setPosition.height)
+  const cameraAltitude = Number.isFinite(camAlt) && camAlt > 0 ? camAlt : 30000
+  const headingDeg = 2.02 // 航向角
+  const pitchDeg = 48.92 // 俯角（向下为正）
+  const groundH = getGroundHeightMeters(lon, lat, 3000)
+  const aboveGround = Math.max(500, cameraAltitude - (Number.isFinite(groundH) ? groundH : 3000))
+  // 视线在地面上的水平投影长度：h / tan(俯角)
+  const backDistance = aboveGround / Math.tan(Cesium.Math.toRadians(pitchDeg))
+  const headingRad = Cesium.Math.toRadians(headingDeg)
+  const cosLat = Math.max(0.05, Math.cos(Cesium.Math.toRadians(lat)))
+  const camLat = lat + (-backDistance * Math.cos(headingRad)) / 111320
+  const camLon = lon + (-backDistance * Math.sin(headingRad)) / (111320 * cosLat)
   viewer.value.camera.setView({
-    // 位置：经纬度转笛卡尔坐标
-    destination: Cesium.Cartesian3.fromDegrees(
-      lon,
-      lat,
-      Number.isFinite(safeHeight) && safeHeight > 0 ? safeHeight : 30000,
-    ),
+    // 位置：经纬度转笛卡尔坐标（视线中心对准目标点）
+    destination: Cesium.Cartesian3.fromDegrees(camLon, camLat, cameraAltitude),
     // 姿态：heading/pitch/roll（弧度值）
     orientation: {
-      heading: Cesium.Math.toRadians(2.02), // 航向角
-      pitch: Cesium.Math.toRadians(-48.92), // 俯仰角
+      heading: headingRad, // 航向角
+      pitch: Cesium.Math.toRadians(-pitchDeg), // 俯仰角
       roll: Cesium.Math.toRadians(360.0), // 翻滚角
     },
   })
   ElMessage({
-    message: `视角已定位到 ${lon.toFixed(5)}, ${lat.toFixed(5)}`,
+    message: `已在 ${lon.toFixed(5)}, ${lat.toFixed(5)} 生成定位点并跳转（WGS84 十进制度）`,
     type: 'success',
   })
 }
@@ -7193,6 +7253,7 @@ const cleanentity = () => {
   removeAllSimulationDataSources()
   // 6. 清空所有实体
   viewer.value.entities.removeAll()
+  setPositionEntity = null
   // 7. 移除所有 GeoServer WMS 影像图层（保留 Cesium 内置图层）
   const imLayers = viewer.value.scene.imageryLayers
   for (let i = imLayers.length - 1; i >= 0; i--) {
