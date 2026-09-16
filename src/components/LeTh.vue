@@ -1975,15 +1975,22 @@
                   <tr><td>参数</td><td>取值 / 单位</td><td>说明</td></tr>
                   <tr><td>{{ cfg.areaLabel }}</td><td>手绘闭合多边形</td><td>在三维地图上左键逐点落点、右键结束绘制，至少需要 3 个顶点；绘制结果即为调控范围</td></tr>
                   <tr><td>{{ cfg.raiseLabel }}</td><td>m（断链调控默认 20，沿程调控默认 15）</td><td>将绘制范围内的底床整体抬升该高度，模拟坝体或护底高程</td></tr>
-                  <tr><td>底床与水深数据</td><td>.tif / .tiff / .txt / .asc</td><td>沿用「冰岩崩动力学模型」的输入数据（zb 灾前地形 / zl 灾后地形 / hw 初始水深），未选择文件时使用内置示例数据</td></tr>
-                  <tr><td>动力学参数</td><td>同冰岩崩动力学模型</td><td>基底摩擦角、曼宁摩擦系数、网格长宽、滑坡与河水密度、输出间距、计算时间沿用冰岩崩动力学模型的默认值</td></tr>
+                  <template v-if="cfg.kind === 'chain'">
+                    <tr><td>底床与水深数据</td><td>.tif / .tiff / .txt / .asc</td><td>沿用「冰岩崩动力学模型」的输入数据（zb 灾前地形 / zl 灾后地形 / hw 初始水深），未选择文件时使用内置示例数据</td></tr>
+                    <tr><td>动力学参数</td><td>同冰岩崩动力学模型</td><td>基底摩擦角、曼宁摩擦系数、网格长宽、滑坡与河水密度、输出间距、计算时间沿用冰岩崩动力学模型的默认值</td></tr>
+                  </template>
+                  <template v-else>
+                    <tr><td>输入栅格</td><td>.tif / .tiff（三份）</td><td>沿用「冰川泥石流动力学模型」的输入数据（平均高程 / 物源启动区 / 影响范围），三份都需就绪才能启动</td></tr>
+                    <tr><td>动力学参数</td><td>同冰川泥石流动力学模型</td><td>摩擦参数、模拟时长与滑移路径沿用冰川泥石流动力学模型的默认配置</td></tr>
+                  </template>
                 </tbody>
               </table>
               <h2>三、运行流程</h2>
               <ol>
                 <li>点击「在地图上绘制」，沿目标沟道绘制闭合范围（左键落点，右键结束，Esc 取消）；</li>
                 <li>填写{{ cfg.raiseLabel }}，点击「{{ cfg.runText }}」；</li>
-                <li>后端将范围内底床抬高指定高度后重新执行动力学计算，前端加载结果图层供对比查看。</li>
+                <li v-if="cfg.kind === 'chain'">后端将范围内底床抬高指定高度后重新执行冰岩崩动力学计算，前端加载结果图层供对比查看。</li>
+                <li v-else>后端将范围内高程栅格抬高指定高度后重新执行冰川泥石流动力学计算，前端加载结果图层供对比查看。</li>
               </ol>
               <h2>四、结果与提示</h2>
               <ul>
@@ -1997,6 +2004,41 @@
             <p class="terrain-desc" :style="{ borderLeftColor: cfg.accent }">
               {{ cfg.desc }}
             </p>
+            <template v-if="cfg.kind === 'along'">
+              <p class="quanyu-section-label">输入数据</p>
+              <el-form label-position="top" class="quanyu-form">
+                <el-form-item
+                  v-for="item in betaFileItems"
+                  :key="'along-' + item.key"
+                  :label="item.label"
+                  label-position="top"
+                  class="quanyu-file-field"
+                >
+                  <el-input
+                    v-model="betaFileNames[item.key]"
+                    :placeholder="item.placeholder"
+                    readonly
+                  >
+                    <template #append>
+                      <el-upload
+                        :ref="el => { if (el) alongUploadRefs[item.key] = el }"
+                        :auto-upload="false"
+                        :show-file-list="false"
+                        accept=".tif,.tiff"
+                        @change="(f, fs) => handleBetaFile(item.key, f, fs)"
+                      >
+                        <el-button
+                          class="quanyu-upload-trigger"
+                          @click.stop="triggerAlongUpload(item.key)"
+                        >
+                          <i class="iconfont icon-daoru"></i>
+                        </el-button>
+                      </el-upload>
+                    </template>
+                  </el-input>
+                </el-form-item>
+              </el-form>
+            </template>
             <div class="terrain-row">
               <span class="terrain-label">{{ cfg.areaLabel }}</span>
               <el-button size="small" type="primary" plain @click="startTerrainDraw(cfg.kind)"
@@ -2556,47 +2598,7 @@ async function submitBeta() {
       ElMessage({ message: accepted?.message || '启动模拟失败', type: 'error' })
       return
     }
-    ElMessage({ message: '模型计算已启动，等待结果（约数分钟~十余分钟）...', type: 'info', duration: 0 })
-    const startTs = Date.now()
-    while (true) {
-      await new Promise(r => setTimeout(r, 5000))
-      let st = null
-      try { st = await modelService.getAvaflowBetaStatus(jobId) } catch (e) { st = null }
-      if (st && st.status === 'running') {
-        const phaseLabel =
-          st.phase === 'converting'
-            ? '\u7ed3\u679c\u8f6c\u6362\u4e2d'
-            : '\u6a21\u578b\u8ba1\u7b97\u4e2d'
-        ElMessage.closeAll()
-        ElMessage({ message: phaseLabel + '... ' + (st.progress ?? 0) + '%\uff08\u5df2\u4ea7\u51fa ' + (st.frames || 0) + ' \u5e27\uff09', type: 'info', duration: 0 })
-      }
-      if (st && st.status === 'done') {
-        ElMessage.closeAll()
-        ElMessage({ message: '冰川泥石流动力学模型 完成，输出 ' + (st.frameCount || 0) + ' 帧', type: 'success', duration: 2500 })
-        $emit('betaLayers', {
-          result: {
-            status: 'ok',
-            outputBase: st.outputBase,
-            ascBase: st.ascBase,
-            frameFiles: st.frameFiles,
-            frameCount: st.frameCount,
-            bbox: st.bbox,
-            meta: st.meta,
-          },
-        })
-        return
-      }
-      if (st && st.status === 'error') {
-        ElMessage.closeAll()
-        ElMessage({ message: '模拟失败: ' + (st.message || '未知错误'), type: 'error' })
-        return
-      }
-      if (Date.now() - startTs > 30 * 60 * 1000) {
-        ElMessage.closeAll()
-        ElMessage({ message: '等待结果超时（30分钟）', type: 'error' })
-        return
-      }
-    }
+    return await waitAvaflowBetaResult(jobId, '冰川泥石流动力学模型')
   } catch (e) {
     ElMessage.closeAll()
     const m2 = e.response?.data || e.message || e
@@ -2742,7 +2744,8 @@ function proNumber(value, fallback) {
 }
 
 // ===== 灾害链断链调控 / 冰川泥石流沿程调控 =====
-// 两个入口共用同一套「手绘范围 + 抬升底床 + Pro 动力学计算」实现，仅面板文案与主题按功能差异化。
+// 断链调控：冰岩崩动力学模型（Pro 内核）——在 zb/zl/hw 底床上抬高拦挡范围后重算；
+// 沿程调控：冰川泥石流动力学模型（r.avaflow 内核）——在 elevation 栅格上抬高护底范围后重算。
 const terrainRegulationConfigs = reactive([
   {
     kind: 'chain',
@@ -2772,7 +2775,7 @@ const terrainRegulationConfigs = reactive([
     raiseLabel: '床面抬升高度',
     raisePlaceholder: '例如 15',
     runText: '执行沿程调控计算',
-    hint: '与断链调控共用同一套动力学内核与输入数据，区别在于调控范围沿沟道纵向布设。',
+    hint: '运行前请先准备「冰川泥石流动力学模型」的三份输入栅格（平均高程 / 物源启动区 / 影响范围），可在本面板或该模型弹窗中选择；未上传时无法启动。',
   },
 ])
 
@@ -2827,6 +2830,99 @@ const onTerrainDrawCancelled = () => {
   if (cfg) cfg.visible = true
 }
 
+// 沿程调控复用冰川泥石流动力学模型的输入栅格选择状态
+const alongUploadRefs = reactive({})
+const triggerAlongUpload = key => {
+  const el = alongUploadRefs[key]?.$el?.querySelector?.('input[type=file]')
+  if (el) el.click()
+}
+
+// 轮询 r.avaflow 计算状态（冰川泥石流动力学模型 / 沿程调控共用）
+const waitAvaflowBetaResult = async (jobId, label) => {
+  ElMessage({ message: '模型计算已启动，等待结果（约数分钟~十余分钟）...', type: 'info', duration: 0 })
+  const startTs = Date.now()
+  while (true) {
+    await new Promise(r => setTimeout(r, 5000))
+    let st = null
+    try { st = await modelService.getAvaflowBetaStatus(jobId) } catch (e) { st = null }
+    if (st && st.status === 'running') {
+      const phaseLabel = st.phase === 'converting' ? '结果转换中' : '模型计算中'
+      ElMessage.closeAll()
+      ElMessage({ message: phaseLabel + '... ' + (st.progress ?? 0) + '%（已产出 ' + (st.frames || 0) + ' 帧）', type: 'info', duration: 0 })
+    }
+    if (st && st.status === 'done') {
+      ElMessage.closeAll()
+      ElMessage({ message: label + ' 完成，输出 ' + (st.frameCount || 0) + ' 帧', type: 'success', duration: 2500 })
+      $emit('betaLayers', {
+        result: {
+          status: 'ok',
+          outputBase: st.outputBase,
+          ascBase: st.ascBase,
+          frameFiles: st.frameFiles,
+          frameCount: st.frameCount,
+          bbox: st.bbox,
+          meta: st.meta,
+        },
+      })
+      return true
+    }
+    if (st && st.status === 'error') {
+      ElMessage.closeAll()
+      ElMessage({ message: '模拟失败: ' + (st.message || '未知错误'), type: 'error' })
+      return false
+    }
+    if (Date.now() - startTs > 30 * 60 * 1000) {
+      ElMessage.closeAll()
+      ElMessage({ message: '等待结果超时（30分钟）', type: 'error' })
+      return false
+    }
+  }
+}
+
+// 冰川泥石流沿程调控：上传三份栅格 -> 后端抬高 elevation 范围 -> r.avaflow 计算
+const submitBetaRegulation = async terrainEdits => {
+  const missing = betaFileItems.filter(item => !betaFiles[item.key])
+  if (missing.length > 0) {
+    ElMessage({
+      message: '请先选择: ' + missing.map(i => i.label).join('、') + '（可在「冰川泥石流动力学模型」中准备）',
+      type: 'warning',
+      duration: 6000,
+    })
+    return false
+  }
+  ElMessage({ message: '输入数据上传中...', type: 'info', duration: 0 })
+  try {
+    const formData = new FormData()
+    const map = { elev: 'elev.tif', debris: 'debris.tif', impact: 'impact_area.tif' }
+    for (const key of ['elev', 'debris', 'impact']) {
+      const f = betaFiles[key]
+      if (f) {
+        const nf = new File([f], map[key], { type: f.type || 'application/octet-stream' })
+        formData.append('files', nf)
+      }
+    }
+    const upResp = await modelService.uploadAvaflowFiles(formData)
+    if (!upResp || upResp?.status !== 'ok' || !upResp.jobId) {
+      ElMessage.closeAll()
+      ElMessage({ message: upResp?.message || '输入数据上传失败', type: 'error' })
+      return false
+    }
+    const accepted = await modelService.runAvaflowBeta({ jobId: upResp.jobId, terrainEdits })
+    if (!accepted || accepted.status !== 'accepted') {
+      ElMessage.closeAll()
+      ElMessage({ message: accepted?.message || '启动计算失败', type: 'error' })
+      return false
+    }
+    return await waitAvaflowBetaResult(accepted.jobId || upResp.jobId, '冰川泥石流沿程调控')
+  } catch (error) {
+    ElMessage.closeAll()
+    const msg = error?.response?.data || error?.message || error
+    ElMessage({ message: '沿程调控计算失败: ' + (typeof msg === 'string' ? msg : JSON.stringify(msg)), type: 'error' })
+    console.error('submitBetaRegulation error:', error)
+    return false
+  }
+}
+
 const submitTerrainRegulation = async kind => {
   if (terrainPolygon.value.length < 3) {
     ElMessage({ message: '请先在地图上手绘一个封闭范围（至少 3 个顶点）', type: 'warning', duration: 4000 })
@@ -2837,16 +2933,19 @@ const submitTerrainRegulation = async kind => {
     ElMessage({ message: '请输入大于 0 的加高值（米）', type: 'warning', duration: 4000 })
     return
   }
+  const terrainEdits = [
+    {
+      polygon: terrainPolygon.value.map(p => [Number(p[0]), Number(p[1])]),
+      raise,
+    },
+  ]
   terrainRunning.value = true
   try {
-    const ok = await submitForm2({
-      terrainEdits: [
-        {
-          polygon: terrainPolygon.value.map(p => [Number(p[0]), Number(p[1])]),
-          raise,
-        },
-      ],
-    })
+    // 断链调控走冰岩崩动力学模型（Pro），沿程调控走冰川泥石流动力学模型（r.avaflow）
+    const ok =
+      kind === 'along'
+        ? await submitBetaRegulation(terrainEdits)
+        : await submitForm2({ terrainEdits })
     if (ok === true) {
       const cfg = terrainRegulationConfigs.find(item => item.kind === kind)
       if (cfg) cfg.visible = false
