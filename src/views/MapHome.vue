@@ -2153,7 +2153,7 @@ function initChainButton() {
 
 
 const area_avaflow = ref(null)
-/** 山洪泥石流 GeoJSON 的 base path，由后端返回或按 area 默认 */
+/** 冰川泥石流 GeoJSON 的 base path，由后端返回或按 area 默认 */
 const avaflowOutputBase = ref('/ng/avaflow')
 /** 热力图帧数，用于轮播循环 */
 const avaflowFrameCount = ref(21)
@@ -2216,8 +2216,8 @@ const yjLayers = payload => {
   // console.log('已跳转！！！')
 }
 
-// 洪水泥石流启动动力学模型（测试） — 独立渲染逻辑
-// 洪水泥石流（测试）— DebrisFlow 渲染
+// 冰岩崩动力学模型（测试） — 独立渲染逻辑
+// 冰岩崩（测试）— DebrisFlow 渲染
 let sdpSim = null
 let sdpLegendEl = null
 
@@ -2437,7 +2437,7 @@ const PRO_FIELD_META = {
 }
 const proFieldMeta = field => PRO_FIELD_META[String(field || 'solid').toLowerCase()] || PRO_FIELD_META.solid
 
-const betaLayers = async (payload, label = '山洪泥石流启动动力学模型', options = {}) => {
+const betaLayers = async (payload, label = '冰川泥石流动力学模型', options = {}) => {
   const useDrape = options.drape !== false
   const result = payload?.result
   if (!result || result.status !== 'ok') {
@@ -2703,8 +2703,8 @@ const betaLayers = async (payload, label = '山洪泥石流启动动力学模型
   }
 
 }
-// 洪水泥石流启动动力学模型（python_port）复用 beta 的 ASC 帧渲染链路
-const proLayers = payload => betaLayers(payload, '洪水泥石流启动动力学模型')
+// 冰岩崩动力学模型（python_port）复用 beta 的 ASC 帧渲染链路
+const proLayers = payload => betaLayers(payload, '冰岩崩动力学模型')
 
 // ===== 断链 / 沿程调控：地图手绘封闭范围 =====
 // LeTh 面板点「在地图上绘制」后进入绘制模式：左键逐点、右键结束、Esc 取消；
@@ -7100,7 +7100,7 @@ const cleanentity = () => {
   clearHeatmapPrimitive()
   // 3. 移除洪水图层
   removeFloodPrimitive()
-  // 3.1 移除山洪/洪水泥石流启动动力学结果（贴地影像图层 + 帧动画 + 图例 + 渲染器）
+  // 3.1 移除冰川泥石流/冰岩崩动力学结果（贴地影像图层 + 帧动画 + 图例 + 渲染器）
   // 说明：该结果由 Cesium 影像图层承载，既不是 DataSource/Entity，也不带 sdpResultTag，
   // 之前的清理链路都没有覆盖到，导致「清除实体」后结果图层仍残留在地图上。
   betaRunId++ // 先让仍在转换中的异步帧失效，避免清理完成后又被补画回来

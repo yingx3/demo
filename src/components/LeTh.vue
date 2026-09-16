@@ -394,17 +394,17 @@
       <div class="theme">
         <div class="title">灾害链模拟</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
-        <!-- 山洪泥石流启动动力学模型：r.avaflow 内核 + 逐帧渲染泥石流层厚度 -->
+        <!-- 冰川泥石流动力学模型：r.avaflow 内核 + 逐帧渲染泥石流层厚度 -->
         <div class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
           <el-button :plain="true" @click="dialogBeta = true"
-            ><span>山洪泥石流启动动力学模型</span></el-button
+            ><span>冰川泥石流动力学模型</span></el-button
           >
-          <el-dialog v-model="dialogBeta" title="山洪泥石流启动动力学模型" width="520" :close-on-click-modal="false" class="dialog_quanyu dialog_fullRisk" @open="resetBetaInputs">
+          <el-dialog v-model="dialogBeta" title="冰川泥石流动力学模型" width="520" :close-on-click-modal="false" class="dialog_quanyu dialog_fullRisk" @open="resetBetaInputs">
             <template #header>
               <div class="model-dialog-header">
                 <div class="model-dialog-heading">
-                  <span class="model-dialog-title">山洪泥石流启动动力学模型</span>
+                  <span class="model-dialog-title">冰川泥石流动力学模型</span>
                   <span class="model-dialog-subtitle">启动动力学参数配置</span>
                 </div>
                 <el-tooltip content="查看参数说明" placement="top">
@@ -423,13 +423,13 @@
             >
               <template #title>
                 <div class="model-help-head">
-                  <span class="model-help-title">山洪泥石流启动动力学模型</span>
+                  <span class="model-help-title">冰川泥石流动力学模型</span>
                   <span class="model-help-subtitle">参数说明</span>
                 </div>
               </template>
               <div id="shanhong-model-info" class="help-body">
                 <h2>一、功能目的</h2>
-                <p>采用二维流变动力学数值方法，基于平均高程、物源启动区与影响范围栅格模拟山洪泥石流的启动与运动过程，输出逐时刻的泥石流层厚度栅格序列，用于评估运动路径、堆积范围与致灾强度。</p>
+                <p>采用二维流变动力学数值方法，基于平均高程、物源启动区与影响范围栅格模拟冰川泥石流的启动与运动过程，输出逐时刻的泥石流层厚度栅格序列，用于评估运动路径、堆积范围与致灾强度。</p>
                 <h2>二、界面输入参数</h2>
                 <table>
                   <tbody>
@@ -502,11 +502,11 @@
           <img src="../assets/img/云反射率.png" alt="" />
 
           <el-button :plain="true" @click="dialogVisible2 = true"
-            ><span>洪水泥石流启动动力学模型</span></el-button
+            ><span>冰岩崩动力学模型</span></el-button
           >
           <el-dialog
             v-model="dialogVisible2"
-            title="洪水泥石流启动动力学模型"
+            title="冰岩崩动力学模型"
             width="560"
             :close-on-click-modal="false"
             class="dialog_quanyu dialog_fullRisk"
@@ -515,8 +515,8 @@
             <template #header>
               <div class="model-dialog-header">
                 <div class="model-dialog-heading">
-                  <span class="model-dialog-title">洪水泥石流启动动力学模型</span>
-                  <span class="model-dialog-subtitle">洪水—泥石流耦合参数配置</span>
+                  <span class="model-dialog-title">冰岩崩动力学模型</span>
+                  <span class="model-dialog-subtitle">冰岩崩动力学参数配置</span>
                 </div>
                 <el-tooltip content="查看参数说明" placement="top">
                   <el-icon
@@ -535,7 +535,7 @@
                   >
                   <template #title>
                     <div class="model-help-head">
-                      <span class="model-help-title">洪水泥石流启动动力学模型</span>
+                      <span class="model-help-title">冰岩崩动力学模型</span>
                       <span class="model-help-subtitle">参数说明</span>
                     </div>
                   </template>
@@ -544,7 +544,7 @@
                     class="help-body"
                     >
                     <h2>一、功能目的</h2>
-                    <p>采用泥石流—洪水耦合的浅水流数值方法，在灾后地形上模拟山洪泥石流的启动、输移与堆积过程，输出逐时刻的泥石流层厚度、水层厚度与流速，为堰塞湖溃决—洪水—泥石流灾害链的形成机制分析与风险评估提供量化支撑。</p>
+                    <p>采用泥石流—洪水耦合的浅水流数值方法，在灾后地形上模拟冰岩崩—泥石流的启动、输移与堆积过程，输出逐时刻的泥石流层厚度、水层厚度与流速，为堰塞湖溃决—洪水—泥石流灾害链的形成机制分析与风险评估提供量化支撑。</p>
                     <h2>二、界面输入参数（数据）</h2>
                     <table>
                       <tbody>
@@ -754,15 +754,15 @@
             </el-form>
           </el-dialog>
         </div>
-        <!-- 洪水泥石流启动动力学模型（测试）：暂时隐藏，保留代码备查 -->
+        <!-- 冰岩崩动力学模型（测试）：暂时隐藏，保留代码备查 -->
         <div v-if="false" class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
           <el-button :plain="true" @click="dialogVisible2Test = true"
-            ><span>洪水泥石流启动动力学模型（测试）</span></el-button
+            ><span>冰岩崩动力学模型（测试）</span></el-button
           >
           <el-dialog
             v-model="dialogVisible2Test"
-            title="洪水泥石流启动动力学模型（测试）"
+            title="冰岩崩动力学模型（测试）"
             width="500"
             :close-on-click-modal="false"
             class="dialog_flood"
@@ -770,7 +770,7 @@
           >
             <template #header>
               <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-                <span style="color:#ffffff;font-size:24px">洪水泥石流启动动力学模型（测试）</span>
+                <span style="color:#ffffff;font-size:24px">冰岩崩动力学模型（测试）</span>
               </div>
             </template>
             <div style="display:flex;align-items:center;gap:12px;margin:6px 0 10px 24px">
@@ -1975,8 +1975,8 @@
                   <tr><td>参数</td><td>取值 / 单位</td><td>说明</td></tr>
                   <tr><td>{{ cfg.areaLabel }}</td><td>手绘闭合多边形</td><td>在三维地图上左键逐点落点、右键结束绘制，至少需要 3 个顶点；绘制结果即为调控范围</td></tr>
                   <tr><td>{{ cfg.raiseLabel }}</td><td>m（断链调控默认 20，沿程调控默认 15）</td><td>将绘制范围内的底床整体抬升该高度，模拟坝体或护底高程</td></tr>
-                  <tr><td>底床与水深数据</td><td>.tif / .tiff / .txt / .asc</td><td>沿用「洪水泥石流启动动力学模型」的输入数据（zb 灾前地形 / zl 灾后地形 / hw 初始水深），未选择文件时使用内置示例数据</td></tr>
-                  <tr><td>动力学参数</td><td>同洪水模型</td><td>基底摩擦角、曼宁摩擦系数、网格长宽、滑坡与河水密度、输出间距、计算时间沿用洪水泥石流模型的默认值</td></tr>
+                  <tr><td>底床与水深数据</td><td>.tif / .tiff / .txt / .asc</td><td>沿用「冰岩崩动力学模型」的输入数据（zb 灾前地形 / zl 灾后地形 / hw 初始水深），未选择文件时使用内置示例数据</td></tr>
+                  <tr><td>动力学参数</td><td>同冰岩崩动力学模型</td><td>基底摩擦角、曼宁摩擦系数、网格长宽、滑坡与河水密度、输出间距、计算时间沿用冰岩崩动力学模型的默认值</td></tr>
                 </tbody>
               </table>
               <h2>三、运行流程</h2>
@@ -2457,7 +2457,7 @@ const form2 = reactive({
   // 渲染场固定为泥石流层厚度 solid=zB-zL（后端仍支持 total/water/speed）：旧语义 total=泥石流层+水层 / water=水层 / solid=泥石流层(zB-zL) / speed=流速
   field: 'solid',
 })
-// 洪水泥石流启动动力学模型（python_port）输入数据：zb 灾前地形 / zl 灾后地形 / hw 初始水深
+// 冰岩崩动力学模型（python_port）输入数据：zb 灾前地形 / zl 灾后地形 / hw 初始水深
 const proUploadRefs = reactive({})
 const proFiles = reactive({})
 const proFileNames = reactive({})
@@ -2484,9 +2484,9 @@ const triggerProUpload = key => {
   const el = proUploadRefs[key]?.$el?.querySelector?.('input[type=file]')
   if (el) el.click()
 }
-// 洪水泥石流启动动力学模型（python_port）运行状态
+// 冰岩崩动力学模型（python_port）运行状态
 const floodRunning = ref(false)
-// 洪水泥石流启动动力学模型（测试）
+// 冰岩崩动力学模型（测试）
 const dialogVisible2Test = ref(false)
 const renderMethod = ref('debrisflow')
 const form2Test = reactive({
@@ -2572,7 +2572,7 @@ async function submitBeta() {
       }
       if (st && st.status === 'done') {
         ElMessage.closeAll()
-        ElMessage({ message: '山洪泥石流启动动力学模型 完成，输出 ' + (st.frameCount || 0) + ' 帧', type: 'success', duration: 2500 })
+        ElMessage({ message: '冰川泥石流动力学模型 完成，输出 ' + (st.frameCount || 0) + ' 帧', type: 'success', duration: 2500 })
         $emit('betaLayers', {
           result: {
             status: 'ok',
@@ -2727,7 +2727,7 @@ const subitForm = () => {
       console.error('subitForm error:', error)
     })
 }
-// 洪水泥石流启动动力学模型（python_port 双层浅水流数值内核）
+// 冰岩崩动力学模型（python_port 双层浅水流数值内核）
 function onSubmit2() {
   dialogVisible2.value = false
   ElMessage({ message: '运行中，请稍候...', type: 'info', duration: 3000 })
@@ -2757,7 +2757,7 @@ const terrainRegulationConfigs = reactive([
     raiseLabel: '坝体加高值',
     raisePlaceholder: '例如 20',
     runText: '执行断链调控计算',
-    hint: '运行前请先在「洪水泥石流启动动力学模型」中准备好输入数据（zb/zl/hw），未选择文件时使用内置示例数据。',
+    hint: '运行前请先在「冰岩崩动力学模型」中准备好输入数据（zb/zl/hw），未选择文件时使用内置示例数据。',
   },
   {
     kind: 'along',
@@ -3012,7 +3012,7 @@ const submitForm2 = async (extra = {}) => {
       if (st && st.status === 'done') {
         ElMessage.closeAll()
         ElMessage({
-          message: '洪水泥石流启动动力学模型完成，输出 ' + (st.frameCount || 0) + ' 帧',
+          message: '冰岩崩动力学模型完成，输出 ' + (st.frameCount || 0) + ' 帧',
           type: 'success',
           duration: 2500,
         })
@@ -3051,7 +3051,7 @@ const submitForm2 = async (extra = {}) => {
     const msg = error?.response?.data || error?.message || error
     ElMessage({
       message:
-        '洪水泥石流模拟失败: ' +
+        '冰岩崩动力学模拟失败: ' +
         (typeof msg === 'string' ? msg : JSON.stringify(msg)),
       type: 'error',
     })
@@ -3434,8 +3434,8 @@ const resetGbmInputs = () => {
   uploadRefGBM.value?.clearFiles?.()
 }
 
-// 洪水泥石流启动动力学模型（Pro）
-// 洪水泥石流启动动力学模型：历史模拟记录（静态目录里的历次运行结果）
+// 冰岩崩动力学模型（Pro）
+// 冰岩崩动力学模型：历史模拟记录（静态目录里的历次运行结果）
 const proHistoryVisible = ref(false)
 const proHistoryLoading = ref(false)
 const proHistoryItems = ref([])
@@ -3526,7 +3526,7 @@ const resetFloodProInputs = () => {
   Object.values(proUploadRefs).forEach(refItem => refItem?.clearFiles?.())
 }
 
-// 洪水泥石流启动动力学模型（测试，界面已隐藏）
+// 冰岩崩动力学模型（测试，界面已隐藏）
 const resetFloodTestInputs = () => {
   Object.assign(form2Test, {
     bed: '24',
@@ -3600,7 +3600,7 @@ const resetSdpInputs = () => {
   uploadOutputRef.value?.clearFiles?.()
 }
 
-// 山洪泥石流启动动力学模型（r.avaflow beta 内核，逐帧输出 hflow）
+// 冰川泥石流动力学模型（r.avaflow beta 内核，逐帧输出 hflow）
 const resetBetaInputs = () => {
   if (isProcessing.value) return
   new Set([...Object.keys(betaFiles), ...Object.keys(betaFileNames)]).forEach(key => {
