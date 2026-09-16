@@ -4471,6 +4471,63 @@ const resetSeismicInputs = () => {
 }
 </script>
 <style lang="scss" scoped>
+/* 模型集数据卡片的勾选弹窗：弹窗节点挂在 body 上，样式需用 :global 才能命中 */
+:global(.data-layer-popover.el-popover.el-popper) {
+  background: linear-gradient(180deg, rgba(7, 28, 56, 0.97), rgba(4, 16, 34, 0.97));
+  border: 1px solid rgba(56, 225, 255, 0.55);
+  box-shadow: 0 0 18px rgba(56, 225, 255, 0.25);
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: #eaf6ff;
+}
+
+:global(.data-layer-popover.el-popper .el-popper__arrow::before) {
+  background: rgba(7, 28, 56, 0.97);
+  border: 1px solid rgba(56, 225, 255, 0.55);
+}
+
+:global(.data-layer-popover .el-checkbox) {
+  display: flex;
+  align-items: center;
+  height: 26px;
+  margin-right: 0;
+}
+
+:global(.data-layer-popover .el-checkbox__label) {
+  color: #dbeaf7;
+  font-size: 13px;
+}
+
+:global(.data-layer-popover .el-checkbox__inner) {
+  background-color: transparent;
+  border-color: rgba(56, 225, 255, 0.65);
+}
+
+:global(.data-layer-popover .el-checkbox__input.is-checked .el-checkbox__inner),
+:global(.data-layer-popover .el-checkbox__input.is-indeterminate .el-checkbox__inner) {
+  background-color: #1e88e5;
+  border-color: #38e1ff;
+}
+
+:global(.data-layer-popover .el-checkbox__input.is-checked .el-checkbox__inner::after) {
+  border-color: #ffffff;
+}
+
+:global(.data-layer-popover .el-checkbox__input.is-checked + .el-checkbox__label) {
+  color: #38e1ff;
+}
+
+:global(.data-layer-popover .el-select__wrapper) {
+  background-color: rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+  border: 1px solid rgba(56, 225, 255, 0.35);
+}
+
+:global(.data-layer-popover .el-select__selected-item),
+:global(.data-layer-popover .el-select__placeholder) {
+  color: #eaf6ff;
+}
+
 /* 模型集里的静态数据卡片（勾选UI） */
 .data-layer-count {
   margin-left: 6px;
@@ -4487,18 +4544,24 @@ const resetSeismicInputs = () => {
   justify-content: space-between;
   align-items: center;
   font-weight: 600;
-  color: #303133;
+  color: #38e1ff;
+  font-size: 14px;
 }
 .data-layer-panel-actions a {
   margin-left: 10px;
   font-size: 12px;
-  color: #409eff;
+  color: #38e1ff;
   text-decoration: none;
+}
+
+.data-layer-panel-actions a:hover {
+  color: #8ceaff;
 }
 .data-layer-panel-hint {
   margin: 2px 0 4px;
   font-size: 12px;
-  color: #909399;
+  line-height: 16px;
+  color: #9fc6e6;
 }
 .data-layer-time {
   display: flex;
@@ -4506,7 +4569,7 @@ const resetSeismicInputs = () => {
   gap: 4px;
   margin-top: 6px;
   font-size: 12px;
-  color: #606266;
+  color: #9fc6e6;
 }
 
 :deep(.el-button.is-plain) {
@@ -4519,6 +4582,9 @@ const resetSeismicInputs = () => {
     'Lucida Sans', Arial, sans-serif;
   font-size: 15px;
   padding: 0;
+  /* 模型条目变多：压缩按钮高度，让左侧面板装下全部分类（超出可滚动） */
+  height: 28px;
+  line-height: 28px;
   // --el-color-primary: transparent;
 }
 
@@ -4559,21 +4625,43 @@ const resetSeismicInputs = () => {
   position: absolute;
   top: 50px;
   left: 60px;
+  /* 模型/数据卡片变多：内容超出时面板内滚动，不再溢出背景边框 */
+  max-height: 745px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
+}
+
+.left .total_theme::-webkit-scrollbar {
+  width: 6px;
+}
+
+.left .total_theme::-webkit-scrollbar-thumb {
+  background: rgba(56, 225, 255, 0.45);
+  border-radius: 3px;
+}
+
+.left .total_theme::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 225, 255, 0.75);
+}
+
+.left .total_theme::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .left .total_theme .theme {
-  margin: 20px 0;
+  margin: 10px 0;
 }
 
 .theme .title {
   width: 300px;
   text-align: left;
   padding-left: 10px;
-  line-height: 35px;
+  line-height: 32px;
   font-weight: 500;
   letter-spacing: 1px;
   color: rgba(255, 255, 255, 1);
-  font-size: 22px;
+  font-size: 20px;
   // background: url(../assets/img/left_theme_1.png);
 }
 
@@ -4660,18 +4748,18 @@ const resetSeismicInputs = () => {
   gap: 10px;
 }
 .box {
-  height: 30px;
+  height: 28px;
   font-weight: 500;
   letter-spacing: 1px;
   /* 添加字间距 */
-  line-height: 40px;
+  line-height: 28px;
   /* 添加行距，可以根据需要调整值 */
   // color: rgba(255, 255, 255, 1);
   color: #606266;
   text-align: left;
   font-size: 15px;
   padding-left: 10px;
-  padding-top: 5px;
+  padding-top: 2px;
 }
 
 .box img {
@@ -4687,7 +4775,7 @@ const resetSeismicInputs = () => {
 }
 
 .p_bottom {
-  padding-bottom: 10px;
+  padding-bottom: 2px;
 }
 
 /* 正方形的样式 */
