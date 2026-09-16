@@ -1934,7 +1934,7 @@
           :key="cfg.kind"
           v-model="cfg.visible"
           :title="cfg.title"
-          width="560"
+          :width="cfg.kind === 'chain' ? '700px' : '560px'"
           :close-on-click-modal="false"
           class="dialog_quanyu"
         >
@@ -1976,12 +1976,14 @@
                   <tr><td>{{ cfg.areaLabel }}</td><td>手绘闭合多边形</td><td>在三维地图上左键逐点落点、右键结束绘制，至少需要 3 个顶点；绘制结果即为调控范围</td></tr>
                   <tr><td>{{ cfg.raiseLabel }}</td><td>m（断链调控默认 20，沿程调控默认 15）</td><td>将绘制范围内的底床整体抬升该高度，模拟坝体或护底高程</td></tr>
                   <template v-if="cfg.kind === 'chain'">
-                    <tr><td>底床与水深数据</td><td>.tif / .tiff / .txt / .asc</td><td>沿用「冰岩崩动力学模型」的输入数据（zb 灾前地形 / zl 灾后地形 / hw 初始水深），未选择文件时使用内置示例数据</td></tr>
-                    <tr><td>动力学参数</td><td>同冰岩崩动力学模型</td><td>基底摩擦角、曼宁摩擦系数、网格长宽、滑坡与河水密度、输出间距、计算时间沿用冰岩崩动力学模型的默认值</td></tr>
+                    <tr><td>数据坐标系</td><td>EPSG 编码</td><td>txt / asc 等不自带坐标系的输入按此解释；tif 或带 xllcorner / yllcorner 头部时以文件为准（默认 EPSG:32646）</td></tr>
+                    <tr><td>源区中心（经度 / 纬度）</td><td>WGS84 十进制度</td><td>无投影头部输入的空间定位基准（易贡示例 95.0020 / 30.2354）</td></tr>
+                    <tr><td>灾前地形 / 灾后地形 / 初始水深</td><td>.tif / .tiff / .txt / .asc</td><td>在断链调控面板内独立选择，不读取「冰岩崩动力学模型」弹窗中的数据；三份都不选时使用内置示例数据</td></tr>
+                    <tr><td>动力学参数</td><td>数值</td><td>基底摩擦角、曼宁摩擦系数、网格长宽、滑坡与河水密度、输出间距、计算时间、物源厚度比例，全部在本面板单独填写</td></tr>
                   </template>
                   <template v-else>
-                    <tr><td>输入栅格</td><td>.tif / .tiff（三份）</td><td>沿用「冰川泥石流动力学模型」的输入数据（平均高程 / 物源启动区 / 影响范围），三份都需就绪才能启动</td></tr>
-                    <tr><td>动力学参数</td><td>同冰川泥石流动力学模型</td><td>摩擦参数、模拟时长与滑移路径沿用冰川泥石流动力学模型的默认配置</td></tr>
+                    <tr><td>输入栅格</td><td>.tif / .tiff（三份）</td><td>在沿程调控面板内独立选择平均高程 / 物源启动区 / 影响范围，不读取「冰川泥石流动力学模型」弹窗中的数据，三份都就绪才能启动</td></tr>
+                    <tr><td>动力学参数</td><td>固定</td><td>摩擦参数、模拟时长与滑移路径沿用冰川泥石流动力学模型的默认配置</td></tr>
                   </template>
                 </tbody>
               </table>
@@ -2004,18 +2006,105 @@
             <p class="terrain-desc" :style="{ borderLeftColor: cfg.accent }">
               {{ cfg.desc }}
             </p>
-            <template v-if="cfg.kind === 'along'">
+            <!-- 断链调控：本面板独立输入，不与「冰岩崩动力学模型」共享 -->
+            <template v-if="cfg.kind === 'chain'">
+              <p class="quanyu-section-label">输入数据</p>
+              <el-form label-position="top" class="quanyu-form">
+                <el-form-item label="数据坐标系" label-position="top">
+                  <el-input v-model="chainSourceCrs" placeholder="EPSG:32646" />
+                </el-form-item>
+                <el-form-item label="源区中心（经度 / 纬度）" label-position="top">
+                  <div class="quanyu-row-2">
+                    <el-input v-model="chainAnchorLon" placeholder="经度 95.0020" />
+                    <el-input v-model="chainAnchorLat" placeholder="纬度 30.2354" />
+                  </div>
+                </el-form-item>
+                <el-form-item
+                  v-for="item in chainFileItems"
+                  :key="'chain-' + item.key"
+                  :label="item.label"
+                  label-position="top"
+                  class="quanyu-file-field"
+                >
+                  <el-input
+                    v-model="chainFileNames[item.key]"
+                    :placeholder="item.placeholder"
+                    readonly
+                  >
+                    <template #append>
+                      <el-upload
+                        :ref="el => { if (el) chainUploadRefs[item.key] = el }"
+                        :auto-upload="false"
+                        :show-file-list="false"
+                        accept=".tif,.tiff,.asc,.txt"
+                        @change="(f, fs) => handleChainFile(item.key, f, fs)"
+                      >
+                        <el-button
+                          class="quanyu-upload-trigger"
+                          @click.stop="triggerChainUpload(item.key)"
+                        >
+                          <i class="iconfont icon-daoru"></i>
+                        </el-button>
+                      </el-upload>
+                    </template>
+                  </el-input>
+                </el-form-item>
+              </el-form>
+
+              <p class="quanyu-section-label">模型参数</p>
+              <el-form :model="chainForm" label-position="top" class="quanyu-form">
+                <div class="quanyu-param-grid">
+                  <el-form-item label="基底摩擦角 (rad)">
+                    <el-input v-model="chainForm.bed" placeholder="0.05" />
+                  </el-form-item>
+                  <el-form-item label="曼宁摩擦系数">
+                    <el-input v-model="chainForm.nn" placeholder="0.0125" />
+                  </el-form-item>
+                  <el-form-item label="网格长度 (m)">
+                    <el-input v-model="chainForm.dx" placeholder="20" />
+                  </el-form-item>
+                  <el-form-item label="网格宽度 (m)">
+                    <el-input v-model="chainForm.dy" placeholder="20" />
+                  </el-form-item>
+                  <el-form-item label="滑坡密度 (kg/m³)">
+                    <el-input v-model="chainForm.rous" placeholder="2700" />
+                  </el-form-item>
+                  <el-form-item label="河水密度 (kg/m³)">
+                    <el-input v-model="chainForm.rouf" placeholder="1000" />
+                  </el-form-item>
+                  <el-form-item label="输出间距 (s)">
+                    <el-input v-model="chainForm.interval" placeholder="10" />
+                  </el-form-item>
+                  <el-form-item label="计算时间 (s)">
+                    <el-input v-model="chainForm.Tmax" placeholder="200" />
+                  </el-form-item>
+                  <el-form-item label="物源厚度比例 (%)">
+                    <el-input v-model="chainForm.depthScale" placeholder="30" />
+                  </el-form-item>
+                </div>
+                <el-form-item class="quanyu-note">
+                  <span>
+                    支持 .tif / .tiff / .txt / .asc（ESRI ASCII）；txt / asc 自带 xllcorner /
+                    yllcorner 头部时按「数据坐标系」解释，无头部时按「源区中心」经纬度定位。
+                    灾前地形 / 灾后地形 / 初始水深在本面板独立选择，三份都不选时使用内置示例数据。
+                  </span>
+                </el-form-item>
+              </el-form>
+            </template>
+
+            <!-- 沿程调控：本面板独立输入，不与「冰川泥石流动力学模型」共享 -->
+            <template v-else>
               <p class="quanyu-section-label">输入数据</p>
               <el-form label-position="top" class="quanyu-form">
                 <el-form-item
-                  v-for="item in betaFileItems"
+                  v-for="item in alongFileItems"
                   :key="'along-' + item.key"
                   :label="item.label"
                   label-position="top"
                   class="quanyu-file-field"
                 >
                   <el-input
-                    v-model="betaFileNames[item.key]"
+                    v-model="alongFileNames[item.key]"
                     :placeholder="item.placeholder"
                     readonly
                   >
@@ -2025,7 +2114,7 @@
                         :auto-upload="false"
                         :show-file-list="false"
                         accept=".tif,.tiff"
-                        @change="(f, fs) => handleBetaFile(item.key, f, fs)"
+                        @change="(f, fs) => handleAlongFile(item.key, f, fs)"
                       >
                         <el-button
                           class="quanyu-upload-trigger"
@@ -2760,7 +2849,7 @@ const terrainRegulationConfigs = reactive([
     raiseLabel: '坝体加高值',
     raisePlaceholder: '例如 20',
     runText: '执行断链调控计算',
-    hint: '运行前请先在「冰岩崩动力学模型」中准备好输入数据（zb/zl/hw），未选择文件时使用内置示例数据。',
+    hint: '运行前请在本面板准备输入数据（灾前地形 / 灾后地形 / 初始水深）并核对数据坐标系与源区中心；本面板与「冰岩崩动力学模型」弹窗各自独立，三份都不选时使用内置示例数据。',
   },
   {
     kind: 'along',
@@ -2775,9 +2864,104 @@ const terrainRegulationConfigs = reactive([
     raiseLabel: '床面抬升高度',
     raisePlaceholder: '例如 15',
     runText: '执行沿程调控计算',
-    hint: '运行前请先准备「冰川泥石流动力学模型」的三份输入栅格（平均高程 / 物源启动区 / 影响范围），可在本面板或该模型弹窗中选择；未上传时无法启动。',
+    hint: '运行前请在本面板选择三份输入栅格（平均高程 / 物源启动区 / 影响范围）；本面板与「冰川泥石流动力学模型」弹窗各自独立，未选齐三份时无法启动。',
   },
 ])
+
+// ===== 两个调控面板的输入状态：各自独立，不与动力学模型共享 =====
+// 断链调控（冰岩崩内核）：本面板自己的坐标系 / 源区中心 / 三份底床数据 / 模型参数
+const chainUploadRefs = reactive({})
+const chainFiles = reactive({})
+const chainFileNames = reactive({})
+const chainFileItems = [
+  { key: 'zb', label: '灾前地形', placeholder: 'zb.tif / zb.txt（灾前 DEM）' },
+  { key: 'zl', label: '灾后地形', placeholder: 'zl.tif / zl.txt（灾后 DEM）' },
+  { key: 'hw', label: '初始水深', placeholder: 'hw.tif / hw.txt（堰塞湖水深）' },
+]
+const chainSourceCrs = ref('EPSG:32646')
+const chainAnchorLon = ref('95.0020')
+const chainAnchorLat = ref('30.2354')
+const chainFormDefaults = {
+  bed: '0.05',
+  nn: '0.0125',
+  dx: '20',
+  dy: '20',
+  rous: '2700',
+  rouf: '1000',
+  interval: '10',
+  Tmax: '200',
+  depthScale: '30',
+  field: 'solid',
+}
+const chainForm = reactive({ ...chainFormDefaults })
+chainFileItems.forEach(item => {
+  chainFiles[item.key] = null
+  chainFileNames[item.key] = ''
+})
+const handleChainFile = (key, uploadFile, uploadFiles) => {
+  const f = (uploadFiles && uploadFiles[0]?.raw) || uploadFile.raw || uploadFile
+  chainFiles[key] = f
+  chainFileNames[key] = f?.name || ''
+}
+const triggerChainUpload = key => {
+  const el = chainUploadRefs[key]?.$el?.querySelector?.('input[type=file]')
+  if (el) el.click()
+}
+const resetChainInputs = () => {
+  if (floodRunning.value) return
+  Object.assign(chainForm, chainFormDefaults)
+  chainFileItems.forEach(item => {
+    chainFiles[item.key] = null
+    chainFileNames[item.key] = ''
+  })
+  chainSourceCrs.value = 'EPSG:32646'
+  chainAnchorLon.value = '95.0020'
+  chainAnchorLat.value = '30.2354'
+  Object.values(chainUploadRefs).forEach(refItem => {
+    refItem?.clearFiles?.()
+    const input = refItem?.$el?.querySelector?.('input[type=file]')
+    if (input) input.value = ''
+  })
+}
+
+// 沿程调控（冰川泥石流内核）：本面板自己的三份栅格
+const alongUploadRefs = reactive({})
+const alongFiles = reactive({})
+const alongFileNames = reactive({})
+const alongFileItems = [
+  { key: 'elev', label: '平均高程', placeholder: '选择 elevation.tif' },
+  { key: 'debris', label: '物源启动区', placeholder: '选择 debris.tif' },
+  { key: 'impact', label: '影响范围', placeholder: '选择 impact_area.tif' },
+]
+alongFileItems.forEach(item => {
+  alongFiles[item.key] = null
+  alongFileNames[item.key] = ''
+})
+const handleAlongFile = (key, uploadFile, uploadFiles) => {
+  const f = (uploadFiles && uploadFiles[0]?.raw) || uploadFile.raw || uploadFile
+  alongFiles[key] = f
+  alongFileNames[key] = f?.name || ''
+}
+const triggerAlongUpload = key => {
+  const el = alongUploadRefs[key]?.$el?.querySelector?.('input[type=file]')
+  if (el) el.click()
+}
+const resetAlongInputs = () => {
+  if (isProcessing.value) return
+  alongFileItems.forEach(item => {
+    alongFiles[item.key] = null
+    alongFileNames[item.key] = ''
+  })
+  Object.values(alongUploadRefs).forEach(refItem => {
+    refItem?.clearFiles?.()
+    const input = refItem?.$el?.querySelector?.('input[type=file]')
+    if (input) input.value = ''
+  })
+}
+const resetTerrainInputs = kind => {
+  if (kind === 'along') resetAlongInputs()
+  else resetChainInputs()
+}
 
 const terrainPolygon = ref([])
 const terrainKind = ref('')
@@ -2797,6 +2981,8 @@ const openTerrainRegulation = kind => {
   terrainDrawing.value = false
   terrainKind.value = kind
   terrainRaise.value = kind === 'chain' ? '20' : '15'
+  // 每次重新进入功能：清空本面板上一次的输入（两个面板互不影响）
+  resetTerrainInputs(kind)
   cfg.visible = true
 }
 
@@ -2830,12 +3016,8 @@ const onTerrainDrawCancelled = () => {
   if (cfg) cfg.visible = true
 }
 
-// 沿程调控复用冰川泥石流动力学模型的输入栅格选择状态
-const alongUploadRefs = reactive({})
-const triggerAlongUpload = key => {
-  const el = alongUploadRefs[key]?.$el?.querySelector?.('input[type=file]')
-  if (el) el.click()
-}
+// 沿程调控的输入状态（alongFiles / alongFileNames / alongUploadRefs）在上方「调控面板输入状态」区块中独立定义，
+// 不再复用冰川泥石流动力学模型弹窗的选择。
 
 // 轮询 r.avaflow 计算状态（冰川泥石流动力学模型 / 沿程调控共用）
 const waitAvaflowBetaResult = async (jobId, label) => {
@@ -2881,10 +3063,10 @@ const waitAvaflowBetaResult = async (jobId, label) => {
 
 // 冰川泥石流沿程调控：上传三份栅格 -> 后端抬高 elevation 范围 -> r.avaflow 计算
 const submitBetaRegulation = async terrainEdits => {
-  const missing = betaFileItems.filter(item => !betaFiles[item.key])
+  const missing = alongFileItems.filter(item => !alongFiles[item.key])
   if (missing.length > 0) {
     ElMessage({
-      message: '请先选择: ' + missing.map(i => i.label).join('、') + '（可在「冰川泥石流动力学模型」中准备）',
+      message: '请先在本面板选择输入数据: ' + missing.map(i => i.label).join('、'),
       type: 'warning',
       duration: 6000,
     })
@@ -2895,7 +3077,7 @@ const submitBetaRegulation = async terrainEdits => {
     const formData = new FormData()
     const map = { elev: 'elev.tif', debris: 'debris.tif', impact: 'impact_area.tif' }
     for (const key of ['elev', 'debris', 'impact']) {
-      const f = betaFiles[key]
+      const f = alongFiles[key]
       if (f) {
         const nf = new File([f], map[key], { type: f.type || 'application/octet-stream' })
         formData.append('files', nf)
@@ -2945,7 +3127,7 @@ const submitTerrainRegulation = async kind => {
     const ok =
       kind === 'along'
         ? await submitBetaRegulation(terrainEdits)
-        : await submitForm2({ terrainEdits })
+        : await submitChainRegulation(terrainEdits)
     if (ok === true) {
       const cfg = terrainRegulationConfigs.find(item => item.kind === kind)
       if (cfg) cfg.visible = false
@@ -2957,40 +3139,38 @@ const submitTerrainRegulation = async kind => {
 
 defineExpose({ onTerrainPolygonDrawn, onTerrainDrawCancelled })
 
-// 参数传回后端 -> 后端调用 suanfa/Pro/python_port 数值内核 -> 输出 ASC 帧 -> 前端渲染
-const submitForm2 = async (extra = {}) => {
+// 参数传回后端 -> 后端调用数值内核 -> 输出 ASC 帧 -> 前端渲染
+// 传参化改造：冰岩崩动力学模型与灾害链断链调控各自使用本面板的输入状态，互不共享
+const runProJob = async (config, extra = {}) => {
+  const { files, fileItems, sourceCrs, anchorLon, anchorLat, params, label, partialHint } = config
   if (floodRunning.value) {
     ElMessage({ message: '正在计算中，请稍候...', type: 'info' })
-    return
+    return false
   }
   floodRunning.value = true
   ElMessage({ message: '数值计算启动中...', type: 'info', duration: 0 })
   try {
     // 选了三份输入数据就先上传（后端用上传数据计算）；都不选则用内置示例数据
-    const chosen = proFileItems.filter(item => proFiles[item.key])
-    if (chosen.length > 0 && chosen.length < proFileItems.length) {
+    const chosen = fileItems.filter(item => files[item.key])
+    if (chosen.length > 0 && chosen.length < fileItems.length) {
       ElMessage.closeAll()
-      ElMessage({
-        message: 'zb / zl / hw 三份数据要么都选，要么都不选（不选用内置示例数据）',
-        type: 'warning',
-        duration: 4000,
-      })
-      return
+      ElMessage({ message: partialHint, type: 'warning', duration: 4000 })
+      return false
     }
     let jobId = ''
-    if (chosen.length === proFileItems.length) {
+    if (chosen.length === fileItems.length) {
       ElMessage.closeAll()
       ElMessage({ message: '输入数据上传中...', type: 'info', duration: 0 })
       const formData = new FormData()
-      const crs = String(proSourceCrs.value || '').trim()
-      const anchorLon = String(proAnchorLon.value || '').trim()
-      const anchorLat = String(proAnchorLat.value || '').trim()
-      if (crs) formData.append('sourceCrs', crs)
-      if (anchorLon) formData.append('anchorLon', anchorLon)
-      if (anchorLat) formData.append('anchorLat', anchorLat)
+      const crsValue = String(sourceCrs || '').trim()
+      const anchorLonValue = String(anchorLon || '').trim()
+      const anchorLatValue = String(anchorLat || '').trim()
+      if (crsValue) formData.append('sourceCrs', crsValue)
+      if (anchorLonValue) formData.append('anchorLon', anchorLonValue)
+      if (anchorLatValue) formData.append('anchorLat', anchorLatValue)
       const keepExts = ['.tif', '.tiff', '.asc', '.txt']
-      for (const item of proFileItems) {
-        const f = proFiles[item.key]
+      for (const item of fileItems) {
+        const f = files[item.key]
         const rawName = String((f && f.name) || '')
         const dot = rawName.lastIndexOf('.')
         const lowerExt = dot >= 0 ? rawName.slice(dot).toLowerCase() : ''
@@ -3007,7 +3187,7 @@ const submitForm2 = async (extra = {}) => {
       if (!up || up.status !== 'ok' || !up.jobId) {
         ElMessage.closeAll()
         ElMessage({ message: up?.message || '输入数据上传失败', type: 'error' })
-        return
+        return false
       }
       jobId = up.jobId
 
@@ -3034,11 +3214,11 @@ const submitForm2 = async (extra = {}) => {
       }
     }
 
-    const anchorLonNum = proNumber(proAnchorLon.value, NaN)
-    const anchorLatNum = proNumber(proAnchorLat.value, NaN)
+    const anchorLonNum = proNumber(anchorLon, NaN)
+    const anchorLatNum = proNumber(anchorLat, NaN)
     const accepted = await modelService.runProModel({
       jobId,
-      sourceCrs: String(proSourceCrs.value || '').trim(),
+      sourceCrs: String(sourceCrs || '').trim(),
       ...(Number.isFinite(anchorLonNum) && Number.isFinite(anchorLatNum)
         ? { anchorLon: anchorLonNum, anchorLat: anchorLatNum }
         : {}),
@@ -3046,16 +3226,16 @@ const submitForm2 = async (extra = {}) => {
         ? { terrainEdits: extra.terrainEdits }
         : {}),
       params: {
-        bed: proNumber(form2.bed, 0.05),
-        nn: proNumber(form2.nn, 0.0125),
-        dx: proNumber(form2.dx, 0),
-        dy: proNumber(form2.dy, 0),
-        rous: proNumber(form2.rous, 2700),
-        rouf: proNumber(form2.rouf, 1000),
-        interval: proNumber(form2.interval, 10),
-        tmax: proNumber(form2.Tmax, 200),
+        bed: proNumber(params.bed, 0.05),
+        nn: proNumber(params.nn, 0.0125),
+        dx: proNumber(params.dx, 0),
+        dy: proNumber(params.dy, 0),
+        rous: proNumber(params.rous, 2700),
+        rouf: proNumber(params.rouf, 1000),
+        interval: proNumber(params.interval, 10),
+        tmax: proNumber(params.Tmax, 200),
         // 物源层厚度比例（% -> 0~1）：100 = 不削薄
-        depthScale: Math.min(1, Math.max(0, proNumber(form2.depthScale, 30) / 100)),
+        depthScale: Math.min(1, Math.max(0, proNumber(params.depthScale, 30) / 100)),
         maxFrames: 40,
         field: 'solid',
       },
@@ -3063,14 +3243,14 @@ const submitForm2 = async (extra = {}) => {
     if (!accepted || accepted.status !== 'accepted') {
       ElMessage.closeAll()
       ElMessage({ message: accepted?.message || '启动计算失败', type: 'error' })
-      return
+      return false
     }
     ElMessage.closeAll()
     // 长时段模拟（Tmax 大）墙钟耗时成倍增长：按「约 9 秒墙钟 / 1 秒模拟」估算前端等待上限，
     // 最少 60 分钟、最多 4 小时，避免结果还没出来就先报「等待超时」。
     // 后端同口径（12*Tmax+300s）会先一步终止进程并把原因写进 message，因此前端再多留 300s，
     // 让用户看到的是「后端为何没算完」，而不是笼统的「等待结果超时」。
-    const proTmaxHint = proNumber(form2.Tmax, 200)
+    const proTmaxHint = proNumber(params.Tmax, 200)
     const proWaitLimitMs = Math.min(
       4 * 60 * 60 * 1000,
       Math.max(60 * 60 * 1000, (Math.round(proTmaxHint * 12) + 600) * 1000),
@@ -3111,7 +3291,7 @@ const submitForm2 = async (extra = {}) => {
       if (st && st.status === 'done') {
         ElMessage.closeAll()
         ElMessage({
-          message: '冰岩崩动力学模型完成，输出 ' + (st.frameCount || 0) + ' 帧',
+          message: label + '完成，输出 ' + (st.frameCount || 0) + ' 帧',
           type: 'success',
           duration: 2500,
         })
@@ -3130,8 +3310,8 @@ const submitForm2 = async (extra = {}) => {
       }
       if (st && st.status === 'error') {
         ElMessage.closeAll()
-        ElMessage({ message: '模拟失败: ' + (st.message || '未知错误'), type: 'error' })
-        return
+        ElMessage({ message: label + '计算失败: ' + (st.message || '未知错误'), type: 'error' })
+        return false
       }
       if (Date.now() - startTs > proWaitLimitMs) {
         ElMessage.closeAll()
@@ -3142,23 +3322,54 @@ const submitForm2 = async (extra = {}) => {
             '分钟），后端计算可能仍在继续，可稍后重新运行或调小「计算时间」',
           type: 'error',
         })
-        return
+        return false
       }
     }
   } catch (error) {
     ElMessage.closeAll()
     const msg = error?.response?.data || error?.message || error
     ElMessage({
-      message:
-        '冰岩崩动力学模拟失败: ' +
-        (typeof msg === 'string' ? msg : JSON.stringify(msg)),
+      message: label + '计算失败: ' + (typeof msg === 'string' ? msg : JSON.stringify(msg)),
       type: 'error',
     })
-    console.error('submitForm2 error:', error)
+    console.error('runProJob error:', error)
+    return false
   } finally {
     floodRunning.value = false
   }
 }
+
+// 冰岩崩动力学模型：使用模型弹窗自己的输入状态
+const submitForm2 = async (extra = {}) =>
+  runProJob(
+    {
+      files: proFiles,
+      fileItems: proFileItems,
+      sourceCrs: proSourceCrs.value,
+      anchorLon: proAnchorLon.value,
+      anchorLat: proAnchorLat.value,
+      params: form2,
+      label: '冰岩崩动力学模型',
+      partialHint: 'zb / zl / hw 三份数据要么都选，要么都不选（不选用内置示例数据）',
+    },
+    extra,
+  )
+
+// 灾害链断链调控：使用断链调控面板自己的输入状态（与冰岩崩动力学模型互不影响）
+const submitChainRegulation = async terrainEdits =>
+  runProJob(
+    {
+      files: chainFiles,
+      fileItems: chainFileItems,
+      sourceCrs: chainSourceCrs.value,
+      anchorLon: chainAnchorLon.value,
+      anchorLat: chainAnchorLat.value,
+      params: chainForm,
+      label: '灾害链断链调控',
+      partialHint: 'zb / zl / hw 三份数据要么都选，要么都不选（不选用内置示例数据）',
+    },
+    { terrainEdits },
+  )
 
 // 关闭正方形的函数
 const closeSquare = () => {
