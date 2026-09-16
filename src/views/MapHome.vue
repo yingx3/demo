@@ -4215,8 +4215,10 @@ const HP_Danger = 'HP_Danger' // 图层名
 const NSL_Danger = 'NSL_Danger' // 图层名
 const SH_Danger = 'SH_Danger' // 图层名
 // 73 承载体分布
-const domestic_build = 'domestic_build'   // 731 建筑物提取
-const linzhi_pop = 'linzhi_pop'           // 732 人口提取（栅格）
+// [修正] 原值 'domestic_build' 是样式名而不是图层名，GeoServer 实际图层为 ygBuildings（默认样式 BuildPolygon）
+const domestic_build = 'ygBuildings'   // 731 建筑物提取
+// [修正] 原值 'linzhi_pop' 是样式名而不是图层名，GeoServer 实际图层为 pop_LinZhi（默认样式 LinzhiPop）
+const linzhi_pop = 'pop_LinZhi'           // 732 人口提取（栅格）
 const motuo_traffic = 'motuo_traffic'     // 733 交通流量预测
 // 74 建筑物风险评估
 const build_one = 'build_one'             // 741 1层建筑物脆弱性
@@ -4237,15 +4239,49 @@ const bridge = 'bridge'                   // 763 总体桥梁脆弱性
 const pop_risk = 'pop_risk'              // 77 人口风险评估（栅格）
 // 78 危险性评估
 const linzi_hazard = 'linzi_hazard'     // 781 区域危险性评估（栅格）
-const yigong_hazard = 'yigong_hazard'     // 782 点危险性评估（栅格）
+// [修正] 工作区未发布 yigong_hazard（易贡点危险性），暂用区域危险性评估图层顶替；
+// 后续在 GeoServer 发布易贡点危险性图层后，把这里改回 'yigong_hazard' 即可
+const yigong_hazard = 'linzi_hazard'     // 782 点危险性评估（栅格）
 const HISTORY_SIM_WMS_LAYER = 'BCNSL_results' // 历史数据模拟
 const STUDY_AREA_RECT = Cesium.Rectangle.fromDegrees(
   92.1550260147193, 27.422589628183562, // 西, 南
   98.8797996278891, 30.68902208298092, // 东, 北
 )
 
+// GeoServer 图层清单预检：只拉一次 GetCapabilities，图层名对不上时给出明确提示，
+// 避免只看到一串 "Failed to obtain image tile" 却不知道是图层没发布/名字写错。
+let wmsLayerIndexPromise = null
+const ensureWmsLayerKnown = layerName => {
+  if (!wmsLayerIndexPromise) {
+    wmsLayerIndexPromise = fetch(
+      `${GEOSERVER_WMS_URL}?service=WMS&request=GetCapabilities&version=1.1.0`,
+    )
+      .then(r => (r.ok ? r.text() : Promise.reject(new Error('HTTP ' + r.status))))
+      .then(txt =>
+        new Set(
+          [...txt.matchAll(/<Layer[^>]*>\s*<Name>([^<]+)<\/Name>/g)].map(m => m[1]),
+        ),
+      )
+      .catch(e => {
+        console.warn('[WMS] 获取 GeoServer 图层清单失败:', e)
+        return null
+      })
+  }
+  wmsLayerIndexPromise.then(set => {
+    if (!set || !set.size) return
+    const name = String(layerName).replace(/^ZHLXT:/, '')
+    if (!set.has(name)) {
+      console.warn(
+        `[WMS] 图层「${layerName}」不在 GeoServer 图层清单中：请确认已在工作区发布，` +
+          '否则地图不会显示该图层（控制台会持续报 Failed to obtain image tile）',
+      )
+    }
+  })
+}
+
 // WMS imagery provider 工厂：统一配置，避免重复
 const createWmsProvider = (layerName, transparent) => {
+  ensureWmsLayerKnown(layerName)
   return new Cesium.WebMapServiceImageryProvider({
     url: GEOSERVER_WMS_URL,
     layers: layerName,
