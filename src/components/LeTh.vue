@@ -1935,6 +1935,7 @@
           v-model="cfg.visible"
           :title="cfg.title"
           :width="cfg.kind === 'chain' ? '700px' : '560px'"
+          top="6vh"
           :close-on-click-modal="false"
           class="dialog_quanyu"
         >
@@ -4075,6 +4076,9 @@ const resetSeismicInputs = () => {
 }
 .terrain-panel {
   padding: 2px 6px 0;
+  /* 断链调控面板输入项较多：内容超长时面板内滚动，保证底部按钮始终可达 */
+  max-height: 70vh;
+  overflow-y: auto;
 }
 .terrain-desc {
   margin: 0 0 14px;
