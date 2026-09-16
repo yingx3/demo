@@ -1487,7 +1487,7 @@
       <div class="theme">
         <div class="title">风险评估</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
-        <div class="box">
+        <div class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
           <el-button :plain="true" @click="dialogVisibleQuanYu = true"
             ><span>全域风险脆弱性分析</span></el-button
@@ -3379,8 +3379,11 @@ const notifyTerrainEdits = (edits, name = '调控范围', meta = null) => {
     })
     return
   }
-  const dx = Number(meta?.dx) || Number(meta?.cellsize) || 0
-  const dy = Number(meta?.dy) || Number(meta?.cellsize) || 0
+  // 面积按「栅格真实像元尺寸」算：cells 统计的是栅格格子数，
+  // 而 meta.dx/dy 是求解器步长（界面可填，可能与数据像元不一致，例如数据 30m、界面填 20m）
+  const cellSize = Number(meta?.cellsize) || 0
+  const dx = cellSize > 0 ? cellSize : Number(meta?.dx) || 0
+  const dy = cellSize > 0 ? cellSize : Number(meta?.dy) || 0
   const areaText = dx > 0 && dy > 0 ? '（约 ' + ((cells * dx * dy) / 1e6).toFixed(3) + ' km²）' : ''
   const checked = list.filter(item => item && Number.isFinite(Number(item.flowPathCells)))
   const maxOf = key => checked.reduce((m, item) => Math.max(m, Number(item[key]) || 0), 0)
