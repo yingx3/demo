@@ -21,6 +21,12 @@ const modelService = {
       .get('/testapi/admin/user/yj_beta_status', { params: { jobId }, timeout: 30000 })
       .then(r => r.data)
   },
+  // 冰川泥石流动力学模型历史模拟记录（静态目录里保留下来的历次运行结果，可直接回放）
+  getAvaflowBetaHistory(params) {
+    return axios
+      .get('/testapi/admin/user/avaflow_beta_history', { params, timeout: 60000 })
+      .then(r => r.data)
+  },
   uploadProFiles(formData) {
     return axios
       .post('/testapi/admin/user/pro_upload', formData, {

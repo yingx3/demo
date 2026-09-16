@@ -452,6 +452,7 @@
                   <li>计算约需数分钟至十余分钟，进度会在提示消息中实时更新，等待超时为 30 分钟；</li>
                   <li>运行期间请勿关闭页面，完成后图层可在资源目录中开关与调节透明度；</li>
                   <li>若定位偏移，请检查输入栅格的坐标系与范围是否与案例区一致。</li>
+                  <li>点击弹窗下方的<strong>「历史模拟」</strong>可查看并回放此前的运行结果（含基准工况与地形调控工况）。</li>
                 </ul>
               </div>
             </el-dialog>
@@ -491,11 +492,69 @@
                 <el-button class="quanyu-submit" type="primary" @click="submitBeta"
                   >运行</el-button
                 >
+                <el-button class="quanyu-cancel" @click="openBetaHistory"
+                  >历史模拟</el-button
+                >
                 <el-button class="quanyu-cancel" @click="dialogBeta = false"
                   >取消</el-button
                 >
               </el-form-item>
             </el-form>
+            <el-dialog
+              v-model="betaHistoryVisible"
+              class="model-help-dialog"
+              width="1020px"
+              :close-on-click-modal="false"
+              top="80px"
+            >
+              <template #title>
+                <div class="model-help-head">
+                  <span class="model-help-title">历史模拟记录</span>
+                  <span class="model-help-subtitle"
+                    >选择任意一次运行结果，直接在三维场景中回放</span
+                  >
+                </div>
+              </template>
+              <div class="help-body">
+                <p v-if="betaHistoryLoading" style="margin: 6px 0">
+                  历史记录读取中...
+                </p>
+                <p v-else-if="!betaHistoryItems.length" style="margin: 6px 0">
+                  暂无可回放的历史模拟记录。
+                </p>
+                <table v-else class="pro-history-table">
+                  <thead>
+                    <tr>
+                      <th>运行时间</th>
+                      <th>任务号</th>
+                      <th>帧数</th>
+                      <th>最大厚度 (m)</th>
+                      <th>工况</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="item in betaHistoryItems" :key="item.jobId">
+                      <td>{{ item.createdAtText }}</td>
+                      <td class="history-jobid">{{ item.jobId }}</td>
+                      <td>{{ item.frameCount }}</td>
+                      <td>{{ Number(item.globalMax || 0).toFixed(1) }}</td>
+                      <td>{{ betaHistoryCondition(item) }}</td>
+                      <td>
+                        <el-button
+                          v-if="betaHistoryPlayable(item)"
+                          link
+                          type="primary"
+                          @click="loadBetaHistory(item)"
+                          >加载</el-button
+                        >
+                        <span v-else style="opacity: 0.55">缺少坐标</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </el-dialog>
           </el-dialog>
         </div>
         <div class="box box-used p_bottom">
@@ -4016,6 +4075,65 @@ const resetSdpInputs = () => {
 }
 
 // 冰川泥石流动力学模型（r.avaflow beta 内核，逐帧输出 hflow）
+// 历史模拟记录：后端扫描 nginx 静态目录 avaflow_beta/ 下的历次结果直接回放
+const betaHistoryVisible = ref(false)
+const betaHistoryLoading = ref(false)
+const betaHistoryItems = ref([])
+
+/** 工况描述：地形调控 / 基准工况 */
+const betaHistoryCondition = item => (item && item.terrainEdited ? '地形调控' : '基准工况')
+
+/** 该记录是否可回放：需要帧文件 + 网格尺寸 + 中心经纬度（老任务可能缺少坐标） */
+const betaHistoryPlayable = item => {
+  const meta = (item && item.result && item.result.meta) || {}
+  const lon = meta.centerLon
+  const lat = meta.centerLat
+  return (
+    Number(item && item.frameCount) > 0 &&
+    Number(meta.ncols) > 0 &&
+    Number(meta.nrows) > 0 &&
+    Number(meta.cellsize) > 0 &&
+    lon != null &&
+    lat != null &&
+    Number.isFinite(Number(lon)) &&
+    Number.isFinite(Number(lat))
+  )
+}
+
+/** 打开历史记录列表 */
+const openBetaHistory = async () => {
+  betaHistoryVisible.value = true
+  betaHistoryLoading.value = true
+  try {
+    const resp = await modelService.getAvaflowBetaHistory({ limit: 50 })
+    betaHistoryItems.value = Array.isArray(resp && resp.items) ? resp.items : []
+  } catch (e) {
+    betaHistoryItems.value = []
+    ElMessage({ message: '历史记录读取失败: ' + (e?.message || e), type: 'error' })
+  } finally {
+    betaHistoryLoading.value = false
+  }
+}
+
+/** 加载某条历史记录：复用实时计算的渲染链路（betaLayers） */
+const loadBetaHistory = item => {
+  if (!betaHistoryPlayable(item)) {
+    ElMessage({
+      message: '该记录缺少网格坐标信息，无法在三维场景中回放',
+      type: 'warning',
+    })
+    return
+  }
+  betaHistoryVisible.value = false
+  dialogBeta.value = false
+  $emit('betaLayers', { result: { status: 'ok', ...item.result } })
+  ElMessage({
+    message: '已加载 ' + (item.createdAtText || item.jobId) + ' 的模拟结果',
+    type: 'success',
+    duration: 2500,
+  })
+}
+
 const resetBetaInputs = () => {
   if (isProcessing.value) return
   new Set([...Object.keys(betaFiles), ...Object.keys(betaFileNames)]).forEach(key => {
