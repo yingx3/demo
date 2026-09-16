@@ -3020,14 +3020,86 @@ const onTerrainDrawCancelled = () => {
 // 沿程调控的输入状态（alongFiles / alongFileNames / alongUploadRefs）在上方「调控面板输入状态」区块中独立定义，
 // 不再复用冰川泥石流动力学模型弹窗的选择。
 
+// 调控结果反馈：让用户一眼确认「拦挡 / 护底范围」有没有真正作用到这次计算上。
+// 后端 run_pro 会回传自检字段：
+//   cells          范围落在计算网格内的格数（0 = 范围没落在数据范围内，等于没调控）
+//   sourceCells    范围内原始物源格数
+//   flowPathCells  范围内出现过流深(>0.05m)的格数（0 = 泥石流没流经这里）
+//   flowPathMax    范围内全场最大流深
+// 只有 flowPathCells > 0 时，抬高底床才会真正改变下游结果。
+const notifyTerrainEdits = (edits, name = '调控范围', meta = null) => {
+  const list = Array.isArray(edits) ? edits : []
+  const cells = list.reduce((sum, item) => sum + (Number(item && item.cells) || 0), 0)
+  const raise = Number(list.length ? list[0].raise : NaN)
+  const raiseText = Number.isFinite(raise) ? raise + ' m' : '--'
+  if (!(cells > 0)) {
+    ElMessage({
+      message:
+        name +
+        '未生效：手绘范围没有落在输入数据覆盖范围内，本次结果与未调控工况一致；请把范围画在泥石流通道上再运行',
+      type: 'warning',
+      duration: 9000,
+      showClose: true,
+    })
+    return
+  }
+  const dx = Number(meta?.dx) || Number(meta?.cellsize) || 0
+  const dy = Number(meta?.dy) || Number(meta?.cellsize) || 0
+  const areaText = dx > 0 && dy > 0 ? '（约 ' + ((cells * dx * dy) / 1e6).toFixed(3) + ' km²）' : ''
+  const checked = list.filter(item => item && Number.isFinite(Number(item.flowPathCells)))
+  const maxOf = key => checked.reduce((m, item) => Math.max(m, Number(item[key]) || 0), 0)
+  if (checked.length && checked.every(item => Number(item.flowPathCells) === 0)) {
+    ElMessage({
+      message:
+        name + '已抬高底床 ' + raiseText + ' × ' + cells + ' 格' + areaText +
+        '，但本次泥石流没有流经该范围（范围内最大流深 ' + maxOf('flowPathMax').toFixed(2) +
+        ' m），对结果几乎没有影响：请把范围画在过流的沟道上再运行',
+      type: 'warning',
+      duration: 12000,
+      showClose: true,
+    })
+    return
+  }
+  ElMessage({
+    message:
+      name + '已生效：底床抬高 ' + raiseText + ' × ' + cells + ' 格' + areaText +
+      (checked.length
+        ? '，范围内最大流深 ' + maxOf('flowPathMax').toFixed(2) + ' m（泥石流确实流经该范围）'
+        : ''),
+    type: 'success',
+    duration: 9000,
+    showClose: true,
+  })
+}
+
 // 轮询 r.avaflow 计算状态（冰川泥石流动力学模型 / 沿程调控共用）
-const waitAvaflowBetaResult = async (jobId, label) => {
+const waitAvaflowBetaResult = async (jobId, label, regulation = false) => {
   ElMessage({ message: '模型计算已启动，等待结果（约数分钟~十余分钟）...', type: 'info', duration: 0 })
   const startTs = Date.now()
+  // 轮询退避：长时间高频轮询叠加地形瓦片请求会把浏览器 socket 缓冲耗尽
+  // （控制台报 net::ERR_NO_BUFFER_SPACE），请求失败后指数退避，成功后立即恢复。
+  let pollFailures = 0
+  let pollHintShown = false
   while (true) {
-    await new Promise(r => setTimeout(r, 5000))
+    await new Promise(r => setTimeout(r, Math.min(5000 * Math.pow(1.6, pollFailures), 20000)))
     let st = null
     try { st = await modelService.getAvaflowBetaStatus(jobId) } catch (e) { st = null }
+    if (st) {
+      pollFailures = 0
+    } else {
+      pollFailures += 1
+      if (pollFailures >= 3 && !pollHintShown) {
+        pollHintShown = true
+        ElMessage.closeAll()
+        ElMessage({
+          message:
+            '与后端的状态连接不稳定（浏览器网络缓冲耗尽），已自动降低轮询频率；后端计算仍在继续，稍后可在「历史模拟」中找回结果',
+          type: 'warning',
+          duration: 8000,
+          showClose: true,
+        })
+      }
+    }
     if (st && st.status === 'running') {
       const phaseLabel = st.phase === 'converting' ? '结果转换中' : '模型计算中'
       ElMessage.closeAll()
@@ -3036,6 +3108,7 @@ const waitAvaflowBetaResult = async (jobId, label) => {
     if (st && st.status === 'done') {
       ElMessage.closeAll()
       ElMessage({ message: label + ' 完成，输出 ' + (st.frameCount || 0) + ' 帧', type: 'success', duration: 2500 })
+      if (regulation) notifyTerrainEdits(st?.terrainEdits, '调控范围', st?.meta)
       $emit('betaLayers', {
         result: {
           status: 'ok',
@@ -3096,7 +3169,7 @@ const submitBetaRegulation = async terrainEdits => {
       ElMessage({ message: accepted?.message || '启动计算失败', type: 'error' })
       return false
     }
-    return await waitAvaflowBetaResult(accepted.jobId || upResp.jobId, '冰川泥石流沿程调控')
+    return await waitAvaflowBetaResult(accepted.jobId || upResp.jobId, '冰川泥石流沿程调控', true)
   } catch (error) {
     ElMessage.closeAll()
     const msg = error?.response?.data || error?.message || error
@@ -3143,7 +3216,17 @@ defineExpose({ onTerrainPolygonDrawn, onTerrainDrawCancelled })
 // 参数传回后端 -> 后端调用数值内核 -> 输出 ASC 帧 -> 前端渲染
 // 传参化改造：冰岩崩动力学模型与灾害链断链调控各自使用本面板的输入状态，互不共享
 const runProJob = async (config, extra = {}) => {
-  const { files, fileItems, sourceCrs, anchorLon, anchorLat, params, label, partialHint } = config
+  const {
+    files,
+    fileItems,
+    sourceCrs,
+    anchorLon,
+    anchorLat,
+    params,
+    label,
+    partialHint,
+    regulation = false,
+  } = config
   if (floodRunning.value) {
     ElMessage({ message: '正在计算中，请稍候...', type: 'info' })
     return false
@@ -3272,13 +3355,32 @@ const runProJob = async (config, extra = {}) => {
     })
 
     const startTs = Date.now()
+    // 轮询退避：同 waitAvaflowBetaResult，避免 net::ERR_NO_BUFFER_SPACE 把结果读取打断。
+    let pollFailures = 0
+    let pollHintShown = false
     while (true) {
-      await new Promise(r => setTimeout(r, 4000))
+      await new Promise(r => setTimeout(r, Math.min(4000 * Math.pow(1.6, pollFailures), 20000)))
       let st = null
       try {
         st = await modelService.getProStatus(accepted.jobId)
       } catch (e) {
         st = null
+      }
+      if (st) {
+        pollFailures = 0
+      } else {
+        pollFailures += 1
+        if (pollFailures >= 3 && !pollHintShown) {
+          pollHintShown = true
+          ElMessage.closeAll()
+          ElMessage({
+            message:
+              '与后端的状态连接不稳定（浏览器网络缓冲耗尽），已自动降低轮询频率；计算仍在后端继续，稍后可在「历史模拟」中找回本次结果',
+            type: 'warning',
+            duration: 8000,
+            showClose: true,
+          })
+        }
       }
       if (st && st.status === 'running') {
         ElMessage.closeAll()
@@ -3296,6 +3398,7 @@ const runProJob = async (config, extra = {}) => {
           type: 'success',
           duration: 2500,
         })
+        if (regulation) notifyTerrainEdits(st?.meta?.terrainEdits, '拦挡范围', st?.meta)
         $emit('proLayers', {
           result: {
             status: 'ok',
@@ -3368,6 +3471,7 @@ const submitChainRegulation = async terrainEdits =>
       params: chainForm,
       label: '灾害链断链调控',
       partialHint: 'zb / zl / hw 三份数据要么都选，要么都不选（不选用内置示例数据）',
+      regulation: true,
     },
     { terrainEdits },
   )

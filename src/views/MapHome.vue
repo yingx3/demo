@@ -2256,8 +2256,76 @@ function clearBetaDrape() {
   legendLayers.value = legendLayers.value.filter(l => l.id !== BETA_FLOW_LEGEND_ID)
 }
 
+/**
+ * 调控范围（拦挡坝 / 护底段）：本次计算实际抬高了哪一片网格，直接画在地图上，
+ * 用户就能判断它是不是压在泥石流流路上（旁边同时会弹「拦挡是否生效」的提示）。
+ * 顶点来自 run_pro 写进 frames_meta.json 的 terrainEdits[].polygon（WGS84 经纬度）。
+ */
+let betaRegulationEntities = []
+
+function clearRegulationZones() {
+  const v = viewer.value
+  if (v && betaRegulationEntities.length) {
+    betaRegulationEntities.forEach(entity => {
+      try {
+        v.entities.remove(entity)
+      } catch (e) {
+        console.warn('[betaLayers] 移除调控范围失败:', e)
+      }
+    })
+  }
+  betaRegulationEntities = []
+}
+
+function drawRegulationZones(edits) {
+  clearRegulationZones()
+  const v = viewer.value
+  const list = Array.isArray(edits) ? edits : []
+  if (!v || (typeof v.isDestroyed === 'function' && v.isDestroyed()) || !list.length) return
+  list.forEach((item, index) => {
+    const ring = Array.isArray(item?.polygon) ? item.polygon : []
+    const lonLat = ring
+      .map(pt => [Number(pt?.[0]), Number(pt?.[1])])
+      .filter(pt => Number.isFinite(pt[0]) && Number.isFinite(pt[1]))
+    if (lonLat.length < 3) return
+    const positions = lonLat.map(pt => Cesium.Cartesian3.fromDegrees(pt[0], pt[1]))
+    const raise = Number(item?.raise)
+    try {
+      const entity = v.entities.add({
+        id: 'betaRegulationZone_' + index,
+        polygon: {
+          hierarchy: new Cesium.PolygonHierarchy(positions),
+          material: Cesium.Color.fromCssColorString('#ffd166').withAlpha(0.22),
+          outline: true,
+          outlineColor: Cesium.Color.fromCssColorString('#ffb703'),
+          outlineWidth: 3,
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        },
+        label: {
+          text: '调控范围' + (Number.isFinite(raise) ? ' +' + raise + ' m' : ''),
+          font: '13px sans-serif',
+          fillColor: Cesium.Color.WHITE,
+          outlineColor: Cesium.Color.fromCssColorString('#7a4f00'),
+          outlineWidth: 3,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          pixelOffset: new Cesium.Cartesian2(0, -18),
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        },
+      })
+      betaRegulationEntities.push(entity)
+    } catch (e) {
+      console.warn('[betaLayers] 调控范围绘制失败:', e)
+    }
+  })
+  if (betaRegulationEntities.length) {
+    console.log('[betaLayers] 已标注本次调控范围:', betaRegulationEntities.length, '个')
+  }
+}
+
 function cleanupBetaRenderer() {
   clearBetaDrape()
+  clearRegulationZones()
   if (betaFrameTimer) {
     clearTimeout(betaFrameTimer)
     betaFrameTimer = null
@@ -2586,6 +2654,9 @@ const betaLayers = async (payload, label = '冰川泥石流动力学模型', opt
         }
         legendLayers.value = legendLayers.value.filter(l => l.id !== BETA_FLOW_LEGEND_ID)
         legendLayers.value.push({ id: BETA_FLOW_LEGEND_ID, ...flowLegend, gradient: legendGradient(flowLegend) })
+
+        // 调控工况：把本次真正抬高过的范围画出来，方便判断拦挡是否压在流路上
+        drawRegulationZones(meta.terrainEdits)
 
         console.log(
           '[betaLayers] 贴地渲染就绪:',
