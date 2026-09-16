@@ -391,7 +391,7 @@
         </div>
         <!-- 静态数据卡片：区域灾害本底数据点位（与资源目录勾选同源） -->
         <div class="box box-used p_bottom">
-          <img src="../assets/img/table.png" alt="" />
+          <img src="../assets/img/云反射率.png" alt="" />
           <el-popover width="290" trigger="click" placement="right-start" popper-class="data-layer-popover">
             <template #reference>
               <el-button :plain="true"
@@ -445,7 +445,7 @@
         </div>
         <!-- 静态数据卡片：冰川泥石流风险源（与资源目录勾选同源） -->
         <div class="box box-used p_bottom">
-          <img src="../assets/img/table.png" alt="" />
+          <img src="../assets/img/云反射率.png" alt="" />
           <el-popover width="290" trigger="click" placement="right-start" popper-class="data-layer-popover">
             <template #reference>
               <el-button :plain="true"
@@ -1595,7 +1595,7 @@
         </div>
         <!-- 静态数据卡片：人口分布（与资源目录勾选同源） -->
         <div class="box box-used p_bottom">
-          <img src="../assets/img/table.png" alt="" />
+          <img src="../assets/img/云反射率.png" alt="" />
           <el-popover width="290" trigger="click" placement="right-start" popper-class="data-layer-popover">
             <template #reference>
               <el-button :plain="true"
@@ -1625,7 +1625,7 @@
         </div>
         <!-- 静态数据卡片：脆弱性结果（与资源目录勾选同源） -->
         <div class="box box-used p_bottom">
-          <img src="../assets/img/table.png" alt="" />
+          <img src="../assets/img/云反射率.png" alt="" />
           <el-popover width="290" trigger="click" placement="right-start" popper-class="data-layer-popover">
             <template #reference>
               <el-button :plain="true"
@@ -1658,7 +1658,7 @@
         </div>
         <!-- 静态数据卡片：危险性评估结果（与资源目录勾选同源） -->
         <div class="box box-used p_bottom">
-          <img src="../assets/img/table.png" alt="" />
+          <img src="../assets/img/云反射率.png" alt="" />
           <el-popover width="290" trigger="click" placement="right-start" popper-class="data-layer-popover">
             <template #reference>
               <el-button :plain="true"
@@ -1691,7 +1691,7 @@
         </div>
         <!-- 静态数据卡片：风险评估结果（与资源目录勾选同源） -->
         <div class="box box-used p_bottom">
-          <img src="../assets/img/table.png" alt="" />
+          <img src="../assets/img/云反射率.png" alt="" />
           <el-popover width="290" trigger="click" placement="right-start" popper-class="data-layer-popover">
             <template #reference>
               <el-button :plain="true"
