@@ -435,7 +435,9 @@
                   <el-option
                     v-for="f in dangerLevelFiles"
                     :key="f.file"
-                    :label="f.timeText + (f.durationText ? ' · ' + f.durationText : '')"
+                    :label="
+                      f.fixed ? f.timeText : f.timeText + (f.durationText ? ' · ' + f.durationText : '')
+                    "
                     :value="f.file"
                   />
                 </el-select>
