@@ -1532,8 +1532,12 @@ const checkedLayers = (ps, node) => {
 /** 读取可用列表（后端扫描静态目录，返回时间、降雨历时与地理范围） */
 const loadDangerLevelFiles = async () => {
   try {
-    const resp = await modelService.getDangerLevelList({ limit: 40 })
-    dangerLevelFiles.value = Array.isArray(resp?.items) ? resp.items : []
+    // 注意：MapHome 里没有引入 modelService，这里直接用 axios（与本文件其它接口一致）
+    const resp = await axios.get('/testapi/admin/user/danger_level_list', {
+      params: { limit: 40 },
+      timeout: 30000,
+    })
+    dangerLevelFiles.value = Array.isArray(resp?.data?.items) ? resp.data.items : []
     if (dangerLevelFiles.value.length) {
       // 默认选中列表首项（第一位是平台固定危险区划）
       const exists = dangerLevelFiles.value.some(it => it.file === selectedDangerLevelFile.value)
