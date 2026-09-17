@@ -161,37 +161,6 @@
                 >
               </el-form-item>
             </el-form>
-            <!-- 计算进度提示：后端为单次长请求，进度按已用时间估算 -->
-            <el-dialog
-              v-model="trigrsProgress.visible"
-              width="380px"
-              align-center
-              :show-close="false"
-              :close-on-click-modal="false"
-              :close-on-press-escape="false"
-              class="trigrs-progress-dialog"
-            >
-              <template #header>
-                <div class="trigrs-progress-head">
-                  <span class="trigrs-progress-title">风险源定量识别与表征模型</span>
-                  <span class="trigrs-progress-sub">计算中，请勿关闭页面</span>
-                </div>
-              </template>
-              <el-progress
-                :percentage="trigrsProgress.percent"
-                :stroke-width="10"
-                striped
-                striped-flow
-                :duration="8"
-              />
-              <div class="trigrs-progress-text">
-                已用 {{ trigrsProgress.elapsed }} s ｜ 已选降雨历时
-                {{ Array.isArray(form.time) ? form.time.length : 0 }} 个 ｜ 当前进度为估算值
-              </div>
-              <div class="trigrs-progress-hint">
-                一般需要 30~120 s（与所选时段数、数据量有关），完成后会自动加载结果图层。
-              </div>
-            </el-dialog>
           </el-dialog>
         </div>
         <div class="box box-used p_bottom">
@@ -3174,28 +3143,42 @@ async function sumbit_wedget() {
     console.error('sumbit_wedget error:', e)
   }
 }
-// 风险源模型计算进度（后端是单次长请求、没有实时进度，这里按已用时间估算并给出阶段提示）
-const trigrsProgress = reactive({ visible: false, elapsed: 0, percent: 0 })
+// 风险源模型计算进度：与「冰岩崩动力学模型」一致的做法——常驻消息里显示「计算中 XX%」。
+// 后端是单次长请求、拿不到真实进度，这里按已用时间估算（先快后慢，上限 95%），
+// 每 2 秒刷新一次，避免消息闪烁。
 let trigrsTimer = null
+let trigrsMsg = null
 const startTrigrsProgress = () => {
-  trigrsProgress.visible = true
-  trigrsProgress.elapsed = 0
-  trigrsProgress.percent = 0
   const t0 = Date.now()
-  if (trigrsTimer) clearInterval(trigrsTimer)
-  trigrsTimer = setInterval(() => {
+  const slots = Array.isArray(form.time) ? form.time.length : 0
+  const tick = () => {
     const sec = Math.round((Date.now() - t0) / 1000)
-    trigrsProgress.elapsed = sec
-    // 估算进度：先快后慢，上限 95%，避免像卡住或提前到 100%
-    trigrsProgress.percent = Math.min(95, Math.round(100 * (1 - Math.exp(-sec / 45))))
-  }, 1000)
+    const percent = Math.min(95, Math.round(100 * (1 - Math.exp(-sec / 45))))
+    if (trigrsMsg) {
+      try { trigrsMsg.close() } catch (e) {}
+    }
+    trigrsMsg = ElMessage({
+      message:
+        '计算中 ' + percent + '%（已用 ' + sec + 's' +
+        (slots ? '，降雨历时 ' + slots + ' 个' : '') + '，进度为估算）',
+      type: 'info',
+      duration: 0,
+      showClose: false,
+    })
+  }
+  tick()
+  if (trigrsTimer) clearInterval(trigrsTimer)
+  trigrsTimer = setInterval(tick, 2000)
 }
 const stopTrigrsProgress = () => {
   if (trigrsTimer) {
     clearInterval(trigrsTimer)
     trigrsTimer = null
   }
-  trigrsProgress.visible = false
+  if (trigrsMsg) {
+    try { trigrsMsg.close() } catch (e) {}
+    trigrsMsg = null
+  }
 }
 
 function onSubmit() {
@@ -4949,37 +4932,6 @@ const resetSeismicInputs = () => {
   color: #9aa7c7;
   font-size: 12px;
 }
-/* 风险源模型计算进度弹窗 */
-.trigrs-progress-head {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-}
-
-.trigrs-progress-title {
-  color: #38e1ff;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.trigrs-progress-sub {
-  color: #9fc6e6;
-  font-size: 12px;
-}
-
-.trigrs-progress-text {
-  margin-top: 12px;
-  color: #dbeaf7;
-  font-size: 13px;
-}
-
-.trigrs-progress-hint {
-  margin-top: 6px;
-  color: #9fc6e6;
-  font-size: 12px;
-  line-height: 18px;
-}
-
 .terrain-compare-hint {
   color: #9fc6e6;
 }
