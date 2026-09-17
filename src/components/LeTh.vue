@@ -544,7 +544,7 @@
                 <h2>四、结果与提示</h2>
                 <ul>
                   <li>结果包含逐时刻泥石流层厚度栅格序列与结果范围 bbox，<strong>默认渲染场为泥石流层厚度</strong>；</li>
-                  <li>计算约需数分钟至十余分钟，进度会在提示消息中实时更新，等待超时为 30 分钟；</li>
+                  <li>计算约需数分钟至十余分钟，进度会在提示消息中实时更新，等待超时为 60 分钟；</li>
                   <li>运行期间请勿关闭页面，完成后图层可在资源目录中开关与调节透明度；</li>
                   <li>若定位偏移，请检查输入栅格的坐标系与范围是否与案例区一致。</li>
                   <li>点击弹窗下方的<strong>「历史模拟」</strong>可查看并回放此前的运行结果（含基准工况与地形调控工况）。</li>
@@ -3581,9 +3581,11 @@ const waitAvaflowBetaResult = async (jobId, label, regulation = false) => {
       ElMessage({ message: '模拟失败: ' + (st.message || '未知错误'), type: 'error' })
       return false
     }
-    if (Date.now() - startTs > 30 * 60 * 1000) {
+    // 后端 r.avaflow 执行超时已放宽到 60 分钟，这里留 5 分钟余量，
+    // 让「后端为什么没算完」的提示先出现，而不是前端先报等待超时
+    if (Date.now() - startTs > 65 * 60 * 1000) {
       ElMessage.closeAll()
-      ElMessage({ message: '等待结果超时（30分钟）', type: 'error' })
+      ElMessage({ message: '等待结果超时（65分钟）', type: 'error' })
       return false
     }
   }
