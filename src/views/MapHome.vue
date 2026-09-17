@@ -4513,6 +4513,9 @@ const removeLayer_population = () => {
 }
 
 //添加天地图路网（天地图 WMTS）
+// 天地图 key 失效/超限时只提示一次，避免控制台与提示被刷屏
+let tiandituKeyWarned = false
+
 const addLayer_tianditu_road = () => {
   try {
     console.log('[天地图路网] 正在加载天地图路网图层')
@@ -4522,11 +4525,40 @@ const addLayer_tianditu_road = () => {
       style: 'default',
       format: 'image/png',
       tileMatrixSetID: 'w',
-      maximumLevel: 18,
+      // 路网注记到 13 级足够用：原来 18 级会成倍放大请求量，很容易触发天地图限流(429)
+      maximumLevel: 13,
       credit: '天地图',
     })
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.tiandituRoadTag = true
+
+    // 天地图返回 429（请求过多）或 tk 失效时，Cesium 会不停重试并刷屏：
+    // 连续失败超过 3 次就自动卸载该图层并给出可操作提示
+    let failures = 0
+    provider.errorEvent.addEventListener(err => {
+      failures += 1
+      if (failures <= 3) return
+      try {
+        viewer.value.scene.imageryLayers.remove(addedLayer, true)
+      } catch (e) {
+        /* ignore */
+      }
+      if (!tiandituKeyWarned) {
+        tiandituKeyWarned = true
+        const code = err && err.statusCode ? err.statusCode : ''
+        ElMessage({
+          message:
+            '天地图服务访问失败' + (code ? '（HTTP ' + code + '）' : '') +
+            '：多为 tk 失效或当日配额用尽。已自动卸载「路网数据」图层，' +
+            '请在 MapHome.vue 中把 TIANDITU_KEY 换成自己申请的天地图 key（浏览器端，域名白名单填 localhost）后重试',
+          type: 'warning',
+          duration: 0,
+          showClose: true,
+        })
+      }
+      console.warn('[天地图路网] 访问失败，已卸载该图层:', err)
+    })
+
     ElMessage.success('天地图路网加载完成')
   } catch (error) {
     console.error('加载天地图路网失败:', error)
