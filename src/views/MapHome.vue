@@ -2738,7 +2738,7 @@ const betaLayers = async (payload, label = '冰川泥石流动力学模型', opt
 
     const bbox = Array.isArray(result.bbox) ? result.bbox.map(Number) : null
     if (bbox && bbox.length === 4 && bbox.every(Number.isFinite)) {
-      flyToResultRect(Cesium.Rectangle.fromDegrees(bbox[0], bbox[1], bbox[2], bbox[3]), RESULT_CAMERA_LIFT_M, 1.5)
+    flyToResultRect(Cesium.Rectangle.fromDegrees(bbox[0], bbox[1], bbox[2], bbox[3]), RESULT_CAMERA_LIFT_M, 1.5)
     }
     startHeatmapCycle()
     return
@@ -3711,16 +3711,7 @@ const addLayer2 = () => {
   const layers = viewer.value.scene.imageryLayers
 
   layers.addImageryProvider(wmsImageryProvider1)
-  viewer.value.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-    //相机的姿态
-    orientation: {
-      heading: Cesium.Math.toRadians(56.34), //朝向
-      pitch: Cesium.Math.toRadians(-31), //俯仰
-      // pitch: Cesium.Math.toRadians(-90), //俯仰
-      roll: 0.0, //滚转
-    },
-  })
+  flyToResultRect(Cesium.Rectangle.fromDegrees(94.730835, 29.606009, 95.417971, 29.959721), 3000, 1.5)
 }
 //移除路网
 const removeLayer2 = () => {
@@ -3762,16 +3753,7 @@ const addLayer_dem = () => {
   })
   const layers = viewer.value.scene.imageryLayers
   layers.addImageryProvider(wmsImageryProvider)
-  viewer.value.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-    //相机的姿态
-    orientation: {
-      heading: Cesium.Math.toRadians(56.34), //朝向
-      pitch: Cesium.Math.toRadians(-31), //俯仰
-      // pitch: Cesium.Math.toRadians(-90), //俯仰
-      roll: 0.0, //滚转
-    },
-  })
+  flyToResultRect(Cesium.Rectangle.fromDegrees(92.1655311831515, 27.55878578080392, 98.753326319242, 30.663632897306222), 3000, 1.5)
 }
 const removeLayer_dem = () => {
   setLegend('dem', false)
@@ -3811,16 +3793,7 @@ const addLayer_slope = () => {
   })
   const layers = viewer.value.scene.imageryLayers
   layers.addImageryProvider(wmsImageryProvider)
-  viewer.value.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-    //相机的姿态
-    orientation: {
-      heading: Cesium.Math.toRadians(56.34), //朝向
-      pitch: Cesium.Math.toRadians(-31), //俯仰
-      // pitch: Cesium.Math.toRadians(-90), //俯仰
-      roll: 0.0, //滚转
-    },
-  })
+  flyToResultRect(Cesium.Rectangle.fromDegrees(92.1655311831515, 27.55878578080392, 98.753326319242, 30.663632897306222), 3000, 1.5)
 }
 const removeLayer_slope = () => {
   setLegend('slope', false)
@@ -3862,16 +3835,7 @@ const addLayer_aspect = () => {
   })
   const layers = viewer.value.scene.imageryLayers
   layers.addImageryProvider(wmsImageryProvider)
-  viewer.value.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-    //相机的姿态
-    orientation: {
-      heading: Cesium.Math.toRadians(56.34), //朝向
-      pitch: Cesium.Math.toRadians(-31), //俯仰
-      // pitch: Cesium.Math.toRadians(-90), //俯仰
-      roll: 0.0, //滚转
-    },
-  })
+  flyToResultRect(Cesium.Rectangle.fromDegrees(92.1655311831515, 27.55878578080392, 98.753326319242, 30.663632897306222), 3000, 1.5)
 }
 const removeLayer_aspect = () => {
   setLegend('aspect', false)
@@ -3913,16 +3877,7 @@ const addLayer_relief = () => {
   })
   const layers = viewer.value.scene.imageryLayers
   layers.addImageryProvider(wmsImageryProvider)
-  viewer.value.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-    //相机的姿态
-    orientation: {
-      heading: Cesium.Math.toRadians(56.34), //朝向
-      pitch: Cesium.Math.toRadians(-31), //俯仰
-      // pitch: Cesium.Math.toRadians(-90), //俯仰
-      roll: 0.0, //滚转
-    },
-  })
+  flyToResultRect(Cesium.Rectangle.fromDegrees(92.1655311831515, 27.55878578080392, 98.753326319242, 30.663632897306222), 3000, 1.5)
 }
 const removeLayer_relief = () => {
   setLegend('relief', false)
@@ -3960,16 +3915,7 @@ const addLayer_river = () => {
     // 初始化
     loadAllRivers()
     // 设置相机位置
-    viewer.value.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-      //相机的姿态
-      orientation: {
-        heading: Cesium.Math.toRadians(56.34), //朝向
-        pitch: Cesium.Math.toRadians(-31), //俯仰
-        // pitch: Cesium.Math.toRadians(-90), //俯仰
-        roll: 0.0, //滚转
-      },
-    })
+    flyToResultRect(Cesium.Rectangle.fromDegrees(92.1655311831515, 27.55878578080392, 98.753326319242, 30.663632897306222), 3000, 1.5)
   })
 }
 // function addRiverToCesium(riverData) {
@@ -4248,34 +4194,79 @@ const STUDY_AREA_RECT = Cesium.Rectangle.fromDegrees(
   98.8797996278891, 30.68902208298092, // 东, 北
 )
 
-// GeoServer 图层清单预检：只拉一次 GetCapabilities，图层名对不上时给出明确提示，
-// 避免只看到一串 "Failed to obtain image tile" 却不知道是图层没发布/名字写错。
+// GeoServer 图层索引：只拉一次 GetCapabilities，解析出「图层名 -> 经纬度范围」，
+// 用于两件事：① 图层名写错时给出明确提示；② 按图层自身范围设置相机中心与高度。
 let wmsLayerIndexPromise = null
-const ensureWmsLayerKnown = layerName => {
+const ensureWmsLayerIndex = () => {
   if (!wmsLayerIndexPromise) {
     wmsLayerIndexPromise = fetch(
       `${GEOSERVER_WMS_URL}?service=WMS&request=GetCapabilities&version=1.1.0`,
     )
       .then(r => (r.ok ? r.text() : Promise.reject(new Error('HTTP ' + r.status))))
-      .then(txt =>
-        new Set(
-          [...txt.matchAll(/<Layer[^>]*>\s*<Name>([^<]+)<\/Name>/g)].map(m => m[1]),
-        ),
-      )
+      .then(txt => {
+        const doc = new DOMParser().parseFromString(txt, 'text/xml')
+        const index = new Map()
+        doc.querySelectorAll('Layer').forEach(layer => {
+          const nameEl = layer.querySelector('Name')
+          const bb = layer.querySelector('LatLonBoundingBox')
+          if (!nameEl || !bb) return
+          const west = Number(bb.getAttribute('minx'))
+          const south = Number(bb.getAttribute('miny'))
+          const east = Number(bb.getAttribute('maxx'))
+          const north = Number(bb.getAttribute('maxy'))
+          if (![west, south, east, north].every(Number.isFinite)) return
+          index.set(nameEl.textContent.trim(), { west, south, east, north })
+        })
+        return index
+      })
       .catch(e => {
-        console.warn('[WMS] 获取 GeoServer 图层清单失败:', e)
+        console.warn('[WMS] 获取 GeoServer 图层索引失败:', e)
         return null
       })
   }
-  wmsLayerIndexPromise.then(set => {
-    if (!set || !set.size) return
+  return wmsLayerIndexPromise
+}
+
+// 图层名预检：命中不到就在控制台说明原因（避免只看到 Failed to obtain image tile）
+const ensureWmsLayerKnown = layerName => {
+  ensureWmsLayerIndex().then(index => {
+    if (!index || !index.size) return
     const name = String(layerName).replace(/^ZHLXT:/, '')
-    if (!set.has(name)) {
+    if (!index.has(name)) {
       console.warn(
         `[WMS] 图层「${layerName}」不在 GeoServer 图层清单中：请确认已在工作区发布，` +
           '否则地图不会显示该图层（控制台会持续报 Failed to obtain image tile）',
       )
     }
+  })
+}
+
+/**
+ * 按「图层自身的空间范围」定位相机：
+ *   - 中心：该图层经纬度 bbox 的中心；
+ *   - 高度：由 bbox 尺寸交给 Cesium 计算取景高度（flyToResultRect），再叠加 lift 缓冲。
+ * 取不到范围时才回退到旧的通用视角。
+ */
+const flyToWmsLayer = (layerName, lift = 3000, duration = 1.5) => {
+  const name = String(layerName || '').replace(/^ZHLXT:/, '')
+  ensureWmsLayerIndex().then(index => {
+    const box = index && (index.get(name) || index.get('ZHLXT:' + name))
+    if (box && box.east > box.west && box.north > box.south) {
+      flyToResultRect(
+        Cesium.Rectangle.fromDegrees(box.west, box.south, box.east, box.north),
+        lift,
+        duration,
+      )
+      return
+    }
+    viewer.value.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+      orientation: {
+        heading: Cesium.Math.toRadians(56.34),
+        pitch: Cesium.Math.toRadians(-31),
+        roll: 0.0,
+      },
+    })
   })
 }
 
@@ -4339,14 +4330,7 @@ const addLayer_population = () => {
     const addedLayer = layers.addImageryProvider(provider)
     addedLayer.populationTag = true
 
-    viewer.value.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-      orientation: {
-        heading: Cesium.Math.toRadians(56.34),
-        pitch: Cesium.Math.toRadians(-31),
-        roll: 0.0,
-      },
-    })
+    flyToWmsLayer(POPULATION_WMS_LAYER, 3000, 1.5)
     ElMessage.success('人口数据加载完成')
   } catch (error) {
     console.error('加载人口数据失败:', error)
@@ -4409,14 +4393,7 @@ const addLayer_621 = () => {
     const addedLayer = layers.addImageryProvider(provider)
     addedLayer.historySimTag = true
 
-    viewer.value.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-      orientation: {
-        heading: Cesium.Math.toRadians(56.34),
-        pitch: Cesium.Math.toRadians(-31),
-        roll: 0.0,
-      },
-    })
+    flyToWmsLayer(HISTORY_SIM_WMS_LAYER, 3000, 1.5)
     ElMessage.success('历史数据模拟加载完成')
   } catch (error) {
     console.error('加载历史数据模拟失败:', error)
@@ -4473,14 +4450,7 @@ const addLayer_622 = () => {
       entity.noDujiangTag = true
     })
 
-    viewer.value.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-      orientation: {
-        heading: Cesium.Math.toRadians(56.34),
-        pitch: Cesium.Math.toRadians(-31),
-        roll: 0.0,
-      },
-    })
+    flyToWmsLayer(HISTORY_SIM_WMS_LAYER, 3000, 1.5)
     ElMessage.success('历史未堵江点加载完成')
   }).catch(error => {
     console.error('加载历史未堵江点失败:', error)
@@ -4627,14 +4597,7 @@ const addLayer_HP_pop_Vulnerability = () => {
     const addedLayer = layers.addImageryProvider(provider)
     addedLayer.HP_pop_VulnerabilityTag = true
 
-    viewer.value.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-      orientation: {
-        heading: Cesium.Math.toRadians(56.34),
-        pitch: Cesium.Math.toRadians(-31),
-        roll: 0.0,
-      },
-    })
+    flyToWmsLayer(HP_pop_Vulnerability, 3000, 1.5)
     ElMessage.success('滑坡人口脆弱性数据加载完成')
   } catch (error) {
     console.error('滑坡人口脆弱性数据失败:', error)
@@ -4664,14 +4627,7 @@ const addLayer_NSL_pop_Vulnerability = () => {
     const addedLayer = layers.addImageryProvider(provider)
     addedLayer.NSL_pop_VulnerabilityTag = true
 
-    viewer.value.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-      orientation: {
-        heading: Cesium.Math.toRadians(56.34),
-        pitch: Cesium.Math.toRadians(-31),
-        roll: 0.0,
-      },
-    })
+    flyToWmsLayer(NSL_pop_Vulnerability, 3000, 1.5)
     ElMessage.success('泥石流人口脆弱性数据加载完成')
   } catch (error) {
     console.error('泥石流人口脆弱性数据失败:', error)
@@ -4701,14 +4657,7 @@ const addLayer_SH_pop_Vulnerability = () => {
     const addedLayer = layers.addImageryProvider(provider)
     addedLayer.SH_pop_VulnerabilityTag = true
 
-    viewer.value.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-      orientation: {
-        heading: Cesium.Math.toRadians(56.34),
-        pitch: Cesium.Math.toRadians(-31),
-        roll: 0.0,
-      },
-    })
+    flyToWmsLayer(SH_pop_Vulnerability, 3000, 1.5)
     ElMessage.success('山洪人口脆弱性数据加载完成')
   } catch (error) {
     console.error('山洪人口脆弱性数据失败:', error)
@@ -4737,14 +4686,7 @@ const addLayer_HP_Danger = () => {
     const addedLayer = layers.addImageryProvider(provider)
     addedLayer.HP_DangerTag = true
 
-    viewer.value.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-      orientation: {
-        heading: Cesium.Math.toRadians(56.34),
-        pitch: Cesium.Math.toRadians(-31),
-        roll: 0.0,
-      },
-    })
+    flyToWmsLayer(HP_Danger, 3000, 1.5)
     ElMessage.success('滑坡危险性数据加载完成')
   } catch (error) {
     console.error('滑坡危险性数据失败:', error)
@@ -4773,14 +4715,7 @@ const addLayer_NSL_Danger = () => {
     const addedLayer = layers.addImageryProvider(provider)
     addedLayer.NSL_DangerTag = true
 
-    viewer.value.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-      orientation: {
-        heading: Cesium.Math.toRadians(56.34),
-        pitch: Cesium.Math.toRadians(-31),
-        roll: 0.0,
-      },
-    })
+    flyToWmsLayer(NSL_Danger, 3000, 1.5)
     ElMessage.success('泥石流危险性数据加载完成')
   } catch (error) {
     console.error('泥石流危险性数据失败:', error)
@@ -4809,14 +4744,7 @@ const addLayer_SH_Danger = () => {
     const addedLayer = layers.addImageryProvider(provider)
     addedLayer.SH_DangerTag = true
 
-    viewer.value.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-      orientation: {
-        heading: Cesium.Math.toRadians(56.34),
-        pitch: Cesium.Math.toRadians(-31),
-        roll: 0.0,
-      },
-    })
+    flyToWmsLayer(SH_Danger, 3000, 1.5)
     ElMessage.success('山洪危险性数据加载完成')
   } catch (error) {
     console.error('山洪危险性数据失败:', error)
@@ -4842,7 +4770,7 @@ const addLayer_domestic_build = () => {
     const provider = createWmsProvider(domestic_build, false)
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.domestic_buildTag = true
-    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    flyToWmsLayer(domestic_build, 3000, 1.5)
     ElMessage.success('建筑物提取加载完成')
   } catch (error) { console.error('建筑物提取失败:', error); ElMessage.error(`建筑物提取失败: ${error.message || error}`) }
 }
@@ -4857,7 +4785,7 @@ const addLayer_linzhi_pop = () => {
     const provider = createWmsProvider(linzhi_pop, false)
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.linzhi_popTag = true
-    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    flyToWmsLayer(linzhi_pop, 3000, 1.5)
     ElMessage.success('人口提取加载完成')
   } catch (error) { console.error('人口提取失败:', error); ElMessage.error(`人口提取失败: ${error.message || error}`) }
 }
@@ -4872,7 +4800,7 @@ const addLayer_motuo_traffic = () => {
     const provider = createWmsProvider(motuo_traffic, false)
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.motuo_trafficTag = true
-    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    flyToWmsLayer(motuo_traffic, 3000, 1.5)
     ElMessage.success('交通流量预测加载完成')
   } catch (error) { console.error('交通流量预测失败:', error); ElMessage.error(`交通流量预测失败: ${error.message || error}`) }
 }
@@ -4888,7 +4816,7 @@ const addLayer_build_one = () => {
     const provider = createWmsProvider(build_one, false)
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.build_oneTag = true
-    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    flyToWmsLayer(build_one, 3000, 1.5)
     ElMessage.success('1层建筑物脆弱性加载完成')
   } catch (error) { console.error('1层建筑物脆弱性失败:', error); ElMessage.error(`1层建筑物脆弱性失败: ${error.message || error}`) }
 }
@@ -4903,7 +4831,7 @@ const addLayer_build_two = () => {
     const provider = createWmsProvider(build_two, false)
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.build_twoTag = true
-    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    flyToWmsLayer(build_two, 3000, 1.5)
     ElMessage.success('2层建筑物脆弱性加载完成')
   } catch (error) { console.error('2层建筑物脆弱性失败:', error); ElMessage.error(`2层建筑物脆弱性失败: ${error.message || error}`) }
 }
@@ -4918,7 +4846,7 @@ const addLayer_build_three = () => {
     const provider = createWmsProvider(build_three, false)
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.build_threeTag = true
-    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    flyToWmsLayer(build_three, 3000, 1.5)
     ElMessage.success('3层建筑物脆弱性加载完成')
   } catch (error) { console.error('3层建筑物脆弱性失败:', error); ElMessage.error(`3层建筑物脆弱性失败: ${error.message || error}`) }
 }
@@ -4933,7 +4861,7 @@ const addLayer_build_masonry = () => {
     const provider = createWmsProvider(build_masonry, false)
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.build_masonryTag = true
-    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    flyToWmsLayer(build_masonry, 3000, 1.5)
     ElMessage.success('砌体建筑物脆弱性加载完成')
   } catch (error) { console.error('砌体建筑物脆弱性失败:', error); ElMessage.error(`砌体建筑物脆弱性失败: ${error.message || error}`) }
 }
@@ -4948,7 +4876,7 @@ const addLayer_building_risk = () => {
     const provider = createWmsProvider(building_risk, false)
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.building_riskTag = true
-    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    flyToWmsLayer(building_risk, 3000, 1.5)
     ElMessage.success('总体建筑物脆弱性加载完成')
   } catch (error) { console.error('总体建筑物脆弱性失败:', error); ElMessage.error(`总体建筑物脆弱性失败: ${error.message || error}`) }
 }
@@ -4964,7 +4892,7 @@ const addLayer_roadrisk_h = () => {
     const provider = createWmsProvider(roadrisk_h, false)
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.roadrisk_hTag = true
-    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    flyToWmsLayer(roadrisk_h, 3000, 1.5)
     ElMessage.success('高等级道路加载完成')
   } catch (error) { console.error('高等级道路失败:', error); ElMessage.error(`高等级道路失败: ${error.message || error}`) }
 }
@@ -4979,7 +4907,7 @@ const addLayer_roadrisk_m = () => {
     const provider = createWmsProvider(roadrisk_m, false)
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.roadrisk_mTag = true
-    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    flyToWmsLayer(roadrisk_m, 3000, 1.5)
     ElMessage.success('次等级道路加载完成')
   } catch (error) { console.error('次等级道路失败:', error); ElMessage.error(`次等级道路失败: ${error.message || error}`) }
 }
@@ -4994,7 +4922,7 @@ const addLayer_roadrisk_s = () => {
     const provider = createWmsProvider(roadrisk_s, false)
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.roadrisk_sTag = true
-    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    flyToWmsLayer(roadrisk_s, 3000, 1.5)
     ElMessage.success('简单道路加载完成')
   } catch (error) { console.error('简单道路失败:', error); ElMessage.error(`简单道路失败: ${error.message || error}`) }
 }
@@ -5009,7 +4937,7 @@ const addLayer_road_risk = () => {
     const provider = createWmsProvider(road_risk, false)
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.road_riskTag = true
-    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    flyToWmsLayer(road_risk, 3000, 1.5)
     ElMessage.success('总体道路加载完成')
   } catch (error) { console.error('总体道路失败:', error); ElMessage.error(`总体道路失败: ${error.message || error}`) }
 }
@@ -5025,7 +4953,7 @@ const addLayer_bridge_d = () => {
     const provider = createWmsProvider(bridge_d, false)
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.bridge_dTag = true
-    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    flyToWmsLayer(bridge_d, 3000, 1.5)
     ElMessage.success('双柱式桥梁脆弱性加载完成')
   } catch (error) { console.error('双柱式桥梁脆弱性失败:', error); ElMessage.error(`双柱式桥梁脆弱性失败: ${error.message || error}`) }
 }
@@ -5040,7 +4968,7 @@ const addLayer_bridge_s = () => {
     const provider = createWmsProvider(bridge_s, false)
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.bridge_sTag = true
-    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    flyToWmsLayer(bridge_s, 3000, 1.5)
     ElMessage.success('单柱式桥梁脆弱性加载完成')
   } catch (error) { console.error('单柱式桥梁脆弱性失败:', error); ElMessage.error(`单柱式桥梁脆弱性失败: ${error.message || error}`) }
 }
@@ -5055,7 +4983,7 @@ const addLayer_bridge = () => {
     const provider = createWmsProvider(bridge, false)
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.bridgeTag = true
-    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    flyToWmsLayer(bridge, 3000, 1.5)
     ElMessage.success('总体桥梁脆弱性加载完成')
   } catch (error) { console.error('总体桥梁脆弱性失败:', error); ElMessage.error(`总体桥梁脆弱性失败: ${error.message || error}`) }
 }
@@ -5071,7 +4999,7 @@ const addLayer_pop_risk = () => {
     const provider = createWmsProvider(pop_risk, false)
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.pop_riskTag = true
-    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    flyToWmsLayer(pop_risk, 3000, 1.5)
     ElMessage.success('人口风险评估加载完成')
   } catch (error) { console.error('人口风险评估失败:', error); ElMessage.error(`人口风险评估失败: ${error.message || error}`) }
 }
@@ -5087,7 +5015,7 @@ const addLayer_linzi_hazard = () => {
     const provider = createWmsProvider(linzi_hazard, false)
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.linzi_hazardTag = true
-    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    flyToWmsLayer(linzi_hazard, 3000, 1.5)
     ElMessage.success('区域危险性评估加载完成')
   } catch (error) { console.error('区域危险性评估失败:', error); ElMessage.error(`区域危险性评估失败: ${error.message || error}`) }
 }
@@ -5102,7 +5030,7 @@ const addLayer_yigong_hazard = () => {
     const provider = createWmsProvider(yigong_hazard, false)
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.yigong_hazardTag = true
-    viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299), orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 } })
+    flyToWmsLayer(yigong_hazard, 3000, 1.5)
     ElMessage.success('点危险性评估加载完成')
   } catch (error) { console.error('点危险性评估失败:', error); ElMessage.error(`点危险性评估失败: ${error.message || error}`) }
 }
@@ -7589,10 +7517,7 @@ const handleFullRiskAnalysis = () => {
     fullRiskLegendEl.remove(); fullRiskLegendEl = null
   }
 
-  viewer.value.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-    orientation: { heading: Cesium.Math.toRadians(56.34), pitch: Cesium.Math.toRadians(-31), roll: 0.0 },
-  })
+  flyToWmsLayer(FULL_RISK_RESULT_LAYER, 3000, 1.5)
 }
 //使用echart绘制seismic图表
 let seismic_chart = null
