@@ -4501,12 +4501,13 @@ const DUJIANG_PHOTO_BASE = '/CS/img/dujiang_photos'
  * 统一的点位信息弹窗（历史堵江点 / 历史未堵江点）：与平台一致的深蓝 + 青色描边卡片，
  * 上半部分标题 + 类型角标，中间为属性表，可选附现场图片。
  */
-const showPointInfoPopup = ({ title, badge = '', rows = [], imageUrl = '' }) => {
+const showPointInfoPopup = ({ title, badge = '', rows = [], images = [] }) => {
   closeDujiangImagePopup()
+  const candidates = (Array.isArray(images) ? images : [images]).filter(Boolean)
   const el = document.createElement('div')
   el.style.cssText = `
-    position: fixed; right: 24px; bottom: 24px; z-index: 9999;
-    width: 340px; max-height: 62vh; overflow: auto;
+    position: fixed; right: 24px; bottom: 24px; z-index: 10050;
+    width: 380px; max-height: 66vh; overflow: auto;
     background: linear-gradient(180deg, rgba(7,28,56,.96), rgba(4,16,34,.96));
     border: 1px solid rgba(56,225,255,.55); border-radius: 8px;
     box-shadow: 0 0 18px rgba(56,225,255,.25); color: #eaf6ff; font-size: 13px;
@@ -4527,11 +4528,32 @@ const showPointInfoPopup = ({ title, badge = '', rows = [], imageUrl = '' }) => 
     </div>
     <div style="padding:10px 12px;">
       ${tableRows ? `<table style="width:100%;border-collapse:collapse;">${tableRows}</table>` : '<div style="color:#9fc6e6;">暂无属性信息</div>'}
-      ${imageUrl ? `<img src="${imageUrl}" style="width:100%;margin-top:8px;border-radius:4px;border:1px solid rgba(56,225,255,.3);" onerror="this.style.display='none'" />` : ''}
+      ${candidates.length ? `<div style="margin-top:8px;color:#9fc6e6;font-size:12px;" id="point-popup-img-tip">现场图片加载中…（原图较大，请稍候）</div>
+      <img id="point-popup-img" data-idx="0" src="${candidates[0]}"
+           style="width:100%;margin-top:4px;border-radius:4px;border:1px solid rgba(56,225,255,.3);" />` : ''}
     </div>
   `
   document.body.appendChild(el)
   el.querySelector('#dujiang-popup-close').onclick = closeDujiangImagePopup
+  // 图片名与属性「名称」可能不完全一致（如 卡贡弄巴（古乡沟）→ 古乡沟.png），失败时按候选依次回退
+  const img = el.querySelector('#point-popup-img')
+  if (img) {
+    img.onload = () => {
+      const tip = el.querySelector('#point-popup-img-tip')
+      if (tip) tip.style.display = 'none'
+    }
+    img.onerror = () => {
+      const next = Number(img.dataset.idx || '0') + 1
+      if (next < candidates.length) {
+        img.dataset.idx = String(next)
+        img.src = candidates[next]
+      } else {
+        img.style.display = 'none'
+        const tip = el.querySelector('#point-popup-img-tip')
+        if (tip) tip.textContent = '未找到该点位的现场图片'
+      }
+    }
+  }
   dujiangImagePopup.value = el
 }
 
@@ -4551,11 +4573,15 @@ const handleDujiangClick = movement => {
   const rows = Object.entries(props)
   if (entity.dujiangTag) {
     const name = entity.name || ''
+    const short = (name.match(/[（(]([^（）()]+)[）)]/) || [])[1] // 如「卡贡弄巴（古乡沟）」→「古乡沟」
+    const images = [name, short, props.新编号]
+      .filter(Boolean)
+      .map(n => `${DUJIANG_PHOTO_BASE}/${n}.png`)
     showPointInfoPopup({
       title: name || '历史堵江点',
       badge: '堵江点',
       rows,
-      imageUrl: `${DUJIANG_PHOTO_BASE}/${name}.png`,
+      images,
     })
   } else if (entity.noDujiangTag) {
     showPointInfoPopup({
