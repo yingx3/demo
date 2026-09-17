@@ -1994,7 +1994,7 @@
                     <template #append>
                       <el-upload
                         ref="uploadRefSeismic"
-                        action="http://localhost:3000/node/upload_excel"
+                        action="/node/upload_excel"
                         name="file"
                         :auto-upload="false"
                         :multiple="false"
@@ -2153,7 +2153,7 @@
                   <template #append>
                     <el-upload
                       ref="uploadRefSeismicDL"
-                      action="http://localhost:3000/node/upload_excel"
+                      action="/node/upload_excel"
                       name="file"
                       :auto-upload="false"
                       :multiple="false"
@@ -4208,7 +4208,11 @@ const submitSeismic = async () => {
     return
   }
   dialogVisibleSeismic.value = false
-  ElMessage({ message: '上传中，请稍候...', type: 'info', duration: 0 })
+  ElMessage({
+    message: '正在上传数据并启动计算，算法约需 1~5 分钟（大文件更久），请勿关闭页面...',
+    type: 'info',
+    duration: 0,
+  })
   try {
     uploadRefSeismic.value?.submit()
   } catch (err) {
@@ -4228,7 +4232,7 @@ const handleUploadSuccessSeismic = async (response, file, fileList) => {
   }
 
   ElMessage({
-    message: '上传成功，正在请求后端处理...',
+    message: '数据已上传，后端正在识别（请稍候，页面不要刷新）...',
     type: 'info',
     duration: 0,
   })
@@ -4267,9 +4271,13 @@ const handleUploadSuccessSeismic = async (response, file, fileList) => {
     }
   } catch (err) {
     ElMessage.closeAll()
+    const isTimeout = String(err?.message || '').toLowerCase().includes('timeout')
     ElMessage({
-      message: '后端处理失败：' + (err?.message || '网络或服务错误'),
+      message: isTimeout
+        ? '等待后端超时：算法可能仍在运行，请稍后重试或换更小的数据文件'
+        : '后端处理失败：' + (err?.message || '网络或服务错误'),
       type: 'error',
+      duration: 8000,
     })
     console.error('调用后端处理 excel 失败', err)
   } finally {

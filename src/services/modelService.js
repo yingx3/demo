@@ -78,18 +78,20 @@ const modelService = {
     )
   },
   postSeismic(savedFile, params) {
+    // 机器学习识别在后端跑脚本（大文件可能数分钟），超时与后端 process-timeout(600s) 对齐并留余量
     return axios
       .post(
         '/testapi/admin/user/seismic',
         { file: savedFile, params },
-        { timeout: 120000 },
+        { timeout: 900000 },
       )
       .then(r => r.data)
   },
   postSeismicDL(data) {
     const payload = { file: data.file, col: data.col }
+    // 深度学习推理同样可能较慢，超时放宽到 15 分钟
     return axios
-      .post('/testapi/admin/user/seismic_dl', payload, { timeout: 120000 })
+      .post('/testapi/admin/user/seismic_dl', payload, { timeout: 900000 })
       .then(r => r.data)
   },
   postAvainit(form) {

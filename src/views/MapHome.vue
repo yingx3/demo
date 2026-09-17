@@ -674,6 +674,12 @@ const DATA_LAYER_IDS = [
 ]
 // 父节点 -> 子节点：取消父节点勾选时一并卸载
 const CATALOG_PARENT_CHILDREN = {
+  // 基础地理空间数据 / 地形因子 / 设备 / 冰川 / 水文数据：取消父节点时一并卸载子图层
+  1: [11, 12, 114, 115, 116],
+  2: [21, 22, 23, 24],
+  3: [31, 32],
+  4: [17],
+  5: [16],
   6: [611, 612, 613, 621, 622, 623],
   61: [611, 612, 613],
   62: [621, 622, 623],
@@ -943,6 +949,12 @@ const checkedLayers = (ps, node) => {
       : [node, ...(CATALOG_PARENT_CHILDREN[node] || [])]
   offIds.forEach(offId => {
     switch (offId) {
+    case 11:
+      removeLayer1()
+      break
+    case 12:
+      removeLayer2()
+      break
     case 16:
       removeLayer_river()
       break
@@ -3657,15 +3669,11 @@ const addLayer1 = () => {
   })
   const layers = viewer.value.scene.imageryLayers
   layers.addImageryProvider(wmsImageryProvider)
+  // 影像数据（易贡—波密一带：94.73~95.42E / 29.61~29.96N）
+  // 相机中心取范围中心，高度按跨度给 60 km（原来统一 7.3 km，太近）
   viewer.value.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-    //相机的姿态
-    orientation: {
-      heading: Cesium.Math.toRadians(56.34), //朝向
-      pitch: Cesium.Math.toRadians(-31), //俯仰
-      // pitch: Cesium.Math.toRadians(-90), //俯仰
-      roll: 0.0, //滚转
-    },
+    destination: Cesium.Cartesian3.fromDegrees(95.074, 29.783, 60000),
+    orientation: { heading: 0, pitch: Cesium.Math.toRadians(-90), roll: 0 },
   })
 }
 const removeLayer1 = () => {
@@ -3711,7 +3719,12 @@ const addLayer2 = () => {
   const layers = viewer.value.scene.imageryLayers
 
   layers.addImageryProvider(wmsImageryProvider1)
-  flyToResultRect(Cesium.Rectangle.fromDegrees(94.730835, 29.606009, 95.417971, 29.959721), 3000, 1.5)
+  // 影像数据（易贡—波密一带：94.73~95.42E / 29.61~29.96N）
+  // 相机中心取范围中心，高度按跨度给 60 km（原来统一 7.3 km，太近）
+  viewer.value.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(95.074, 29.783, 60000),
+    orientation: { heading: 0, pitch: Cesium.Math.toRadians(-90), roll: 0 },
+  })
 }
 //移除路网
 const removeLayer2 = () => {
@@ -4070,6 +4083,14 @@ const addLayer_glacier = () => {
   // console.log(data)
   axios.get('/node/glacier').then(res => {
     const data = res.data
+    // 相机范围由冰川数据自身决定
+    let bbox = null
+    const extend = (lon, lat) => {
+      if (!Number.isFinite(lon) || !Number.isFinite(lat)) return
+      bbox = bbox
+        ? [Math.min(bbox[0], lon), Math.min(bbox[1], lat), Math.max(bbox[2], lon), Math.max(bbox[3], lat)]
+        : [lon, lat, lon, lat]
+    }
 
     data.forEach(glacier => {
       try {
@@ -4103,6 +4124,7 @@ const addLayer_glacier = () => {
 
           // 添加 glacierTag 方便后续删除
           entity.glacierTag = true
+          polygon.forEach(ring => ring.forEach(pt => extend(pt[0], pt[1])))
         })
       } catch (e) {
         console.error('解析失败:', {
@@ -4111,16 +4133,11 @@ const addLayer_glacier = () => {
         })
       }
     })
-  })
-  viewer.value.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-    //相机的姿态
-    orientation: {
-      heading: Cesium.Math.toRadians(56.34), //朝向
-      pitch: Cesium.Math.toRadians(-31), //俯仰
-      // pitch: Cesium.Math.toRadians(-90), //俯仰
-      roll: 0.0, //滚转
-    },
+    if (bbox) {
+      flyToResultRect(Cesium.Rectangle.fromDegrees(bbox[0], bbox[1], bbox[2], bbox[3]), 3000, 1.5)
+    }
+  }).catch(e => {
+    console.error('冰川分布加载失败:', e)
   })
 }
 // MultiPolygon parsing moved to ../utils/wkb.js
@@ -4425,32 +4442,40 @@ const addLayer_622 = () => {
     const features = res.data.features
     console.log(`[历史未堵江点] 加载 ${features.length} 个点`)
 
+    // 相机范围由点位数据自身决定
+    let bbox = null
+    const extend = (lon, lat) => {
+      if (!Number.isFinite(lon) || !Number.isFinite(lat)) return
+      bbox = bbox
+        ? [Math.min(bbox[0], lon), Math.min(bbox[1], lat), Math.max(bbox[2], lon), Math.max(bbox[3], lat)]
+        : [lon, lat, lon, lat]
+    }
+
     features.forEach(feature => {
       const [lon, lat] = feature.geometry.coordinates
       const props = feature.properties
-
-      // 构建 Cesium InfoBox 描述 HTML（点击实体时自动弹出）
-      const descFields = Object.entries(props)
-        .map(([key, value]) => `<tr><th>${key}</th><td>${value ?? ''}</td></tr>`)
-        .join('')
-      const description = `<table style="width:100%">${descFields}</table>`
+      extend(lon, lat)
 
       const entity = viewer.value.entities.add({
         position: Cesium.Cartesian3.fromDegrees(lon, lat),
         name: props.名称 || props.新编号 || '',
-        description,
         billboard: {
           image: '/CS/img/positionBlue.png',
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
           width: 32,
           height: 32,
         },
       })
       entity.noDujiangTag = true
+      entity.pointProps = props          // 供统一点位弹窗展示
     })
 
-    flyToWmsLayer(HISTORY_SIM_WMS_LAYER, 3000, 1.5)
+    ensurePointClickHandler()
+    if (bbox) {
+      flyToResultRect(Cesium.Rectangle.fromDegrees(bbox[0], bbox[1], bbox[2], bbox[3]), 3000, 1.5)
+    }
     ElMessage.success('历史未堵江点加载完成')
   }).catch(error => {
     console.error('加载历史未堵江点失败:', error)
@@ -4472,23 +4497,38 @@ const removeLayer_622 = () => {
 // ========== 堵江点图片弹窗 ==========
 const DUJIANG_PHOTO_BASE = '/CS/img/dujiang_photos'
 
-const showDujiangImagePopup = (imageUrl, title) => {
+/**
+ * 统一的点位信息弹窗（历史堵江点 / 历史未堵江点）：与平台一致的深蓝 + 青色描边卡片，
+ * 上半部分标题 + 类型角标，中间为属性表，可选附现场图片。
+ */
+const showPointInfoPopup = ({ title, badge = '', rows = [], imageUrl = '' }) => {
   closeDujiangImagePopup()
   const el = document.createElement('div')
   el.style.cssText = `
-    position: fixed; bottom: 75px; left: 105px; z-index: 9999;
-    background: rgba(0,0,0,0.85); border: 1px solid #38e1ff;
-    border-radius: 8px; box-shadow: 0 0 10px 2px #29baf1;
-    padding: 10px; min-width: 220px; min-height: 100px;
-    resize: both; overflow: auto;
+    position: fixed; right: 24px; bottom: 24px; z-index: 9999;
+    width: 340px; max-height: 62vh; overflow: auto;
+    background: linear-gradient(180deg, rgba(7,28,56,.96), rgba(4,16,34,.96));
+    border: 1px solid rgba(56,225,255,.55); border-radius: 8px;
+    box-shadow: 0 0 18px rgba(56,225,255,.25); color: #eaf6ff; font-size: 13px;
   `
+  const tableRows = (rows || [])
+    .map(
+      ([k, v]) => `<tr>
+        <th style="text-align:left;padding:3px 8px 3px 0;color:#9fc6e6;font-weight:400;white-space:nowrap;vertical-align:top;">${k}</th>
+        <td style="padding:3px 0;color:#eaf6ff;word-break:break-all;">${v ?? ''}</td>
+      </tr>`,
+    )
+    .join('')
   el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-      <span style="color:#fff;font-size:14px;font-weight:600;">${title}</span>
-      <span id="dujiang-popup-close" style="color:#fff;cursor:pointer;font-size:16px;padding:0 6px;">X</span>
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid rgba(56,225,255,.25);">
+      <span style="flex:1;font-weight:600;color:#38e1ff;">${title || '点位信息'}</span>
+      ${badge ? `<span style="font-size:12px;color:#0b2c4d;background:#38e1ff;border-radius:10px;padding:1px 8px;">${badge}</span>` : ''}
+      <span id="dujiang-popup-close" style="cursor:pointer;color:#9fc6e6;font-size:16px;padding:0 4px;">×</span>
     </div>
-    <img src="${imageUrl}" style="width:100%;max-width:800px;display:block;"
-         onerror="this.style.display='none'" />
+    <div style="padding:10px 12px;">
+      ${tableRows ? `<table style="width:100%;border-collapse:collapse;">${tableRows}</table>` : '<div style="color:#9fc6e6;">暂无属性信息</div>'}
+      ${imageUrl ? `<img src="${imageUrl}" style="width:100%;margin-top:8px;border-radius:4px;border:1px solid rgba(56,225,255,.3);" onerror="this.style.display='none'" />` : ''}
+    </div>
   `
   document.body.appendChild(el)
   el.querySelector('#dujiang-popup-close').onclick = closeDujiangImagePopup
@@ -4502,17 +4542,38 @@ const closeDujiangImagePopup = () => {
   }
 }
 
+// 点位点击：历史堵江点（带现场图片）与历史未堵江点共用同一套弹窗样式
 const handleDujiangClick = movement => {
   const picked = viewer.value.scene.pick(movement.position)
-  console.log('[堵江点] pick result:', picked)
   if (!Cesium.defined(picked) || !picked.id) return
   const entity = picked.id
-  console.log('[堵江点] entity:', entity.name, 'dujiangTag:', entity.dujiangTag)
-  if (!entity.dujiangTag) return
-  const name = entity.name || ''
-  const imageUrl = `${DUJIANG_PHOTO_BASE}/${name}.png`
-  console.log('[堵江点] 显示图片:', imageUrl)
-  showDujiangImagePopup(imageUrl, name)
+  const props = entity.pointProps || {}
+  const rows = Object.entries(props)
+  if (entity.dujiangTag) {
+    const name = entity.name || ''
+    showPointInfoPopup({
+      title: name || '历史堵江点',
+      badge: '堵江点',
+      rows,
+      imageUrl: `${DUJIANG_PHOTO_BASE}/${name}.png`,
+    })
+  } else if (entity.noDujiangTag) {
+    showPointInfoPopup({
+      title: entity.name || '历史未堵江点',
+      badge: '未堵江点',
+      rows,
+    })
+  }
+}
+
+/** 点位点击处理器只创建一次（历史堵江点/未堵江点共用） */
+const ensurePointClickHandler = () => {
+  if (dujiangClickHandler.value) return
+  dujiangClickHandler.value = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
+  dujiangClickHandler.value.setInputAction(
+    handleDujiangClick,
+    Cesium.ScreenSpaceEventType.LEFT_CLICK,
+  )
 }
 
 //添加历史堵江点（Cesium Entity 悬浮图标）
@@ -4521,47 +4582,40 @@ const addLayer_623 = () => {
     const features = res.data.features
     console.log(`[历史堵江点] 加载 ${features.length} 个点`)
 
+    // 相机范围由点位数据自身决定
+    let bbox = null
+    const extend = (lon, lat) => {
+      if (!Number.isFinite(lon) || !Number.isFinite(lat)) return
+      bbox = bbox
+        ? [Math.min(bbox[0], lon), Math.min(bbox[1], lat), Math.max(bbox[2], lon), Math.max(bbox[3], lat)]
+        : [lon, lat, lon, lat]
+    }
+
     features.forEach(feature => {
       const [lon, lat] = feature.geometry.coordinates
       const props = feature.properties
-
-      const descFields = Object.entries(props)
-        .map(([key, value]) => `<tr><th>${key}</th><td>${value ?? ''}</td></tr>`)
-        .join('')
-      const description = `<table style="width:100%">${descFields}</table>`
+      extend(lon, lat)
 
       const entity = viewer.value.entities.add({
         position: Cesium.Cartesian3.fromDegrees(lon, lat),
         name: props.名称 || props.新编号 || '',
-        description,
         billboard: {
           image: '/CS/img/positionBlue.png',
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
           width: 32,
           height: 32,
         },
       })
       entity.dujiangTag = true
+      entity.pointProps = props          // 供统一点位弹窗展示
     })
 
-    // 添加点击事件：点击堵江点弹出关联图片
-    dujiangClickHandler.value = new Cesium.ScreenSpaceEventHandler(
-      viewer.value.scene.canvas,
-    )
-    dujiangClickHandler.value.setInputAction(
-      handleDujiangClick,
-      Cesium.ScreenSpaceEventType.LEFT_CLICK,
-    )
-
-    viewer.value.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
-      orientation: {
-        heading: Cesium.Math.toRadians(56.34),
-        pitch: Cesium.Math.toRadians(-31),
-        roll: 0.0,
-      },
-    })
+    ensurePointClickHandler()
+    if (bbox) {
+      flyToResultRect(Cesium.Rectangle.fromDegrees(bbox[0], bbox[1], bbox[2], bbox[3]), 3000, 1.5)
+    }
     ElMessage.success('历史堵江点加载完成')
   }).catch(error => {
     console.error('加载历史堵江点失败:', error)
@@ -5098,12 +5152,14 @@ const addLayer_weatherstation = () => {
           TYPES: station.TYPES,
           COMMENT: station.COMMENT,
         },
-        point: {
-          pixelSize: 6,
-          color: getColorByType(station.TYPES), // 按类型着色
-          outlineColor: Cesium.Color.WHITE,
-          outlineWidth: 1,
+        // [统一样式] 与「历史堵江点/历史未堵江点/地震动设备」同款图钉
+        billboard: {
+          image: '/CS/img/positionBlue.png',
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          width: 32,
+          height: 32,
         },
         label: {
           text: station.NAME,
