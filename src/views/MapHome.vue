@@ -564,6 +564,52 @@
       <el-table-column prop="precipitation_mm" label="降水(mm)" min-width="105" />
     </el-table>
   </el-dialog>
+  <!-- 历史灾害点 / 古灾害链：点击事件点后的详情卡片（平台统一样式，居中显示） -->
+  <el-dialog
+    v-model="legacyEventVisible"
+    width="620px"
+    align-center
+    append-to-body
+    :close-on-click-modal="true"
+    class="legacy-event-dialog"
+  >
+    <template #header>
+      <div class="legacy-event-head">
+        <span class="legacy-event-title" v-text="legacyEventTitle"></span>
+        <span
+          v-if="legacyEventBadge"
+          class="legacy-event-badge"
+          :style="{ background: legacyEventBadgeColor || '#38e1ff' }"
+          v-text="legacyEventBadge"
+        ></span>
+      </div>
+    </template>
+    <div class="legacy-event-body">
+      <div
+        v-for="sec in legacyEventSections"
+        :key="sec.title"
+        class="legacy-event-section"
+      >
+        <div class="legacy-event-section-title" v-text="sec.title"></div>
+        <div class="legacy-event-grid">
+          <div
+            v-for="row in sec.rows"
+            :key="row.label"
+            class="legacy-event-row"
+            :class="{ 'legacy-event-row--wide': row.wide }"
+          >
+            <span class="legacy-event-label" v-text="row.label"></span>
+            <span class="legacy-event-value" v-text="row.value"></span>
+          </div>
+        </div>
+      </div>
+      <div
+        v-if="legacyEventHint"
+        class="legacy-event-hint"
+        v-text="legacyEventHint"
+      ></div>
+    </div>
+  </el-dialog>
 </template>
 <script setup>
 // import wkb from 'wkb'
@@ -651,6 +697,34 @@ const weatherChartRef = ref(null) // [新增] 近 7 天趋势图容器
 let weatherChartInstance = null // [新增] ECharts 实例
 const dujiangImagePopup = ref(null) // 堵江点图片弹窗
 const dujiangClickHandler = ref(null) // 堵江点点击事件处理器
+// 历史灾害点 / 古灾害链：事件详情卡片（平台统一样式，居中显示）
+const legacyEventVisible = ref(false)
+const legacyEventTitle = ref('')
+const legacyEventBadge = ref('')
+const legacyEventBadgeColor = ref('')
+const legacyEventSections = ref([])
+const legacyEventHint = ref('')
+const showLegacyEventPopup = ({
+  title = '事件详情',
+  badge = '',
+  badgeColor = '',
+  sections = [],
+  hint = '',
+}) => {
+  legacyEventTitle.value = title
+  legacyEventBadge.value = badge
+  legacyEventBadgeColor.value = badgeColor
+  legacyEventSections.value = (sections || [])
+    .map(sec => ({
+      title: sec.title || '',
+      rows: (sec.rows || [])
+        .map(r => (Array.isArray(r) ? { label: r[0], value: r[1] } : r))
+        .filter(Boolean),
+    }))
+    .filter(sec => sec.rows.length)
+  legacyEventHint.value = hint
+  legacyEventVisible.value = true
+}
 // 获取 store 实例
 const squareStore = useSquareStore()
 const leftlong = ref(97.51465187373286)
@@ -6357,6 +6431,55 @@ const addLayer3 = (p1, p2, p3, p4, p5) => {
 
 //   img.src = imgUrl
 // }
+/**
+ * 读取 GeoJSON 实体属性：
+ * 历史数据里同名字段出现过「带下划线前缀 / 不带前缀」两种写法，这里统一兜底；
+ * 同时兼容 Cesium 的 ConstantProperty 包装（_value / getValue）。
+ */
+const readGeoJsonProp = (entity, ...keys) => {
+  const bag = entity && entity._properties ? entity._properties : null
+  if (!bag) return undefined
+  const names = []
+  keys.forEach(k => {
+    const raw = String(k)
+    names.push(raw, '_' + raw, raw.replace(/^_+/, ''))
+  })
+  for (const name of names) {
+    const prop = bag[name]
+    if (!prop) continue
+    let v
+    if (prop._value !== undefined) v = prop._value
+    else if (typeof prop.getValue === 'function')
+      v = prop.getValue(Cesium.JulianDate.now())
+    if (v !== undefined && v !== null && v !== '') return v
+  }
+  return undefined
+}
+
+/** 属性值格式化：空值统一显示「—」，避免出现「无数据 m²」这类拼接 */
+const fmtPropValue = (v, unit = '', digits) => {
+  if (v === undefined || v === null || v === '') return '—'
+  const n = Number(v)
+  // 角度不需要空格（18°），其余带单位的数值统一用空格分隔
+  const gap = unit === '°' ? '' : ' '
+  if (Number.isFinite(n)) {
+    const d = digits === undefined ? (Math.abs(n) >= 1000 ? 0 : 2) : digits
+    const s = Number(n.toFixed(d)).toLocaleString('zh-CN')
+    return unit ? s + gap + unit : s
+  }
+  return unit ? String(v) + gap + unit : String(v)
+}
+
+/** 历史灾害点规模角标配色：特大型红 / 大型橙 / 中型黄 / 小型绿 */
+const legacyScaleColor = scale => {
+  const s = String(scale || '')
+  if (s.indexOf('特大') >= 0) return '#ff8787'
+  if (s.indexOf('大型') >= 0) return '#ffc078'
+  if (s.indexOf('中型') >= 0) return '#ffe066'
+  if (s.indexOf('小型') >= 0) return '#8ce99a'
+  return ''
+}
+
 const addLayer4 = () => {
   Cesium.GeoJsonDataSource.load('/ng/hpps2.geojson')
     .then(function (dataSource) {
@@ -6368,7 +6491,7 @@ const addLayer4 = () => {
       // 添加数据源到视图
       viewer.value.dataSources.add(dataSource)
 
-      // 统一设置实体样式
+      // 统一设置实体样式：贴地图钉 + 就近缩放时显示名称（远看只留图钉，避免堆叠）
       const entities = dataSource.entities.values
       entities.forEach(entity => {
         entity.billboard = {
@@ -6377,6 +6500,26 @@ const addLayer4 = () => {
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
           width: 32,
           height: 32,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        }
+        const pointName = readGeoJsonProp(entity, '名称')
+        if (pointName) {
+          entity.label = {
+            text: String(pointName),
+            font: '12px sans-serif',
+            fillColor: Cesium.Color.fromCssColorString('#bfe9ff'),
+            outlineColor: Cesium.Color.fromCssColorString('#06233a'),
+            outlineWidth: 3,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            verticalOrigin: Cesium.VerticalOrigin.TOP,
+            pixelOffset: new Cesium.Cartesian2(0, 2),
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(
+              0,
+              80000,
+            ),
+          }
         }
       })
 
@@ -6391,53 +6534,57 @@ const addLayer4 = () => {
         handleLayer4Click,
         Cesium.ScreenSpaceEventType.RIGHT_CLICK,
       )
+      // 左键同样可打开详情卡片，与平台其它点位操作保持一致
+      layer4ClickHandler.setInputAction(
+        handleLayer4Click,
+        Cesium.ScreenSpaceEventType.LEFT_CLICK,
+      )
     })
     .catch(error => {
       console.error('加载GeoJSON失败:', error)
     })
 }
-// 点击事件处理函数
+// 点击事件处理函数：历史灾害点详情卡片（平台统一样式，居中显示）
 const handleLayer4Click = movement => {
   const pickedFeature = viewer.value.scene.pick(movement.position)
   if (!pickedFeature || !pickedFeature.id) return
 
-  // 安全获取属性值
-  const getProperty = prop => {
-    return pickedFeature.id._properties[prop]?._value ?? '无数据'
-  }
+  const entity = pickedFeature.id
+  // 只响应「历史灾害点」图层的实体，避免图层移除后误响应其它点位
+  if (!readGeoJsonProp(entity, '潜在滑坡体积规模', '断层密度_km_km2_')) return
 
-  // 准备弹窗内容
-  const opts = {
-    viewer,
-    position: {
-      _value: pickedFeature.id.position || pickedFeature.primitive.position,
-    },
-    title: getProperty('_OBJECTID'),
-    content: [
-      { name: '名称', value: getProperty('_名称') },
-      { name: '经度', value: getProperty('_经度') },
-      { name: '纬度', value: getProperty('_纬度') },
-      { name: '断层密度', value: getProperty('_断层密度_km_km2_') + ' km/km²' },
-      { name: '隆升速率', value: getProperty('_隆升速率_mm_y_') + ' mm/y' },
-      { name: '坡度', value: getProperty('_坡度___') + '°' },
+  const p = (...keys) => readGeoJsonProp(entity, ...keys)
+  const name = p('名称')
+  const scale = p('潜在滑坡体积规模')
+
+  showLegacyEventPopup({
+    title: name ? String(name) : '历史灾害点',
+    badge: scale ? String(scale) : '历史灾害点',
+    badgeColor: legacyScaleColor(scale),
+    sections: [
       {
-        name: '河流下切速率',
-        value: getProperty('_河流下切速率_mm_y_') + ' mm/y',
+        title: '基本信息',
+        rows: [
+          ['编号', p('编号')],
+          ['潜在滑坡体积规模', scale],
+          ['经度', fmtPropValue(p('经度'), '', 4)],
+          ['纬度', fmtPropValue(p('纬度'), '', 4)],
+        ],
       },
       {
-        name: '坡体后端汇水面积',
-        value: getProperty('_坡体后端汇水面积_m2_') + ' m²',
+        title: '地形与地质条件',
+        rows: [
+          ['坡度', fmtPropValue(p('坡度___'), '°')],
+          ['高差', fmtPropValue(p('高差_m_'), 'm')],
+          ['断层密度', fmtPropValue(p('断层密度_km_km2_'), 'km/km²')],
+          ['隆升速率', fmtPropValue(p('隆升速率_mm_y_'), 'mm/y')],
+          ['河流下切速率', fmtPropValue(p('河流下切速率_mm_y_'), 'mm/y')],
+          ['坡体后端汇水面积', fmtPropValue(p('坡体后端汇水面积_m2_'), 'm²')],
+        ],
       },
-      { name: '高差', value: getProperty('_高差_m_') + ' m' },
-      { name: '潜在滑坡体积规模', value: getProperty('_潜在滑坡体积规模') },
     ],
-  }
-
-  // 关闭现有弹窗并打开新弹窗
-  if (dialogs.value) {
-    dialogs.value.windowClose()
-  }
-  dialogs.value = new Dialog(opts)
+    hint: '在地图上左键 / 右键点击该点位，可再次打开本卡片。',
+  })
 }
 //移除滑坡判识矢量点
 const removeLayer4 = () => {
@@ -6466,10 +6613,35 @@ const addLayer5 = () => {
       for (var i = 0; i < entities.length; i++) {
         const entity = entities[i]
 
-        const name = entity.name
+        // 贴地图钉 + 就近缩放时显示解译编号 / 地点，远看只留图钉
         entity.billboard.heightReference =
           Cesium.HeightReference.CLAMP_TO_GROUND
         entity.billboard.image = '/ng/position.png'
+        entity.billboard.width = 32
+        entity.billboard.height = 32
+        entity.billboard.verticalOrigin = Cesium.VerticalOrigin.BOTTOM
+        entity.billboard.disableDepthTestDistance = Number.POSITIVE_INFINITY
+        const labelText =
+          readGeoJsonProp(entity, '遥感解译编号') ||
+          readGeoJsonProp(entity, '地点')
+        if (labelText) {
+          entity.label = {
+            text: String(labelText),
+            font: '12px sans-serif',
+            fillColor: Cesium.Color.fromCssColorString('#ffd8a8'),
+            outlineColor: Cesium.Color.fromCssColorString('#3a2205'),
+            outlineWidth: 3,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            verticalOrigin: Cesium.VerticalOrigin.TOP,
+            pixelOffset: new Cesium.Cartesian2(0, 2),
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(
+              0,
+              80000,
+            ),
+          }
+        }
       }
       viewer.value.zoomTo(dataSource)
       // 设置点击事件处理器
@@ -6480,51 +6652,78 @@ const addLayer5 = () => {
         handleLayer5Click,
         Cesium.ScreenSpaceEventType.RIGHT_CLICK,
       )
+      // 左键同样可打开详情卡片，与平台其它点位操作保持一致
+      layer5ClickHandler.setInputAction(
+        handleLayer5Click,
+        Cesium.ScreenSpaceEventType.LEFT_CLICK,
+      )
     },
   )
 }
+// 点击事件处理函数：古灾害链详情卡片（平台统一样式，居中显示）
 const handleLayer5Click = movement => {
   const pickedFeature = viewer.value.scene.pick(movement.position)
   if (!pickedFeature || !pickedFeature.id) return
 
-  // 安全获取属性值
-  const getProperty = prop => {
-    return pickedFeature.id._properties[prop]?._value ?? '无数据'
-  }
+  const entity = pickedFeature.id
+  // 只响应「古灾害链」图层的实体，避免图层移除后误响应其它点位
+  if (!readGeoJsonProp(entity, '遥感解译编号', '滑坡体体积_m3')) return
 
-  // console.log(pickedFeature)
-  // console.log(getProperty('_OBJECTID'))
-  // 准备弹窗内容
-  const opts = {
-    viewer,
-    position: {
-      _value: pickedFeature.id.position || pickedFeature.primitive.position,
-    },
-    title: getProperty('_OBJECTID'),
-    content: [
-      { name: '名称', value: getProperty('_遥感解译编号') },
-      { name: '经度', value: getProperty('_X') },
-      { name: '纬度', value: getProperty('_Y') },
-      { name: '干_支流', value: getProperty('_干_支流') },
-      { name: '高差', value: getProperty('_高差_m') + ' m' },
-      { name: '主滑方向', value: getProperty('_主滑方向__') + '°' },
+  const p = (...keys) => readGeoJsonProp(entity, ...keys)
+  const code = p('遥感解译编号')
+  const place = p('地点')
+  const blocked = Number(p('堰塞坝坝高_m'))
+
+  showLegacyEventPopup({
+    title: place ? String(place) : code ? String(code) : '古灾害链',
+    badge: Number.isFinite(blocked) && blocked > 0 ? '滑坡堰塞湖' : '古灾害链',
+    badgeColor: '#ffd166',
+    sections: [
       {
-        name: '滑坡全长',
-        value: getProperty('_滑坡全长_m') + ' m',
+        title: '基本信息',
+        rows: [
+          ['遥感解译编号', code],
+          ['所属干支流', p('干_支流')],
+          ['岸别', p('岸别')],
+          ['与河道关系', p('与河道关系')],
+          ['经度', fmtPropValue(p('X'), '', 4)],
+          ['纬度', fmtPropValue(p('Y'), '', 4)],
+        ],
       },
       {
-        name: '滑坡体面积',
-        value: getProperty('滑坡体面积_m2') + ' m²',
+        title: '滑坡体特征',
+        rows: [
+          ['前缘高程', fmtPropValue(p('前缘_m'), 'm')],
+          ['后缘高程', fmtPropValue(p('后缘_m'), 'm')],
+          ['高差', fmtPropValue(p('高差_m'), 'm')],
+          ['滑坡全长', fmtPropValue(p('滑坡全长_m'), 'm')],
+          ['滑坡体纵长', fmtPropValue(p('滑坡体纵长_m'), 'm')],
+          ['滑坡体宽', fmtPropValue(p('滑坡体宽_m'), 'm')],
+          ['滑坡体平均坡度', fmtPropValue(p('滑坡体平均坡度__'), '°')],
+          ['滑坡壁平均坡度', fmtPropValue(p('滑坡壁平均坡度__'), '°')],
+          ['主滑方向', fmtPropValue(p('主滑方向__'), '°')],
+          ['滑坡体面积', fmtPropValue(p('滑坡体面积_m2'), 'm²')],
+          ['滑坡体体积', fmtPropValue(p('滑坡体体积_m3'), 'm³')],
+          ['对岸坡体陡缓', p('对岸坡体陡缓情况')],
+        ],
       },
-      { name: '滑坡体体积', value: getProperty('_滑坡体体积_m3') + ' m³' },
+      {
+        title: '堰塞坝 / 堰塞湖',
+        rows: [
+          ['河床高程', fmtPropValue(p('河床高程_elevation__m'), 'm')],
+          ['坝顶高程', fmtPropValue(p('坝顶高程_m'), 'm')],
+          ['堰塞坝坝高', fmtPropValue(p('堰塞坝坝高_m'), 'm')],
+          ['坝长', fmtPropValue(p('坝长_m'), 'm')],
+          ['坝宽', fmtPropValue(p('坝宽_m'), 'm')],
+          ['堰塞坝面积', fmtPropValue(p('堰塞坝面积_m2'), 'm²')],
+          ['堰塞坝体积', fmtPropValue(p('堰塞坝体积_m3'), 'm³')],
+          ['堰塞湖面积', fmtPropValue(p('堰塞湖面积_m2'), 'm²')],
+          ['堰塞湖体积', fmtPropValue(p('堰塞湖体积_m3'), 'm³')],
+        ],
+      },
     ],
-  }
-
-  // 关闭现有弹窗并打开新弹窗
-  if (dialogs.value) {
-    dialogs.value.windowClose()
-  }
-  dialogs.value = new Dialog(opts)
+    hint: '在地图上左键 / 右键点击该点位，可再次打开本卡片。',
+  })
 }
 //移除古滑坡灾害链
 const removeLayer5 = () => {
@@ -8015,6 +8214,103 @@ onBeforeUnmount(() => {
 .seismic-wave-chart {
   width: 100%;
   height: 460px;
+}
+
+/* 历史灾害点 / 古灾害链 事件详情卡片：平台深蓝主题 + 居中显示（不贴边） */
+:global(.el-dialog.legacy-event-dialog) {
+  background: linear-gradient(
+    180deg,
+    rgba(7, 28, 56, 0.97),
+    rgba(4, 16, 34, 0.97)
+  );
+  border: 1px solid rgba(56, 225, 255, 0.55);
+  border-radius: 10px;
+  box-shadow: 0 0 24px rgba(56, 225, 255, 0.25);
+}
+
+:global(.el-dialog.legacy-event-dialog .el-dialog__header) {
+  margin: 0;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(56, 225, 255, 0.25);
+}
+
+:global(.el-dialog.legacy-event-dialog .el-dialog__body) {
+  padding: 12px 16px 16px;
+  max-height: 68vh;
+  overflow: auto;
+}
+
+:global(.el-dialog.legacy-event-dialog .el-dialog__headerbtn .el-dialog__close) {
+  color: #9fc6e6;
+}
+
+.legacy-event-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legacy-event-title {
+  color: #38e1ff;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.legacy-event-badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: #06263f;
+  border-radius: 10px;
+  padding: 1px 8px;
+}
+
+.legacy-event-section + .legacy-event-section {
+  margin-top: 12px;
+}
+
+.legacy-event-section-title {
+  margin-bottom: 6px;
+  padding-left: 8px;
+  color: #38e1ff;
+  font-size: 13px;
+  font-weight: 600;
+  border-left: 3px solid rgba(56, 225, 255, 0.85);
+}
+
+.legacy-event-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 18px;
+}
+
+.legacy-event-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 22px;
+}
+
+.legacy-event-row--wide {
+  grid-column: 1 / -1;
+}
+
+.legacy-event-label {
+  color: #9fc6e6;
+  white-space: nowrap;
+}
+
+.legacy-event-value {
+  color: #eaf6ff;
+  word-break: break-all;
+}
+
+.legacy-event-hint {
+  margin-top: 12px;
+  padding-top: 8px;
+  color: #9fc6e6;
+  font-size: 12px;
+  border-top: 1px solid rgba(56, 225, 255, 0.25);
 }
 
 /* [新增] 点击标记点弹出的信息卡片 */
