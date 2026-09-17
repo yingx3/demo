@@ -392,7 +392,13 @@
         <!-- 静态数据卡片：区域灾害本底数据点位（与资源目录勾选同源） -->
         <div class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
-          <el-popover width="290" trigger="click" placement="right-start" popper-class="data-layer-popover">
+          <el-popover
+            width="290"
+            trigger="click"
+            placement="right-start"
+            popper-class="data-layer-popover"
+            @show="loadDangerLevelFiles()"
+          >
             <template #reference>
               <el-button :plain="true"
                 ><span>区域灾害本底数据点位</span>

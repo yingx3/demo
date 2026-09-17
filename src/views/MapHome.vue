@@ -108,7 +108,7 @@
           overlayClassName="setPositionPopover"
         >
           <template #content>
-            <div>设置位置</div>
+            <div>空间定位</div>
           </template>
           <a-popover
             placement="left"
@@ -306,7 +306,7 @@
 
         <el-dialog
           v-model="dialogVisible_checkattribute"
-          title="属性表"
+          title="属性表（可删除点位）"
           width="980"
         >
           <div class="dynamic-table-container">
@@ -314,14 +314,10 @@
             <div class="table-controls">
               <el-input
                 v-model="searchKeyword"
-                placeholder="输入关键字搜索（名称 / 坡度 / 规模 / 高程…）"
-                style="width: 320px; margin-right: 12px"
-                clearable
-                @keyup.enter="filterAllPoints"
-                @clear="filterAllPoints"
+                placeholder="输入关键字搜索"
+                style="width: 300px; margin-right: 20px"
               />
-              <el-button type="primary" @click="filterAllPoints">搜索</el-button>
-              <span class="table-search-tip">当前 {{ tableData.length }} 条</span>
+              <el-button type="primary">搜索</el-button>
             </div>
 
             <!-- 数据表格 -->
@@ -1538,11 +1534,17 @@ const loadDangerLevelFiles = async () => {
   try {
     const resp = await modelService.getDangerLevelList({ limit: 40 })
     dangerLevelFiles.value = Array.isArray(resp?.items) ? resp.items : []
-    if (!selectedDangerLevelFile.value && dangerLevelFiles.value.length) {
-      selectedDangerLevelFile.value = dangerLevelFiles.value[0].file
+    if (dangerLevelFiles.value.length) {
+      // 默认选中列表首项（第一位是平台固定危险区划）
+      const exists = dangerLevelFiles.value.some(it => it.file === selectedDangerLevelFile.value)
+      if (!selectedDangerLevelFile.value || !exists) {
+        selectedDangerLevelFile.value = dangerLevelFiles.value[0].file
+      }
     }
+    return dangerLevelFiles.value.length
   } catch (e) {
     console.warn('[dangerLevel] 灾害危险区划列表读取失败:', e)
+    return 0
   }
 }
 
@@ -1563,13 +1565,25 @@ const removeLayer_dangerLevel = () => {
   dangerLevelLayer = null
 }
 
-const addLayer_dangerLevel = fileName => {
+const addLayer_dangerLevel = async fileName => {
+  // 列表可能因为后端刚启动/未重启而为空：勾选时按需再拉一次
+  if (!dangerLevelFiles.value.length) {
+    await loadDangerLevelFiles()
+  }
   const name = fileName || selectedDangerLevelFile.value
-  const meta = dangerLevelFiles.value.find(item => item.file === name)
+  let meta = dangerLevelFiles.value.find(item => item.file === name)
+  if (!meta && dangerLevelFiles.value.length) {
+    // 之前选中的结果文件已被清理时，回退到列表首项（通常为固定危险区划）
+    meta = dangerLevelFiles.value[0]
+    selectedDangerLevelFile.value = meta.file
+  }
   if (!meta) {
     ElMessage({
-      message: '暂无可用的灾害危险区划结果（运行「风险源定量识别与表征模型」后自动生成）',
+      message:
+        '暂无可用的灾害危险区划结果：请确认后端已启动（接口 /danger_level_list 可访问），' +
+        '或先运行「风险源定量识别与表征模型」生成结果',
       type: 'warning',
+      duration: 6000,
     })
     return
   }
@@ -7110,7 +7124,6 @@ const deletePoint = async row => {
     if (res.status >= 200 && res.status < 300) {
       ElMessage({ message: '删除成功', type: 'success' })
       tableData.value = tableData.value.filter(item => Number(item.id) !== id)
-      allPointsData.value = allPointsData.value.filter(item => Number(item.id) !== id)
       if (Number(disasterInfoEntity.value?.pointId) === id) hideDisasterInfo()
       removeMarkerByPointId(id)
     }
@@ -7118,7 +7131,6 @@ const deletePoint = async row => {
     if (err?.response?.status === 404) {
       // 库里已无该点，前端一并清掉，避免“删不掉”的错觉
       tableData.value = tableData.value.filter(item => Number(item.id) !== id)
-      allPointsData.value = allPointsData.value.filter(item => Number(item.id) !== id)
       if (Number(disasterInfoEntity.value?.pointId) === id) hideDisasterInfo()
       removeMarkerByPointId(id)
       ElMessage({ message: '该点已不存在，已从列表移除', type: 'warning' })
@@ -7149,7 +7161,6 @@ const showAllPoints = () => {
     .get('/node/point/all', { params: { limit: 500 } })
     .then(res => {
       const data = res.data?.data || []
-      searchKeyword.value = ''
       tableData.value = []
       if (!data.length) {
         ElMessage({ message: '平台中还没有灾害点', type: 'warning' })
@@ -7171,67 +7182,12 @@ const showAllPoints = () => {
           lat: item.lat,
         })
       })
-      // 保留完整数据，供属性表搜索过滤（表内搜索 + 地图标记联动）
-      allPointsData.value = [...tableData.value]
       dialogVisible_checkattribute.value = true
     })
     .catch(err => handleQueryError(err, '灾害点数据'))
     .finally(() => {
       loading.value = false
     })
-}
-
-/** 全部灾害点：完整数据副本（搜索过滤后可还原） */
-const allPointsData = ref([])
-
-/**
- * 属性表搜索：按关键字过滤表格，同时联动地图标记与相机。
- * 关键字为空时恢复全部点位。
- */
-const filterAllPoints = () => {
-  const kw = String(searchKeyword.value || '').trim().toLowerCase()
-  const all = allPointsData.value || []
-  const matched = !kw
-    ? all
-    : all.filter(item =>
-        [item.name, item.dcmd, item.lssl, item.slope, item.hlxqsl, item.pthhsmj, item.elevation, item.scale]
-          .some(v => String(v ?? '').toLowerCase().includes(kw)),
-      )
-  tableData.value = matched
-
-  // 地图标记联动：只显示命中的点位
-  const ids = new Set(matched.map(it => Number(it.id)))
-  searchMarkerEntities.forEach(ent => {
-    ent.show = !kw || ids.has(Number(ent.pointId))
-  })
-
-  ElMessage({
-    message: kw
-      ? (matched.length ? '匹配到 ' + matched.length + ' 个灾害点' : '未找到匹配的灾害点')
-      : '已显示全部 ' + all.length + ' 个灾害点',
-    type: matched.length ? 'success' : 'warning',
-    duration: 2500,
-  })
-
-  // 相机自动定位到命中点范围（只有输入关键字时才移动）
-  const pts = matched
-    .map(it => [Number(it.lng), Number(it.lat)])
-    .filter(pt => Number.isFinite(pt[0]) && Number.isFinite(pt[1]))
-  if (kw && pts.length) {
-    const lons = pts.map(pt => pt[0])
-    const lats = pts.map(pt => pt[1])
-    const west = Math.min(...lons)
-    const east = Math.max(...lons)
-    const south = Math.min(...lats)
-    const north = Math.max(...lats)
-    const padLon = Math.max(0.02, (east - west) * 0.25)
-    const padLat = Math.max(0.02, (north - south) * 0.25)
-    flyToResultRect(
-      Cesium.Rectangle.fromDegrees(west - padLon, south - padLat, east + padLon, north + padLat),
-      3000,
-      1.5,
-    )
-  }
 }
 
 // ===== [新增] 标记点信息卡片：点击地图上的点弹出属性 =====
@@ -7392,7 +7348,6 @@ const locationsearch = () => {
       },
     })
     .then(res => {
-      searchKeyword.value = ''
       tableData.value = [] // 清空表格数据
       const data = res.data
       // console.log(typeof data)
@@ -7426,8 +7381,7 @@ const locationsearch = () => {
             50000,
           ),
         })
-        allPointsData.value = [...tableData.value]
-      dialogVisible_checkattribute.value = true
+        dialogVisible_checkattribute.value = true
       }
     })
     .catch(err => handleQueryError(err, '灾害点数据'))
@@ -7490,7 +7444,6 @@ const attributesearch_disaster = () => {
       },
     })
     .then(res => {
-      searchKeyword.value = ''
       tableData.value = []
       const data = res.data.data
       // console.log(data)
@@ -7524,8 +7477,7 @@ const attributesearch_disaster = () => {
             50000,
           ),
         })
-        allPointsData.value = [...tableData.value]
-      dialogVisible_checkattribute.value = true
+        dialogVisible_checkattribute.value = true
       }
     })
     .catch(err => handleQueryError(err, '灾害点数据'))
@@ -7982,12 +7934,6 @@ onBeforeUnmount(() => {
 
 :global(.el-dialog.seismic-wave-dialog .el-dialog__headerbtn .el-dialog__close) {
   color: #9fc6e6;
-}
-
-.table-search-tip {
-  margin-left: 12px;
-  color: #909399;
-  font-size: 13px;
 }
 
 .seismic-wave-head {
