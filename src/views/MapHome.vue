@@ -1600,8 +1600,16 @@ const addLayer_dangerLevel = async fileName => {
   removeLayer_dangerLevel()
   const [west, south, east, north] = meta.bbox
   const rectangle = Cesium.Rectangle.fromDegrees(west, south, east, north)
+  // 注意：当前 Cesium 版本要求 SingleTileImageryProvider 必须给 tileWidth/tileHeight
+  const tileW = Number(meta.width) || 1024
+  const tileH = Number(meta.height) || 1024
   const layer = viewer.value.scene.imageryLayers.addImageryProvider(
-    new Cesium.SingleTileImageryProvider({ url: meta.url, rectangle }),
+    new Cesium.SingleTileImageryProvider({
+      url: meta.url,
+      rectangle,
+      tileWidth: tileW,
+      tileHeight: tileH,
+    }),
   )
   layer.dangerLevelTag = true
   dangerLevelLayer = layer
