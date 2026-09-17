@@ -6557,6 +6557,9 @@ const handleLayer4Click = movement => {
   const name = p('名称')
   const scale = p('潜在滑坡体积规模')
 
+  // 关闭 Cesium 默认 InfoBox：本图层的详情统一用平台卡片展示
+  viewer.value.selectedEntity = undefined
+
   showLegacyEventPopup({
     title: name ? String(name) : '历史灾害点',
     badge: scale ? String(scale) : '历史灾害点',
@@ -6673,6 +6676,9 @@ const handleLayer5Click = movement => {
   const code = p('遥感解译编号')
   const place = p('地点')
   const blocked = Number(p('堰塞坝坝高_m'))
+
+  // 关闭 Cesium 默认 InfoBox：本图层的详情统一用平台卡片展示
+  viewer.value.selectedEntity = undefined
 
   showLegacyEventPopup({
     title: place ? String(place) : code ? String(code) : '古灾害链',
