@@ -1806,13 +1806,6 @@
                       <li>未检测到加速变形（no_ooa）时提示「暂无法计算失稳时间」，此时应补充更长的监测序列；</li>
                       <li>点击地图上的预警点可查看该监测点的位移数据。</li>
                     </ul>
-                    <h2>五、运行结果示例</h2>
-                    <img
-                  :src="ASSET_BASE + 'img/demo-displacement.png'"
-                  alt="基于位移监测滑坡预警运行结果示例"
-                  title="点击查看大图"
-                  @click="previewSrc = $event.target.src"
-                />
                   </div>
                 </el-dialog>
               </div>
