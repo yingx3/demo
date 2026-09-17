@@ -2275,6 +2275,7 @@
                 <li>结果渲染场为抬升地形后的泥石流层厚度，与未调控工况对比即可评估断链／沿程调控的削峰效果；</li>
                 <li>{{ cfg.hint }}</li>
                 <li>绘制范围应落在输入数据覆盖范围内，范围过小或偏离沟道会明显削弱调控效果。</li>
+                <li>点击面板下方的<strong>「历史模拟」</strong>可回放此前的运行结果（含地形调控与基准工况），用于对比评估调控效果。</li>
               </ul>
             </div>
           </el-dialog>
@@ -2424,6 +2425,7 @@
             </el-form>
             <p class="terrain-hint">{{ cfg.hint }}</p>
             <div class="terrain-actions">
+              <el-button @click="openRegulationHistory(cfg.kind)">历史模拟</el-button>
               <el-button @click="cfg.visible = false">取消</el-button>
               <el-button
                 type="primary"
@@ -2434,6 +2436,61 @@
             </div>
           </div>
         </el-dialog>
+          <el-dialog
+            v-model="regulationHistoryVisible"
+            class="model-help-dialog"
+            width="1020px"
+            :close-on-click-modal="false"
+            top="80px"
+          >
+            <template #title>
+              <div class="model-help-head">
+                <span class="model-help-title">{{ regulationHistoryTitle }}</span>
+                <span class="model-help-subtitle"
+                  >选择任意一次运行结果，直接在三维场景中回放（含地形调控与基准工况）</span
+                >
+              </div>
+            </template>
+            <div class="help-body">
+              <p v-if="regulationHistoryLoading" style="margin: 6px 0">
+                历史记录读取中...
+              </p>
+              <p v-else-if="!regulationHistoryItems.length" style="margin: 6px 0">
+                暂无可回放的历史模拟记录。
+              </p>
+              <table v-else class="pro-history-table">
+                <thead>
+                  <tr>
+                    <th>运行时间</th>
+                    <th>任务号</th>
+                    <th>帧数</th>
+                    <th>最大厚度 (m)</th>
+                    <th>工况</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in regulationHistoryItems" :key="item.jobId">
+                    <td>{{ item.createdAtText }}</td>
+                    <td class="history-jobid">{{ item.jobId }}</td>
+                    <td>{{ item.frameCount }}</td>
+                    <td>{{ Number(item.globalMax || 0).toFixed(1) }}</td>
+                    <td>{{ item.terrainEdited ? '地形调控' : '基准工况' }}</td>
+                    <td>
+                      <el-button
+                        v-if="proHistoryPlayable(item)"
+                        link
+                        type="primary"
+                        @click="loadRegulationHistory(item)"
+                        >加载</el-button
+                      >
+                      <span v-else style="opacity: 0.55">缺少坐标</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </el-dialog>
       </div>
     </div>
 
@@ -3814,6 +3871,66 @@ const submitChainRegulation = async terrainEdits =>
     },
     { terrainEdits },
   )
+
+// ===== 断链防控（断链调控 / 沿程调控）历史模拟记录 =====
+// 断链调控结果来自冰岩崩动力学(Pro)输出，沿程调控结果来自 r.avaflow 输出，两者历史接口不同：
+//   chain -> /pro_history          along -> /avaflow_beta_history
+const regulationHistoryVisible = ref(false)
+const regulationHistoryLoading = ref(false)
+const regulationHistoryItems = ref([])
+const regulationHistoryKind = ref('chain')
+const regulationHistoryTitle = computed(
+  () =>
+    (regulationHistoryKind.value === 'along'
+      ? '冰川泥石流沿程调控技术'
+      : '灾害链断链调控技术') + ' · 历史模拟记录',
+)
+
+/** 打开历史记录列表（地形调控工况排在前，便于与基准工况对比） */
+const openRegulationHistory = async kind => {
+  regulationHistoryKind.value = kind
+  regulationHistoryVisible.value = true
+  regulationHistoryLoading.value = true
+  try {
+    const resp =
+      kind === 'along'
+        ? await modelService.getAvaflowBetaHistory({ limit: 50 })
+        : await modelService.getProHistory({ limit: 50 })
+    const items = Array.isArray(resp && resp.items) ? resp.items : []
+    regulationHistoryItems.value = items
+      .slice()
+      .sort((a, b) => Number(!!b.terrainEdited) - Number(!!a.terrainEdited))
+  } catch (e) {
+    regulationHistoryItems.value = []
+    ElMessage({ message: '历史记录读取失败: ' + (e?.message || e), type: 'error' })
+  } finally {
+    regulationHistoryLoading.value = false
+  }
+}
+
+/** 加载某条历史记录：复用实时计算的渲染链路（proLayers / betaLayers） */
+const loadRegulationHistory = item => {
+  if (!proHistoryPlayable(item)) {
+    ElMessage({
+      message: '该记录缺少网格坐标信息，无法在三维场景中回放',
+      type: 'warning',
+    })
+    return
+  }
+  regulationHistoryVisible.value = false
+  const cfg = terrainRegulationConfigs.find(c => c.kind === regulationHistoryKind.value)
+  if (cfg) cfg.visible = false
+  if (regulationHistoryKind.value === 'along') {
+    $emit('betaLayers', { result: { status: 'ok', ...item.result } })
+  } else {
+    $emit('proLayers', { result: { status: 'ok', ...item.result } })
+  }
+  ElMessage({
+    message: '已加载 ' + (item.createdAtText || item.jobId) + ' 的模拟结果',
+    type: 'success',
+    duration: 2500,
+  })
+}
 
 // 关闭正方形的函数
 const closeSquare = () => {
