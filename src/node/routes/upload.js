@@ -32,7 +32,10 @@ const storageSeismic = multer.diskStorage({
 const uploadSeismic = multer({ storage: storageSeismic })
 
 // 上传 shapefile
-router.post('/node/upload_shp', uploadGBM.array('file', 10), (req, res) => {
+// 路径同时注册两种写法：
+//   /node/upload_shp —— 直连 Node（历史写法）
+//   /upload_shp      —— 经 vite/nginx 代理时 /node 前缀会被剥掉
+const handleShpUpload = (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ code: 400, message: '没有文件上传' })
@@ -56,10 +59,12 @@ router.post('/node/upload_shp', uploadGBM.array('file', 10), (req, res) => {
       .status(500)
       .json({ code: 500, message: err.message || 'server error' })
   }
-})
+}
+router.post('/node/upload_shp', uploadGBM.array('file', 10), handleShpUpload)
+router.post('/upload_shp', uploadGBM.array('file', 10), handleShpUpload)
 
-// 上传 Excel 文件
-router.post('/node/upload_excel', uploadSeismic.single('file'), (req, res) => {
+// 上传 Excel 文件（同样注册两种路径）
+const handleExcelUpload = (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ code: 400, message: '没有文件上传' })
@@ -87,6 +92,8 @@ router.post('/node/upload_excel', uploadSeismic.single('file'), (req, res) => {
       .status(500)
       .json({ code: 500, message: err.message || 'server error' })
   }
-})
+}
+router.post('/node/upload_excel', uploadSeismic.single('file'), handleExcelUpload)
+router.post('/upload_excel', uploadSeismic.single('file'), handleExcelUpload)
 
 export default router

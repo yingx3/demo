@@ -281,7 +281,7 @@
                   <template #append>
                     <el-upload
                       ref="uploadRefGBM"
-                      action="http://localhost:3000/node/upload_shp"
+                      action="/node/upload_shp"
                       name="file"
                       :auto-upload="false"
                       :multiple="true"
@@ -1569,7 +1569,7 @@
                   <template #append>
                     <el-upload
                       :ref="el => { if (el) uploadRefsQuanYu[item.key] = el }"
-                      action="http://localhost:3000/node/upload_tif"
+                      action="/node/upload_tif"
                       name="file"
                       :auto-upload="false"
                       :multiple="false"
