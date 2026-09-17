@@ -50,6 +50,7 @@
       @bedding_wedget="showBeddingFos"
       @dataLayerToggle="toggleDataLayer"
       @dangerLevelFileChange="changeDangerLevelFile"
+      @dangerLevelRefresh="loadDangerLevelFiles"
       :data-layer-checked="dataLayerIds"
       :danger-level-files="dangerLevelFiles"
       :danger-level-selected="selectedDangerLevelFile"
@@ -1570,6 +1571,7 @@ const removeLayer_dangerLevel = () => {
 }
 
 const addLayer_dangerLevel = async fileName => {
+  try {
   // 列表可能因为后端刚启动/未重启而为空：勾选时按需再拉一次
   if (!dangerLevelFiles.value.length) {
     await loadDangerLevelFiles()
@@ -1591,6 +1593,10 @@ const addLayer_dangerLevel = async fileName => {
     })
     return
   }
+  if (!viewer.value || !viewer.value.scene) {
+    ElMessage({ message: '地图尚未初始化完成，请稍后再试', type: 'warning' })
+    return
+  }
   removeLayer_dangerLevel()
   const [west, south, east, north] = meta.bbox
   const rectangle = Cesium.Rectangle.fromDegrees(west, south, east, north)
@@ -1599,13 +1605,22 @@ const addLayer_dangerLevel = async fileName => {
   )
   layer.dangerLevelTag = true
   dangerLevelLayer = layer
-  selectedDangerLevelFile.value = name
+  selectedDangerLevelFile.value = meta.file || name
   flyToResultRect(rectangle, 2000, 1.5)
   ElMessage({
     message: '已加载灾害危险区划：' + meta.timeText + (meta.durationText ? ' · ' + meta.durationText : ''),
     type: 'success',
     duration: 2500,
   })
+  } catch (e) {
+    // 该函数由 checkedLayers 触发（异步），这里兜住异常避免出现 Uncaught (in promise)
+    console.error('[dangerLevel] 加载灾害危险区划失败:', e)
+    ElMessage({
+      message: '加载灾害危险区划失败：' + (e?.message || e),
+      type: 'error',
+      duration: 6000,
+    })
+  }
 }
 
 /**

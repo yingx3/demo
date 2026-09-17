@@ -397,7 +397,7 @@
             trigger="click"
             placement="right-start"
             popper-class="data-layer-popover"
-            @show="loadDangerLevelFiles()"
+            @show="$emit('dangerLevelRefresh')"
           >
             <template #reference>
               <el-button :plain="true"
@@ -2905,6 +2905,7 @@ let $emit = defineEmits([
   'terrainDrawCancel',
   'dataLayerToggle',
   'dangerLevelFileChange',
+  'dangerLevelRefresh',
 ])
 // ===== 模型集里的静态数据卡片（与资源目录同源）=====
 // 每个卡片对应资源目录里的一组叶子节点，勾选即调用资源目录同一条加载管线
