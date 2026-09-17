@@ -2424,6 +2424,12 @@
               </el-form-item>
             </el-form>
             <p class="terrain-hint">{{ cfg.hint }}</p>
+            <p class="terrain-hint terrain-compare-hint">
+              对照实验：到
+              <strong>{{ cfg.kind === 'chain' ? '「冰岩崩动力学模型」' : '「冰川泥石流动力学模型」' }}</strong>
+              用<strong>完全相同的输入与参数</strong>再跑一次（不绘制调控范围），两次结果才具有可比性；
+              若其余参数（计算时长、物源厚度等）不同，拦挡带来的差异会被掩盖。
+            </p>
             <div class="terrain-actions">
               <el-button @click="openRegulationHistory(cfg.kind)">历史模拟</el-button>
               <el-button @click="cfg.visible = false">取消</el-button>
@@ -3456,14 +3462,24 @@ const notifyTerrainEdits = (edits, name = '调控范围', meta = null) => {
     })
     return
   }
+  const hitMax = maxOf('flowPathMax')
+  const globalMaxNum = Number(meta?.globalMax) || 0
+  // 「薄流」判定：范围内峰值流深不足 1 m，或明显低于全场峰值（<30%），
+  // 这时抬高底床对结果的影响会很有限，需要明确提醒，避免误以为拦挡没生效
+  const thinFlow =
+    checked.length > 0 && (hitMax < 1 || (globalMaxNum > 0 && hitMax < 0.3 * globalMaxNum))
+  const thinHint = thinFlow
+    ? '；但范围内峰值流深仅 ' + hitMax.toFixed(2) + ' m（全场峰值 ' + globalMaxNum.toFixed(2) +
+      ' m），泥石流在这里已经摊得很薄，抬高 ' + raiseText +
+      ' 对结果影响会很有限：可加大物源厚度、或把范围移到流路更集中（流深更大）的位置'
+    : ''
   ElMessage({
     message:
       name + '已生效：底床抬高 ' + raiseText + ' × ' + cells + ' 格' + areaText +
-      (checked.length
-        ? '，范围内最大流深 ' + maxOf('flowPathMax').toFixed(2) + ' m（泥石流确实流经该范围）'
-        : ''),
-    type: 'success',
-    duration: 9000,
+      (checked.length ? '，范围内最大流深 ' + hitMax.toFixed(2) + ' m（泥石流确实流经该范围）' : '') +
+      thinHint,
+    type: thinFlow ? 'warning' : 'success',
+    duration: 12000,
     showClose: true,
   })
 }
@@ -4855,6 +4871,9 @@ const resetSeismicInputs = () => {
   margin-left: 8px;
   color: #9aa7c7;
   font-size: 12px;
+}
+.terrain-compare-hint {
+  color: #9fc6e6;
 }
 .terrain-hint {
   margin: 0 0 14px;
