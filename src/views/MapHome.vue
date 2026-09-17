@@ -3601,11 +3601,13 @@ const fetchDisplacementData = pointId => {
   }
 
   axios
-    .get('node/search_displ', {
+    // 必须带前导斜杠：应用基址是 /CS，'node/...' 会被解析成 /CS/node/...，
+    // 命中不了 vite 的 /node 代理，返回的是 index.html，前端只能弹一个空提示
+    .get('/node/search_displ', {
       params: { pointId },
     })
     .then(response => {
-      const data = response.data
+      const data = response.data || {}
       if (data.success) {
         console.log('获取到的位移数据:', data.data)
         chartVisible.value = true
@@ -3619,7 +3621,7 @@ const fetchDisplacementData = pointId => {
         })
       } else {
         ElMessage({
-          message: data.message,
+          message: data.message || '未找到该监测点的位移数据',
           type: data.type || 'warning',
         })
       }
@@ -3681,7 +3683,7 @@ const renderDisplacementChart = chartData => {
     grid: {
       left: '3%', // 【修改】左边距从5%→3%，缩小边距扩大图表区域
       right: '3%', // 【修改】右边距从5%→3%
-      bottom: '8%', // 【修改】下边距从10%→8%
+      bottom: '16%', // 给底部 dataZoom 滑块留位置，避免压住 x 轴日期
       top: '10%', // 【修改】上边距从15%→10%
       containLabel: true,
     },
@@ -8565,6 +8567,18 @@ onBeforeUnmount(() => {
 
 .show-chart {
   display: block;
+}
+
+/* 位移曲线：容器有 700px 高度，但内部 .chart-body / #displacement-chart
+   之前没有高度样式，ECharts 只能画在 0 高度里（面板一片空白），这里补上 */
+.chart-body {
+  width: 100%;
+  height: 100%;
+}
+
+#displacement-chart {
+  width: 100%;
+  height: 100%;
 }
 
 .hide-chart {
