@@ -4820,7 +4820,7 @@ const showPointInfoPopup = ({ title, badge = '', badgeColor = '', rows = [], ima
   const candidates = normalizePhotoCandidates(images)
   const el = document.createElement('div')
   el.style.cssText = `
-    position: fixed; right: 24px; bottom: 24px; z-index: 10050;
+    position: fixed; right: 440px; top: 50%; transform: translateY(-50%); z-index: 10050;
     width: ${candidates.length ? 420 : 380}px; max-height: 70vh; overflow: auto;
     background: linear-gradient(180deg, rgba(7,28,56,.96), rgba(4,16,34,.96));
     border: 1px solid rgba(56,225,255,.55); border-radius: 8px;
@@ -4907,8 +4907,12 @@ const closeDujiangImagePopup = () => {
 // 点位点击：历史堵江点（带现场图片）与历史未堵江点共用同一套弹窗样式
 const handleDujiangClick = movement => {
   const picked = viewer.value.scene.pick(movement.position)
-  if (!Cesium.defined(picked) || !picked.id) return
-  const entity = picked.id
+  const entity = Cesium.defined(picked) && picked.id ? picked.id : null
+  // 点到地图空白处（或其它非堵江点要素）时，关闭历史堵江点信息弹窗
+  if (!entity || (!entity.dujiangTag && !entity.noDujiangTag)) {
+    closeDujiangImagePopup()
+    return
+  }
   const props = entity.pointProps || {}
   const rows = Object.entries(props)
   if (entity.dujiangTag) {
@@ -4935,6 +4939,8 @@ const handleDujiangClick = movement => {
       rows,
     })
   }
+  // 关闭 Cesium 默认 InfoBox（右上角白框）：详情只用平台卡片展示
+  viewer.value.selectedEntity = undefined
 }
 
 /** 点位点击处理器只创建一次（历史堵江点/未堵江点共用） */
