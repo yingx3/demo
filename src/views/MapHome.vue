@@ -511,20 +511,24 @@
       ></div>
     </div>
   </el-dialog>
-  <el-drawer v-model="drawer" direction="ttb" resizable size="60%">
-    <div>
-      <el-button type="primary" @click="drawer_seismic('data')"
-        >地震仪原数据</el-button
-      >
-      <el-button v-if="!seismicIsDL" type="primary" @click="drawer_seismic('ratio')"
-        >比率</el-button
-      >
-      <el-button v-if="!seismicIsDL" type="primary" @click="drawer_seismic('result')"
-        >结果</el-button
-      >
-    </div>
-    <div id="seismic-chart" style="width: 100%; height: 500px"></div>
-  </el-drawer>
+  <!-- 地震仪原数据波形弹窗（冰川泥石流监测预警 / 位移监测滑坡预警 共用）
+       只展示原始波形，不再提供「比率 / 结果」切换 -->
+  <el-dialog
+    v-model="drawer"
+    width="1080px"
+    top="10vh"
+    align-center
+    :close-on-click-modal="true"
+    class="seismic-wave-dialog"
+  >
+    <template #header>
+      <div class="seismic-wave-head">
+        <span class="seismic-wave-title">地震仪原数据</span>
+        <span class="seismic-wave-subtitle">{{ seismicWaveMeta }}</span>
+      </div>
+    </template>
+    <div id="seismic-chart" class="seismic-wave-chart"></div>
+  </el-dialog>
   <!-- 地形因子图层图例（随图层勾选自动显示） -->
   <div class="map-legend" v-if="legendLayers.length">
     <div class="legend-item" v-for="lg in legendLayers" :key="lg.id">
@@ -7489,6 +7493,7 @@ const cleanentity = () => {
 const handler_seismic = ref('')
 var echarts_data = ''
 const seismicIsDL = ref(false)
+const seismicWaveMeta = ref('')
 function handleSeismicResult(payload) {
   try {
     seismicIsDL.value = !!payload?.isDL
@@ -7538,14 +7543,10 @@ function handleSeismicResult(payload) {
       viewer.value.scene.canvas,
     )
     handler_seismic.value.setInputAction(e => {
-      //获取点击位置
-      // console.log(echarts_data)
       const pick = viewer.value.scene.pick(e.position)
-      // console.log(pick.id._id)
-      if (pick.id._id == 'seismic') {
-        console.log(echarts_data)
-        //绘制图表
-        drawSeismicChart()
+      if (!Cesium.defined(pick) || !pick.id) return   // 点在空白处时直接忽略
+      if (pick.id._id === 'seismic') {
+        drawSeismicChart()   // 只绘制地震仪原数据波形
       }
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
   } catch (e) {
@@ -7603,29 +7604,18 @@ const handleFullRiskAnalysis = () => {
 }
 //使用echart绘制seismic图表
 let seismic_chart = null
-function drawSeismicChart(d) {
-  // console.log(d)
-  const dataType = d || 'data'
-  let seismic_data
-  switch (dataType) {
-    case 'data':
-      seismic_data = echarts_data.data
-      break
-    case 'ratio':
-      seismic_data = echarts_data.ratio
-      break
-    case 'result':
-      seismic_data = echarts_data.result_array
-      break
-    default:
-      seismic_data = echarts_data.data // 默认使用 data
-  }
-  // console.log(seismic_data)
-  // 检查数据是否存在
+function drawSeismicChart() {
+  // 只展示地震仪原数据波形（比率/结果不再提供切换）
+  const seismic_data = echarts_data?.data
   if (!seismic_data || !Array.isArray(seismic_data)) {
     console.error('数据不存在或格式错误')
     return
   }
+  const total = Number(echarts_data?.totalSamples) || seismic_data.length
+  const drawn = Number(echarts_data?.drawnSamples) || seismic_data.length
+  seismicWaveMeta.value =
+    '采样点 ' + total.toLocaleString() +
+    (drawn < total ? '（图中每 ' + Math.ceil(total / drawn) + ' 点取 1 点，共 ' + drawn + ' 点）' : '')
   drawer.value = true
   // console.log(echarts_data.data)
   nextTick(() => {
@@ -7634,50 +7624,64 @@ function drawSeismicChart(d) {
     // 检查 DOM 元素是否存在
     if (seismic_container) {
       try {
+        // 重复点击同一个点位时先销毁旧实例，避免 ECharts 重复初始化告警/叠图
+        if (seismic_chart) {
+          seismic_chart.dispose()
+          seismic_chart = null
+        }
         seismic_chart = echarts.init(seismic_container)
 
-        // 配置图表
+        // 配置图表：与平台一致的深色 + 青色主题
+        const axisLabel = { color: '#9fc6e6', fontSize: 11 }
+        const axisLine = { lineStyle: { color: 'rgba(56,225,255,.45)' } }
+        const splitLine = { lineStyle: { color: 'rgba(120,180,230,.15)' } }
         const option = {
+          backgroundColor: 'transparent',
+          textStyle: { color: '#dbeaf7' },
+          grid: { left: 56, right: 24, top: 24, bottom: 40 },
           tooltip: {
             trigger: 'axis',
-            position: function (pt) {
-              return [pt[0], '10%']
-            },
-          },
-          title: {
-            left: 'center',
-            text: `${dataType === 'data' ? '地震仪原数据' : dataType === 'ratio' ? '比率' : '结果'}`,
+            backgroundColor: 'rgba(7,28,56,.95)',
+            borderColor: 'rgba(56,225,255,.55)',
+            textStyle: { color: '#eaf6ff', fontSize: 12 },
           },
           toolbox: {
+            right: 12,
+            top: 0,
+            iconStyle: { borderColor: '#9fc6e6' },
             feature: {
-              dataZoom: {
-                yAxisIndex: 'none',
-              },
+              dataZoom: { yAxisIndex: 'none' },
               restore: {},
               saveAsImage: {},
             },
           },
           xAxis: {
-            name: 'x',
+            name: '采样点',
+            nameTextStyle: { color: '#9fc6e6' },
             type: 'category',
-            minorTick: {
-              show: true,
-            },
+            axisLabel,
+            axisLine,
+            splitLine: { show: false },
+            minorTick: { show: true },
           },
           yAxis: {
-            name: 'y',
-
-            minorTick: {
-              show: true,
-            },
+            name: '幅值',
+            nameTextStyle: { color: '#9fc6e6' },
+            type: 'value',
+            axisLabel,
+            axisLine,
+            splitLine,
+            minorTick: { show: true },
           },
           series: [
             {
-              name: `${dataType === 'data' ? '地震仪原数据' : dataType === 'ratio' ? '比率' : '结果'}`,
+              name: '地震仪原数据',
               type: 'line',
               smooth: false,
               symbol: 'none',
-              areaStyle: {},
+              lineStyle: { color: '#38e1ff', width: 1 },
+              itemStyle: { color: '#38e1ff' },
+              areaStyle: { color: 'rgba(56,225,255,.18)' },
               data: seismic_data.map((item, index) => [index, item]), // 使用索引作为 x 轴
             },
           ],
@@ -7692,15 +7696,7 @@ function drawSeismicChart(d) {
     }
   })
 }
-function drawer_seismic(data) {
-  // console.log('点击事件的：', data)
-  const seismic = document.getElementById('seismic-chart')
-  if (seismic) {
-    seismic_chart.dispose()
-    // console.log('销毁图表')
-  }
-  drawSeismicChart(data)
-}
+// [已移除] 原「地震仪原数据 / 比率 / 结果」切换函数：现在只展示原数据
 onBeforeUnmount(() => {
   if (weatherChartInstance) {
     weatherChartInstance.dispose()
@@ -7786,6 +7782,50 @@ onBeforeUnmount(() => {
 }
 .map-home-overlay > * {
   pointer-events: auto;
+}
+
+/* 地震仪原数据波形弹窗：平台深蓝风格 + 居中显示（不要贴边） */
+:global(.el-dialog.seismic-wave-dialog) {
+  background: linear-gradient(180deg, rgba(7, 28, 56, 0.97), rgba(4, 16, 34, 0.97));
+  border: 1px solid rgba(56, 225, 255, 0.55);
+  border-radius: 10px;
+  box-shadow: 0 0 24px rgba(56, 225, 255, 0.25);
+}
+
+:global(.el-dialog.seismic-wave-dialog .el-dialog__header) {
+  margin: 0;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(56, 225, 255, 0.25);
+}
+
+:global(.el-dialog.seismic-wave-dialog .el-dialog__body) {
+  padding: 12px 16px 16px;
+}
+
+:global(.el-dialog.seismic-wave-dialog .el-dialog__headerbtn .el-dialog__close) {
+  color: #9fc6e6;
+}
+
+.seismic-wave-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.seismic-wave-title {
+  color: #38e1ff;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.seismic-wave-subtitle {
+  color: #9fc6e6;
+  font-size: 12px;
+}
+
+.seismic-wave-chart {
+  width: 100%;
+  height: 460px;
 }
 
 /* [新增] 点击标记点弹出的信息卡片 */
