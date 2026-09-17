@@ -3653,6 +3653,7 @@ const renderDisplacementChart = chartData => {
       text: '位移变化趋势图',
       left: 'center',
       textStyle: {
+        color: '#38e1ff', // 平台主题色
         fontSize: 18, // 【修改】标题字号从14→18，更大更醒目
         fontWeight: 'bold',
       },
@@ -3674,10 +3675,10 @@ const renderDisplacementChart = chartData => {
         })
         return `时间: ${formattedDate}<br/>位移: ${params[0].data[1]} mm`
       },
-      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-      borderColor: '#ddd',
+      backgroundColor: 'rgba(7, 28, 56, 0.95)', // 平台深蓝底
+      borderColor: 'rgba(56, 225, 255, 0.55)',
       borderWidth: 1,
-      textStyle: { color: '#333', fontSize: 14 }, // 【新增】tooltip文字放大
+      textStyle: { color: '#eaf6ff', fontSize: 14 }, // 【新增】tooltip文字放大
       padding: 12, // 【修改】内边距从10→12，tooltip更饱满
     },
     grid: {
@@ -3691,8 +3692,9 @@ const renderDisplacementChart = chartData => {
       type: 'time',
       name: '时间',
       nameLocation: 'middle',
-      nameGap: 30,
+      nameGap: 62, // 标签旋转 30°，轴名下移，避免压住日期
       nameTextStyle: {
+        color: '#9fc6e6', // 平台浅蓝文字
         fontSize: 16, // 【修改】坐标轴名称字号从12→16
       },
       axisLabel: {
@@ -3705,11 +3707,13 @@ const renderDisplacementChart = chartData => {
           })
         },
         rotate: 30,
+        color: '#9fc6e6',
         fontSize: 14, // 【修改】坐标轴标签字号从10→14
+        hideOverlap: true, // 空间不够时自动隐藏重叠的日期标签
       },
       axisLine: {
         lineStyle: {
-          color: '#ccc',
+          color: 'rgba(56, 225, 255, 0.45)',
           width: 1.5, // 【新增】坐标轴线条加宽
         },
       },
@@ -3719,21 +3723,23 @@ const renderDisplacementChart = chartData => {
       name: '位移 (mm)',
       nameGap: 30,
       nameTextStyle: {
+        color: '#9fc6e6',
         fontSize: 16, // 【修改】坐标轴名称字号从12→16
       },
       axisLabel: {
         formatter: '{value} mm',
+        color: '#9fc6e6',
         fontSize: 14, // 【修改】坐标轴标签字号从10→14
       },
       axisLine: {
         lineStyle: {
-          color: '#ccc',
+          color: 'rgba(56, 225, 255, 0.45)',
           width: 1.5, // 【新增】坐标轴线条加宽
         },
       },
       splitLine: {
         lineStyle: {
-          color: '#f0f0f0',
+          color: 'rgba(56, 225, 255, 0.12)',
           width: 1.2, // 【新增】网格线加宽
         },
       },
@@ -3751,6 +3757,21 @@ const renderDisplacementChart = chartData => {
         end: 100,
         height: 12, // 【修改】滑块高度从8→12，更易操作
         bottom: 5,
+        // 平台深蓝 + 青色
+        backgroundColor: 'rgba(4, 16, 34, 0.55)',
+        borderColor: 'rgba(56, 225, 255, 0.4)',
+        fillerColor: 'rgba(56, 225, 255, 0.18)',
+        handleStyle: { color: '#38e1ff', borderColor: '#38e1ff' },
+        moveHandleStyle: { color: 'rgba(56, 225, 255, 0.6)' },
+        textStyle: { color: '#9fc6e6' },
+        dataBackground: {
+          lineStyle: { color: 'rgba(56, 225, 255, 0.45)' },
+          areaStyle: { color: 'rgba(56, 225, 255, 0.15)' },
+        },
+        selectedDataBackground: {
+          lineStyle: { color: '#38e1ff' },
+          areaStyle: { color: 'rgba(56, 225, 255, 0.35)' },
+        },
       },
     ],
     series: [
@@ -3767,15 +3788,18 @@ const renderDisplacementChart = chartData => {
           symbolSize: 12, // 【修改】hover时标记点从8→12
         },
         itemStyle: {
-          color: '#5470c6',
+          color: '#38e1ff', // 平台青色
         },
         lineStyle: {
+          color: '#38e1ff',
           width: 3, // 【修改】趋势线宽度从2→3，更粗更显眼
+          shadowColor: 'rgba(56, 225, 255, 0.55)',
+          shadowBlur: 8,
         },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(84, 112, 198, 0.6)' },
-            { offset: 1, color: 'rgba(84, 112, 198, 0.1)' },
+            { offset: 0, color: 'rgba(56, 225, 255, 0.45)' },
+            { offset: 1, color: 'rgba(56, 225, 255, 0.02)' },
           ]),
         },
       },
@@ -8557,9 +8581,11 @@ onBeforeUnmount(() => {
   width: 80%;
   max-width: 1200px;
   height: 700px;
-  background: #f5f7fa;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  /* 与平台其它弹窗统一的深蓝 + 青色描边风格（不透明，避免透出身后地球） */
+  background: linear-gradient(180deg, #071c38, #041022);
+  border: 1px solid rgba(56, 225, 255, 0.55);
+  border-radius: 10px;
+  box-shadow: 0 0 24px rgba(56, 225, 255, 0.25);
   padding: 20px;
   box-sizing: border-box;
   z-index: 100;
@@ -8595,5 +8621,11 @@ onBeforeUnmount(() => {
   font-size: 18px;
   cursor: pointer;
   z-index: 10;
+  color: #9fc6e6;
+  transition: color 0.2s;
+}
+
+.chart-close-btn:hover {
+  color: #38e1ff;
 }
 </style>
