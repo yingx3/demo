@@ -161,6 +161,37 @@
                 >
               </el-form-item>
             </el-form>
+            <!-- 计算进度提示：后端为单次长请求，进度按已用时间估算 -->
+            <el-dialog
+              v-model="trigrsProgress.visible"
+              width="380px"
+              align-center
+              :show-close="false"
+              :close-on-click-modal="false"
+              :close-on-press-escape="false"
+              class="trigrs-progress-dialog"
+            >
+              <template #header>
+                <div class="trigrs-progress-head">
+                  <span class="trigrs-progress-title">风险源定量识别与表征模型</span>
+                  <span class="trigrs-progress-sub">计算中，请勿关闭页面</span>
+                </div>
+              </template>
+              <el-progress
+                :percentage="trigrsProgress.percent"
+                :stroke-width="10"
+                striped
+                striped-flow
+                :duration="8"
+              />
+              <div class="trigrs-progress-text">
+                已用 {{ trigrsProgress.elapsed }} s ｜ 已选降雨历时
+                {{ Array.isArray(form.time) ? form.time.length : 0 }} 个 ｜ 当前进度为估算值
+              </div>
+              <div class="trigrs-progress-hint">
+                一般需要 30~120 s（与所选时段数、数据量有关），完成后会自动加载结果图层。
+              </div>
+            </el-dialog>
           </el-dialog>
         </div>
         <div class="box box-used p_bottom">
@@ -1861,8 +1892,9 @@
               <el-button
                 class="inverse-submit"
                 type="primary"
-                @click="(submit_inverseV(), (dialog_inverseV = false))"
-                >运行</el-button
+                :loading="inverseVLoading"
+                @click="submit_inverseV"
+                >{{ inverseVLoading ? '计算中...' : '运行' }}</el-button
               >
               <el-button
                 class="inverse-cancel"
@@ -3142,6 +3174,30 @@ async function sumbit_wedget() {
     console.error('sumbit_wedget error:', e)
   }
 }
+// 风险源模型计算进度（后端是单次长请求、没有实时进度，这里按已用时间估算并给出阶段提示）
+const trigrsProgress = reactive({ visible: false, elapsed: 0, percent: 0 })
+let trigrsTimer = null
+const startTrigrsProgress = () => {
+  trigrsProgress.visible = true
+  trigrsProgress.elapsed = 0
+  trigrsProgress.percent = 0
+  const t0 = Date.now()
+  if (trigrsTimer) clearInterval(trigrsTimer)
+  trigrsTimer = setInterval(() => {
+    const sec = Math.round((Date.now() - t0) / 1000)
+    trigrsProgress.elapsed = sec
+    // 估算进度：先快后慢，上限 95%，避免像卡住或提前到 100%
+    trigrsProgress.percent = Math.min(95, Math.round(100 * (1 - Math.exp(-sec / 45))))
+  }, 1000)
+}
+const stopTrigrsProgress = () => {
+  if (trigrsTimer) {
+    clearInterval(trigrsTimer)
+    trigrsTimer = null
+  }
+  trigrsProgress.visible = false
+}
+
 function onSubmit() {
   // 未选择预测时间时，后端不会生成任何结果图，先在前端拦截并提示
   if (!Array.isArray(form.time) || form.time.length === 0) {
@@ -3149,7 +3205,7 @@ function onSubmit() {
     return
   }
   dialogVisible.value = false
-  ElMessage({ message: '运行中!', type: 'success', duration: 40000 })
+  startTrigrsProgress()
   subitForm()
   // console.log(form.time[0])
   //把选中的时间通过自定义事件传递给父组件
@@ -3217,6 +3273,7 @@ const subitForm = () => {
       })
       console.error('subitForm error:', error)
     })
+    .finally(() => stopTrigrsProgress())
 }
 // 冰岩崩动力学模型（python_port 双层浅水流数值内核）
 function onSubmit2() {
@@ -4133,13 +4190,19 @@ const handleUploadErrorGBM = (err, file, fileList) => {
   gbmSubmitting.value = false
 }
 
+const inverseVLoading = ref(false)
 const submit_inverseV = async () => {
   try {
-    ElMessage({ message: '运行中!', type: 'success' })
     if (!selectedDisplFile.value) {
       ElMessage({ message: '请先选择位移文件', type: 'warning' })
       return
     }
+    inverseVLoading.value = true
+    ElMessage({
+      message: '计算中：正在解析位移数据并预测失稳时间，请稍候...',
+      type: 'info',
+      duration: 0,
+    })
 
     const formData = new FormData()
     formData.append('file', selectedDisplFile.value)
@@ -4179,12 +4242,18 @@ const submit_inverseV = async () => {
     //   console.log("未有险情！")
     // }
     $emit('forecast', params_return)
+    ElMessage.closeAll()
+    ElMessage({ message: '计算完成，已在地图标记预警点', type: 'success', duration: 2500 })
   } catch (error) {
     console.error('位移预警计算失败:', error.response?.data || error.message)
+    ElMessage.closeAll()
     ElMessage({
       message: error.response?.data?.message || '位移预警计算失败',
       type: 'error',
     })
+  } finally {
+    inverseVLoading.value = false
+    dialog_inverseV.value = false
   }
 }
 
@@ -4880,6 +4949,37 @@ const resetSeismicInputs = () => {
   color: #9aa7c7;
   font-size: 12px;
 }
+/* 风险源模型计算进度弹窗 */
+.trigrs-progress-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.trigrs-progress-title {
+  color: #38e1ff;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.trigrs-progress-sub {
+  color: #9fc6e6;
+  font-size: 12px;
+}
+
+.trigrs-progress-text {
+  margin-top: 12px;
+  color: #dbeaf7;
+  font-size: 13px;
+}
+
+.trigrs-progress-hint {
+  margin-top: 6px;
+  color: #9fc6e6;
+  font-size: 12px;
+  line-height: 18px;
+}
+
 .terrain-compare-hint {
   color: #9fc6e6;
 }

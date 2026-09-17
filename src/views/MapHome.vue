@@ -3306,22 +3306,37 @@ const foreCast = params => {
 
   let picture = 'safe'
   let forecastText = ''
+  // 危险等级：红 > 橙 > 黄 > 蓝（点位样式、标签、弹窗角标都用这套配色）
+  let levelLabel = '无加速变形'
+  let levelColor = '#28c76f'
   if (status === 'no_ooa' || rt < 0) {
     picture = 'safe'
+    levelLabel = '无加速变形'
+    levelColor = '#28c76f'
     forecastText = '未检测到加速变形（OOA），暂无法计算失稳时间'
   } else if (rt < 24) {
     picture = 'warning_red'
+    levelLabel = '红色预警'
+    levelColor = '#ff4d4f'
     forecastText = `红色预警，预计还有${Math.round(rt)}小时发生滑坡`
   } else if (rt < 48) {
     picture = 'warning_orange'
+    levelLabel = '橙色预警'
+    levelColor = '#ff9f1c'
     forecastText = `橙色预警，预计还有${Math.round(rt)}小时发生滑坡`
   } else if (rt < 72) {
     picture = 'warning_yellow'
+    levelLabel = '黄色预警'
+    levelColor = '#f7d51d'
     forecastText = `黄色预警，预计还有${Math.round(rt)}小时发生滑坡`
   } else if (rt < 96) {
     picture = 'warning_blue'
+    levelLabel = '蓝色预警'
+    levelColor = '#4dabf7'
     forecastText = `蓝色预警，预计还有${Math.round(rt)}小时发生滑坡`
   } else {
+    levelLabel = '超期'
+    levelColor = '#9fc6e6'
     forecastText = `预计失稳时间超过96小时（约${Math.round(rt)}小时）`
   }
   if (rt >= 0) forecastText += `（预测时间：${time}）`
@@ -3346,20 +3361,60 @@ const foreCast = params => {
       complete: () => {
         clearForecastEntity()
         const entityId = `forecast-${pointId}-${Date.now()}`
-        viewer.value.entities.add({
+        const levelCesiumColor = Cesium.Color.fromCssColorString(levelColor)
+        const remainText =
+          Number.isFinite(rt) && rt >= 0 ? Math.round(rt) + ' h' : '—'
+        const entity = viewer.value.entities.add({
           id: entityId,
           pointId,
           name: '预警信息',
           position: pointPosition,
+          // 图标按等级选图（与原来一致），并永远可见
           billboard: {
             image: `CS/img/${picture}.png`,
             heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
             width: 32,
             height: 32,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
           },
-          description: `<div><p>${forecastText}</p></div>`,
+          // 按等级着色的警戒圈：一眼看出危险等级
+          ellipse: {
+            semiMajorAxis: 420,
+            semiMinorAxis: 420,
+            material: levelCesiumColor.withAlpha(0.18),
+            outline: true,
+            outlineColor: levelCesiumColor.withAlpha(0.9),
+            outlineWidth: 3,
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          },
+          // 等级 + 剩余时间标签
+          label: {
+            text: `${levelLabel}｜剩余 ${remainText}`,
+            font: '13px sans-serif',
+            fillColor: levelCesiumColor,
+            outlineColor: Cesium.Color.BLACK,
+            outlineWidth: 3,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+            pixelOffset: new Cesium.Cartesian2(0, -42),
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          },
+          // 注意：不再挂 description，避免弹出 Cesium 默认 InfoBox；
+          // 预警信息改用平台风格弹窗（见下方 forecastInfo + showForecastInfoPopup）
         })
+        entity.forecastInfo = {
+          pointId,
+          rt,
+          time,
+          status,
+          levelLabel,
+          levelColor,
+          forecastText,
+          longitude,
+          latitude,
+        }
         forecastEntityId = entityId
 
         if (!forecastHandler) {
@@ -3371,15 +3426,55 @@ const foreCast = params => {
             if (!Cesium.defined(picked) || !picked.id) return
             const pickedPointId = picked.id.pointId
             if (pickedPointId === undefined || pickedPointId === null) return
-            viewer.value.selectedEntity = picked.id
             currentPointId.value = pickedPointId
-            fetchDisplacementData(pickedPointId)
+            showForecastInfoPopup(picked.id.forecastInfo, pickedPointId)
           }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
         }
       },
     },
   )
 }
+/**
+ * 预警点信息弹窗：单独设计的平台风格弹窗（深蓝卡片），
+ * 展示该监测点记录的预警信息；「查看位移曲线」按钮再打开位移曲线图。
+ */
+const showForecastInfoPopup = (info, pointId) => {
+  const f = info || {}
+  const rtText =
+    Number.isFinite(f.rt) && f.rt >= 0
+      ? Math.round(f.rt) + ' 小时'
+      : f.status === 'no_ooa'
+        ? '未检测到加速变形'
+        : '—'
+  const lon = Number(f.longitude)
+  const lat = Number(f.latitude)
+  showPointInfoPopup({
+    title: '监测预警点' + (pointId !== undefined && pointId !== null ? ' #' + pointId : ''),
+    badge: f.levelLabel || '预警信息',
+    badgeColor: f.levelColor || '',
+    rows: [
+      ['预警等级', f.levelLabel || '—'],
+      ['预计失稳剩余时间', rtText],
+      ['预测时间', f.time || '—'],
+      ['监测点编号', pointId !== undefined && pointId !== null ? String(pointId) : '—'],
+      [
+        '点位坐标',
+        Number.isFinite(lon) && Number.isFinite(lat)
+          ? lon.toFixed(5) + ', ' + lat.toFixed(5)
+          : '—',
+      ],
+      ['结论', f.forecastText || '—'],
+    ],
+    hint: '该弹窗为本次计算记录的预警信息，可点击下方按钮查看该点的位移曲线。',
+    actions: [
+      {
+        label: '查看位移曲线',
+        onClick: () => pointId !== undefined && pointId !== null && fetchDisplacementData(pointId),
+      },
+    ],
+  })
+}
+
 const fetchDisplacementData = pointId => {
   if (!pointId) {
     console.log('fetchDisplacementData: pointId is empty')
@@ -4505,7 +4600,7 @@ const DUJIANG_PHOTO_BASE = '/CS/img/dujiang_photos'
  * 统一的点位信息弹窗（历史堵江点 / 历史未堵江点）：与平台一致的深蓝 + 青色描边卡片，
  * 上半部分标题 + 类型角标，中间为属性表，可选附现场图片。
  */
-const showPointInfoPopup = ({ title, badge = '', rows = [], images = [] }) => {
+const showPointInfoPopup = ({ title, badge = '', badgeColor = '', rows = [], images = [], hint = '', actions = [] }) => {
   closeDujiangImagePopup()
   const candidates = (Array.isArray(images) ? images : [images]).filter(Boolean)
   const el = document.createElement('div')
@@ -4527,11 +4622,13 @@ const showPointInfoPopup = ({ title, badge = '', rows = [], images = [] }) => {
   el.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid rgba(56,225,255,.25);">
       <span style="flex:1;font-weight:600;color:#38e1ff;">${title || '点位信息'}</span>
-      ${badge ? `<span style="font-size:12px;color:#0b2c4d;background:#38e1ff;border-radius:10px;padding:1px 8px;">${badge}</span>` : ''}
+      ${badge ? `<span style="font-size:12px;color:#0b2c4d;background:${badgeColor || '#38e1ff'};border-radius:10px;padding:1px 8px;">${badge}</span>` : ''}
       <span id="dujiang-popup-close" style="cursor:pointer;color:#9fc6e6;font-size:16px;padding:0 4px;">×</span>
     </div>
     <div style="padding:10px 12px;">
       ${tableRows ? `<table style="width:100%;border-collapse:collapse;">${tableRows}</table>` : '<div style="color:#9fc6e6;">暂无属性信息</div>'}
+      ${hint ? `<div style="margin-top:8px;color:#9fc6e6;font-size:12px;line-height:17px;">${hint}</div>` : ''}
+      ${actions && actions.length ? '<div id="point-popup-actions" style="margin-top:10px;display:flex;gap:8px;"></div>' : ''}
       ${candidates.length ? `<div style="margin-top:8px;color:#9fc6e6;font-size:12px;" id="point-popup-img-tip">现场图片加载中…（原图较大，请稍候）</div>
       <img id="point-popup-img" data-idx="0" src="${candidates[0]}"
            style="width:100%;margin-top:4px;border-radius:4px;border:1px solid rgba(56,225,255,.3);" />` : ''}
@@ -4540,6 +4637,21 @@ const showPointInfoPopup = ({ title, badge = '', rows = [], images = [] }) => {
   document.body.appendChild(el)
   el.querySelector('#dujiang-popup-close').onclick = closeDujiangImagePopup
   // 图片名与属性「名称」可能不完全一致（如 卡贡弄巴（古乡沟）→ 古乡沟.png），失败时按候选依次回退
+  const actionHost = el.querySelector('#point-popup-actions')
+  if (actionHost) {
+    ;(actions || []).forEach(a => {
+      const btn = document.createElement('button')
+      btn.textContent = a.label
+      btn.style.cssText =
+        'flex:1;cursor:pointer;background:#1e88e5;color:#fff;border:1px solid #38e1ff;' +
+        'border-radius:4px;padding:5px 8px;font-size:12px;'
+      btn.onclick = () => {
+        closeDujiangImagePopup()
+        if (typeof a.onClick === 'function') a.onClick()
+      }
+      actionHost.appendChild(btn)
+    })
+  }
   const img = el.querySelector('#point-popup-img')
   if (img) {
     img.onload = () => {
