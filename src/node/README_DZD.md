@@ -39,7 +39,7 @@ TCPClient 的 CSV 不含设备坐标，地图位置在 `src/node/dzd-devices.jso
 `deviceId` 默认与 `TCPClient.DEFAULT_DEVICE_ID`（5200369）一致：
 
 ```json
-{ "deviceId": 5200369, "name": "地震动监测站", "lng": 94.9378, "lat": 29.7499 }   // 林芝市色东普沟
+{ "deviceId": 5200369, "name": "地震动监测站", "lng": 102.092337, "lat": 30.054334 }
 ```
 
 ## 4. 接口
