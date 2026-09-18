@@ -532,9 +532,11 @@
                     <tr><td>平均高程</td><td>.tif / .tiff（单文件）</td><td>必填</td><td>地形基准面，作为流动计算的底床（上传后重命名为 elev.tif）</td></tr>
                     <tr><td>物源启动区</td><td>.tif / .tiff（单文件）</td><td>必填</td><td>标记参与启动的物源分布范围，决定初始泥石流体的位置与体积（重命名为 debris.tif）</td></tr>
                     <tr><td>影响范围</td><td>.tif / .tiff（单文件）</td><td>必填</td><td>限定计算域，范围外的像元不参与演算（重命名为 impact_area.tif）</td></tr>
+                    <tr><td>时间步长</td><td>秒（正数）</td><td>10</td><td>数值计算的时间推进步长：越小越精细、计算越慢；建议 1~60 秒</td></tr>
+                    <tr><td>模拟时长</td><td>秒（正数，≥ 时间步长）</td><td>200</td><td>本次模拟的总时长，决定泥石流运动的演进距离；上限 30 天</td></tr>
                   </tbody>
                 </table>
-                <p>说明：本模型没有可调的物理参数输入框，全部动力学参数由后端模型统一配置；三份栅格需覆盖同一范围，提交时缺项会逐项提示。</p>
+                <p>说明：可调的时序参数只有「时间步长」与「模拟时长」两项，其余动力学参数由后端统一配置；三份栅格需覆盖同一范围，提交时缺项会逐项提示。</p>
                 <h2>三、运行流程</h2>
                 <ol>
                   <li>依次选择并上传三份栅格数据（缺项会在提交时提示，无法启动计算）；</li>
@@ -582,6 +584,12 @@
                     </el-upload>
                   </template>
                 </el-input>
+              </el-form-item>
+              <el-form-item label="时间步长 (s)" class="quanyu-file-field">
+                <el-input v-model="betaTimeStep" placeholder="10" />
+              </el-form-item>
+              <el-form-item label="模拟时长 (s)" class="quanyu-file-field">
+                <el-input v-model="betaDuration" placeholder="200" />
               </el-form-item>
               <el-form-item class="quanyu-actions">
                 <el-button class="quanyu-submit" type="primary" @click="submitBeta"
@@ -2261,7 +2269,7 @@
                   </template>
                   <template v-else>
                     <tr><td>输入栅格</td><td>.tif / .tiff（三份）</td><td>在沿程调控面板内独立选择平均高程 / 物源启动区 / 影响范围，不读取「冰川泥石流动力学模型」弹窗中的数据，三份都就绪才能启动</td></tr>
-                    <tr><td>动力学参数</td><td>固定</td><td>摩擦参数、模拟时长与滑移路径沿用冰川泥石流动力学模型的默认配置</td></tr>
+                    <tr><td>时间步长 / 模拟时长</td><td>秒（正数）</td><td>10 / 200</td><td>在本面板单独填写；其余动力学参数（摩擦参数、滑移路径等）沿用默认配置</td></tr>
                   </template>
                 </tbody>
               </table>
@@ -2404,6 +2412,12 @@
                       </el-upload>
                     </template>
                   </el-input>
+                </el-form-item>
+                <el-form-item label="时间步长 (s)" class="quanyu-file-field">
+                  <el-input v-model="alongTimeStep" placeholder="10" />
+                </el-form-item>
+                <el-form-item label="模拟时长 (s)" class="quanyu-file-field">
+                  <el-input v-model="alongDuration" placeholder="200" />
                 </el-form-item>
               </el-form>
             </template>
@@ -2666,6 +2680,9 @@ const dialogBeta = ref(false)
 const betaUploadRefs = reactive({})
 const betaFiles = reactive({})
 const betaFileNames = reactive({})
+// 时间参数（用户可调，单位秒）：时间步长 / 模拟时长
+const betaTimeStep = ref('10')
+const betaDuration = ref('200')
 const betaFileItems = [
   { key: 'elev', label: '平均高程', placeholder: '选择 elevation.tif' },
   { key: 'debris', label: '物源启动区', placeholder: '选择 debris.tif' },
@@ -3056,6 +3073,8 @@ const isProcessing = ref(false)
 async function submitBeta() {
   dialogBeta.value = false
   $emit('betaLayers', { result: null })
+  const timing = resolveTimeParams(betaTimeStep.value, betaDuration.value, '冰川泥石流动力学模型')
+  if (!timing) return
   const missing = betaFileItems.filter(item => !betaFiles[item.key])
   if (missing.length > 0) {
     ElMessage({ message: '请选择: ' + missing.map(i => i.label).join('、'), type: 'warning' })
@@ -3084,7 +3103,11 @@ async function submitBeta() {
       ElMessage({ message: '\u4e0a\u4f20\u6210\u529f\u4f46\u672a\u8fd4\u56de\u4efb\u52a1ID', type: 'error' })
       return
     }
-    const accepted = await modelService.runAvaflowBeta({ jobId })
+    const accepted = await modelService.runAvaflowBeta({
+      jobId,
+      timeStep: timing.timeStep,
+      duration: timing.duration,
+    })
     ElMessage.closeAll()
     if (!accepted || accepted.status !== 'accepted' || !accepted.jobId) {
       ElMessage({ message: accepted?.message || '启动模拟失败', type: 'error' })
@@ -3274,6 +3297,32 @@ function proNumber(value, fallback) {
   return Number.isFinite(n) ? n : fallback
 }
 
+/**
+ * 校验「时间步长 / 模拟时长」（秒）。不合法时提示并返回 null。
+ * 这两个值直接决定数值计算的时间推进与总时长，越大越省时间、越小越精细。
+ */
+function resolveTimeParams(stepValue, durationValue, label = '本模型') {
+  const timeStep = proNumber(stepValue, NaN)
+  const duration = proNumber(durationValue, NaN)
+  if (!Number.isFinite(timeStep) || timeStep <= 0 || !Number.isFinite(duration) || duration <= 0) {
+    ElMessage({ message: label + '：请输入大于 0 的时间步长与模拟时长（秒）', type: 'warning', duration: 4500, showClose: true })
+    return null
+  }
+  if (timeStep > 3600) {
+    ElMessage({ message: '时间步长过大，建议 1~60 秒', type: 'warning', duration: 4500, showClose: true })
+    return null
+  }
+  if (duration < timeStep) {
+    ElMessage({ message: '模拟时长不能小于时间步长', type: 'warning', duration: 4500, showClose: true })
+    return null
+  }
+  if (duration > 30 * 24 * 3600) {
+    ElMessage({ message: '模拟时长过大，上限 30 天', type: 'warning', duration: 4500, showClose: true })
+    return null
+  }
+  return { timeStep, duration }
+}
+
 // ===== 灾害链断链调控 / 冰川泥石流沿程调控 =====
 // 断链调控：冰岩崩动力学模型（Pro 内核）——在 zb/zl/hw 底床上抬高拦挡范围后重算；
 // 沿程调控：冰川泥石流动力学模型（r.avaflow 内核）——在 elevation 栅格上抬高护底范围后重算。
@@ -3408,6 +3457,9 @@ const resetTerrainInputs = kind => {
 const terrainPolygon = ref([])
 const terrainKind = ref('')
 const terrainRaise = ref('20')
+// 沿程调控的时间参数（用户可调，单位秒）
+const alongTimeStep = ref('10')
+const alongDuration = ref('200')
 const terrainDrawing = ref(false)
 const terrainRunning = ref(false)
 const terrainStatusText = computed(() => {
@@ -3423,6 +3475,8 @@ const openTerrainRegulation = kind => {
   terrainDrawing.value = false
   terrainKind.value = kind
   terrainRaise.value = kind === 'chain' ? '20' : '15'
+  alongTimeStep.value = '10'
+  alongDuration.value = '200'
   // 每次重新进入功能：清空本面板上一次的输入（两个面板互不影响）
   resetTerrainInputs(kind)
   cfg.visible = true
@@ -3593,6 +3647,8 @@ const waitAvaflowBetaResult = async (jobId, label, regulation = false) => {
 
 // 冰川泥石流沿程调控：上传三份栅格 -> 后端抬高 elevation 范围 -> r.avaflow 计算
 const submitBetaRegulation = async terrainEdits => {
+  const timing = resolveTimeParams(alongTimeStep.value, alongDuration.value, '冰川泥石流沿程调控技术')
+  if (!timing) return false
   const missing = alongFileItems.filter(item => !alongFiles[item.key])
   if (missing.length > 0) {
     ElMessage({
@@ -3619,7 +3675,12 @@ const submitBetaRegulation = async terrainEdits => {
       ElMessage({ message: upResp?.message || '输入数据上传失败', type: 'error' })
       return false
     }
-    const accepted = await modelService.runAvaflowBeta({ jobId: upResp.jobId, terrainEdits })
+    const accepted = await modelService.runAvaflowBeta({
+      jobId: upResp.jobId,
+      terrainEdits,
+      timeStep: timing.timeStep,
+      duration: timing.duration,
+    })
     if (!accepted || accepted.status !== 'accepted') {
       ElMessage.closeAll()
       ElMessage({ message: accepted?.message || '启动计算失败', type: 'error' })
@@ -4613,6 +4674,8 @@ const loadBetaHistory = item => {
 
 const resetBetaInputs = () => {
   if (isProcessing.value) return
+  betaTimeStep.value = '10'
+  betaDuration.value = '200'
   new Set([...Object.keys(betaFiles), ...Object.keys(betaFileNames)]).forEach(key => {
     delete betaFiles[key]
     delete betaFileNames[key]
