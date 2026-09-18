@@ -4534,6 +4534,8 @@ const flyToWmsLayer = (layerName, lift = 3000, duration = 1.5) => {
 // WMS imagery provider 工厂：统一配置，避免重复
 const createWmsProvider = (layerName, transparent) => {
   ensureWmsLayerKnown(layerName)
+  // 风险评估数据 / 历史数据模拟等 WMS 图层：点击后用平台卡片展示该点的要素信息
+  ensureWmsFeatureClickHandler()
   return new Cesium.WebMapServiceImageryProvider({
     url: GEOSERVER_WMS_URL,
     layers: layerName,
@@ -4546,6 +4548,9 @@ const createWmsProvider = (layerName, transparent) => {
     tilingScheme: new Cesium.GeographicTilingScheme(),
     rectangle: STUDY_AREA_RECT,
     maximumLevel: 18,
+    // 要素查询由前端自己发 GetFeatureInfo（见 ensureWmsFeatureClickHandler），
+    // 关掉 Cesium 内置拾取，避免每次点击多一次请求
+    enablePickFeatures: false,
   })
 }
 
@@ -4928,6 +4933,165 @@ const closeDujiangImagePopup = () => {
     dujiangImagePopup.value.remove()
     dujiangImagePopup.value = null
   }
+}
+
+// ========== WMS 图层要素点击（风险评估数据 / 历史数据模拟等） ==========
+// 平台不使用 Cesium 自带的 InfoBox：点 WMS 影像时它会选中图层对象，弹出
+// 标题是 UUID、内容空白的白色小框。这里改为：点击后向 GeoServer 取该点要素
+// （GetFeatureInfo），用平台统一风格的卡片展示；取不到要素就什么都不弹。
+const WMS_LAYER_LABELS = {
+  ygBuildings: '建筑物提取',
+  pop_LinZhi: '人口提取',
+  motuo_traffic: '交通流量预测',
+  build_one: '1层建筑物脆弱性',
+  build_two: '2层建筑物脆弱性',
+  build_three: '3层建筑物脆弱性',
+  build_masonry: '砌体建筑物脆弱性',
+  building_risk: '总体建筑物脆弱性',
+  roadrisk_h: '高等级道路',
+  roadrisk_m: '次等级道路',
+  roadrisk_s: '简单道路',
+  road_risk: '总体道路',
+  bridge_d: '双柱式桥梁脆弱性',
+  bridge_s: '单柱式桥梁脆弱性',
+  bridge: '总体桥梁脆弱性',
+  pop_risk: '人口风险评估',
+  linzi_hazard: '区域危险性评估',
+  yigong_hazard: '点危险性评估',
+  HP_pop_Vulnerability: '滑坡人口脆弱性',
+  NSL_pop_Vulnerability: '泥石流人口脆弱性',
+  SH_pop_Vulnerability: '山洪人口脆弱性',
+  HP_Danger: '滑坡危险性',
+  NSL_Danger: '泥石流危险性',
+  SH_Danger: '山洪危险性',
+  BCNSL_results: '历史数据模拟',
+}
+
+/** WMS 要素属性值格式化：数字保留 4 位小数（超 10 万加千分位），字符串原样输出（避免把 osm_id 变成 522,214,288） */
+const fmtWmsValue = v => {
+  if (v === null || v === undefined || v === '') return '—'
+  if (typeof v === 'number' && Number.isFinite(v)) {
+    return Math.abs(v) >= 100000
+      ? Number(v.toFixed(0)).toLocaleString('zh-CN')
+      : String(Number(v.toFixed(4)))
+  }
+  return String(v)
+}
+
+/** 当前显示中的 WMS 图层名（从上层往下的顺序），用于逐层查询要素 */
+const wmsVisibleLayersTopDown = () => {
+  const out = []
+  const layers = viewer.value?.scene?.imageryLayers
+  if (!layers) return out
+  for (let i = layers.length - 1; i >= 0; i--) {
+    const layer = layers.get(i)
+    if (!layer.show) continue
+    const provider = layer.imageryProvider
+    if (provider && typeof provider.layers === 'string' && provider.layers) {
+      out.push(provider.layers)
+    }
+  }
+  return out
+}
+
+/** 点击位置附近 8×8 像素对应的经纬度范围（GetFeatureInfo 的查询窗口） */
+const wmsQueryBbox = position => {
+  const scene = viewer.value.scene
+  const toLonLat = pos => {
+    const cart = scene.camera.pickEllipsoid(pos, scene.globe.ellipsoid)
+    if (!cart) return null
+    const carto = Cesium.Cartographic.fromCartesian(cart)
+    return [Cesium.Math.toDegrees(carto.longitude), Cesium.Math.toDegrees(carto.latitude)]
+  }
+  const a = toLonLat(new Cesium.Cartesian2(position.x - 4, position.y + 4))
+  const b = toLonLat(new Cesium.Cartesian2(position.x + 4, position.y - 4))
+  if (!a || !b) return null
+  return [
+    Math.min(a[0], b[0]),
+    Math.min(a[1], b[1]),
+    Math.max(a[0], b[0]),
+    Math.max(a[1], b[1]),
+  ]
+}
+
+/** 向 GeoServer 取某个 WMS 图层在该点的要素（GeoJSON） */
+const queryWmsFeatureInfo = async (layerName, bbox) => {
+  const resp = await axios.get(GEOSERVER_WMS_URL, {
+    params: {
+      service: 'WMS',
+      version: '1.1.0',
+      request: 'GetFeatureInfo',
+      layers: layerName,
+      query_layers: layerName,
+      srs: 'EPSG:4326',
+      bbox: bbox.join(','),
+      width: 100,
+      height: 100,
+      x: 50,
+      y: 50,
+      info_format: 'application/json',
+      feature_count: 1,
+    },
+    timeout: 15000,
+  })
+  const features = resp?.data?.features
+  return Array.isArray(features) && features.length ? features[0] : null
+}
+
+let wmsFeatureClickHandler = null
+const ensureWmsFeatureClickHandler = () => {
+  if (wmsFeatureClickHandler || !viewer.value?.scene) return
+  wmsFeatureClickHandler = new Cesium.ScreenSpaceEventHandler(
+    viewer.value.scene.canvas,
+  )
+  wmsFeatureClickHandler.setInputAction(async movement => {
+    // ① 关掉 Cesium 自带 InfoBox（点 WMS 影像时会选中图层对象）
+    viewer.value.selectedEntity = undefined
+    // ② 点位类图层有自己的平台弹窗，这里不抢
+    const picked = viewer.value.scene.pick(movement.position)
+    const pid = Cesium.defined(picked) ? picked.id : null
+    if (
+      pid &&
+      (pid.dujiangTag ||
+        pid.noDujiangTag ||
+        pid.isDzdDevice ||
+        pid.isWeatherStation ||
+        pid.forecastInfo)
+    ) {
+      return
+    }
+    // ③ 取点击位置附近 8×8 像素的经纬度窗口，从上往下逐层查要素（最多 3 层）
+    const bbox = wmsQueryBbox(movement.position)
+    if (!bbox) {
+      closeDujiangImagePopup()
+      return
+    }
+    const candidates = wmsVisibleLayersTopDown().slice(0, 3)
+    for (const layerName of candidates) {
+      let feature = null
+      try {
+        feature = await queryWmsFeatureInfo(layerName, bbox)
+      } catch (e) {
+        feature = null
+      }
+      if (!feature) continue
+      const props = feature.properties || {}
+      const rows = Object.keys(props).length
+        ? Object.entries(props).map(([k, v]) => [
+            k === 'GRAY_INDEX' ? '像元值' : k,
+            fmtWmsValue(v),
+          ])
+        : [['要素编号', feature.id || '—']]
+      showPointInfoPopup({
+        title: WMS_LAYER_LABELS[layerName] || layerName,
+        badge: '图层要素',
+        rows,
+        hint: '数据来源：GeoServer WMS 图层（按点击位置实时查询）。影像图层返回的是该位置像元的值。',
+      })
+      return
+    }
+    closeDujiangImagePopup()
+  }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
 }
 
 // 点位点击：历史堵江点（带现场图片）与历史未堵江点共用同一套弹窗样式
@@ -6696,7 +6860,6 @@ const handleLayer4Click = movement => {
         ],
       },
     ],
-    hint: '在地图上左键 / 右键点击该点位，可再次打开本卡片。',
   })
 }
 //移除滑坡判识矢量点
@@ -6838,7 +7001,6 @@ const handleLayer5Click = movement => {
         ],
       },
     ],
-    hint: '在地图上左键 / 右键点击该点位，可再次打开本卡片。',
   })
 }
 //移除古滑坡灾害链
