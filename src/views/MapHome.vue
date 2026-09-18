@@ -2587,6 +2587,21 @@ function clearBetaDrape() {
  */
 let betaRegulationEntities = []
 
+// 拦挡范围填充的“呼吸”透明度：静止时也一眼能看到（0.34 ~ 0.58 循环）
+const REG_ZONE_FILL = Cesium.Color.fromCssColorString('#ffb703')
+const REG_ZONE_EDGE = Cesium.Color.fromCssColorString('#ffea00')
+const REG_ZONE_OUTLINE = Cesium.Color.fromCssColorString('#e8590c')
+const regulationPulseMaterial = () =>
+  new Cesium.ColorMaterialProperty(
+    new Cesium.CallbackProperty(
+      () =>
+        REG_ZONE_FILL.withAlpha(
+          0.3 + 0.2 * (0.5 + 0.5 * Math.sin(performance.now() / 420)),
+        ),
+      false,
+    ),
+  )
+
 function clearRegulationZones() {
   const v = viewer.value
   if (v && betaRegulationEntities.length) {
@@ -2614,30 +2629,73 @@ function drawRegulationZones(edits) {
     if (lonLat.length < 3) return
     const positions = lonLat.map(pt => Cesium.Cartesian3.fromDegrees(pt[0], pt[1]))
     const raise = Number(item?.raise)
+    const cells = Number(item?.cells)
     try {
+      // ① 面：呼吸填充（比原先 0.22 明显）+ 深橙色描边兜底
       const entity = v.entities.add({
         id: 'betaRegulationZone_' + index,
         polygon: {
           hierarchy: new Cesium.PolygonHierarchy(positions),
-          material: Cesium.Color.fromCssColorString('#ffd166').withAlpha(0.22),
+          material: regulationPulseMaterial(),
           outline: true,
-          outlineColor: Cesium.Color.fromCssColorString('#ffb703'),
-          outlineWidth: 3,
+          outlineColor: REG_ZONE_OUTLINE,
+          outlineWidth: 4,
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-        },
-        label: {
-          text: '调控范围' + (Number.isFinite(raise) ? ' +' + raise + ' m' : ''),
-          font: '13px sans-serif',
-          fillColor: Cesium.Color.WHITE,
-          outlineColor: Cesium.Color.fromCssColorString('#7a4f00'),
-          outlineWidth: 3,
-          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-          pixelOffset: new Cesium.Cartesian2(0, -18),
-          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
         },
       })
       betaRegulationEntities.push(entity)
+
+      // ② 边框：Cesium 地面多边形描边宽度常被驱动限制为 1px，
+      //    这里额外加一条贴地粗折线（6px 深橙 + 3px 亮黄双层），保证任何底图上都看得清
+      const ring = positions.concat([positions[0]])
+      betaRegulationEntities.push(
+        v.entities.add({
+          id: 'betaRegulationZoneEdge_' + index,
+          polyline: {
+            positions: ring,
+            width: 6,
+            material: REG_ZONE_OUTLINE,
+            clampToGround: true,
+          },
+        }),
+      )
+      betaRegulationEntities.push(
+        v.entities.add({
+          id: 'betaRegulationZoneEdgeIn_' + index,
+          polyline: {
+            positions: ring,
+            width: 3,
+            material: REG_ZONE_EDGE,
+            clampToGround: true,
+          },
+        }),
+      )
+
+      // ③ 标签：徽标样式 + 屏边固定大小，远看也有存在感
+      betaRegulationEntities.push(
+        v.entities.add({
+          id: 'betaRegulationZoneLabel_' + index,
+          position: Cesium.Cartesian3.fromDegrees(lonLat[0][0], lonLat[0][1]),
+          label: {
+            text:
+              '调控范围' +
+              (Number.isFinite(raise) ? '  +' + raise + ' m' : '') +
+              (Number.isFinite(cells) && cells > 0 ? '  ·  ' + cells + ' 格' : ''),
+            font: 'bold 15px sans-serif',
+            fillColor: Cesium.Color.WHITE,
+            outlineColor: Cesium.Color.fromCssColorString('#7a4f00'),
+            outlineWidth: 3,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            showBackground: true,
+            backgroundColor: REG_ZONE_OUTLINE.withAlpha(0.88),
+            backgroundPadding: new Cesium.Cartesian2(10, 6),
+            pixelOffset: new Cesium.Cartesian2(0, -22),
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            scaleByDistance: new Cesium.NearFarScalar(500, 1.0, 30000, 0.75),
+          },
+        }),
+      )
     } catch (e) {
       console.warn('[betaLayers] 调控范围绘制失败:', e)
     }
