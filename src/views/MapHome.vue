@@ -5096,6 +5096,10 @@ const queryWmsFeatureInfo = async (layerName, bbox) => {
   return Array.isArray(features) && features.length ? features[0] : null
 }
 
+// 需求：GeoServer WMS 图层点击不再弹任何信息（含平台卡片与 Cesium 自带白框）。
+// 如需恢复要素弹窗，把这里改成 true 即可（下面的查询逻辑完整保留）。
+const WMS_FEATURE_POPUP_ENABLED = false
+
 let wmsFeatureClickHandler = null
 const ensureWmsFeatureClickHandler = () => {
   if (wmsFeatureClickHandler || !viewer.value?.scene) return
@@ -5118,7 +5122,13 @@ const ensureWmsFeatureClickHandler = () => {
     ) {
       return
     }
-    // ③ 取点击位置附近 8×8 像素的经纬度窗口，从上往下逐层查要素（最多 3 层）
+    // ③ 已关闭 WMS 要素弹窗：只要保证不弹白框、并清掉可能残留的卡片即可
+    if (!WMS_FEATURE_POPUP_ENABLED) {
+      closeDujiangImagePopup()
+      return
+    }
+    // 以下为「开启弹窗」时的实现：取点击位置附近 8×8 像素的经纬度窗口，
+    // 从上往下逐层查要素（最多 3 层）
     const bbox = wmsQueryBbox(movement.position)
     if (!bbox) {
       closeDujiangImagePopup()
