@@ -37,6 +37,7 @@
       @timeSelected="handleTimeSelected"
       @yjLayers="yjLayers"
       @betaLayers="betaLayers"
+      @alphaLayers="alphaLayers"
       @proLayers="proLayers"
       @terrainDrawStart="startTerrainDraw"
       @terrainDrawCancel="cancelTerrainDraw"
@@ -307,7 +308,7 @@
 
         <el-dialog
           v-model="dialogVisible_checkattribute"
-          title="属性表（可删除点位）"
+          title="属性表"
           width="980"
         >
           <div class="dynamic-table-container">
@@ -671,6 +672,10 @@ import {
   fetchDzdWave,
   predictDzd,
 } from '../services/deviceService.js'
+import {
+  getSeismicMarkerVisual,
+  getSeismicPulseRadii,
+} from './seismicMarkerVisual.js'
 import { ElMessageBox } from 'element-plus'
 // import { Popover } from 'ant-design-vue'
 
@@ -2653,7 +2658,7 @@ function drawRegulationZones(edits) {
           id: 'betaRegulationZoneEdge_' + index,
           polyline: {
             positions: ring,
-            width: 6,
+            width: 5,
             material: REG_ZONE_OUTLINE,
             clampToGround: true,
           },
@@ -2667,32 +2672,6 @@ function drawRegulationZones(edits) {
             width: 3,
             material: REG_ZONE_EDGE,
             clampToGround: true,
-          },
-        }),
-      )
-
-      // ③ 标签：徽标样式 + 屏边固定大小，远看也有存在感
-      betaRegulationEntities.push(
-        v.entities.add({
-          id: 'betaRegulationZoneLabel_' + index,
-          position: Cesium.Cartesian3.fromDegrees(lonLat[0][0], lonLat[0][1]),
-          label: {
-            text:
-              '调控范围' +
-              (Number.isFinite(raise) ? '  +' + raise + ' m' : '') +
-              (Number.isFinite(cells) && cells > 0 ? '  ·  ' + cells + ' 格' : ''),
-            font: 'bold 15px sans-serif',
-            fillColor: Cesium.Color.WHITE,
-            outlineColor: Cesium.Color.fromCssColorString('#7a4f00'),
-            outlineWidth: 3,
-            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-            showBackground: true,
-            backgroundColor: REG_ZONE_OUTLINE.withAlpha(0.88),
-            backgroundPadding: new Cesium.Cartesian2(10, 6),
-            pixelOffset: new Cesium.Cartesian2(0, -22),
-            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-            disableDepthTestDistance: Number.POSITIVE_INFINITY,
-            scaleByDistance: new Cesium.NearFarScalar(500, 1.0, 30000, 0.75),
           },
         }),
       )
@@ -3048,7 +3027,7 @@ const betaLayers = async (payload, label = '冰川泥石流动力学模型', opt
           'maxDepth=' + globalMax.toFixed(2) + 'm',
         )
         ElMessage.closeAll()
-        ElMessage({ message: label + ' 渲染完成（贴地）', type: 'success', duration: 2000 })
+        ElMessage({ message: label + ' 渲染完成', type: 'success', duration: 2000 })
         drapeOk = true
       } catch (e) {
         console.error('[betaLayers] 贴地渲染失败，回退 BOX 渲染:', e)
@@ -3156,6 +3135,9 @@ const betaLayers = async (payload, label = '冰川泥石流动力学模型', opt
   }
 
 }
+// 冰川泥石流动力学模型_alpha 复用 beta 的 ASC 贴地逐帧渲染链路
+const alphaLayers = payload =>
+  betaLayers(payload, payload?.label || '冰川泥石流动力学模型_alpha')
 // 冰岩崩动力学模型（python_port）复用 beta 的 ASC 帧渲染链路
 const proLayers = payload => betaLayers(payload, '冰岩崩动力学模型')
 
@@ -5098,7 +5080,7 @@ const queryWmsFeatureInfo = async (layerName, bbox) => {
 
 // 需求：GeoServer WMS 图层点击不再弹任何信息（含平台卡片与 Cesium 自带白框）。
 // 如需恢复要素弹窗，把这里改成 true 即可（下面的查询逻辑完整保留）。
-const WMS_FEATURE_POPUP_ENABLED = false
+const WMS_FEATURE_POPUP_ENABLED = true
 
 let wmsFeatureClickHandler = null
 const ensureWmsFeatureClickHandler = () => {
@@ -5154,7 +5136,6 @@ const ensureWmsFeatureClickHandler = () => {
         title: WMS_LAYER_LABELS[layerName] || layerName,
         badge: '图层要素',
         rows,
-        hint: '数据来源：GeoServer WMS 图层（按点击位置实时查询）。影像图层返回的是该位置像元的值。',
       })
       return
     }
@@ -8198,6 +8179,7 @@ const cleanentity = () => {
   squareStore.closeSquare()
   squareStore.closeRisk()
   // 10. 移除事件
+  clearSeismicEntity()
   if (handler_seismic.value && typeof handler_seismic.value.destroy === 'function') {
     handler_seismic.value.destroy()
   }
@@ -8228,61 +8210,196 @@ const handler_seismic = ref('')
 var echarts_data = ''
 const seismicIsDL = ref(false)
 const seismicWaveMeta = ref('')
+// 冰川泥石流监测预警结果点位：与「基于位移检测滑坡预警」保持同一套样式
+// （按等级着色的图钉 + 警戒圈 + 等级标签；点击弹平台风格卡片，卡片内可看地震仪原数据）
+const SEISMIC_POINT_ID = 'seismic_warning_point'
+
+const clearSeismicEntity = () => {
+  const v = viewer.value
+  if (!v) return
+  const old = v.entities.getById(SEISMIC_POINT_ID)
+  if (old) v.entities.remove(old)
+}
+
+/** 结果点位卡片：与位移预警共用平台弹窗组件，附「查看地震仪原数据」按钮 */
+const showSeismicInfoPopup = info => {
+  const f = info || {}
+  const coordText =
+    Number.isFinite(f.lon) && Number.isFinite(f.lat)
+      ? f.lon.toFixed(5) + ', ' + f.lat.toFixed(5)
+      : '—'
+  showPointInfoPopup({
+    title: '冰川泥石流监测预警',
+    badge: f.levelLabel || '监测结果',
+    badgeColor: f.levelColor || '',
+    rows: [
+      ['检测结论', f.levelLabel || '—'],
+      ['风险概率', f.probText || '—'],
+      ['识别方式', f.isDL ? '深度学习' : '机器学习'],
+      ['检测时间', f.timeText || '—'],
+      ['点位坐标', coordText],
+    ],
+    hint: '该弹窗为本次识别的结果记录，可点击下方按钮查看对应的地震仪原数据。',
+    actions: [
+      {
+        label: '查看地震仪原数据',
+        onClick: () => drawSeismicChart(),
+      },
+    ],
+  })
+}
+
 function handleSeismicResult(payload) {
   try {
     seismicIsDL.value = !!payload?.isDL
-    echarts_data = payload.echarts_data
-    const detected = payload?.detected
+    echarts_data = payload?.echarts_data
+    const detected = !!payload?.detected
     const lon = Number(payload?.lon) || 97.5
     const lat = Number(payload?.lat) || 30.5
-    const imageUrl = detected ? '/CS/img/warning_red.png' : '/CS/img/safe.png' // 统一大小写路径
-    viewer.value.entities.add({
-      // id: `seismic_${Date.now()}`,
-      id: 'seismic',
-      position: Cesium.Cartesian3.fromDegrees(lon, lat),
-      billboard: {
-        image: imageUrl,
-        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-        disableDepthTestDistance: Number.POSITIVE_INFINITY,
-        width: 48,
-        height: 48,
-      },
-      properties: {
-        raw: payload.info,
-      },
-    })
 
-    viewer.value.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(lon, lat - 0.05, 10000), // 高度可按需调整
-      orientation: {
-        heading: Cesium.Math.toRadians(0.0),
-        pitch: Cesium.Math.toRadians(-35.0),
-        roll: 0.0,
+    // 等级配色、图标和尺寸统一由可单测的视觉映射生成：风险=红，正常=绿
+    const seismicVisual = getSeismicMarkerVisual(
+      detected,
+      payload?.info?.probability,
+    )
+    const {
+      levelLabel,
+      levelColor,
+      picture,
+      probabilityText: probText,
+      billboardSize,
+      pulseDurationMs,
+    } = seismicVisual
+    const levelCesiumColor = Cesium.Color.fromCssColorString(levelColor)
+    const timeText = new Date().toLocaleString('zh-CN', { hour12: false })
+
+    // 同一个结果只保留一个点位（重复运行不会因 id 冲突报错）
+    clearSeismicEntity()
+
+    const groundHeight = getGroundHeightMeters(lon, lat, 3000)
+    const pointPosition = Cesium.Cartesian3.fromDegrees(lon, lat, groundHeight)
+
+    // 呼吸警戒圈：风险状态更快、更醒目，正常状态更柔和
+    const pulseStartedAt = performance.now()
+    const pulsePhase = () =>
+      ((performance.now() - pulseStartedAt) % pulseDurationMs) / pulseDurationMs
+    const pulseAxisAt = () =>
+      getSeismicPulseRadii(performance.now() - pulseStartedAt, seismicVisual)
+    const pulseMajorAxis = new Cesium.CallbackProperty(
+      () => pulseAxisAt().semiMajorAxis,
+      false,
+    )
+    const pulseMinorAxis = new Cesium.CallbackProperty(
+      () => pulseAxisAt().semiMinorAxis,
+      false,
+    )
+    const pulseMaterial = new Cesium.ColorMaterialProperty(
+      new Cesium.CallbackProperty(
+        () => levelCesiumColor.withAlpha(0.06 + 0.24 * (1 - pulsePhase())),
+        false,
+      ),
+    )
+
+    const entity = viewer.value.entities.add({
+      id: SEISMIC_POINT_ID,
+      name: '冰川泥石流监测预警',
+      isSeismicWarning: true,
+      position: pointPosition,
+      // 图钉按等级选图，并根据远近自动缩放，避免远看成一个点
+      billboard: {
+        image: `CS/img/${picture}.png`,
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+        horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+        width: billboardSize,
+        height: billboardSize,
+        scaleByDistance: new Cesium.NearFarScalar(500, 1.12, 30000, 0.72),
+        translucencyByDistance: new Cesium.NearFarScalar(1000, 1.0, 50000, 0.72),
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
       },
-      complete: () => {
-        // 飞行完成后选中实体以触发 InfoBox（若需要）
-        try {
-          viewer.value.selectedEntity = entity
-        } catch (e) {}
+      // 中心小光点 + 动态警戒圈，形成清晰的“警示信号”层次
+      point: {
+        pixelSize: 8,
+        color: Cesium.Color.WHITE.withAlpha(0.82),
+        outlineColor: levelCesiumColor.withAlpha(0.96),
+        outlineWidth: 3,
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        scaleByDistance: new Cesium.NearFarScalar(500, 1.1, 30000, 0.7),
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
       },
+      ellipse: {
+        semiMajorAxis: pulseMajorAxis,
+        semiMinorAxis: pulseMinorAxis,
+        material: pulseMaterial,
+        outline: true,
+        outlineColor: levelCesiumColor.withAlpha(0.76),
+        outlineWidth: 2.6,
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+      },
+      // 深色玻璃徽标：白字保证可读，等级色用于描边和底色提示
+      label: {
+        text: `${levelLabel}｜${probText}`,
+        font: '600 14px "Microsoft YaHei", "PingFang SC", sans-serif',
+        fillColor: Cesium.Color.WHITE,
+        outlineColor: levelCesiumColor.withAlpha(0.95),
+        outlineWidth: 2,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        showBackground: true,
+        backgroundColor: Cesium.Color.fromCssColorString('#061b33').withAlpha(0.86),
+        backgroundPadding: new Cesium.Cartesian2(12, 7),
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+        pixelOffset: new Cesium.Cartesian2(0, -58),
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        scaleByDistance: new Cesium.NearFarScalar(500, 1.08, 30000, 0.76),
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      },
+      // 不再挂 description / properties，避免弹 Cesium 默认 InfoBox
     })
+    entity.seismicInfo = {
+      detected,
+      levelLabel,
+      levelColor,
+      probText,
+      timeText,
+      lon,
+      lat,
+      isDL: !!payload?.isDL,
+    }
+    // 关掉 Cesium 自带 InfoBox：结果详情统一用平台卡片
+    viewer.value.selectedEntity = undefined
+
+    // 相机：与位移预警一致（点位居中、留足取景高度）
+    viewer.value.camera.flyToBoundingSphere(
+      new Cesium.BoundingSphere(pointPosition, 1000),
+      {
+        offset: new Cesium.HeadingPitchRange(
+          Cesium.Math.toRadians(250.0),
+          Cesium.Math.toRadians(-55.0),
+          18000,
+        ),
+        duration: 2.5,
+      },
+    )
 
     if (detected) {
       ElMessage({ message: '检测到异常，已在地图标记', type: 'warning' })
     } else {
       ElMessage({ message: '未检测到异常', type: 'success' })
     }
-    //监听seismic鼠标点击事件,
-    handler_seismic.value = new Cesium.ScreenSpaceEventHandler(
-      viewer.value.scene.canvas,
-    )
-    handler_seismic.value.setInputAction(e => {
-      const pick = viewer.value.scene.pick(e.position)
-      if (!Cesium.defined(pick) || !pick.id) return   // 点在空白处时直接忽略
-      if (pick.id._id === 'seismic') {
-        drawSeismicChart()   // 只绘制地震仪原数据波形
-      }
-    }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+
+    // 点击结果点位 → 平台风格卡片（只注册一次，避免重复点击弹多个）
+    if (!handler_seismic.value) {
+      handler_seismic.value = new Cesium.ScreenSpaceEventHandler(
+        viewer.value.scene.canvas,
+      )
+      handler_seismic.value.setInputAction(movement => {
+        const picked = viewer.value.scene.pick(movement.position)
+        if (!Cesium.defined(picked) || !picked.id) return
+        if (!picked.id.isSeismicWarning) return
+        viewer.value.selectedEntity = undefined
+        showSeismicInfoPopup(picked.id.seismicInfo)
+      }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+    }
   } catch (e) {
     console.error('handleSeismicResult error', e)
   }
@@ -8440,6 +8557,11 @@ onBeforeUnmount(() => {
   if (forecastHandler) {
     forecastHandler.destroy()
     forecastHandler = null
+  }
+  clearSeismicEntity()
+  if (handler_seismic.value) {
+    handler_seismic.value.destroy()
+    handler_seismic.value = null
   }
   // [新增] 释放标记点信息相关监听与处理器
   if (disasterPickHandler) {

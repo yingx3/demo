@@ -68,6 +68,35 @@ const modelService = {
       })
       .then(r => r.data)
   },
+  uploadAvaflowAlphaFiles(formData) {
+    return axios
+      .post('/testapi/admin/user/upload_avaflow_alpha', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000,
+      })
+      .then(r => r.data)
+  },
+  runAvaflowAlpha(form) {
+    return axios
+      .post('/testapi/admin/user/yj_alpha', form, { timeout: 60000 })
+      .then(r => r.data)
+  },
+  getAvaflowAlphaStatus(jobId) {
+    return axios
+      .get('/testapi/admin/user/yj_alpha_status', {
+        params: { jobId },
+        timeout: 30000,
+      })
+      .then(r => r.data)
+  },
+  getAvaflowAlphaHistory(params) {
+    return axios
+      .get('/testapi/admin/user/avaflow_alpha_history', {
+        params,
+        timeout: 60000,
+      })
+      .then(r => r.data)
+  },
   postGBM(savedFiles, form) {
     // 返回完整 response 以保留 uploadResp/processResp 语义
     // 推理脚本为串行执行，超时与后端 process-timeout 对齐（5 分钟）
