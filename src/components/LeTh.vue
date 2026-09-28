@@ -489,177 +489,6 @@
       <div class="theme">
         <div class="title">灾害链模拟</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
-        <!-- 冰川泥石流动力学模型：r.avaflow 内核 + 逐帧渲染泥石流层厚度 -->
-        <div v-if="false" class="box box-used p_bottom">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <el-button :plain="true" @click="dialogBeta = true"
-            ><span>冰川泥石流动力学模型_a</span></el-button
-          >
-          <el-dialog v-model="dialogBeta" title="冰川泥石流动力学模型" width="520" :close-on-click-modal="false" class="dialog_quanyu dialog_fullRisk" @open="resetBetaInputs">
-            <template #header>
-              <div class="model-dialog-header">
-                <div class="model-dialog-heading">
-                  <span class="model-dialog-title">冰川泥石流动力学模型</span>
-                  <span class="model-dialog-subtitle">启动动力学参数配置</span>
-                </div>
-                <el-tooltip content="查看参数说明" placement="top">
-                  <el-icon class="help-icon" @click="openHelpDialog_sh = true">
-                    <QuestionFilled />
-                  </el-icon>
-                </el-tooltip>
-              </div>
-            </template>
-            <el-dialog
-              v-model="openHelpDialog_sh"
-              class="model-help-dialog"
-              width="1200px"
-              :close-on-click-modal="false"
-              top="70px"
-            >
-              <template #title>
-                <div class="model-help-head">
-                  <span class="model-help-title">冰川泥石流动力学模型</span>
-                  <span class="model-help-subtitle">参数说明</span>
-                </div>
-              </template>
-              <div id="shanhong-model-info" class="help-body">
-                <h2>一、功能目的</h2>
-                <p>采用二维流变动力学数值方法，基于平均高程、物源启动区与影响范围栅格模拟冰川泥石流的启动与运动过程，输出逐时刻的泥石流层厚度栅格序列，用于评估运动路径、堆积范围与致灾强度。</p>
-                <h2>二、界面输入参数</h2>
-                <table>
-                  <tbody>
-                    <tr><td>参数</td><td>格式</td><td>默认值</td><td>说明</td></tr>
-                    <tr><td>平均高程</td><td>.tif / .tiff（单文件）</td><td>必填</td><td>地形基准面，作为流动计算的底床（上传后重命名为 elev.tif）</td></tr>
-                    <tr><td>物源启动区</td><td>.tif / .tiff（单文件）</td><td>必填</td><td>标记参与启动的物源分布范围，决定初始泥石流体的位置与体积（重命名为 debris.tif）</td></tr>
-                    <tr><td>影响范围</td><td>.tif / .tiff（单文件）</td><td>必填</td><td>限定计算域，范围外的像元不参与演算（重命名为 impact_area.tif）</td></tr>
-                    <tr><td>时间步长</td><td>秒（正数）</td><td>10</td><td>数值计算的时间推进步长：越小越精细、计算越慢；建议 1~60 秒</td></tr>
-                    <tr><td>模拟时长</td><td>秒（正数，≥ 时间步长）</td><td>200</td><td>本次模拟的总时长，决定泥石流运动的演进距离；上限 30 天</td></tr>
-                  </tbody>
-                </table>
-                <p>说明：可调的时序参数只有「时间步长」与「模拟时长」两项，其余动力学参数由后端统一配置；三份栅格需覆盖同一范围，提交时缺项会逐项提示。</p>
-                <h2>三、运行流程</h2>
-                <ol>
-                  <li>依次选择并上传三份栅格数据（缺项会在提交时提示，无法启动计算）；</li>
-                  <li>后端导入栅格并执行数值计算，按代表性时间节点抽取逐帧结果；</li>
-                  <li>结果由 tif 转换为 GeoJSON（EPSG:4326）与 bbox，前端按帧播放泥石流层厚度并自动定位相机。</li>
-                </ol>
-                <h2>四、结果与提示</h2>
-                <ul>
-                  <li>结果包含逐时刻泥石流层厚度栅格序列与结果范围 bbox，<strong>默认渲染场为泥石流层厚度</strong>；</li>
-                  <li>计算约需数分钟至十余分钟，进度会在提示消息中实时更新，等待超时为 120 分钟；</li>
-                  <li>运行期间请勿关闭页面，完成后图层可在资源目录中开关与调节透明度；</li>
-                  <li>若定位偏移，请检查输入栅格的坐标系与范围是否与案例区一致。</li>
-                  <li>点击弹窗下方的<strong>「历史模拟」</strong>可查看并回放此前的运行结果（含基准工况与地形调控工况）。</li>
-                </ul>
-              </div>
-            </el-dialog>
-            <p class="quanyu-section-label">输入数据</p>
-            <el-form label-position="top" class="quanyu-form">
-              <el-form-item
-                v-for="item in betaFileItems"
-                :key="item.key"
-                :label="item.label"
-                label-position="top"
-                class="quanyu-file-field"
-              >
-                <el-input
-                  v-model="betaFileNames[item.key]"
-                  :placeholder="item.placeholder"
-                  readonly
-                >
-                  <template #append>
-                    <el-upload
-                      :ref="el => { if (el) betaUploadRefs[item.key] = el }"
-                      :auto-upload="false"
-                      :show-file-list="false"
-                      accept=".tif,.tiff"
-                      @change="(f, fs) => handleBetaFile(item.key, f, fs)"
-                    >
-                      <el-button
-                        class="quanyu-upload-trigger"
-                        @click.stop="triggerBetaUpload(item.key)"
-                      >
-                        <i class="iconfont icon-daoru"></i>
-                      </el-button>
-                    </el-upload>
-                  </template>
-                </el-input>
-              </el-form-item>
-              <el-form-item label="时间步长 (s)" class="quanyu-file-field">
-                <el-input v-model="betaTimeStep" placeholder="10" />
-              </el-form-item>
-              <el-form-item label="模拟时长 (s)" class="quanyu-file-field">
-                <el-input v-model="betaDuration" placeholder="200" />
-              </el-form-item>
-              <el-form-item class="quanyu-actions">
-                <el-button class="quanyu-submit" type="primary" @click="submitBeta"
-                  >运行</el-button
-                >
-                <el-button class="quanyu-cancel" @click="openBetaHistory"
-                  >历史模拟</el-button
-                >
-                <el-button class="quanyu-cancel" @click="dialogBeta = false"
-                  >取消</el-button
-                >
-              </el-form-item>
-            </el-form>
-            <el-dialog
-              v-model="betaHistoryVisible"
-              class="model-help-dialog"
-              width="1020px"
-              :close-on-click-modal="false"
-              top="80px"
-            >
-              <template #title>
-                <div class="model-help-head">
-                  <span class="model-help-title">历史模拟记录</span>
-                  <span class="model-help-subtitle"
-                    >选择任意一次运行结果，直接在三维场景中回放</span
-                  >
-                </div>
-              </template>
-              <div class="help-body">
-                <p v-if="betaHistoryLoading" style="margin: 6px 0">
-                  历史记录读取中...
-                </p>
-                <p v-else-if="!betaHistoryItems.length" style="margin: 6px 0">
-                  暂无可回放的历史模拟记录。
-                </p>
-                <table v-else class="pro-history-table">
-                  <thead>
-                    <tr>
-                      <th>运行时间</th>
-                      <th>任务号</th>
-                      <th>帧数</th>
-                      <th>最大厚度 (m)</th>
-                      <th>工况</th>
-                      <th>操作</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="item in betaHistoryItems" :key="item.jobId">
-                      <td>{{ item.createdAtText }}</td>
-                      <td class="history-jobid">{{ item.jobId }}</td>
-                      <td>{{ item.frameCount }}</td>
-                      <td>{{ Number(item.globalMax || 0).toFixed(1) }}</td>
-                      <td>{{ betaHistoryCondition(item) }}</td>
-                      <td>
-                        <el-button
-                          v-if="betaHistoryPlayable(item)"
-                          link
-                          type="primary"
-                          @click="loadBetaHistory(item)"
-                          >加载</el-button
-                        >
-                        <span v-else style="opacity: 0.55">缺少坐标</span>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </el-dialog>
-          </el-dialog>
-        </div>
         <div class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
           <el-button :plain="true" @click="dialogAlpha = true"
@@ -667,7 +496,7 @@
           >
           <el-dialog
             v-model="dialogAlpha"
-            title="冰川泥石流动力学模型_alpha"
+            title="冰川泥石流动力学模型"
             width="520"
             :close-on-click-modal="false"
             class="dialog_quanyu dialog_fullRisk"
@@ -2347,12 +2176,7 @@
             ><span>灾害链断链调控技术</span></el-button
           >
         </div>
-        <div v-if="false" class="box box-used p_bottom regulation-entry">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <el-button :plain="true" @click="openTerrainRegulation('along')"
-            ><span>冰川泥石流沿程调控技术_a</span></el-button
-          >
-        </div>
+
         <div class="box box-used p_bottom regulation-entry">
           <img src="../assets/img/云反射率.png" alt="" />
           <el-button :plain="true" @click="openTerrainRegulation('alpha_barrier')"
@@ -2524,50 +2348,7 @@
               </el-form>
             </template>
 
-            <!-- 沿程调控：本面板独立输入，不与「冰川泥石流动力学模型」共享 -->
-            <template v-else-if="cfg.kind === 'along'">
-              <p class="quanyu-section-label">输入数据</p>
-              <el-form label-position="top" class="quanyu-form">
-                <el-form-item
-                  v-for="item in alongFileItems"
-                  :key="'along-' + item.key"
-                  :label="item.label"
-                  label-position="top"
-                  class="quanyu-file-field"
-                >
-                  <el-input
-                    v-model="alongFileNames[item.key]"
-                    :placeholder="item.placeholder"
-                    readonly
-                  >
-                    <template #append>
-                      <el-upload
-                        :ref="el => { if (el) alongUploadRefs[item.key] = el }"
-                        :auto-upload="false"
-                        :show-file-list="false"
-                        accept=".tif,.tiff"
-                        @change="(f, fs) => handleAlongFile(item.key, f, fs)"
-                      >
-                        <el-button
-                          class="quanyu-upload-trigger"
-                          @click.stop="triggerAlongUpload(item.key)"
-                        >
-                          <i class="iconfont icon-daoru"></i>
-                        </el-button>
-                      </el-upload>
-                    </template>
-                  </el-input>
-                </el-form-item>
-                <el-form-item label="时间步长 (s)" class="quanyu-file-field">
-                  <el-input v-model="alongTimeStep" placeholder="10" />
-                </el-form-item>
-                <el-form-item label="模拟时长 (s)" class="quanyu-file-field">
-                  <el-input v-model="alongDuration" placeholder="200" />
-                </el-form-item>
-              </el-form>
-            </template>
-
-            <!-- 冰川泥石流拦挡：DepthAveraged2D 原生 barrier.asc -->
+            <!-- 冰川泥石流沿程调控技术：DepthAveraged2D 原生 barrier.asc -->
             <template v-else>
               <p class="quanyu-section-label">输入数据</p>
               <el-form label-position="top" class="quanyu-form">
@@ -2784,7 +2565,6 @@ const dialog_avainit = ref(false)
 const openHelpDialog_fxy = ref(false)
 // 参数说明里结果示例图的全屏预览地址
 const previewSrc = ref('')
-const openHelpDialog_sh = ref(false)
 const openHelpDialog_flood = ref(false)
 const openHelpDialog_inverseV = ref(false)
 const openHelpDialog_gbm = ref(false)
@@ -2864,30 +2644,7 @@ const submitQuanYu = () => {
 
 // --- 泥石流启动物源计算模型 ---
 const dialogVisibleSDP = ref(false)
-const dialogBeta = ref(false)
-const betaUploadRefs = reactive({})
-const betaFiles = reactive({})
-const betaFileNames = reactive({})
-// 时间参数（用户可调，单位秒）：时间步长 / 模拟时长
-const betaTimeStep = ref('10')
-const betaDuration = ref('200')
-const betaFileItems = [
-  { key: 'elev', label: '平均高程', placeholder: '选择 elevation.tif' },
-  { key: 'debris', label: '物源启动区', placeholder: '选择 debris.tif' },
-  { key: 'impact', label: '影响范围', placeholder: '选择 impact_area.tif' },
-]
-betaFileItems.forEach(item => { betaFileNames[item.key] = ''; betaFiles[item.key] = null })
-const handleBetaFile = (key, uploadFile, uploadFiles) => {
-  const f = (uploadFiles && uploadFiles[0]?.raw) || uploadFile.raw || uploadFile
-  betaFiles[key] = f
-  betaFileNames[key] = f?.name || ''
-}
-const triggerBetaUpload = key => {
-  const el = betaUploadRefs[key]?.$el?.querySelector?.('input[type=file]')
-  if (el) el.click()
-}
-
-// 冰川泥石流动力学模型_alpha：DepthAveraged2D，仅暴露 z.asc / h.asc / 时间参数
+// 冰川泥石流动力学模型：DepthAveraged2D，仅暴露 z.asc / h.asc / 时间参数
 const dialogAlpha = ref(false)
 const openHelpDialog_alpha = ref(false)
 const alphaUploadRefs = reactive({})
@@ -2959,7 +2716,7 @@ const loadAlphaHistory = item => {
   alphaHistoryVisible.value = false
   dialogAlpha.value = false
   $emit('alphaLayers', {
-    label: '冰川泥石流动力学模型_alpha',
+    label: '冰川泥石流动力学模型',
     result: { status: 'ok', ...item.result },
   })
 }
@@ -3174,7 +2931,6 @@ let $emit = defineEmits([
   'bedding_parallel',
   'bedding_inverted',
   'bedding_wedget',
-  'betaLayers',
   'alphaLayers',
   'proLayers',
   'terrainDrawStart',
@@ -3335,67 +3091,13 @@ const form_BGM = reactive({
   rainfall: '700',
   relief_amplitude: '250',
 })
-const isProcessing = ref(false)
-async function submitBeta() {
-  dialogBeta.value = false
-  $emit('betaLayers', { result: null })
-  const timing = resolveTimeParams(betaTimeStep.value, betaDuration.value, '冰川泥石流动力学模型')
-  if (!timing) return
-  const missing = betaFileItems.filter(item => !betaFiles[item.key])
-  if (missing.length > 0) {
-    ElMessage({ message: '请选择: ' + missing.map(i => i.label).join('、'), type: 'warning' })
-    return
-  }
-  ElMessage({ message: '上传输入数据...', type: 'info', duration: 0 })
-  try {
-    const formData = new FormData()
-    const map = { elev: 'elev.tif', debris: 'debris.tif', impact: 'impact_area.tif' }
-    for (const key of ['elev', 'debris', 'impact']) {
-      const f = betaFiles[key]
-      if (f) {
-        const nf = new File([f], map[key], { type: f.type || 'application/octet-stream' })
-        formData.append('files', nf)
-      }
-    }
-    const upResp = await modelService.uploadAvaflowFiles(formData)
-    if (!upResp || upResp?.status !== 'ok') {
-      ElMessage.closeAll()
-      ElMessage({ message: upResp?.message || '文件上传失败', type: 'error' })
-      return
-    }
-    const jobId = upResp.jobId
-    if (!jobId) {
-      ElMessage.closeAll()
-      ElMessage({ message: '\u4e0a\u4f20\u6210\u529f\u4f46\u672a\u8fd4\u56de\u4efb\u52a1ID', type: 'error' })
-      return
-    }
-    const accepted = await modelService.runAvaflowBeta({
-      jobId,
-      timeStep: timing.timeStep,
-      duration: timing.duration,
-    })
-    ElMessage.closeAll()
-    if (!accepted || accepted.status !== 'accepted' || !accepted.jobId) {
-      ElMessage({ message: accepted?.message || '启动模拟失败', type: 'error' })
-      return
-    }
-    return await waitAvaflowBetaResult(jobId, '冰川泥石流动力学模型')
-  } catch (e) {
-    ElMessage.closeAll()
-    const m2 = e.response?.data || e.message || e
-    ElMessage({ message: 'beta 失败: ' + (typeof m2 === 'string' ? m2 : JSON.stringify(m2)), type: 'error' })
-    console.error('submitBeta error:', e)
-    $emit('betaLayers', { result: null })
-  }
-}
-
 async function submitAlpha() {
   dialogAlpha.value = false
   $emit('alphaLayers', { result: null })
   const timing = resolveTimeParams(
     alphaTimeStep.value,
     alphaDuration.value,
-    '冰川泥石流动力学模型_alpha',
+    '冰川泥石流动力学模型',
   )
   if (!timing) return
   const missing = alphaFileItems.filter(item => !alphaFiles[item.key])
@@ -3437,13 +3139,13 @@ async function submitAlpha() {
       ElMessage({ message: accepted?.message || '启动模拟失败', type: 'error' })
       return
     }
-    return await waitAvaflowAlphaResult(upload.jobId, '冰川泥石流动力学模型_alpha')
+    return await waitAvaflowAlphaResult(upload.jobId, '冰川泥石流动力学模型')
   } catch (error) {
     ElMessage.closeAll()
     const detail = error.response?.data || error.message || error
     ElMessage({
       message:
-        '冰川泥石流动力学模型_alpha 失败: ' +
+        '冰川泥石流动力学模型 失败: ' +
         (typeof detail === 'string' ? detail : JSON.stringify(detail)),
       type: 'error',
       duration: 8000,
@@ -3674,22 +3376,6 @@ const terrainRegulationConfigs = reactive([
     hint: '运行前请在本面板准备输入数据（灾前地形 / 灾后地形 / 初始水深）并核对数据坐标系与源区中心；本面板与「冰岩崩动力学模型」弹窗各自独立，三份都不选时使用内置示例数据。',
   },
   {
-    kind: 'along',
-    visible: false,
-    helpVisible: false,
-    title: '冰川泥石流沿程调控技术',
-    tagline: '沿程护底消能',
-    accent: '#24c8a0',
-    desc:
-      '沿冰川泥石流运动路径手绘护底与消能范围，抬升床面削弱沿程侵蚀冲刷，控制泥石流规模的持续放大。',
-    areaLabel: '调控范围',
-    raiseLabel: '床面抬升高度',
-    raisePlaceholder: '例如 15',
-    runText: '执行沿程调控计算',
-    compareLabel: '「冰川泥石流动力学模型」',
-    hint: '运行前请在本面板选择三份输入栅格（平均高程 / 物源启动区 / 影响范围）；本面板与「冰川泥石流动力学模型」弹窗各自独立，未选齐三份时无法启动。',
-  },
-  {
     kind: 'alpha_barrier',
     visible: false,
     helpVisible: false,
@@ -3699,8 +3385,8 @@ const terrainRegulationConfigs = reactive([
     areaLabel: '拦挡范围',
     raiseLabel: '挡墙高度',
     raisePlaceholder: '例如 20',
-    runText: '执行冰川泥石流拦挡计算',
-    compareLabel: '「冰川泥石流动力学模型_alpha」',
+    runText: '执行冰川泥石流沿程调控计算',
+    compareLabel: '「冰川泥石流动力学模型」',
     hint: '运行前请在本面板选择 z.asc 与 h.asc；手绘范围应横跨沟道，挡墙高度将直接作为 barrier.asc 的坝顶高度。',
   },
 ])
@@ -3761,47 +3447,12 @@ const resetChainInputs = () => {
   })
 }
 
-// 沿程调控（冰川泥石流内核）：本面板自己的三份栅格
-const alongUploadRefs = reactive({})
-const alongFiles = reactive({})
-const alongFileNames = reactive({})
-const alongFileItems = [
-  { key: 'elev', label: '平均高程', placeholder: '选择 elevation.tif' },
-  { key: 'debris', label: '物源启动区', placeholder: '选择 debris.tif' },
-  { key: 'impact', label: '影响范围', placeholder: '选择 impact_area.tif' },
-]
-alongFileItems.forEach(item => {
-  alongFiles[item.key] = null
-  alongFileNames[item.key] = ''
-})
-const handleAlongFile = (key, uploadFile, uploadFiles) => {
-  const f = (uploadFiles && uploadFiles[0]?.raw) || uploadFile.raw || uploadFile
-  alongFiles[key] = f
-  alongFileNames[key] = f?.name || ''
-}
-const triggerAlongUpload = key => {
-  const el = alongUploadRefs[key]?.$el?.querySelector?.('input[type=file]')
-  if (el) el.click()
-}
-const resetAlongInputs = () => {
-  if (isProcessing.value) return
-  alongFileItems.forEach(item => {
-    alongFiles[item.key] = null
-    alongFileNames[item.key] = ''
-  })
-  Object.values(alongUploadRefs).forEach(refItem => {
-    refItem?.clearFiles?.()
-    const input = refItem?.$el?.querySelector?.('input[type=file]')
-    if (input) input.value = ''
-  })
-}
 const resetTerrainInputs = kind => {
-  if (kind === 'along') resetAlongInputs()
-  else if (kind === 'alpha_barrier') resetBarrierAlphaInputs()
+  if (kind === 'alpha_barrier') resetBarrierAlphaInputs()
   else resetChainInputs()
 }
 
-// 冰川泥石流拦挡：独立上传 z.asc / h.asc，手绘范围由后端生成 barrier.asc
+// 冰川泥石流沿程调控技术：独立上传 z.asc / h.asc，手绘范围由后端生成 barrier.asc
 const barrierAlphaUploadRefs = reactive({})
 const barrierAlphaFiles = reactive({})
 const barrierAlphaFileNames = reactive({})
@@ -3842,9 +3493,6 @@ const resetBarrierAlphaInputs = () => {
 const terrainPolygon = ref([])
 const terrainKind = ref('')
 const terrainRaise = ref('20')
-// 沿程调控的时间参数（用户可调，单位秒）
-const alongTimeStep = ref('10')
-const alongDuration = ref('200')
 const terrainDrawing = ref(false)
 const terrainRunning = ref(false)
 const terrainStatusText = computed(() => {
@@ -3859,9 +3507,7 @@ const openTerrainRegulation = kind => {
   terrainPolygon.value = []
   terrainDrawing.value = false
   terrainKind.value = kind
-  terrainRaise.value = kind === 'along' ? '15' : '20'
-  alongTimeStep.value = '10'
-  alongDuration.value = '200'
+  terrainRaise.value = '20'
   barrierAlphaTimeStep.value = '10'
   barrierAlphaDuration.value = '200'
   // 每次重新进入功能：清空本面板上一次的输入（两个面板互不影响）
@@ -3899,8 +3545,6 @@ const onTerrainDrawCancelled = () => {
   if (cfg) cfg.visible = true
 }
 
-// 沿程调控的输入状态（alongFiles / alongFileNames / alongUploadRefs）在上方「调控面板输入状态」区块中独立定义，
-// 不再复用冰川泥石流动力学模型弹窗的选择。
 
 // 调控结果反馈：让用户一眼确认「拦挡 / 护底范围」有没有真正作用到这次计算上。
 // 后端 run_pro 会回传自检字段：
@@ -3967,74 +3611,9 @@ const notifyTerrainEdits = (edits, name = '调控范围', meta = null) => {
   })
 }
 
-// 轮询 r.avaflow 计算状态（冰川泥石流动力学模型 / 沿程调控共用）
-const waitAvaflowBetaResult = async (jobId, label, regulation = false) => {
-  ElMessage({ message: '模型计算已启动...', type: 'info', duration: 0 })
-  const startTs = Date.now()
-  // 轮询退避：长时间高频轮询叠加地形瓦片请求会把浏览器 socket 缓冲耗尽
-  // （控制台报 net::ERR_NO_BUFFER_SPACE），请求失败后指数退避，成功后立即恢复。
-  let pollFailures = 0
-  let pollHintShown = false
-  while (true) {
-    await new Promise(r => setTimeout(r, Math.min(5000 * Math.pow(1.6, pollFailures), 20000)))
-    let st = null
-    try { st = await modelService.getAvaflowBetaStatus(jobId) } catch (e) { st = null }
-    if (st) {
-      pollFailures = 0
-    } else {
-      pollFailures += 1
-      if (pollFailures >= 3 && !pollHintShown) {
-        pollHintShown = true
-        ElMessage.closeAll()
-        ElMessage({
-          message:
-            '与后端的状态连接不稳定（浏览器网络缓冲耗尽），已自动降低轮询频率；后端计算仍在继续，稍后可在「历史模拟」中找回结果',
-          type: 'warning',
-          duration: 8000,
-          showClose: true,
-        })
-      }
-    }
-    if (st && st.status === 'running') {
-      const phaseLabel = st.phase === 'converting' ? '结果转换中' : '模型计算中'
-      ElMessage.closeAll()
-      ElMessage({ message: phaseLabel + '... ' , type: 'info', duration: 0 })
-    }
-    if (st && st.status === 'done') {
-      ElMessage.closeAll()
-      ElMessage({ message: label + ' 完成，输出 ' + (st.frameCount || 0) + ' 帧', type: 'success', duration: 2500 })
-      if (regulation) notifyTerrainEdits(st?.terrainEdits, '调控范围', st?.meta)
-      $emit('betaLayers', {
-        result: {
-          status: 'ok',
-          outputBase: st.outputBase,
-          ascBase: st.ascBase,
-          frameFiles: st.frameFiles,
-          frameCount: st.frameCount,
-          bbox: st.bbox,
-          meta: st.meta,
-        },
-      })
-      return true
-    }
-    if (st && st.status === 'error') {
-      ElMessage.closeAll()
-      ElMessage({ message: '模拟失败: ' + (st.message || '未知错误'), type: 'error' })
-      return false
-    }
-    // 后端 r.avaflow 执行超时已放宽到 120 分钟，这里留 5 分钟余量，
-    // 让「后端为什么没算完」的提示先出现，而不是前端先报等待超时
-    if (Date.now() - startTs > 125 * 60 * 1000) {
-      ElMessage.closeAll()
-      ElMessage({ message: '等待结果超时（125分钟）', type: 'error' })
-      return false
-    }
-  }
-}
-
 const waitAvaflowAlphaResult = async (
   jobId,
-  label = '冰川泥石流动力学模型_alpha',
+  label = '冰川泥石流动力学模型',
 ) => {
   ElMessage({ message: label + ' 已启动...', type: 'info', duration: 0 })
   const startedAt = Date.now()
@@ -4097,62 +3676,11 @@ const waitAvaflowAlphaResult = async (
   }
 }
 
-// 冰川泥石流沿程调控：上传三份栅格 -> 后端抬高 elevation 范围 -> r.avaflow 计算
-const submitBetaRegulation = async terrainEdits => {
-  const timing = resolveTimeParams(alongTimeStep.value, alongDuration.value, '冰川泥石流沿程调控技术')
-  if (!timing) return false
-  const missing = alongFileItems.filter(item => !alongFiles[item.key])
-  if (missing.length > 0) {
-    ElMessage({
-      message: '请先在本面板选择输入数据: ' + missing.map(i => i.label).join('、'),
-      type: 'warning',
-      duration: 6000,
-    })
-    return false
-  }
-  ElMessage({ message: '输入数据上传中...', type: 'info', duration: 0 })
-  try {
-    const formData = new FormData()
-    const map = { elev: 'elev.tif', debris: 'debris.tif', impact: 'impact_area.tif' }
-    for (const key of ['elev', 'debris', 'impact']) {
-      const f = alongFiles[key]
-      if (f) {
-        const nf = new File([f], map[key], { type: f.type || 'application/octet-stream' })
-        formData.append('files', nf)
-      }
-    }
-    const upResp = await modelService.uploadAvaflowFiles(formData)
-    if (!upResp || upResp?.status !== 'ok' || !upResp.jobId) {
-      ElMessage.closeAll()
-      ElMessage({ message: upResp?.message || '输入数据上传失败', type: 'error' })
-      return false
-    }
-    const accepted = await modelService.runAvaflowBeta({
-      jobId: upResp.jobId,
-      terrainEdits,
-      timeStep: timing.timeStep,
-      duration: timing.duration,
-    })
-    if (!accepted || accepted.status !== 'accepted') {
-      ElMessage.closeAll()
-      ElMessage({ message: accepted?.message || '启动计算失败', type: 'error' })
-      return false
-    }
-    return await waitAvaflowBetaResult(accepted.jobId || upResp.jobId, '冰川泥石流沿程调控', true)
-  } catch (error) {
-    ElMessage.closeAll()
-    const msg = error?.response?.data || error?.message || error
-    ElMessage({ message: '沿程调控计算失败: ' + (typeof msg === 'string' ? msg : JSON.stringify(msg)), type: 'error' })
-    console.error('submitBetaRegulation error:', error)
-    return false
-  }
-}
-
 const submitAlphaBarrier = async terrainEdits => {
   const timing = resolveTimeParams(
     barrierAlphaTimeStep.value,
     barrierAlphaDuration.value,
-    '冰川泥石流拦挡',
+    '冰川泥石流沿程调控技术',
   )
   if (!timing) return false
   const missing = barrierAlphaFileItems.filter(item => !barrierAlphaFiles[item.key])
@@ -4196,12 +3724,12 @@ const submitAlphaBarrier = async terrainEdits => {
       ElMessage({ message: accepted?.message || '启动拦挡计算失败', type: 'error' })
       return false
     }
-    return await waitAvaflowAlphaResult(upload.jobId, '冰川泥石流拦挡')
+    return await waitAvaflowAlphaResult(upload.jobId, '冰川泥石流沿程调控技术')
   } catch (error) {
     ElMessage.closeAll()
     const detail = error?.response?.data || error?.message || error
     ElMessage({
-      message: '冰川泥石流拦挡失败: ' + (typeof detail === 'string' ? detail : JSON.stringify(detail)),
+      message: '冰川泥石流沿程调控技术失败: ' + (typeof detail === 'string' ? detail : JSON.stringify(detail)),
       type: 'error',
       duration: 8000,
     })
@@ -4228,11 +3756,9 @@ const submitTerrainRegulation = async kind => {
   ]
   terrainRunning.value = true
   try {
-    // 断链调控走冰岩崩动力学模型（Pro），沿程调控走冰川泥石流动力学模型（r.avaflow）
+    // 断链调控走冰岩崩动力学模型（Pro），沿程调控走 DepthAveraged2D 拦挡链路
     let ok = false
-    if (kind === 'along') {
-      ok = await submitBetaRegulation(terrainEdits)
-    } else if (kind === 'alpha_barrier') {
+    if (kind === 'alpha_barrier') {
       ok = await submitAlphaBarrier(terrainEdits)
     } else {
       ok = await submitChainRegulation(terrainEdits)
@@ -4390,7 +3916,7 @@ const runProJob = async (config, extra = {}) => {
     })
 
     const startTs = Date.now()
-    // 轮询退避：同 waitAvaflowBetaResult，避免 net::ERR_NO_BUFFER_SPACE 把结果读取打断。
+    // 轮询退避：避免 net::ERR_NO_BUFFER_SPACE 把结果读取打断。
     let pollFailures = 0
     let pollHintShown = false
     while (true) {
@@ -4511,20 +4037,16 @@ const submitChainRegulation = async terrainEdits =>
     { terrainEdits },
   )
 
-// ===== 断链防控（断链调控 / 沿程调控）历史模拟记录 =====
-// 断链调控结果来自冰岩崩动力学(Pro)输出，沿程调控结果来自 r.avaflow 输出，两者历史接口不同：
-//   chain -> /pro_history          along -> /avaflow_beta_history
+// ===== 断链防控历史模拟记录 =====
 const regulationHistoryVisible = ref(false)
 const regulationHistoryLoading = ref(false)
 const regulationHistoryItems = ref([])
 const regulationHistoryKind = ref('chain')
 const regulationHistoryTitle = computed(() => {
   const title =
-    regulationHistoryKind.value === 'along'
+    regulationHistoryKind.value === 'alpha_barrier'
       ? '冰川泥石流沿程调控技术'
-      : regulationHistoryKind.value === 'alpha_barrier'
-        ? '冰川泥石流拦挡'
-        : '灾害链断链调控技术'
+      : '灾害链断链调控技术'
   return title + ' · 历史模拟记录'
 })
 
@@ -4535,11 +4057,9 @@ const openRegulationHistory = async kind => {
   regulationHistoryLoading.value = true
   try {
     const resp =
-      kind === 'along'
-        ? await modelService.getAvaflowBetaHistory({ limit: 50 })
-        : kind === 'alpha_barrier'
-          ? await modelService.getAvaflowAlphaHistory({ limit: 50, kind: 'barrier' })
-          : await modelService.getProHistory({ limit: 50 })
+      kind === 'alpha_barrier'
+        ? await modelService.getAvaflowAlphaHistory({ limit: 50, kind: 'barrier' })
+        : await modelService.getProHistory({ limit: 50 })
     const items = Array.isArray(resp && resp.items) ? resp.items : []
     regulationHistoryItems.value = items
       .slice()
@@ -4552,7 +4072,7 @@ const openRegulationHistory = async kind => {
   }
 }
 
-/** 加载某条历史记录：复用实时计算的渲染链路（proLayers / betaLayers） */
+/** 加载某条历史记录：复用实时计算的渲染链路 */
 const loadRegulationHistory = item => {
   if (!proHistoryPlayable(item)) {
     ElMessage({
@@ -4564,11 +4084,9 @@ const loadRegulationHistory = item => {
   regulationHistoryVisible.value = false
   const cfg = terrainRegulationConfigs.find(c => c.kind === regulationHistoryKind.value)
   if (cfg) cfg.visible = false
-  if (regulationHistoryKind.value === 'along') {
-    $emit('betaLayers', { result: { status: 'ok', ...item.result } })
-  } else if (regulationHistoryKind.value === 'alpha_barrier') {
+  if (regulationHistoryKind.value === 'alpha_barrier') {
     $emit('alphaLayers', {
-      label: '冰川泥石流拦挡',
+      label: '冰川泥石流沿程调控技术',
       result: { status: 'ok', ...item.result },
     })
   } else {
@@ -5138,77 +4656,6 @@ const resetSdpInputs = () => {
   uploadRainRef.value?.clearFiles?.()
   uploadTempRef.value?.clearFiles?.()
   uploadOutputRef.value?.clearFiles?.()
-}
-
-// 冰川泥石流动力学模型（r.avaflow beta 内核，逐帧输出 hflow）
-// 历史模拟记录：后端扫描 nginx 静态目录 avaflow_beta/ 下的历次结果直接回放
-const betaHistoryVisible = ref(false)
-const betaHistoryLoading = ref(false)
-const betaHistoryItems = ref([])
-
-/** 工况描述：地形调控 / 基准工况 */
-const betaHistoryCondition = item => (item && item.terrainEdited ? '地形调控' : '基准工况')
-
-/** 该记录是否可回放：需要帧文件 + 网格尺寸 + 中心经纬度（老任务可能缺少坐标） */
-const betaHistoryPlayable = item => {
-  const meta = (item && item.result && item.result.meta) || {}
-  const lon = meta.centerLon
-  const lat = meta.centerLat
-  return (
-    Number(item && item.frameCount) > 0 &&
-    Number(meta.ncols) > 0 &&
-    Number(meta.nrows) > 0 &&
-    Number(meta.cellsize) > 0 &&
-    lon != null &&
-    lat != null &&
-    Number.isFinite(Number(lon)) &&
-    Number.isFinite(Number(lat))
-  )
-}
-
-/** 打开历史记录列表 */
-const openBetaHistory = async () => {
-  betaHistoryVisible.value = true
-  betaHistoryLoading.value = true
-  try {
-    const resp = await modelService.getAvaflowBetaHistory({ limit: 50 })
-    betaHistoryItems.value = Array.isArray(resp && resp.items) ? resp.items : []
-  } catch (e) {
-    betaHistoryItems.value = []
-    ElMessage({ message: '历史记录读取失败: ' + (e?.message || e), type: 'error' })
-  } finally {
-    betaHistoryLoading.value = false
-  }
-}
-
-/** 加载某条历史记录：复用实时计算的渲染链路（betaLayers） */
-const loadBetaHistory = item => {
-  if (!betaHistoryPlayable(item)) {
-    ElMessage({
-      message: '该记录缺少网格坐标信息，无法在三维场景中回放',
-      type: 'warning',
-    })
-    return
-  }
-  betaHistoryVisible.value = false
-  dialogBeta.value = false
-  $emit('betaLayers', { result: { status: 'ok', ...item.result } })
-  ElMessage({
-    message: '已加载 ' + (item.createdAtText || item.jobId) + ' 的模拟结果',
-    type: 'success',
-    duration: 2500,
-  })
-}
-
-const resetBetaInputs = () => {
-  if (isProcessing.value) return
-  betaTimeStep.value = '10'
-  betaDuration.value = '200'
-  new Set([...Object.keys(betaFiles), ...Object.keys(betaFileNames)]).forEach(key => {
-    delete betaFiles[key]
-    delete betaFileNames[key]
-  })
-  Object.values(betaUploadRefs).forEach(refItem => refItem?.clearFiles?.())
 }
 
 // 全域风险脆弱性分析

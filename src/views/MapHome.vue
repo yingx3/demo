@@ -36,7 +36,6 @@
       @openLayers="openLayers"
       @timeSelected="handleTimeSelected"
       @yjLayers="yjLayers"
-      @betaLayers="betaLayers"
       @alphaLayers="alphaLayers"
       @proLayers="proLayers"
       @terrainDrawStart="startTerrainDraw"
@@ -3154,9 +3153,9 @@ const betaLayers = async (payload, label = '冰川泥石流动力学模型', opt
   }
 
 }
-// 冰川泥石流动力学模型_alpha 复用 beta 的 ASC 贴地逐帧渲染链路
+// 冰川泥石流动力学模型 复用 beta 的 ASC 贴地逐帧渲染链路
 const alphaLayers = payload =>
-  betaLayers(payload, payload?.label || '冰川泥石流动力学模型_alpha')
+  betaLayers(payload, payload?.label || '冰川泥石流动力学模型')
 // 冰岩崩动力学模型（python_port）复用 beta 的 ASC 帧渲染链路
 const proLayers = payload => betaLayers(payload, '冰岩崩动力学模型')
 

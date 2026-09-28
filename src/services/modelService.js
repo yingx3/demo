@@ -6,33 +6,14 @@ const modelService = {
       .post('/testapi/admin/user/fx', form, { timeout: 400000 })
       .then(r => r.data)
   },
-  runAvaflow(form1) {
-    return axios
-      .post('/testapi/admin/user/yj', form1, { timeout: 60000 })
-      .then(r => r.data)
-  },
-  runAvaflowBeta(form1) {
-    return axios
-      .post('/testapi/admin/user/yj_beta', form1, { timeout: 60000 })
-      .then(r => r.data)
-  },
-  getAvaflowBetaStatus(jobId) {
-    return axios
-      .get('/testapi/admin/user/yj_beta_status', { params: { jobId }, timeout: 30000 })
-      .then(r => r.data)
-  },
+
   // 「灾害危险区划」静态图层列表（风险源模型输出的 dangerLevel_*.png，含时间/降雨历时/地理范围）
   getDangerLevelList(params) {
     return axios
       .get('/testapi/admin/user/danger_level_list', { params, timeout: 30000 })
       .then(r => r.data)
   },
-  // 冰川泥石流动力学模型历史模拟记录（静态目录里保留下来的历次运行结果，可直接回放）
-  getAvaflowBetaHistory(params) {
-    return axios
-      .get('/testapi/admin/user/avaflow_beta_history', { params, timeout: 60000 })
-      .then(r => r.data)
-  },
+
   uploadProFiles(formData) {
     return axios
       .post('/testapi/admin/user/pro_upload', formData, {
@@ -60,14 +41,7 @@ const modelService = {
       .get('/testapi/admin/user/pro_history', { params, timeout: 30000 })
       .then(r => r.data)
   },
-  uploadAvaflowFiles(formData) {
-    return axios
-      .post('/testapi/admin/user/upload_avaflow', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 120000,
-      })
-      .then(r => r.data)
-  },
+
   uploadAvaflowAlphaFiles(formData) {
     return axios
       .post('/testapi/admin/user/upload_avaflow_alpha', formData, {
