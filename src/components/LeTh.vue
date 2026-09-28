@@ -2341,22 +2341,22 @@
       <div class="theme">
         <div class="title">断链防控</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
-        <div v-if="false" class="box box-used regulation-entry">
+        <div  class="box box-used regulation-entry">
           <img src="../assets/img/云反射率.png" alt="" />
           <el-button :plain="true" @click="openTerrainRegulation('chain')"
-            ><span>灾害链断链调控技术_a</span></el-button
+            ><span>灾害链断链调控技术</span></el-button
           >
         </div>
-        <div class="box box-used p_bottom regulation-entry">
+        <div v-if="false" class="box box-used p_bottom regulation-entry">
           <img src="../assets/img/云反射率.png" alt="" />
           <el-button :plain="true" @click="openTerrainRegulation('along')"
-            ><span>冰川泥石流沿程调控技术</span></el-button
+            ><span>冰川泥石流沿程调控技术_a</span></el-button
           >
         </div>
         <div class="box box-used p_bottom regulation-entry">
           <img src="../assets/img/云反射率.png" alt="" />
           <el-button :plain="true" @click="openTerrainRegulation('alpha_barrier')"
-            ><span>灾害链断链调控技术</span></el-button
+            ><span>冰川泥石流沿程调控技术</span></el-button
           >
         </div>
         <el-dialog
@@ -3281,7 +3281,7 @@ const proFileNames = reactive({})
 const proFileItems = [
   { key: 'zb', label: '灾前地形', placeholder: 'zb.tif / zb.txt（灾前 DEM）' },
   { key: 'zl', label: '灾后地形', placeholder: 'zl.tif / zl.txt（灾后 DEM）' },
-  { key: 'hw', label: '初始水深', placeholder: 'hw.tif / hw.txt（堰塞湖水深）' },
+  { key: 'hw', label: '初始水深', placeholder: 'hw.tif / hw.txt（水深）' },
 ]
 // txt / asc（ESRI ASCII）输入不带坐标系，按此坐标系解释；tif 自带坐标系时以文件为准
 // 无 xllcorner/yllcorner 头部的 txt/asc：源区中心经纬度（WGS84），后端换算成 UTM 角点；有头部时忽略
@@ -3693,11 +3693,9 @@ const terrainRegulationConfigs = reactive([
     kind: 'alpha_barrier',
     visible: false,
     helpVisible: false,
-    title: '冰川泥石流拦挡',
+    title: '冰川泥石流沿程调控技术',
     tagline: '手绘挡墙原生拦挡',
     accent: '#f4a261',
-    desc:
-      '在沟道内手绘挡墙范围并设置坝高，后端生成与 z.asc 同网格的 barrier.asc，交由 DepthAveraged2D 原生挡墙边界执行拦挡计算。',
     areaLabel: '拦挡范围',
     raiseLabel: '挡墙高度',
     raisePlaceholder: '例如 20',
@@ -3715,7 +3713,7 @@ const chainFileNames = reactive({})
 const chainFileItems = [
   { key: 'zb', label: '灾前地形', placeholder: 'zb.tif / zb.txt（灾前 DEM）' },
   { key: 'zl', label: '灾后地形', placeholder: 'zl.tif / zl.txt（灾后 DEM）' },
-  { key: 'hw', label: '初始水深', placeholder: 'hw.tif / hw.txt（堰塞湖水深）' },
+  { key: 'hw', label: '初始水深', placeholder: 'hw.tif / hw.txt（水深）' },
 ]
 const chainSourceCrs = ref('EPSG:32646')
 const chainAnchorLon = ref('95.0020')

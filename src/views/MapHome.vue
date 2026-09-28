@@ -2831,27 +2831,46 @@ const flyToResultRect = (rectangle, lift = RESULT_CAMERA_LIFT_M, duration = 2.5)
   if (!camera || !rectangle) return
   try {
     const ellipsoid = Cesium.Ellipsoid.WGS84
-    // 离屏相机：只用来算 Cesium 的默认取景位置，不影响当前视角
-    const scratch = new Cesium.Camera(viewer.value.scene)
-    const fov = camera.frustum ? camera.frustum.fov : undefined
-    if (Number.isFinite(fov)) {
-      scratch.frustum.fov = fov
-      scratch.frustum.aspectRatio = camera.frustum.aspectRatio
-    }
-    scratch.flyTo({ destination: rectangle, duration: 0 })
-    const carto = ellipsoid.cartesianToCartographic(scratch.position)
+    // 用当前相机直接计算“能完整框住 rectangle”的默认位置。
+    // 旧实现用临时 Camera + flyTo(duration:0)，position 不保证立即更新，高度可能算错。
+    const destination = camera.getRectangleCameraCoordinates(rectangle)
+    const carto = ellipsoid.cartesianToCartographic(destination)
     if (!carto || !Number.isFinite(carto.height)) throw new Error('invalid framing')
-    const height = carto.height + lift
+
+    // 默认取景高度是相对椭球面的，高地形区域必须再叠加地形高程，
+    // 否则相机可能落到地表以下，看起来就像图层/点位没渲染。
+    const center = Cesium.Rectangle.center(rectangle)
+    const centerLon = Cesium.Math.toDegrees(center.longitude)
+    const centerLat = Cesium.Math.toDegrees(center.latitude)
+    const terrainHeight = Math.max(
+      0,
+      getGroundHeightMeters(centerLon, centerLat, 0),
+    )
+    const height = carto.height + terrainHeight + lift
+
     camera.flyTo({
-      destination: Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, height, ellipsoid),
+      destination: Cesium.Cartesian3.fromRadians(
+        carto.longitude,
+        carto.latitude,
+        height,
+        ellipsoid,
+      ),
       orientation: { heading: 0, pitch: -Cesium.Math.PI_OVER_TWO, roll: 0 },
       duration,
     })
     console.log(
-      '[betaLayers] 相机定位: 默认取景高度=' + carto.height.toFixed(1) + 'm → ' + height.toFixed(1) + 'm',
+      '[betaLayers] 相机定位: 默认取景=' +
+        carto.height.toFixed(1) +
+        'm + 地形=' +
+        terrainHeight.toFixed(1) +
+        'm + lift=' +
+        lift +
+        'm → ' +
+        height.toFixed(1) +
+        'm',
     )
   } catch (e) {
-    console.warn('[betaLayers] 抬高相机失败，回退默认取景:', e)
+    console.warn('[betaLayers] 相机定位失败，回退默认取景:', e)
     camera.flyTo({ destination: rectangle, duration })
   }
 }
@@ -3506,8 +3525,78 @@ const foreCast = params => {
     latitude,
     groundHeight,
   )
-  // Keep the warning point centered and fly high enough to avoid a close-up
-  // terrain view. Range is the camera-to-point distance in meters.
+  const entityId = `forecast-${pointId}-${Date.now()}`
+  const levelCesiumColor = Cesium.Color.fromCssColorString(levelColor)
+  const remainText =
+    Number.isFinite(rt) && rt >= 0 ? Math.round(rt) + ' h' : '—'
+
+  // 先把预警点实体加上，再飞相机。
+  // 原来的实现把 entities.add 放在 flyTo 的 complete 回调里，一旦飞行被中断或
+  // 地形尚未加载完成，complete 不触发，结果就是“计算完成但地图上什么都没有”。
+  const entity = viewer.value.entities.add({
+    id: entityId,
+    pointId,
+    name: '预警信息',
+    position: pointPosition,
+    billboard: {
+      image: `/CS/img/${picture}.png`,
+      heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+      verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+      width: 32,
+      height: 32,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+    },
+    // ellipse 是 geometry，贴地时 outline 会被 Cesium 禁用；
+    // 这里显式给 height 并关闭 outline，避免两个控制台警告，同时保留填充警戒圈。
+    ellipse: {
+      semiMajorAxis: 420,
+      semiMinorAxis: 420,
+      height: 0,
+      material: levelCesiumColor.withAlpha(0.18),
+      outline: false,
+      heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+    },
+    label: {
+      text: `${levelLabel}｜剩余 ${remainText}`,
+      font: '13px sans-serif',
+      fillColor: levelCesiumColor,
+      outlineColor: Cesium.Color.BLACK,
+      outlineWidth: 3,
+      style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+      verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+      pixelOffset: new Cesium.Cartesian2(0, -42),
+      heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+    },
+  })
+  entity.forecastInfo = {
+    pointId,
+    rt,
+    time,
+    status,
+    levelLabel,
+    levelColor,
+    forecastText,
+    longitude,
+    latitude,
+  }
+  forecastEntityId = entityId
+
+  if (!forecastHandler) {
+    forecastHandler = new Cesium.ScreenSpaceEventHandler(
+      viewer.value.scene.canvas,
+    )
+    forecastHandler.setInputAction(movement => {
+      const picked = viewer.value.scene.pick(movement.position)
+      if (!Cesium.defined(picked) || !picked.id) return
+      const pickedPointId = picked.id.pointId
+      if (pickedPointId === undefined || pickedPointId === null) return
+      currentPointId.value = pickedPointId
+      showForecastInfoPopup(picked.id.forecastInfo, pickedPointId)
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+  }
+
+  // 实体已经先加入，相机飞行只负责“取景”，不再决定实体是否存在。
   viewer.value.camera.flyToBoundingSphere(
     new Cesium.BoundingSphere(pointPosition, 1000),
     {
@@ -3517,79 +3606,6 @@ const foreCast = params => {
         18000,
       ),
       duration: 2.5,
-      complete: () => {
-        clearForecastEntity()
-        const entityId = `forecast-${pointId}-${Date.now()}`
-        const levelCesiumColor = Cesium.Color.fromCssColorString(levelColor)
-        const remainText =
-          Number.isFinite(rt) && rt >= 0 ? Math.round(rt) + ' h' : '—'
-        const entity = viewer.value.entities.add({
-          id: entityId,
-          pointId,
-          name: '预警信息',
-          position: pointPosition,
-          // 图标按等级选图（与原来一致），并永远可见
-          billboard: {
-            image: `CS/img/${picture}.png`,
-            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-            width: 32,
-            height: 32,
-            disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          },
-          // 按等级着色的警戒圈：一眼看出危险等级
-          ellipse: {
-            semiMajorAxis: 420,
-            semiMinorAxis: 420,
-            material: levelCesiumColor.withAlpha(0.18),
-            outline: true,
-            outlineColor: levelCesiumColor.withAlpha(0.9),
-            outlineWidth: 3,
-            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-          },
-          // 等级 + 剩余时间标签
-          label: {
-            text: `${levelLabel}｜剩余 ${remainText}`,
-            font: '13px sans-serif',
-            fillColor: levelCesiumColor,
-            outlineColor: Cesium.Color.BLACK,
-            outlineWidth: 3,
-            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-            pixelOffset: new Cesium.Cartesian2(0, -42),
-            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-            disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          },
-          // 注意：不再挂 description，避免弹出 Cesium 默认 InfoBox；
-          // 预警信息改用平台风格弹窗（见下方 forecastInfo + showForecastInfoPopup）
-        })
-        entity.forecastInfo = {
-          pointId,
-          rt,
-          time,
-          status,
-          levelLabel,
-          levelColor,
-          forecastText,
-          longitude,
-          latitude,
-        }
-        forecastEntityId = entityId
-
-        if (!forecastHandler) {
-          forecastHandler = new Cesium.ScreenSpaceEventHandler(
-            viewer.value.scene.canvas,
-          )
-          forecastHandler.setInputAction(movement => {
-            const picked = viewer.value.scene.pick(movement.position)
-            if (!Cesium.defined(picked) || !picked.id) return
-            const pickedPointId = picked.id.pointId
-            if (pickedPointId === undefined || pickedPointId === null) return
-            currentPointId.value = pickedPointId
-            showForecastInfoPopup(picked.id.forecastInfo, pickedPointId)
-          }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
-        }
-      },
     },
   )
 }
@@ -4548,25 +4564,42 @@ const ensureWmsLayerKnown = layerName => {
  *   - 高度：由 bbox 尺寸交给 Cesium 计算取景高度（flyToResultRect），再叠加 lift 缓冲。
  * 取不到范围时才回退到旧的通用视角。
  */
-const flyToWmsLayer = (layerName, lift = 3000, duration = 1.5) => {
+const flyToWmsLayer = (layerName, lift = RESULT_CAMERA_LIFT_M, duration = 1.5) => {
   const name = String(layerName || '').replace(/^ZHLXT:/, '')
   ensureWmsLayerIndex().then(index => {
     const box = index && (index.get(name) || index.get('ZHLXT:' + name))
     if (box && box.east > box.west && box.north > box.south) {
       flyToResultRect(
         Cesium.Rectangle.fromDegrees(box.west, box.south, box.east, box.north),
-        lift,
+        Math.max(lift, RESULT_CAMERA_LIFT_M),
         duration,
       )
       return
     }
+    // 拿不到图层 bbox 时退回研究区中心，而不是写死一个点；
+    // 高度叠加地形并留足 50km 俯视距离，避免高地形把相机压到地表以下。
+    const center = Cesium.Rectangle.center(STUDY_AREA_RECT)
+    const groundHeight = Math.max(
+      0,
+      getGroundHeightMeters(
+        Cesium.Math.toDegrees(center.longitude),
+        Cesium.Math.toDegrees(center.latitude),
+        0,
+      ),
+    )
     viewer.value.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(94.8845, 29.697148, 7299),
+      destination: Cesium.Cartesian3.fromRadians(
+        center.longitude,
+        center.latitude,
+        groundHeight + 50000,
+        Cesium.Ellipsoid.WGS84,
+      ),
       orientation: {
-        heading: Cesium.Math.toRadians(56.34),
-        pitch: Cesium.Math.toRadians(-31),
-        roll: 0.0,
+        heading: 0,
+        pitch: -Cesium.Math.PI_OVER_TWO,
+        roll: 0,
       },
+      duration,
     })
   })
 }
@@ -8307,7 +8340,7 @@ function handleSeismicResult(payload) {
       position: pointPosition,
       // 图钉按等级选图，并根据远近自动缩放，避免远看成一个点
       billboard: {
-        image: `CS/img/${picture}.png`,
+        image: `/CS/img/${picture}.png`,
         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
         horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
@@ -8330,10 +8363,9 @@ function handleSeismicResult(payload) {
       ellipse: {
         semiMajorAxis: pulseMajorAxis,
         semiMinorAxis: pulseMinorAxis,
+        height: 0,
         material: pulseMaterial,
-        outline: true,
-        outlineColor: levelCesiumColor.withAlpha(0.76),
-        outlineWidth: 2.6,
+        outline: false,
         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
       },
       // 深色玻璃徽标：白字保证可读，等级色用于描边和底色提示
