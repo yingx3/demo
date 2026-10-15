@@ -2604,11 +2604,14 @@ let betaRegulationEntities = []
 const REG_ZONE_FILL = Cesium.Color.fromCssColorString('#ffb703')
 const REG_ZONE_EDGE = Cesium.Color.fromCssColorString('#ffea00')
 const REG_ZONE_OUTLINE = Cesium.Color.fromCssColorString('#e8590c')
-const regulationPulseMaterial = () =>
+const NOTCH_ZONE_FILL = Cesium.Color.fromCssColorString('#38e1ff')
+const NOTCH_ZONE_EDGE = Cesium.Color.fromCssColorString('#7ae7ff')
+const NOTCH_ZONE_OUTLINE = Cesium.Color.fromCssColorString('#0b6ea8')
+const regulationPulseMaterial = fillColor =>
   new Cesium.ColorMaterialProperty(
     new Cesium.CallbackProperty(
       () =>
-        REG_ZONE_FILL.withAlpha(
+        fillColor.withAlpha(
           0.3 + 0.2 * (0.5 + 0.5 * Math.sin(performance.now() / 420)),
         ),
       false,
@@ -2641,17 +2644,19 @@ function drawRegulationZones(edits) {
       .filter(pt => Number.isFinite(pt[0]) && Number.isFinite(pt[1]))
     if (lonLat.length < 3) return
     const positions = lonLat.map(pt => Cesium.Cartesian3.fromDegrees(pt[0], pt[1]))
-    const raise = Number(item?.raise)
-    const cells = Number(item?.cells)
+    const isNotch = item?.type === 'notch'
+    const fillColor = isNotch ? NOTCH_ZONE_FILL : REG_ZONE_FILL
+    const edgeColor = isNotch ? NOTCH_ZONE_EDGE : REG_ZONE_EDGE
+    const outlineColor = isNotch ? NOTCH_ZONE_OUTLINE : REG_ZONE_OUTLINE
     try {
-      // ① 面：呼吸填充（比原先 0.22 明显）+ 深橙色描边兜底
+      // ① 面：呼吸填充（拦挡橙色 / 开槽青色）+ 描边兜底
       const entity = v.entities.add({
         id: 'betaRegulationZone_' + index,
         polygon: {
           hierarchy: new Cesium.PolygonHierarchy(positions),
-          material: regulationPulseMaterial(),
+          material: regulationPulseMaterial(fillColor),
           outline: true,
-          outlineColor: REG_ZONE_OUTLINE,
+          outlineColor: outlineColor,
           outlineWidth: 4,
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
         },
@@ -2667,7 +2672,7 @@ function drawRegulationZones(edits) {
           polyline: {
             positions: ring,
             width: 5,
-            material: REG_ZONE_OUTLINE,
+            material: outlineColor,
             clampToGround: true,
           },
         }),
@@ -2678,7 +2683,7 @@ function drawRegulationZones(edits) {
           polyline: {
             positions: ring,
             width: 3,
-            material: REG_ZONE_EDGE,
+            material: edgeColor,
             clampToGround: true,
           },
         }),
@@ -3130,7 +3135,7 @@ const betaLayers = async (payload, label = '冰川泥石流动力学模型', opt
         if (runId !== betaRunId) return
 
         // 预合成帧已经包含过渡效果：播放时只做单层切换，不再做双层 alpha 渐变
-        const BASE_FRAME_INTERVAL_MS = 250
+        const BASE_FRAME_INTERVAL_MS = 400
         const PLAYBACK_FRAME_MS = Math.max(
           40,
           Math.round(BASE_FRAME_INTERVAL_MS / (Math.max(0, transitionSteps) + 1)),
@@ -3339,8 +3344,12 @@ const renderTerrainFeatureFootprints = features => {
       .filter(pt => Number.isFinite(pt[0]) && Number.isFinite(pt[1]))
     if (lonLat.length < 3) return
     const positions = lonLat.map(pt => Cesium.Cartesian3.fromDegrees(pt[0], pt[1]))
+    const isNotch = feature.type === 'notch'
+    const palette = isNotch
+      ? ['#38e1ff', '#7ae7ff', '#3a86ff', '#00b4d8']
+      : TERRAIN_FEATURE_COLORS
     const color = Cesium.Color.fromCssColorString(
-      TERRAIN_FEATURE_COLORS[index % TERRAIN_FEATURE_COLORS.length],
+      palette[index % palette.length],
     )
     const suffix = feature.id || String(index)
     try {
@@ -3374,7 +3383,10 @@ const renderTerrainFeatureFootprints = features => {
           id: 'terrainFeatureLabel_' + suffix,
           position: center,
           label: {
-            text: '拦挡' + (index + 1) + (feature.raise ? ' · ' + feature.raise + 'm' : ''),
+            text:
+              (isNotch ? '开槽' : '拦挡') +
+              (index + 1) +
+              (feature.value ? ' · ' + feature.value + 'm' : ''),
             font: '12px sans-serif',
             fillColor: color,
             outlineColor: Cesium.Color.fromCssColorString('#061b33'),

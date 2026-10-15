@@ -2391,8 +2391,11 @@
             </template>
             <div class="terrain-row">
               <span class="terrain-label">{{ activeTerrainConfig.areaLabel }}</span>
-              <el-button size="small" type="primary" plain @click="addTerrainBarrier"
+              <el-button size="small" type="primary" plain @click="addTerrainFeature('barrier')"
                 >添加拦挡</el-button
+              >
+              <el-button size="small" type="warning" plain @click="addTerrainFeature('notch')"
+                >添加开槽</el-button
               >
               <el-button size="small" @click="clearTerrainBarriers">清空全部</el-button>
               <span class="terrain-status">共 {{ terrainBarriers.length }} 处</span>
@@ -2406,7 +2409,9 @@
                 @click="activeTerrainBarrierId = barrier.id"
               >
                 <div class="terrain-barrier-head">
-                  <span class="terrain-barrier-index">拦挡 {{ index + 1 }}</span>
+                  <span class="terrain-barrier-index">
+                    {{ barrier.type === 'notch' ? '开槽' : '拦挡' }} {{ index + 1 }}
+                  </span>
                   <span class="terrain-barrier-state">
                     {{ barrier.polygon.length >= 3 ? '已绘制 ' + barrier.polygon.length + ' 点' : '未绘制' }}
                   </span>
@@ -2418,11 +2423,11 @@
                   </span>
                 </div>
                 <el-form label-width="auto" class="terrain-barrier-form">
-                  <el-form-item :label="activeTerrainConfig.raiseLabel">
+                  <el-form-item :label="barrier.type === 'notch' ? '下切深度' : activeTerrainConfig.raiseLabel">
                     <el-input
-                      v-model="barrier.raise"
+                      v-model="barrier.value"
                       style="width: 140px"
-                      :placeholder="activeTerrainConfig.raisePlaceholder"
+                      :placeholder="barrier.type === 'notch' ? '例如 5' : activeTerrainConfig.raisePlaceholder"
                       @change="emitTerrainFeatures"
                     />
                     <span class="terrain-unit">米</span>
@@ -2430,7 +2435,7 @@
                 </el-form>
               </div>
               <p v-if="!terrainBarriers.length" class="terrain-hint">
-                还没有拦挡，点击「添加拦挡」后在地图上绘制范围。
+                还没有调控段，点击「添加拦挡」或「添加开槽」后在地图上绘制范围。
               </p>
             </div>
             <p class="terrain-hint">{{ activeTerrainConfig.hint }}</p>
@@ -3527,34 +3532,37 @@ const activeTerrainConfig = computed(
   () => terrainRegulationConfigs.find(item => item.kind === regulationMode.value) || terrainRegulationConfigs[0],
 )
 
-const defaultTerrainRaise = kind => (kind === 'alpha_barrier' ? '15' : '20')
-const createTerrainBarrier = kind => ({
-  id: `barrier_${Date.now()}_${++terrainBarrierSeq}`,
+const defaultTerrainValue = (type, kind) =>
+  type === 'notch' ? '5' : kind === 'alpha_barrier' ? '15' : '20'
+const createTerrainFeature = (kind, type = 'barrier') => ({
+  id: `${type}_${Date.now()}_${++terrainBarrierSeq}`,
+  type,
   polygon: [],
-  raise: defaultTerrainRaise(kind),
+  value: defaultTerrainValue(type, kind),
 })
 const emitTerrainFeatures = () => {
   const features = terrainBarriers.value
     .filter(item => Array.isArray(item.polygon) && item.polygon.length >= 3)
     .map(item => ({
       id: item.id,
+      type: item.type === 'notch' ? 'notch' : 'barrier',
       polygon: item.polygon.map(p => [Number(p[0]), Number(p[1])]),
-      raise: Number(item.raise) || 0,
+      value: Number(item.value) || 0,
     }))
   $emit('terrainFeaturesChange', features)
 }
 const resetTerrainBarriers = kind => {
   terrainBarrierSeq = 0
-  terrainBarriers.value = [createTerrainBarrier(kind)]
+  terrainBarriers.value = [createTerrainFeature(kind, 'barrier')]
   activeTerrainBarrierId.value = terrainBarriers.value[0].id
   terrainDrawingBarrierId.value = ''
   terrainDrawing.value = false
   emitTerrainFeatures()
 }
-const addTerrainBarrier = () => {
-  const barrier = createTerrainBarrier(regulationMode.value)
-  terrainBarriers.value.push(barrier)
-  activeTerrainBarrierId.value = barrier.id
+const addTerrainFeature = type => {
+  const feature = createTerrainFeature(regulationMode.value, type)
+  terrainBarriers.value.push(feature)
+  activeTerrainBarrierId.value = feature.id
   emitTerrainFeatures()
 }
 const removeTerrainBarrier = id => {
@@ -3615,7 +3623,7 @@ const onTerrainPolygonDrawn = points => {
   const barrierId = terrainDrawingBarrierId.value
   let barrier = terrainBarriers.value.find(item => item.id === barrierId)
   if (!barrier && ring.length >= 3) {
-    barrier = createTerrainBarrier(regulationMode.value)
+    barrier = createTerrainFeature(regulationMode.value, 'barrier')
     barrier.polygon = ring
     terrainBarriers.value.push(barrier)
     activeTerrainBarrierId.value = barrier.id
@@ -3647,9 +3655,10 @@ const onTerrainDrawCancelled = () => {
 const notifyTerrainEdits = (edits, name = '调控范围', meta = null) => {
   const list = Array.isArray(edits) ? edits : []
   const cells = list.reduce((sum, item) => sum + (Number(item && item.cells) || 0), 0)
-  const raiseValues = list.map(item => Number(item && item.raise)).filter(Number.isFinite)
+  const readEditValue = item => Number(item && (item.height ?? item.depth ?? item.raise))
+  const raiseValues = list.map(readEditValue).filter(Number.isFinite)
   const raiseText = list.length > 1
-    ? list.length + ' 处（高度 ' + raiseValues.map(v => v + ' m').join(' / ') + '）'
+    ? list.length + ' 处（' + list.map(item => (item.type === 'notch' ? '开槽' : '拦挡') + ' ' + readEditValue(item) + 'm').join(' / ') + '）'
     : (raiseValues.length ? raiseValues[0] + ' m' : '--')
   if (!(cells > 0)) {
     ElMessage({
@@ -3673,7 +3682,7 @@ const notifyTerrainEdits = (edits, name = '调控范围', meta = null) => {
   if (checked.length && checked.every(item => Number(item.flowPathCells) === 0)) {
     ElMessage({
       message:
-        name + '已抬高底床 ' + raiseText + ' × ' + cells + ' 格' + areaText +
+        name + '已调整地形 ' + raiseText + ' × ' + cells + ' 格' + areaText +
         '，但本次泥石流没有流经该范围（范围内最大流深 ' + maxOf('flowPathMax').toFixed(2) +
         ' m），对结果几乎没有影响：请把范围画在过流的沟道上再运行',
       type: 'warning',
@@ -3695,7 +3704,7 @@ const notifyTerrainEdits = (edits, name = '调控范围', meta = null) => {
     : ''
   ElMessage({
     message:
-      name + '已生效：底床抬高 ' + raiseText + ' × ' + cells + ' 格' + areaText +
+      name + '已生效：地形调整 ' + raiseText + ' × ' + cells + ' 格' + areaText +
       (checked.length ? '，范围内最大流深 ' + hitMax.toFixed(2) + ' m（泥石流确实流经该范围）' : '') +
       thinHint,
     type: thinFlow ? 'warning' : 'success',
@@ -3832,26 +3841,31 @@ const submitAlphaBarrier = async terrainEdits => {
 }
 
 const submitTerrainRegulation = async kind => {
-  const barriers = Array.isArray(terrainBarriers.value) ? terrainBarriers.value : []
-  if (!barriers.length) {
-    ElMessage({ message: '请先添加至少一处拦挡范围', type: 'warning', duration: 4000 })
+  const features = Array.isArray(terrainBarriers.value) ? terrainBarriers.value : []
+  if (!features.length) {
+    ElMessage({ message: '请先添加至少一处拦挡或开槽范围', type: 'warning', duration: 4000 })
     return
   }
-  const undrawn = barriers.find(item => !Array.isArray(item.polygon) || item.polygon.length < 3)
+  const undrawn = features.find(item => !Array.isArray(item.polygon) || item.polygon.length < 3)
   if (undrawn) {
-    ElMessage({ message: '有拦挡尚未绘制封闭范围（至少 3 个顶点）', type: 'warning', duration: 4000 })
+    ElMessage({ message: '有调控段尚未绘制封闭范围（至少 3 个顶点）', type: 'warning', duration: 4000 })
     return
   }
   const terrainEdits = []
-  for (const barrier of barriers) {
-    const raise = proNumber(barrier.raise, NaN)
-    if (!Number.isFinite(raise) || raise <= 0) {
-      ElMessage({ message: '拦挡高度必须大于 0', type: 'warning', duration: 4000 })
+  for (const feature of features) {
+    const value = proNumber(feature.value, NaN)
+    if (!Number.isFinite(value) || value <= 0) {
+      ElMessage({
+        message: (feature.type === 'notch' ? '开槽深度' : '拦挡高度') + '必须大于 0',
+        type: 'warning',
+        duration: 4000,
+      })
       return
     }
     terrainEdits.push({
-      polygon: barrier.polygon.map(p => [Number(p[0]), Number(p[1])]),
-      raise,
+      type: feature.type === 'notch' ? 'notch' : 'barrier',
+      polygon: feature.polygon.map(p => [Number(p[0]), Number(p[1])]),
+      ...(feature.type === 'notch' ? { depth: value } : { height: value }),
     })
   }
   terrainRunning.value = true
