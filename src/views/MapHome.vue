@@ -2768,6 +2768,80 @@ async function buildAvaflowDataSet(frameFiles, ascBase, maxDepth, outW, outH, on
   return { frames, wetBbox: wet.row1 >= 0 ? wet : null }
 }
 
+async function loadFrameImage(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error('过渡帧图片加载失败'))
+    img.src = url
+  })
+}
+
+/**
+ * 在相邻原始帧之间生成预合成过渡帧。
+ * 播放时只显示单层，alpha 始终为 1，不再依赖两层半透明叠加，因此不会出现亮度下陷。
+ */
+async function buildCrossfadeFrames(dataUrls, steps = 2, maxDim = 512) {
+  const list = Array.isArray(dataUrls) ? dataUrls : []
+  const stepCount = Math.max(0, Math.floor(Number(steps) || 0))
+  if (list.length < 2 || stepCount <= 0) return list
+
+  const images = await Promise.all(list.map(loadFrameImage))
+  const srcW = images[0].naturalWidth || images[0].width
+  const srcH = images[0].naturalHeight || images[0].height
+  if (!(srcW > 0) || !(srcH > 0)) return list
+
+  const scale = Math.min(1, Number(maxDim) > 0 ? Number(maxDim) / Math.max(srcW, srcH) : 1)
+  const tw = Math.max(2, Math.round(srcW * scale))
+  const th = Math.max(2, Math.round(srcH * scale))
+
+  const sampler = document.createElement('canvas')
+  sampler.width = tw
+  sampler.height = th
+  const samplerCtx = sampler.getContext('2d', { willReadFrequently: true })
+  const sourceData = images.map(img => {
+    samplerCtx.clearRect(0, 0, tw, th)
+    samplerCtx.drawImage(img, 0, 0, tw, th)
+    return samplerCtx.getImageData(0, 0, tw, th).data
+  })
+
+  const outputCanvas = document.createElement('canvas')
+  outputCanvas.width = tw
+  outputCanvas.height = th
+  const outputCtx = outputCanvas.getContext('2d', { willReadFrequently: true })
+  const output = [list[0]]
+
+  for (let i = 0; i < list.length - 1; i++) {
+    const a = sourceData[i]
+    const b = sourceData[i + 1]
+    for (let s = 1; s <= stepCount; s++) {
+      const p = s / (stepCount + 1)
+      const frame = outputCtx.createImageData(tw, th)
+      const out = frame.data
+      for (let k = 0; k < a.length; k += 4) {
+        const aA = a[k + 3] / 255
+        const bA = b[k + 3] / 255
+        const oA = aA * (1 - p) + bA * p
+        if (oA <= 1e-6) {
+          out[k] = 0
+          out[k + 1] = 0
+          out[k + 2] = 0
+          out[k + 3] = 0
+          continue
+        }
+        out[k] = Math.round((a[k] * aA * (1 - p) + b[k] * bA * p) / oA)
+        out[k + 1] = Math.round((a[k + 1] * aA * (1 - p) + b[k + 1] * bA * p) / oA)
+        out[k + 2] = Math.round((a[k + 2] * aA * (1 - p) + b[k + 2] * bA * p) / oA)
+        out[k + 3] = Math.round(oA * 255)
+      }
+      outputCtx.putImageData(frame, 0, 0)
+      output.push(outputCanvas.toDataURL('image/png'))
+    }
+    output.push(list[i + 1])
+  }
+  return output
+}
+
 /**
  * 结果范围 → 相机要看的矩形（附带用于采样地面高度的点）。
  * 优先用湿区并集：整幅网格有十几公里，直接看整幅会把泥石流缩成一个点。
@@ -2984,7 +3058,7 @@ const betaLayers = async (payload, label = '冰川泥石流动力学模型', opt
         const height = Math.max(2, Math.round(nrows / scale))
 
         const total = frameFiles.length
-        const { frames, wetBbox } = await buildAvaflowDataSet(
+        const { frames: rawFrames, wetBbox } = await buildAvaflowDataSet(
           frameFiles,
           result.ascBase,
           globalMax,
@@ -2998,6 +3072,14 @@ const betaLayers = async (payload, label = '冰川泥石流动力学模型', opt
           'visual',
           meta.field === 'speed' ? { ramp: 'speed' } : null,
         )
+        if (runId !== betaRunId) return
+
+        // 预合成过渡帧：在相邻原始帧之间补齐过渡帧，播放时只切换单层，不再做双层 alpha 渐变
+        const transitionSteps = rawFrames.length > 80 ? 0 : rawFrames.length > 40 ? 1 : 2
+        const frames =
+          transitionSteps > 0
+            ? await buildCrossfadeFrames(rawFrames, transitionSteps, 512)
+            : rawFrames
         if (runId !== betaRunId) return
 
         const view = computeBetaViewRect(meta, wetBbox, width, height, ncols, nrows, cellsize)
@@ -3047,75 +3129,27 @@ const betaLayers = async (payload, label = '冰川泥石流动力学模型', opt
         await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
         if (runId !== betaRunId) return
 
-        betaDrapeIndex = 0
-        betaDrapeLayers.forEach((layer, i) => {
-          layer.alpha = i === 0 ? 1 : 0
-        })
-
-        // 时间轴动画：rAF 驱动 + 两段式过渡，避免两个图层同时半透明造成亮度忽浅忽深
-        const FRAME_INTERVAL_MS = 250 // 每帧停留时间（毫秒）
-        const FADE_IN_MS = Math.min(120, Math.max(60, Math.round(FRAME_INTERVAL_MS * 0.36)))
-        // 把剩余的整段帧时间都留给旧帧淡出，避免旧帧多出的区域消失过快导致亮暗跳变
-        const FADE_OUT_MS = Math.max(80, FRAME_INTERVAL_MS - FADE_IN_MS)
+        // 预合成帧已经包含过渡效果：播放时只做单层切换，不再做双层 alpha 渐变
+        const BASE_FRAME_INTERVAL_MS = 250
+        const PLAYBACK_FRAME_MS = Math.max(
+          40,
+          Math.round(BASE_FRAME_INTERVAL_MS / (Math.max(0, transitionSteps) + 1)),
+        )
         const setLayerAlpha = (layer, value) => {
           if (layer) layer.alpha = Math.max(0, Math.min(1, value))
         }
+        betaDrapeIndex = 0
+        betaDrapeLayers.forEach((layer, i) => setLayerAlpha(layer, i === 0 ? 1 : 0))
         let lastAdvance = performance.now()
-        let fading = false
-        let fadeStart = 0
-        let fadePhase = 'in'
-        let fromIndex = 0
-        let toIndex = 0
-        const beginCrossfade = now => {
-          fromIndex = betaDrapeIndex
-          toIndex = (betaDrapeIndex + 1) % betaDrapeLayers.length
-          const outgoing = betaDrapeLayers[fromIndex]
-          const incoming = betaDrapeLayers[toIndex]
-          try { layerCollection.raiseToTop(incoming) } catch (e) {}
-          // 第一段：旧帧保持不透明，新帧淡入，避免中间整体变浅
-          setLayerAlpha(outgoing, 1)
-          setLayerAlpha(incoming, 0)
-          fading = true
-          fadePhase = 'in'
-          fadeStart = now
-        }
         const step = now => {
           betaDrapeRafId = requestAnimationFrame(step)
           if (!betaDrapeLayers.length) return
-          if (betaDrapeLayers.length === 1) {
-            setLayerAlpha(betaDrapeLayers[0], 1)
-            return
-          }
-          if (!fading) {
-            if (now - lastAdvance >= FRAME_INTERVAL_MS) beginCrossfade(now)
-            return
-          }
-
-          const outgoing = betaDrapeLayers[fromIndex]
-          const incoming = betaDrapeLayers[toIndex]
-
-          if (fadePhase === 'in') {
-            const progress = Math.min(1, (now - fadeStart) / FADE_IN_MS)
-            setLayerAlpha(outgoing, 1)
-            setLayerAlpha(incoming, progress)
-            if (progress >= 1) {
-              fadePhase = 'out'
-              fadeStart = now
-            }
-            return
-          }
-
-          // 第二段：新帧保持不透明，旧帧淡出；亮度由新帧决定，不会再下陷
-          const progress = Math.min(1, (now - fadeStart) / FADE_OUT_MS)
-          setLayerAlpha(outgoing, 1 - progress)
-          setLayerAlpha(incoming, 1)
-          if (progress >= 1) {
-            setLayerAlpha(outgoing, 0)
-            setLayerAlpha(incoming, 1)
-            betaDrapeIndex = toIndex
-            fading = false
-            lastAdvance = now
-          }
+          if (now - lastAdvance < PLAYBACK_FRAME_MS) return
+          lastAdvance = now
+          betaDrapeIndex = (betaDrapeIndex + 1) % betaDrapeLayers.length
+          betaDrapeLayers.forEach((layer, i) => {
+            setLayerAlpha(layer, i === betaDrapeIndex ? 1 : 0)
+          })
         }
         betaDrapeRafId = requestAnimationFrame(step)
 
