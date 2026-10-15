@@ -574,6 +574,9 @@
               <el-form-item label="时间范围 (s)" class="quanyu-file-field">
                 <el-input v-model="alphaDuration" placeholder="200" />
               </el-form-item>
+              <el-form-item label="模拟名称" class="quanyu-file-field">
+                <el-input v-model="alphaSimName" placeholder="例如：色东普-基准工况" maxlength="60" />
+              </el-form-item>
 
               <el-form-item class="quanyu-actions">
                 <el-button class="quanyu-submit" type="primary" @click="submitAlpha">运行</el-button>
@@ -601,6 +604,7 @@
                   <thead>
                     <tr>
                       <th>运行时间</th>
+                      <th>名称</th>
                       <th>任务号</th>
                       <th>帧数</th>
                       <th>最大流深 (m)</th>
@@ -611,6 +615,7 @@
                   <tbody>
                     <tr v-for="item in alphaHistoryItems" :key="item.jobId">
                       <td>{{ item.createdAtText }}</td>
+                      <td>{{ item.name || '—' }}</td>
                       <td class="history-jobid">{{ item.jobId }}</td>
                       <td>{{ item.frameCount }}</td>
                       <td>{{ Number(item.globalMax || 0).toFixed(2) }}</td>
@@ -742,6 +747,7 @@
                       <thead>
                         <tr>
                           <th>运行时间</th>
+                          <th>名称</th>
                           <th>任务号</th>
                           <th>帧数</th>
                           <th>最大厚度 (m)</th>
@@ -754,6 +760,7 @@
                       <tbody>
                         <tr v-for="item in proHistoryItems" :key="item.jobId">
                           <td>{{ item.createdAtText }}</td>
+                          <td>{{ item.name || '—' }}</td>
                           <td class="history-jobid">{{ item.jobId }}</td>
                           <td>{{ item.frameCount }}</td>
                           <td>{{ Number(item.globalMax || 0).toFixed(1) }}</td>
@@ -825,6 +832,9 @@
 
             <p class="quanyu-section-label">模型参数</p>
             <el-form :model="form2" label-position="top" class="quanyu-form">
+              <el-form-item label="模拟名称" class="quanyu-file-field">
+                <el-input v-model="proSimName" placeholder="例如：易贡-基准工况" maxlength="60" />
+              </el-form-item>
               <div class="quanyu-param-grid">
                 <el-form-item label="基底摩擦角 (rad)">
                   <el-input v-model="form2.bed" placeholder="0.05" />
@@ -2682,6 +2692,7 @@ const alphaFiles = reactive({})
 const alphaFileNames = reactive({})
 const alphaTimeStep = ref('10')
 const alphaDuration = ref('200')
+const alphaSimName = ref('')
 const alphaFileItems = [
   { key: 'z', label: '地形高程 z.asc', placeholder: '选择 z.asc' },
   { key: 'h', label: '物源厚度 h.asc', placeholder: '选择 h.asc' },
@@ -2702,6 +2713,7 @@ const triggerAlphaUpload = key => {
 const resetAlphaInputs = () => {
   alphaTimeStep.value = '10'
   alphaDuration.value = '200'
+  alphaSimName.value = ''
   new Set([...Object.keys(alphaFiles), ...Object.keys(alphaFileNames)]).forEach(key => {
     delete alphaFiles[key]
     delete alphaFileNames[key]
@@ -3164,6 +3176,7 @@ async function submitAlpha() {
       jobId: upload.jobId,
       timeStep: timing.timeStep,
       duration: timing.duration,
+      name: alphaSimName.value.trim(),
     })
     ElMessage.closeAll()
     if (!accepted || accepted.status !== 'accepted' || !accepted.jobId) {
@@ -3900,6 +3913,7 @@ const runProJob = async (config, extra = {}) => {
     params,
     label,
     partialHint,
+    name = '',
     regulation = false,
   } = config
   if (floodRunning.value) {
@@ -3977,6 +3991,7 @@ const runProJob = async (config, extra = {}) => {
     const anchorLatNum = proNumber(anchorLat, NaN)
     const accepted = await modelService.runProModel({
       jobId,
+      name: String(name || '').trim(),
       sourceCrs: String(sourceCrs || '').trim(),
       ...(Number.isFinite(anchorLonNum) && Number.isFinite(anchorLatNum)
         ? { anchorLon: anchorLonNum, anchorLat: anchorLatNum }
@@ -4129,6 +4144,7 @@ const submitForm2 = async (extra = {}) =>
       anchorLat: proAnchorLat.value,
       params: form2,
       label: '冰岩崩动力学模型',
+      name: proSimName.value.trim(),
       partialHint: 'zb / zl / hw 三份数据要么都选，要么都不选（不选用内置示例数据）',
     },
     extra,
@@ -4610,6 +4626,7 @@ const resetGbmInputs = () => {
 const proHistoryVisible = ref(false)
 const proHistoryLoading = ref(false)
 const proHistoryItems = ref([])
+const proSimName = ref('')
 
 /** 历史记录的工况描述：地形调控 / 物源削薄比例 / 基准工况 */
 const proHistoryCondition = item => {
@@ -4675,6 +4692,7 @@ const loadProHistory = item => {
 
 const resetFloodProInputs = () => {
   if (floodRunning.value) return
+  proSimName.value = ''
   Object.assign(form2, {
     bed: '0.05',
     nn: '0.0125',
