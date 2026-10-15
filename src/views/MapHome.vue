@@ -2565,7 +2565,7 @@ let betaRunId = 0
 
 // ---- 贴地渲染状态：pro/beta 的流深帧由 Cesium 影像图层承载（自动贴合地形）----
 let betaDrapeLayers = []
-let betaDrapeTimer = null
+let betaDrapeRafId = null
 let betaDrapeIndex = -1
 const BETA_FLOW_LEGEND_ID = 'flowDepth'
 
@@ -2573,9 +2573,9 @@ const BETA_FLOW_LEGEND_ID = 'flowDepth'
  * 清掉上一次的贴地渲染：移除影像图层、停掉时间轴、撤掉图例。
  */
 function clearBetaDrape() {
-  if (betaDrapeTimer) {
-    clearInterval(betaDrapeTimer)
-    betaDrapeTimer = null
+  if (betaDrapeRafId) {
+    cancelAnimationFrame(betaDrapeRafId)
+    betaDrapeRafId = null
   }
   const layers = viewer.value?.scene?.imageryLayers
   if (layers && betaDrapeLayers.length) {
@@ -3004,33 +3004,96 @@ const betaLayers = async (payload, label = '冰川泥石流动力学模型', opt
         flyToResultRect(view.rectangle)
 
         const layerCollection = viewer.value.scene.imageryLayers
+        const providers = []
         frames.forEach(url => {
-          const layer = layerCollection.addImageryProvider(
-            new Cesium.SingleTileImageryProvider({
-              url,
-              rectangle: rect,
-              tileWidth: width,
-              tileHeight: height,
-            }),
-          )
-          layer.show = false
-          layer.alpha = 1.0
+          const provider = new Cesium.SingleTileImageryProvider({
+            url,
+            rectangle: rect,
+            tileWidth: width,
+            tileHeight: height,
+          })
+          providers.push(provider)
+          const layer = layerCollection.addImageryProvider(provider)
+          // 所有帧常驻且保持 show=true，用 alpha 控制显隐：
+          // 这样 Cesium 会提前加载/上传全部帧纹理，切帧时不会再出现“旧帧已隐藏、新帧未就绪”的空档。
+          layer.show = true
+          layer.alpha = 0
           betaDrapeLayers.push(layer)
         })
         if (!betaDrapeLayers.length) throw new Error('未创建任何贴地图层')
 
-        // 时间轴动画：默认 400ms 一帧，循环播放
-        const showFrame = idx => {
-          betaDrapeIndex = idx
-          betaDrapeLayers.forEach((layer, i) => {
-            layer.show = i === idx
+        const waitForProviderReady = provider => {
+          if (!provider || provider.ready || !provider.readyEvent?.addEventListener) {
+            return Promise.resolve()
+          }
+          return new Promise(resolve => {
+            let settled = false
+            let remove = () => {}
+            let timeoutId = 0
+            const finish = () => {
+              if (settled) return
+              settled = true
+              clearTimeout(timeoutId)
+              try { remove() } catch (e) {}
+              resolve()
+            }
+            remove = provider.readyEvent.addEventListener(finish)
+            timeoutId = setTimeout(finish, 4000)
           })
         }
-        showFrame(0)
-        betaDrapeTimer = setInterval(() => {
+        await Promise.all(providers.map(waitForProviderReady))
+        if (runId !== betaRunId) return
+        // 让 Cesium 完成首轮纹理上传后再开始播放
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+        if (runId !== betaRunId) return
+
+        betaDrapeIndex = 0
+        betaDrapeLayers.forEach((layer, i) => {
+          layer.alpha = i === 0 ? 1 : 0
+        })
+
+        // 时间轴动画：rAF 驱动 + 帧间 alpha 交叉淡化，避免硬切造成的闪烁
+        const FRAME_INTERVAL_MS = 400
+        const CROSSFADE_MS = Math.min(180, Math.max(80, Math.round(FRAME_INTERVAL_MS * 0.4)))
+        const setLayerAlpha = (layer, value) => {
+          if (layer) layer.alpha = Math.max(0, Math.min(1, value))
+        }
+        let lastAdvance = performance.now()
+        let fading = false
+        let fadeStart = 0
+        let fromIndex = 0
+        let toIndex = 0
+        const beginCrossfade = now => {
+          fromIndex = betaDrapeIndex
+          toIndex = (betaDrapeIndex + 1) % betaDrapeLayers.length
+          const incoming = betaDrapeLayers[toIndex]
+          try { layerCollection.raiseToTop(incoming) } catch (e) {}
+          fading = true
+          fadeStart = now
+        }
+        const step = now => {
+          betaDrapeRafId = requestAnimationFrame(step)
           if (!betaDrapeLayers.length) return
-          showFrame((betaDrapeIndex + 1) % betaDrapeLayers.length)
-        }, 400)
+          if (betaDrapeLayers.length === 1) {
+            setLayerAlpha(betaDrapeLayers[0], 1)
+            return
+          }
+          if (!fading) {
+            if (now - lastAdvance >= FRAME_INTERVAL_MS) beginCrossfade(now)
+            return
+          }
+          const progress = Math.min(1, (now - fadeStart) / CROSSFADE_MS)
+          setLayerAlpha(betaDrapeLayers[fromIndex], 1 - progress)
+          setLayerAlpha(betaDrapeLayers[toIndex], progress)
+          if (progress >= 1) {
+            setLayerAlpha(betaDrapeLayers[fromIndex], 0)
+            setLayerAlpha(betaDrapeLayers[toIndex], 1)
+            betaDrapeIndex = toIndex
+            fading = false
+            lastAdvance = now
+          }
+        }
+        betaDrapeRafId = requestAnimationFrame(step)
 
         // 图例：流深色带（复用地图右下角图例组件）
         const flowLegend = {
