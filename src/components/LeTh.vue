@@ -1471,112 +1471,6 @@
       <div class="theme">
         <div class="title">风险评估</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
-        <div class="box box-used p_bottom">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <el-button :plain="true" @click="dialogVisibleQuanYu = true"
-            ><span>全域风险脆弱性分析</span></el-button
-          >
-          <el-dialog
-            v-model="dialogVisibleQuanYu"
-            title="全域风险脆弱性分析"
-            width="560"
-            :close-on-click-modal="false"
-            class="dialog_quanyu dialog_fullRisk"
-            @open="resetQuanYuInputs"
-          >
-            <template #header>
-              <div class="model-dialog-header quanyu-header">
-                <div class="model-dialog-heading">
-                  <span class="model-dialog-title">全域风险脆弱性分析</span>
-                  <span class="model-dialog-subtitle">全域风险评估参数配置</span>
-                </div>
-                <el-tooltip content="查看参数说明" placement="top">
-                  <el-icon class="help-icon" @click="openHelpDialog_quanyu = true">
-                    <QuestionFilled />
-                  </el-icon>
-                </el-tooltip>
-              </div>
-            </template>
-            <el-dialog
-              v-model="openHelpDialog_quanyu"
-              class="model-help-dialog"
-              width="1200px"
-              :close-on-click-modal="false"
-              top="70px"
-            >
-              <template #title>
-                <div class="model-help-head">
-                  <span class="model-help-title">全域风险脆弱性分析</span>
-                  <span class="model-help-subtitle">参数说明</span>
-                </div>
-              </template>
-              <div id="quanyu-model-info" class="help-body">
-                <h2>一、功能目的</h2>
-                <p>以 12 项孕灾环境因子栅格为输入，统一重采样与归一化后按权重叠加，输出全域尺度的风险脆弱性分级结果，用于识别高风险区并支撑防治规划与重点区筛选。</p>
-                <h2>二、界面输入参数（栅格 .tif）</h2>
-                <table>
-                  <tbody>
-                    <tr><td>因子</td><td>默认文件</td><td>说明</td></tr>
-                    <tr><td>平均高程</td><td>elevation.tif</td><td>地形基准面，间接反映气温与冰川发育条件</td></tr>
-                    <tr><td>地形起伏度</td><td>relief.tif</td><td>高差变化，控制势能与物质搬运能力</td></tr>
-                    <tr><td>流域面积</td><td>watershed.tif</td><td>汇水规模，影响径流与物源汇集</td></tr>
-                    <tr><td>地层岩性</td><td>lithology.tif</td><td>岩性分类栅格，反映抗侵蚀能力</td></tr>
-                    <tr><td>断层密度</td><td>fault_density.tif</td><td>构造活动强度与岩体破碎程度</td></tr>
-                    <tr><td>土壤类型</td><td>soil_type.tif</td><td>土壤可蚀性差异</td></tr>
-                    <tr><td>距水系距离</td><td>water_dist.tif</td><td>距水系越近，承灾暴露度越高</td></tr>
-                    <tr><td>河网密度</td><td>drainage_density.tif</td><td>汇流通道发育程度</td></tr>
-                    <tr><td>降雨数据</td><td>rainfall.tif</td><td>降水驱动因子</td></tr>
-                    <tr><td>土地利用</td><td>land_use.tif</td><td>地表覆被与人类活动影响</td></tr>
-                    <tr><td>距公路距离</td><td>road_dist.tif</td><td>道路承灾体可达性与暴露度</td></tr>
-                    <tr><td>NDVI</td><td>ndvi.tif</td><td>植被覆盖度，影响水土保持能力</td></tr>
-                  </tbody>
-                </table>
-                <p>说明：12 项因子需全部选择，缺项在提交时会逐项提示因子名称；建议各因子使用同一空间范围与分辨率，坐标系不一致时由后端统一重采样。</p>
-                <h2>三、运行流程</h2>
-                <ol>
-                  <li>逐项选择 12 个因子栅格（点击每行的导入按钮从本地选取）；</li>
-                  <li>点击「运行」，后端完成重采样、归一化与加权叠加，约需 10 秒；</li>
-                  <li>计算完成后自动加载脆弱性分级图层并定位到成果范围。</li>
-                </ol>
-                <h2>四、结果与提示</h2>
-                <ul>
-                  <li>结果为全域风险脆弱性分级专题图层，可在资源目录中开关与调节透明度；</li>
-                  <li>因子权重与分级阈值由后端模型配置，界面不暴露；</li>
-                  <li>如个别因子缺失，建议先用同范围的近似数据替代，以保证叠加结果完整。</li>
-                </ul>
-              </div>
-            </el-dialog>
-            <p id="name_par_gbm" class="quanyu-section-label">栅格数据</p>
-            <el-form label-position="top" class="form_gbm quanyu-form">
-              <el-form-item v-for="item in quanyuFileItems" :key="item.key" :label="item.label" label-position="top" class="quanyu-file-field">
-                <el-input v-model="quanYuFileNames[item.key]" :placeholder="item.placeholder" readonly>
-                  <template #append>
-                    <el-upload
-                      :ref="el => { if (el) uploadRefsQuanYu[item.key] = el }"
-                      action="/node/upload_tif"
-                      name="file"
-                      :auto-upload="false"
-                      :multiple="false"
-                      :show-file-list="false"
-                      accept=".tif,.tiff"
-                      @change="(f,fs) => handleQuanYuFileChange(item.key, f, fs)"
-                    >
-                      <el-button class="quanyu-upload-trigger" @click.stop="triggerQuanYuUpload(item.key)">
-                        <i class="iconfont icon-daoru"></i>
-                      </el-button>
-                    </el-upload>
-                  </template>
-                </el-input>
-              </el-form-item>
-              <el-form-item class="quanyu-actions">
-                <el-button class="quanyu-submit" type="primary" @click="submitQuanYu" :loading="quanYuLoading">
-                  {{ quanYuLoading ? '计算中 ...' : '提交分析' }}
-                </el-button>
-                <el-button class="quanyu-cancel" @click="dialogVisibleQuanYu = false">取消</el-button>
-              </el-form-item>
-            </el-form>
-          </el-dialog>
-        </div>
         <!-- 静态数据卡片：人口分布（与资源目录勾选同源） -->
         <div class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
@@ -1706,6 +1600,112 @@
             </div>
           </el-popover>
         </div>
+        <div class="box box-used p_bottom">
+          <img src="../assets/img/云反射率.png" alt="" />
+          <el-button :plain="true" @click="dialogVisibleQuanYu = true"
+            ><span>全域风险分析</span></el-button
+          >
+          <el-dialog
+            v-model="dialogVisibleQuanYu"
+            title="全域风险分析"
+            width="560"
+            :close-on-click-modal="false"
+            class="dialog_quanyu dialog_fullRisk"
+            @open="resetQuanYuInputs"
+          >
+            <template #header>
+              <div class="model-dialog-header quanyu-header">
+                <div class="model-dialog-heading">
+                  <span class="model-dialog-title">全域风险分析</span>
+                  <span class="model-dialog-subtitle">全域风险评估参数配置</span>
+                </div>
+                <el-tooltip content="查看参数说明" placement="top">
+                  <el-icon class="help-icon" @click="openHelpDialog_quanyu = true">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </div>
+            </template>
+            <el-dialog
+              v-model="openHelpDialog_quanyu"
+              class="model-help-dialog"
+              width="1200px"
+              :close-on-click-modal="false"
+              top="70px"
+            >
+              <template #title>
+                <div class="model-help-head">
+                  <span class="model-help-title">全域风险分析</span>
+                  <span class="model-help-subtitle">参数说明</span>
+                </div>
+              </template>
+              <div id="quanyu-model-info" class="help-body">
+                <h2>一、功能目的</h2>
+                <p>以 12 项孕灾环境因子栅格为输入，统一重采样与归一化后按权重叠加，输出全域尺度的风险分级结果，用于识别高风险区并支撑防治规划与重点区筛选。</p>
+                <h2>二、界面输入参数（栅格 .tif）</h2>
+                <table>
+                  <tbody>
+                    <tr><td>因子</td><td>默认文件</td><td>说明</td></tr>
+                    <tr><td>平均高程</td><td>elevation.tif</td><td>地形基准面，间接反映气温与冰川发育条件</td></tr>
+                    <tr><td>地形起伏度</td><td>relief.tif</td><td>高差变化，控制势能与物质搬运能力</td></tr>
+                    <tr><td>流域面积</td><td>watershed.tif</td><td>汇水规模，影响径流与物源汇集</td></tr>
+                    <tr><td>地层岩性</td><td>lithology.tif</td><td>岩性分类栅格，反映抗侵蚀能力</td></tr>
+                    <tr><td>断层密度</td><td>fault_density.tif</td><td>构造活动强度与岩体破碎程度</td></tr>
+                    <tr><td>土壤类型</td><td>soil_type.tif</td><td>土壤可蚀性差异</td></tr>
+                    <tr><td>距水系距离</td><td>water_dist.tif</td><td>距水系越近，承灾暴露度越高</td></tr>
+                    <tr><td>河网密度</td><td>drainage_density.tif</td><td>汇流通道发育程度</td></tr>
+                    <tr><td>降雨数据</td><td>rainfall.tif</td><td>降水驱动因子</td></tr>
+                    <tr><td>土地利用</td><td>land_use.tif</td><td>地表覆被与人类活动影响</td></tr>
+                    <tr><td>距公路距离</td><td>road_dist.tif</td><td>道路承灾体可达性与暴露度</td></tr>
+                    <tr><td>NDVI</td><td>ndvi.tif</td><td>植被覆盖度，影响水土保持能力</td></tr>
+                  </tbody>
+                </table>
+                <p>说明：12 项因子需全部选择，缺项在提交时会逐项提示因子名称；建议各因子使用同一空间范围与分辨率，坐标系不一致时由后端统一重采样。</p>
+                <h2>三、运行流程</h2>
+                <ol>
+                  <li>逐项选择 12 个因子栅格（点击每行的导入按钮从本地选取）；</li>
+                  <li>点击「运行」，后端完成重采样、归一化与加权叠加，约需 10 秒；</li>
+                  <li>计算完成后自动加载风险分级图层并定位到成果范围。</li>
+                </ol>
+                <h2>四、结果与提示</h2>
+                <ul>
+                  <li>结果为全域风险分级专题图层，可在资源目录中开关与调节透明度；</li>
+                  <li>因子权重与分级阈值由后端模型配置，界面不暴露；</li>
+                  <li>如个别因子缺失，建议先用同范围的近似数据替代，以保证叠加结果完整。</li>
+                </ul>
+              </div>
+            </el-dialog>
+            <p id="name_par_gbm" class="quanyu-section-label">栅格数据</p>
+            <el-form label-position="top" class="form_gbm quanyu-form">
+              <el-form-item v-for="item in quanyuFileItems" :key="item.key" :label="item.label" label-position="top" class="quanyu-file-field">
+                <el-input v-model="quanYuFileNames[item.key]" :placeholder="item.placeholder" readonly>
+                  <template #append>
+                    <el-upload
+                      :ref="el => { if (el) uploadRefsQuanYu[item.key] = el }"
+                      action="/node/upload_tif"
+                      name="file"
+                      :auto-upload="false"
+                      :multiple="false"
+                      :show-file-list="false"
+                      accept=".tif,.tiff"
+                      @change="(f,fs) => handleQuanYuFileChange(item.key, f, fs)"
+                    >
+                      <el-button class="quanyu-upload-trigger" @click.stop="triggerQuanYuUpload(item.key)">
+                        <i class="iconfont icon-daoru"></i>
+                      </el-button>
+                    </el-upload>
+                  </template>
+                </el-input>
+              </el-form-item>
+              <el-form-item class="quanyu-actions">
+                <el-button class="quanyu-submit" type="primary" @click="submitQuanYu" :loading="quanYuLoading">
+                  {{ quanYuLoading ? '计算中 ...' : '提交分析' }}
+                </el-button>
+                <el-button class="quanyu-cancel" @click="dialogVisibleQuanYu = false">取消</el-button>
+              </el-form-item>
+            </el-form>
+          </el-dialog>
+        </div>
       </div>
       <!-- 监测预警模块 -->
       <div class="theme">
@@ -1714,11 +1714,11 @@
         <div class="box p_bottom box-used">
           <img src="../assets/img/云反射率.png" alt="" />
           <el-button :plain="true" @click="dialog_inverseV = true">
-            <span>基于位移监测滑坡预警</span></el-button
+            <span>冰岩崩坡体位移监测预警</span></el-button
           >
           <el-dialog
             v-model="dialog_inverseV"
-            title="滑坡预警（测试版）"
+            title="冰岩崩坡体位移监测预警"
             width="500"
             :close-on-click-modal="false"
             class="dialog_inverseV"
@@ -1727,7 +1727,7 @@
             <template #header>
               <div class="model-dialog-header inverse-header">
                 <div class="model-dialog-heading">
-                  <span class="model-dialog-title">基于位移监测滑坡预警</span>
+                  <span class="model-dialog-title">冰岩崩坡体位移监测预警</span>
                   <span class="model-dialog-subtitle">位移监测参数配置</span>
                 </div>
                 <div class="help-anchor">
@@ -1749,7 +1749,7 @@
                   >
                   <template #title>
                     <div class="model-help-head">
-                      <span class="model-help-title">基于位移监测滑坡预警</span>
+                      <span class="model-help-title">冰岩崩坡体位移监测预警</span>
                       <span class="model-help-subtitle">参数说明</span>
                     </div>
                   </template>
@@ -2170,46 +2170,37 @@
       <div class="theme">
         <div class="title">断链防控</div>
         <img id="bar" src="../assets/img/left_line.png" alt="" />
-        <div  class="box box-used regulation-entry">
-          <img src="../assets/img/云反射率.png" alt="" />
-          <el-button :plain="true" @click="openTerrainRegulation('chain')"
-            ><span>灾害链断链调控技术</span></el-button
-          >
-        </div>
-
         <div class="box box-used p_bottom regulation-entry">
           <img src="../assets/img/云反射率.png" alt="" />
-          <el-button :plain="true" @click="openTerrainRegulation('alpha_barrier')"
-            ><span>冰川泥石流沿程调控技术</span></el-button
-          >
+          <el-button :plain="true" @click="openTerrainRegulation(regulationMode)">
+            <span>灾害链断链调控模拟</span>
+          </el-button>
         </div>
         <el-dialog
-          v-for="cfg in terrainRegulationConfigs"
-          :key="cfg.kind"
-          v-model="cfg.visible"
-          :title="cfg.title"
-          :width="cfg.kind === 'chain' ? '700px' : '560px'"
+          v-model="terrainRegulationVisible"
+          :title="activeTerrainConfig.title"
+          :width="regulationMode === 'chain' ? '700px' : '560px'"
           top="6vh"
           :close-on-click-modal="false"
           class="dialog_quanyu"
         >
           <template #header>
             <div class="terrain-dialog-header">
-              <span class="terrain-dialog-title">{{ cfg.title }}</span>
+              <span class="terrain-dialog-title">{{ activeTerrainConfig.title }}</span>
               <span
                 class="terrain-dialog-tag"
-                :style="{ color: cfg.accent, borderColor: cfg.accent }"
-                >{{ cfg.tagline }}</span
+                :style="{ color: activeTerrainConfig.accent, borderColor: activeTerrainConfig.accent }"
+                >{{ activeTerrainConfig.tagline }}</span
               >
               <el-tooltip content="查看参数说明" placement="top">
-                <el-icon class="help-icon" @click="cfg.helpVisible = true">
+                <el-icon class="help-icon" @click="regulationHelpVisible = true">
                   <QuestionFilled />
                 </el-icon>
               </el-tooltip>
             </div>
           </template>
           <el-dialog
-            v-model="cfg.helpVisible"
+            v-model="regulationHelpVisible"
             class="model-help-dialog"
             width="1200px"
             :close-on-click-modal="false"
@@ -2217,20 +2208,20 @@
           >
             <template #title>
               <div class="model-help-head">
-                <span class="model-help-title">{{ cfg.title }}</span>
+                <span class="model-help-title">{{ activeTerrainConfig.title }}</span>
                 <span class="model-help-subtitle">参数说明</span>
               </div>
             </template>
             <div class="help-body">
               <h2>一、功能目的</h2>
-              <p>{{ cfg.desc }}</p>
+              <p>{{ activeTerrainConfig.desc }}</p>
               <h2>二、界面输入参数</h2>
               <table>
                 <tbody>
                   <tr><td>参数</td><td>取值 / 单位</td><td>说明</td></tr>
-                  <tr><td>{{ cfg.areaLabel }}</td><td>手绘闭合多边形</td><td>在三维地图上左键逐点落点、右键结束绘制，至少需要 3 个顶点；绘制结果即为调控范围</td></tr>
-                  <tr><td>{{ cfg.raiseLabel }}</td><td>m（断链调控默认 20，沿程调控默认 15）</td><td>将绘制范围内的底床整体抬升该高度，模拟坝体或护底高程</td></tr>
-                  <template v-if="cfg.kind === 'chain'">
+                  <tr><td>{{ activeTerrainConfig.areaLabel }}</td><td>手绘闭合多边形（可多处）</td><td>点击「添加拦挡」新增一处，在三维地图上左键逐点落点、右键结束绘制；每处至少 3 个顶点，可分别设置高度</td></tr>
+                  <tr><td>{{ activeTerrainConfig.raiseLabel }}</td><td>m（断链调控默认 20，沿程调控默认 15）</td><td>将绘制范围内的底床整体抬升该高度，模拟坝体或护底高程</td></tr>
+                  <template v-if="regulationMode === 'chain'">
                     <tr><td>数据坐标系</td><td>EPSG 编码</td><td>txt / asc 等不自带坐标系的输入按此解释；tif 或带 xllcorner / yllcorner 头部时以文件为准（默认 EPSG:32646）</td></tr>
                     <tr><td>源区中心（经度 / 纬度）</td><td>WGS84 十进制度</td><td>无投影头部输入的空间定位基准（易贡示例 95.0020 / 30.2354）</td></tr>
                     <tr><td>灾前地形 / 灾后地形 / 初始水深</td><td>.tif / .tiff / .txt / .asc</td><td>在断链调控面板内独立选择，不读取「冰岩崩动力学模型」弹窗中的数据；三份都不选时使用内置示例数据</td></tr>
@@ -2245,25 +2236,33 @@
               <h2>三、运行流程</h2>
               <ol>
                 <li>点击「在地图上绘制」，沿目标沟道绘制闭合范围（左键落点，右键结束，Esc 取消）；</li>
-                <li>填写{{ cfg.raiseLabel }}，点击「{{ cfg.runText }}」；</li>
-                <li v-if="cfg.kind === 'chain'">后端将范围内底床抬高指定高度后重新执行冰岩崩动力学计算，前端加载结果图层供对比查看。</li>
+                <li>填写{{ activeTerrainConfig.raiseLabel }}，点击「{{ activeTerrainConfig.runText }}」；</li>
+                <li v-if="regulationMode === 'chain'">后端将范围内底床抬高指定高度后重新执行冰岩崩动力学计算，前端加载结果图层供对比查看。</li>
                 <li v-else>后端将范围内高程栅格抬高指定高度后重新执行冰川泥石流动力学计算，前端加载结果图层供对比查看。</li>
               </ol>
               <h2>四、结果与提示</h2>
               <ul>
                 <li>结果渲染场为抬升地形后的泥石流层厚度，与未调控工况对比即可评估断链／沿程调控的削峰效果；</li>
-                <li>{{ cfg.hint }}</li>
+                <li>{{ activeTerrainConfig.hint }}</li>
                 <li>绘制范围应落在输入数据覆盖范围内，范围过小或偏离沟道会明显削弱调控效果。</li>
                 <li>点击面板下方的<strong>「历史模拟」</strong>可回放此前的运行结果，用于对比评估调控效果。</li>
               </ul>
             </div>
           </el-dialog>
           <div class="terrain-panel">
-            <p class="terrain-desc" :style="{ borderLeftColor: cfg.accent }">
-              {{ cfg.desc }}
+            <div class="seismic-mode-switch" style="margin-bottom: 12px;">
+              <span class="seismic-mode-label">调控类型</span>
+              <el-radio-group v-model="regulationMode" size="small" @change="handleRegulationModeChange">
+                <el-radio value="chain">冰岩崩断链调控</el-radio>
+                <el-radio value="alpha_barrier">冰川泥石流沿程调控</el-radio>
+              </el-radio-group>
+            </div>
+
+            <p class="terrain-desc" :style="{ borderLeftColor: activeTerrainConfig.accent }">
+              {{ activeTerrainConfig.desc }}
             </p>
             <!-- 断链调控：本面板独立输入，不与「冰岩崩动力学模型」共享 -->
-            <template v-if="cfg.kind === 'chain'">
+            <template v-if="regulationMode === 'chain'">
               <p class="quanyu-section-label">输入数据</p>
               <el-form label-position="top" class="quanyu-form">
                 <el-form-item label="数据坐标系" label-position="top">
@@ -2391,38 +2390,64 @@
               </el-form>
             </template>
             <div class="terrain-row">
-              <span class="terrain-label">{{ cfg.areaLabel }}</span>
-              <el-button size="small" type="primary" plain @click="startTerrainDraw(cfg.kind)"
-                >在地图上绘制</el-button
+              <span class="terrain-label">{{ activeTerrainConfig.areaLabel }}</span>
+              <el-button size="small" type="primary" plain @click="addTerrainBarrier"
+                >添加拦挡</el-button
               >
-              <el-button size="small" @click="clearTerrainDraw">清除绘制</el-button>
-              <span class="terrain-status">{{ terrainStatusText }}</span>
+              <el-button size="small" @click="clearTerrainBarriers">清空全部</el-button>
+              <span class="terrain-status">共 {{ terrainBarriers.length }} 处</span>
             </div>
-            <el-form label-width="auto" class="terrain-form">
-              <el-form-item :label="cfg.raiseLabel">
-                <el-input
-                  v-model="terrainRaise"
-                  style="width: 160px"
-                  :placeholder="cfg.raisePlaceholder"
-                />
-                <span class="terrain-unit">米</span>
-              </el-form-item>
-            </el-form>
-            <p class="terrain-hint">{{ cfg.hint }}</p>
+            <div class="terrain-barrier-list">
+              <div
+                v-for="(barrier, index) in terrainBarriers"
+                :key="barrier.id"
+                class="terrain-barrier-item"
+                :class="{ 'is-active': barrier.id === activeTerrainBarrierId }"
+                @click="activeTerrainBarrierId = barrier.id"
+              >
+                <div class="terrain-barrier-head">
+                  <span class="terrain-barrier-index">拦挡 {{ index + 1 }}</span>
+                  <span class="terrain-barrier-state">
+                    {{ barrier.polygon.length >= 3 ? '已绘制 ' + barrier.polygon.length + ' 点' : '未绘制' }}
+                  </span>
+                  <span class="terrain-barrier-actions">
+                    <el-button size="small" type="primary" plain @click.stop="startTerrainDrawForBarrier(barrier.id)"
+                      >绘制</el-button
+                    >
+                    <el-button size="small" @click.stop="removeTerrainBarrier(barrier.id)">删除</el-button>
+                  </span>
+                </div>
+                <el-form label-width="auto" class="terrain-barrier-form">
+                  <el-form-item :label="activeTerrainConfig.raiseLabel">
+                    <el-input
+                      v-model="barrier.raise"
+                      style="width: 140px"
+                      :placeholder="activeTerrainConfig.raisePlaceholder"
+                      @change="emitTerrainFeatures"
+                    />
+                    <span class="terrain-unit">米</span>
+                  </el-form-item>
+                </el-form>
+              </div>
+              <p v-if="!terrainBarriers.length" class="terrain-hint">
+                还没有拦挡，点击「添加拦挡」后在地图上绘制范围。
+              </p>
+            </div>
+            <p class="terrain-hint">{{ activeTerrainConfig.hint }}</p>
             <p class="terrain-hint terrain-compare-hint">
               对照实验：到
-              <strong>{{ cfg.compareLabel }}</strong>
+              <strong>{{ activeTerrainConfig.compareLabel }}</strong>
               用<strong>完全相同的输入与参数</strong>再跑一次（不绘制调控范围），两次结果才具有可比性；
               若其余参数（计算时长、物源厚度等）不同，拦挡带来的差异会被掩盖。
             </p>
             <div class="terrain-actions">
-              <el-button @click="openRegulationHistory(cfg.kind)">历史模拟</el-button>
-              <el-button @click="cfg.visible = false">取消</el-button>
+              <el-button @click="openRegulationHistory(regulationMode)">历史模拟</el-button>
+              <el-button @click="terrainRegulationVisible = false">取消</el-button>
               <el-button
                 type="primary"
                 :loading="terrainRunning"
-                @click="submitTerrainRegulation(cfg.kind)"
-                >{{ cfg.runText }}</el-button
+                @click="submitTerrainRegulation(regulationMode)"
+                >{{ activeTerrainConfig.runText }}</el-button
               >
             </div>
           </div>
@@ -2592,7 +2617,7 @@ const formGBM = reactive({
   // 前端不用把 targetFolder 强行传死，若后端需要可以传；这里演示也可以传
   targetFolder: './src/assets/shps',
 })
-// --- 全域风险脆弱性分析 ---
+// --- 全域风险分析 ---
 const dialogVisibleQuanYu = ref(false)
 const quanYuLoading = ref(false)
 const uploadRefsQuanYu = reactive({})
@@ -2633,7 +2658,7 @@ const submitQuanYu = () => {
   }
   dialogVisibleQuanYu.value = false
   quanYuLoading.value = true
-  ElMessage({ message: '正在计算全域风险脆弱性', type: 'info', duration: 0 })
+  ElMessage({ message: '正在计算全域风险', type: 'info', duration: 0 })
   setTimeout(() => {
     quanYuLoading.value = false
     ElMessage.closeAll()
@@ -2935,6 +2960,7 @@ let $emit = defineEmits([
   'proLayers',
   'terrainDrawStart',
   'terrainDrawCancel',
+  'terrainFeaturesChange',
   'dataLayerToggle',
   'dangerLevelFileChange',
   'dangerLevelRefresh',
@@ -3361,8 +3387,6 @@ function resolveTimeParams(stepValue, durationValue, label = '本模型') {
 const terrainRegulationConfigs = reactive([
   {
     kind: 'chain',
-    visible: false,
-    helpVisible: false,
     title: '灾害链断链调控技术',
     tagline: '关键链节阻截',
     accent: '#5ab0ff',
@@ -3377,8 +3401,6 @@ const terrainRegulationConfigs = reactive([
   },
   {
     kind: 'alpha_barrier',
-    visible: false,
-    helpVisible: false,
     title: '冰川泥石流沿程调控技术',
     tagline: '手绘挡墙原生拦挡',
     accent: '#f4a261',
@@ -3490,59 +3512,128 @@ const resetBarrierAlphaInputs = () => {
   })
 }
 
-const terrainPolygon = ref([])
+const terrainBarriers = ref([])
+const activeTerrainBarrierId = ref('')
+const terrainDrawingBarrierId = ref('')
 const terrainKind = ref('')
-const terrainRaise = ref('20')
 const terrainDrawing = ref(false)
 const terrainRunning = ref(false)
-const terrainStatusText = computed(() => {
-  if (terrainDrawing.value) return '绘制中：左键逐点、右键结束'
-  const n = terrainPolygon.value.length
-  return n >= 3 ? '已绘制 ' + n + ' 个顶点' : '尚未绘制封闭范围'
+let terrainBarrierSeq = 0
+
+const terrainRegulationVisible = ref(false)
+const regulationMode = ref('chain')
+const regulationHelpVisible = ref(false)
+const activeTerrainConfig = computed(
+  () => terrainRegulationConfigs.find(item => item.kind === regulationMode.value) || terrainRegulationConfigs[0],
+)
+
+const defaultTerrainRaise = kind => (kind === 'alpha_barrier' ? '15' : '20')
+const createTerrainBarrier = kind => ({
+  id: `barrier_${Date.now()}_${++terrainBarrierSeq}`,
+  polygon: [],
+  raise: defaultTerrainRaise(kind),
 })
+const emitTerrainFeatures = () => {
+  const features = terrainBarriers.value
+    .filter(item => Array.isArray(item.polygon) && item.polygon.length >= 3)
+    .map(item => ({
+      id: item.id,
+      polygon: item.polygon.map(p => [Number(p[0]), Number(p[1])]),
+      raise: Number(item.raise) || 0,
+    }))
+  $emit('terrainFeaturesChange', features)
+}
+const resetTerrainBarriers = kind => {
+  terrainBarrierSeq = 0
+  terrainBarriers.value = [createTerrainBarrier(kind)]
+  activeTerrainBarrierId.value = terrainBarriers.value[0].id
+  terrainDrawingBarrierId.value = ''
+  terrainDrawing.value = false
+  emitTerrainFeatures()
+}
+const addTerrainBarrier = () => {
+  const barrier = createTerrainBarrier(regulationMode.value)
+  terrainBarriers.value.push(barrier)
+  activeTerrainBarrierId.value = barrier.id
+  emitTerrainFeatures()
+}
+const removeTerrainBarrier = id => {
+  terrainBarriers.value = terrainBarriers.value.filter(item => item.id !== id)
+  if (activeTerrainBarrierId.value === id) {
+    activeTerrainBarrierId.value = terrainBarriers.value[0]?.id || ''
+  }
+  if (terrainDrawingBarrierId.value === id) {
+    terrainDrawingBarrierId.value = ''
+    terrainDrawing.value = false
+    $emit('terrainDrawCancel')
+  }
+  emitTerrainFeatures()
+}
+const clearTerrainBarriers = () => {
+  terrainBarriers.value = []
+  activeTerrainBarrierId.value = ''
+  terrainDrawingBarrierId.value = ''
+  terrainDrawing.value = false
+  emitTerrainFeatures()
+}
 
 const openTerrainRegulation = kind => {
-  const cfg = terrainRegulationConfigs.find(item => item.kind === kind)
-  if (!cfg) return
-  terrainPolygon.value = []
-  terrainDrawing.value = false
-  terrainKind.value = kind
-  terrainRaise.value = '20'
+  const nextKind = terrainRegulationConfigs.some(item => item.kind === kind) ? kind : 'chain'
+  regulationMode.value = nextKind
+  terrainKind.value = nextKind
+  regulationHelpVisible.value = false
   barrierAlphaTimeStep.value = '10'
   barrierAlphaDuration.value = '200'
   // 每次重新进入功能：清空本面板上一次的输入（两个面板互不影响）
-  resetTerrainInputs(kind)
-  cfg.visible = true
+  resetTerrainInputs(nextKind)
+  resetTerrainBarriers(nextKind)
+  terrainRegulationVisible.value = true
 }
 
-const startTerrainDraw = kind => {
-  const cfg = terrainRegulationConfigs.find(item => item.kind === kind)
+const handleRegulationModeChange = kind => {
+  if (!terrainRegulationConfigs.some(item => item.kind === kind)) return
+  regulationMode.value = kind
   terrainKind.value = kind
-  terrainPolygon.value = []
-  terrainDrawing.value = true
-  if (cfg) cfg.visible = false
-  $emit('terrainDrawStart', { kind })
-  ElMessage({ message: '在地图上左键逐点绘制范围，右键结束，Esc 取消', type: 'info', duration: 5000 })
+  resetTerrainBarriers(kind)
 }
 
-const clearTerrainDraw = () => {
-  terrainPolygon.value = []
-  terrainDrawing.value = false
-  $emit('terrainDrawCancel')
+const startTerrainDrawForBarrier = barrierId => {
+  const barrier = terrainBarriers.value.find(item => item.id === barrierId)
+  if (!barrier) return
+  activeTerrainBarrierId.value = barrierId
+  terrainDrawingBarrierId.value = barrierId
+  terrainKind.value = regulationMode.value
+  terrainDrawing.value = true
+  terrainRegulationVisible.value = false
+  $emit('terrainDrawStart', { kind: regulationMode.value, barrierId })
+  ElMessage({ message: '在地图上左键逐点绘制范围，右键结束，Esc 取消', type: 'info', duration: 5000 })
 }
 
 // MapHome 手绘结束后回传顶点（WGS84 经纬度数组）
 const onTerrainPolygonDrawn = points => {
-  terrainPolygon.value = Array.isArray(points) ? points : []
+  const ring = Array.isArray(points) ? points : []
+  const barrierId = terrainDrawingBarrierId.value
+  let barrier = terrainBarriers.value.find(item => item.id === barrierId)
+  if (!barrier && ring.length >= 3) {
+    barrier = createTerrainBarrier(regulationMode.value)
+    barrier.polygon = ring
+    terrainBarriers.value.push(barrier)
+    activeTerrainBarrierId.value = barrier.id
+  } else if (barrier) {
+    barrier.polygon = ring
+  }
+  terrainDrawingBarrierId.value = ''
   terrainDrawing.value = false
-  const cfg = terrainRegulationConfigs.find(item => item.kind === terrainKind.value)
-  if (cfg) cfg.visible = true
+  regulationMode.value = terrainKind.value || regulationMode.value
+  terrainRegulationVisible.value = true
+  emitTerrainFeatures()
 }
 
 const onTerrainDrawCancelled = () => {
+  terrainDrawingBarrierId.value = ''
   terrainDrawing.value = false
-  const cfg = terrainRegulationConfigs.find(item => item.kind === terrainKind.value)
-  if (cfg) cfg.visible = true
+  regulationMode.value = terrainKind.value || regulationMode.value
+  terrainRegulationVisible.value = true
 }
 
 
@@ -3556,8 +3647,10 @@ const onTerrainDrawCancelled = () => {
 const notifyTerrainEdits = (edits, name = '调控范围', meta = null) => {
   const list = Array.isArray(edits) ? edits : []
   const cells = list.reduce((sum, item) => sum + (Number(item && item.cells) || 0), 0)
-  const raise = Number(list.length ? list[0].raise : NaN)
-  const raiseText = Number.isFinite(raise) ? raise + ' m' : '--'
+  const raiseValues = list.map(item => Number(item && item.raise)).filter(Number.isFinite)
+  const raiseText = list.length > 1
+    ? list.length + ' 处（高度 ' + raiseValues.map(v => v + ' m').join(' / ') + '）'
+    : (raiseValues.length ? raiseValues[0] + ' m' : '--')
   if (!(cells > 0)) {
     ElMessage({
       message:
@@ -3739,21 +3832,28 @@ const submitAlphaBarrier = async terrainEdits => {
 }
 
 const submitTerrainRegulation = async kind => {
-  if (terrainPolygon.value.length < 3) {
-    ElMessage({ message: '请先在地图上手绘一个封闭范围（至少 3 个顶点）', type: 'warning', duration: 4000 })
+  const barriers = Array.isArray(terrainBarriers.value) ? terrainBarriers.value : []
+  if (!barriers.length) {
+    ElMessage({ message: '请先添加至少一处拦挡范围', type: 'warning', duration: 4000 })
     return
   }
-  const raise = proNumber(terrainRaise.value, NaN)
-  if (!Number.isFinite(raise) || raise <= 0) {
-    ElMessage({ message: '请输入大于 0 的加高值（米）', type: 'warning', duration: 4000 })
+  const undrawn = barriers.find(item => !Array.isArray(item.polygon) || item.polygon.length < 3)
+  if (undrawn) {
+    ElMessage({ message: '有拦挡尚未绘制封闭范围（至少 3 个顶点）', type: 'warning', duration: 4000 })
     return
   }
-  const terrainEdits = [
-    {
-      polygon: terrainPolygon.value.map(p => [Number(p[0]), Number(p[1])]),
+  const terrainEdits = []
+  for (const barrier of barriers) {
+    const raise = proNumber(barrier.raise, NaN)
+    if (!Number.isFinite(raise) || raise <= 0) {
+      ElMessage({ message: '拦挡高度必须大于 0', type: 'warning', duration: 4000 })
+      return
+    }
+    terrainEdits.push({
+      polygon: barrier.polygon.map(p => [Number(p[0]), Number(p[1])]),
       raise,
-    },
-  ]
+    })
+  }
   terrainRunning.value = true
   try {
     // 断链调控走冰岩崩动力学模型（Pro），沿程调控走 DepthAveraged2D 拦挡链路
@@ -3764,8 +3864,8 @@ const submitTerrainRegulation = async kind => {
       ok = await submitChainRegulation(terrainEdits)
     }
     if (ok === true) {
-      const cfg = terrainRegulationConfigs.find(item => item.kind === kind)
-      if (cfg) cfg.visible = false
+      terrainRegulationVisible.value = false
+      emitTerrainFeatures()
     }
   } finally {
     terrainRunning.value = false
@@ -4082,8 +4182,7 @@ const loadRegulationHistory = item => {
     return
   }
   regulationHistoryVisible.value = false
-  const cfg = terrainRegulationConfigs.find(c => c.kind === regulationHistoryKind.value)
-  if (cfg) cfg.visible = false
+  terrainRegulationVisible.value = false
   if (regulationHistoryKind.value === 'alpha_barrier') {
     $emit('alphaLayers', {
       label: '冰川泥石流沿程调控技术',
@@ -4658,7 +4757,7 @@ const resetSdpInputs = () => {
   uploadOutputRef.value?.clearFiles?.()
 }
 
-// 全域风险脆弱性分析
+// 全域风险分析
 const resetQuanYuInputs = () => {
   if (quanYuLoading.value) return
   new Set([...Object.keys(quanYuFiles), ...Object.keys(quanYuFileNames)]).forEach(key => {
@@ -4668,7 +4767,7 @@ const resetQuanYuInputs = () => {
   Object.values(uploadRefsQuanYu).forEach(refItem => refItem?.clearFiles?.())
 }
 
-// 基于位移监测滑坡预警（测试版）
+// 冰岩崩坡体位移监测预警（测试版）
 const resetInverseVInputs = () => {
   Object.assign(form_inverseV, {
     name: '',
@@ -4965,6 +5064,49 @@ const resetSeismicInputs = () => {
 .terrain-status {
   color: #ffd166;
   font-size: 12px;
+}
+.terrain-barrier-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 260px;
+  overflow: auto;
+}
+.terrain-barrier-item {
+  padding: 8px 10px;
+  border: 1px solid rgba(90, 176, 255, 0.22);
+  border-radius: 8px;
+  background: rgba(5, 20, 36, 0.42);
+}
+.terrain-barrier-item.is-active {
+  border-color: rgba(83, 190, 255, 0.65);
+  box-shadow: inset 0 0 0 1px rgba(83, 190, 255, 0.25);
+}
+.terrain-barrier-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.terrain-barrier-index {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+}
+.terrain-barrier-state {
+  flex: 1;
+  color: #9fc6e6;
+  font-size: 12px;
+}
+.terrain-barrier-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+.terrain-barrier-form {
+  margin-top: 8px;
+}
+.terrain-barrier-form :deep(.el-form-item) {
+  margin-bottom: 0;
 }
 .terrain-form {
   margin-top: 14px;

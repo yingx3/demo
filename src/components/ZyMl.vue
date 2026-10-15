@@ -780,7 +780,12 @@ const handleClick = (node, data) => {
   --el-fill-color-blank: transparent;
   --el-tree-node-content-height: 30px;
   font-size: 16px;
-  color: white;
+  --el-tree-text-color: #ffffff;
+  color: #ffffff;
+}
+:deep(.el-tree-node__content),
+:deep(.el-tree-node__label) {
+  color: #ffffff !important;
 }
 :deep(.el-tree-node:focus > .el-tree-node__content) {
   background-color: transparent; //激活颜色

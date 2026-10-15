@@ -8,6 +8,24 @@
           <component :is="Component" />
         </router-view>
       </div>
+      <div class="map-widget-layer">
+        <div class="map-compass-widget">
+          <div class="compass-dial" :style="{ transform: `rotate(${compassRotation}deg)` }">
+            <span class="compass-cardinal compass-north">N</span>
+            <span class="compass-cardinal compass-south">S</span>
+            <span class="compass-needle compass-needle-north"></span>
+            <span class="compass-needle compass-needle-south"></span>
+            <span class="compass-center"></span>
+          </div>
+        </div>
+        <div class="map-scalebar-widget">
+          <div class="scalebar-track" :style="{ width: scaleBarWidth + 'px' }"></div>
+          <div class="scalebar-values" :style="{ width: scaleBarWidth + 'px' }">
+            <span>0</span>
+            <span>{{ scaleBarValue }} {{ scaleBarUnit }}</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -15,6 +33,7 @@
 <script setup>
 import { ref, shallowRef, provide, onMounted, onBeforeUnmount } from 'vue'
 import * as Cesium from 'cesium'
+import { chooseMapScale } from '../utils/mapScale.js'
 
 // Cesium Viewer 及 scene/globe/terrainProvider 等内部对象绝不能被 Vue 深度响应式代理。
 // 否则 Cesium 内部（raw）与外部 viewer.value（Proxy）会混用同一棵 TileAvailability
@@ -26,6 +45,12 @@ provide('cesiumViewer', viewer)
 const DESIGN_WIDTH = 1920
 const DESIGN_HEIGHT = 1080
 const scale = ref(1)
+const compassRotation = ref(0)
+const scaleBarWidth = ref(120)
+const scaleBarValue = ref('100')
+const scaleBarUnit = ref('km')
+let mapWidgetPostRender = null
+let lastScaleBarUpdate = 0
 const updateScale = () => {
   const w = window.innerWidth
   const h = window.innerHeight
@@ -34,6 +59,60 @@ const updateScale = () => {
     return
   }
   scale.value = Math.min(w / DESIGN_WIDTH, h / DESIGN_HEIGHT)
+}
+
+const updateMapWidgets = () => {
+  const currentViewer = viewer.value
+  if (!currentViewer || currentViewer.isDestroyed()) return
+
+  compassRotation.value = -Cesium.Math.toDegrees(
+    currentViewer.camera.heading || 0,
+  )
+
+  const now = performance.now()
+  if (now - lastScaleBarUpdate < 150) return
+  lastScaleBarUpdate = now
+
+  const scene = currentViewer.scene
+  const canvas = scene.canvas
+  const width = canvas.clientWidth || canvas.width || 1
+  const height = canvas.clientHeight || canvas.height || 1
+  const camera = currentViewer.camera
+  const center = new Cesium.Cartesian2(width / 2, height / 2)
+  const ray = camera.getPickRay(center)
+  const hit = ray && scene.globe ? scene.globe.pick(ray, scene) : null
+
+  let distance = hit
+    ? Cesium.Cartesian3.distance(camera.positionWC, hit)
+    : camera.positionCartographic?.height
+  if (!Number.isFinite(distance) || distance <= 0) {
+    const carto = scene.globe?.ellipsoid
+      ? scene.globe.ellipsoid.cartesianToCartographic(camera.positionWC)
+      : null
+    distance = carto?.height || 1000
+  }
+
+  let metersPerPixel
+  const frustum = camera.frustum
+  if (frustum instanceof Cesium.PerspectiveFrustum) {
+    metersPerPixel = (2 * distance * Math.tan(frustum.fovy / 2)) / height
+  } else if (frustum instanceof Cesium.OrthographicFrustum) {
+    metersPerPixel = frustum.width / width
+  } else {
+    metersPerPixel = distance / height
+  }
+  if (!Number.isFinite(metersPerPixel) || metersPerPixel <= 0) {
+    metersPerPixel = 1
+  }
+
+  const targetWidth = 128
+  const selected = chooseMapScale(metersPerPixel * targetWidth)
+  scaleBarWidth.value = Math.max(
+    42,
+    Math.min(targetWidth + 24, selected.meters / metersPerPixel),
+  )
+  scaleBarValue.value = selected.valueText
+  scaleBarUnit.value = selected.unit
 }
 
 onMounted(async () => {
@@ -150,6 +229,20 @@ onMounted(async () => {
 
   viewer.value.cesiumWidget.creditContainer.style.display = 'none'
 
+  // 初始定位中国：视角中心约 104°E, 35°N，显示亚洲及中国全境。
+  viewer.value.camera.setView({
+    destination: Cesium.Cartesian3.fromDegrees(104.0, 35.0, 15000000),
+    orientation: {
+      heading: 0,
+      pitch: -Cesium.Math.PI_OVER_TWO,
+      roll: 0,
+    },
+  })
+
+  mapWidgetPostRender = updateMapWidgets
+  viewer.value.scene.postRender.addEventListener(mapWidgetPostRender)
+  updateMapWidgets()
+
   try {
     const infoBoxFrame = viewer.value?.infoBox?.frame
     if (infoBoxFrame && typeof infoBoxFrame.setAttribute === 'function') {
@@ -177,6 +270,14 @@ onBeforeUnmount(() => {
     clearInterval(terrainRefreshTimer)
     terrainRefreshTimer = null
   }
+  if (
+    mapWidgetPostRender &&
+    viewer.value &&
+    !viewer.value.isDestroyed()
+  ) {
+    viewer.value.scene.postRender.removeEventListener(mapWidgetPostRender)
+  }
+  mapWidgetPostRender = null
   if (viewer.value && !viewer.value.isDestroyed()) {
     viewer.value.destroy()
     viewer.value = null
@@ -233,6 +334,131 @@ onBeforeUnmount(() => {
   .screen-root {
     transform: translate(-50%, 0) scale(1);
   }
+}
+
+.map-widget-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.map-compass-widget {
+  position: absolute;
+  left: 430px;
+  top: 88px;
+  width: 100px;
+  height: 100px;
+  transform: scale(0.6);
+  transform-origin: top left;
+}
+
+.compass-dial {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgba(56, 225, 255, 0.82);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(7, 40, 70, 0.96) 0 38%, rgba(4, 19, 38, 0.96) 39% 100%);
+  box-shadow:
+    0 0 12px rgba(56, 225, 255, 0.28),
+    inset 0 0 12px rgba(56, 225, 255, 0.16);
+  transition: transform 120ms linear;
+}
+
+.compass-dial::after {
+  content: '';
+  position: absolute;
+  inset: 13px;
+  border: 1px solid rgba(56, 225, 255, 0.24);
+  border-radius: 50%;
+}
+
+.compass-cardinal {
+  position: absolute;
+  z-index: 2;
+  font-size: 11px;
+  line-height: 1;
+  color: #b9edff;
+  text-shadow: 0 0 4px rgba(56, 225, 255, 0.7);
+}
+
+.compass-north { left: 44px; top: 5px; color: #ff6b6b; font-weight: 700; }
+.compass-east { right: 6px; top: 43px; }
+.compass-south { left: 45px; bottom: 5px; }
+.compass-west { left: 6px; top: 43px; }
+
+.compass-needle {
+  position: absolute;
+  z-index: 1;
+  left: 43px;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  filter: drop-shadow(0 0 4px rgba(56, 225, 255, 0.55));
+}
+
+.compass-needle-north {
+  top: 18px;
+  border-bottom: 27px solid #ff6b6b;
+}
+
+.compass-needle-south {
+  bottom: 18px;
+  border-top: 27px solid #38e1ff;
+}
+
+.compass-center {
+  position: absolute;
+  z-index: 3;
+  left: 45px;
+  top: 45px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #dff8ff;
+  border-radius: 50%;
+  background: #0b3658;
+  box-shadow: 0 0 7px rgba(56, 225, 255, 0.85);
+}
+
+.map-scalebar-widget {
+  position: absolute;
+  right: 80px;
+  bottom: 150px;
+  width: 250px;
+  height: auto;
+  box-sizing: border-box;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: #dff8ff;
+}
+
+.scalebar-track {
+  height: 10px;
+  margin-top: 0;
+  border: 1px solid rgba(56, 225, 255, 0.82);
+  background: repeating-linear-gradient(
+    90deg,
+    #38e1ff 0 25%,
+    #082d50 25% 50%
+  );
+  box-shadow: 0 0 7px rgba(56, 225, 255, 0.22);
+  transition: width 120ms linear;
+}
+
+.scalebar-values {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3px;
+  color: #a9dff2;
+  font-size: 11px;
+  line-height: 14px;
+  text-shadow: 0 0 4px #031428, 0 1px 2px #031428;
 }
 
 .top-container {

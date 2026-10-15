@@ -40,6 +40,7 @@
       @proLayers="proLayers"
       @terrainDrawStart="startTerrainDraw"
       @terrainDrawCancel="cancelTerrainDraw"
+      @terrainFeaturesChange="renderTerrainFeatureFootprints"
       @floodLayers="floodLayers"
       @floodLayersTest="floodLayersTest"
       @forecast="foreCast"
@@ -512,7 +513,7 @@
       ></div>
     </div>
   </el-dialog>
-  <!-- 地震仪原数据波形弹窗（冰川泥石流监测预警 / 位移监测滑坡预警 共用）
+  <!-- 地震仪原数据波形弹窗（冰川泥石流监测预警 / 冰岩崩坡体位移监测预警 共用）
        只展示原始波形，不再提供「比率 / 结果」切换 -->
   <el-dialog
     v-model="drawer"
@@ -545,6 +546,12 @@
     width="860px"
     top="8vh"
     append-to-body
+    draggable
+    :modal="false"
+    modal-penetrable
+    :lock-scroll="false"
+    :close-on-click-modal="false"
+    class="weather-history-dialog"
     @opened="onWeatherDialogOpened"
   >
     <!-- [新增] 近 7 天气象趋势折线图（ECharts：温度/湿度/风速/降水） -->
@@ -630,6 +637,7 @@ import {
 } from 'vue'
 import { reactive } from 'vue'
 import { getGeojson } from '../common/api/api.js'
+import { isForecastEntity } from './mapPickGuards.js'
 import Dialog from '../js/dialog.js'
 import ZhJc from '../components/ZhJc.vue'
 import LeTh from '../components/LeTh.vue'
@@ -699,6 +707,7 @@ const weatherTableTitle = ref('近 7 天气象数据')
 const weatherTableRows = ref([])
 const weatherChartRef = ref(null) // [新增] 近 7 天趋势图容器
 let weatherChartInstance = null // [新增] ECharts 实例
+let weatherDialogResizeObserver = null
 const dujiangImagePopup = ref(null) // 堵江点图片弹窗
 const dujiangClickHandler = ref(null) // 堵江点点击事件处理器
 // 历史灾害点 / 古灾害链：事件详情卡片（平台统一样式，居中显示）
@@ -3166,6 +3175,7 @@ const leThRef = ref(null)
 let terrainDrawHandler = null
 let terrainDrawLonLat = []
 let terrainDrawEntities = []
+let terrainFeatureEntities = []
 
 const removeTerrainDrawEntities = () => {
   const v = viewer.value
@@ -3179,6 +3189,85 @@ const removeTerrainDrawEntities = () => {
     })
   }
   terrainDrawEntities = []
+}
+
+const TERRAIN_FEATURE_COLORS = ['#ffb703', '#38e1ff', '#ff6b6b', '#8ce99a', '#c084fc']
+
+const clearTerrainFeatureFootprints = () => {
+  const v = viewer.value
+  if (v) {
+    terrainFeatureEntities.forEach(entity => {
+      try {
+        v.entities.remove(entity)
+      } catch (e) {
+        /* ignore */
+      }
+    })
+  }
+  terrainFeatureEntities = []
+}
+
+const renderTerrainFeatureFootprints = features => {
+  clearTerrainFeatureFootprints()
+  const v = viewer.value
+  if (!v || !Array.isArray(features) || !features.length) return
+  features.forEach((feature, index) => {
+    const ring = Array.isArray(feature?.polygon) ? feature.polygon : []
+    const lonLat = ring
+      .map(pt => [Number(pt?.[0]), Number(pt?.[1])])
+      .filter(pt => Number.isFinite(pt[0]) && Number.isFinite(pt[1]))
+    if (lonLat.length < 3) return
+    const positions = lonLat.map(pt => Cesium.Cartesian3.fromDegrees(pt[0], pt[1]))
+    const color = Cesium.Color.fromCssColorString(
+      TERRAIN_FEATURE_COLORS[index % TERRAIN_FEATURE_COLORS.length],
+    )
+    const suffix = feature.id || String(index)
+    try {
+      terrainFeatureEntities.push(
+        v.entities.add({
+          id: 'terrainFeature_' + suffix,
+          polygon: {
+            hierarchy: new Cesium.PolygonHierarchy(positions),
+            material: color.withAlpha(0.32),
+            outline: true,
+            outlineColor: color,
+            outlineWidth: 3,
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          },
+        }),
+      )
+      terrainFeatureEntities.push(
+        v.entities.add({
+          id: 'terrainFeatureEdge_' + suffix,
+          polyline: {
+            positions: positions.concat([positions[0]]),
+            width: 4,
+            material: color,
+            clampToGround: true,
+          },
+        }),
+      )
+      const center = Cesium.BoundingSphere.fromPoints(positions).center
+      terrainFeatureEntities.push(
+        v.entities.add({
+          id: 'terrainFeatureLabel_' + suffix,
+          position: center,
+          label: {
+            text: '拦挡' + (index + 1) + (feature.raise ? ' · ' + feature.raise + 'm' : ''),
+            font: '12px sans-serif',
+            fillColor: color,
+            outlineColor: Cesium.Color.fromCssColorString('#061b33'),
+            outlineWidth: 3,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          },
+        }),
+      )
+    } catch (e) {
+      console.warn('[terrainFeatures] 拦挡范围绘制失败:', e)
+    }
+  })
 }
 
 const destroyTerrainDrawHandler = () => {
@@ -3272,6 +3361,7 @@ const finishTerrainDraw = () => {
   if (leThRef.value && leThRef.value.onTerrainPolygonDrawn) {
     leThRef.value.onTerrainPolygonDrawn(points)
   }
+  removeTerrainDrawEntities()
   ElMessage({ message: '已绘制封闭范围（' + points.length + ' 个顶点）', type: 'success', duration: 3000 })
 }
 
@@ -3588,10 +3678,9 @@ const foreCast = params => {
     forecastHandler.setInputAction(movement => {
       const picked = viewer.value.scene.pick(movement.position)
       if (!Cesium.defined(picked) || !picked.id) return
-      const pickedPointId = picked.id.pointId
-      if (pickedPointId === undefined || pickedPointId === null) return
-      currentPointId.value = pickedPointId
-      showForecastInfoPopup(picked.id.forecastInfo, pickedPointId)
+      if (!isForecastEntity(picked.id)) return
+      currentPointId.value = picked.id.pointId
+      showForecastInfoPopup(picked.id.forecastInfo, picked.id.pointId)
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
   }
 
@@ -4466,7 +4555,7 @@ const removeLayer_glacier = () => {
 // GeoServer WMS 配置（发布数据后修改以下常量即可）
 // ============================================================
 const GEOSERVER_WMS_URL = '/geoserver/ZHLXT/wms'
-const FULL_RISK_RESULT_LAYER = 'linzi_hazard' // 全域风险脆弱性分析结果
+const FULL_RISK_RESULT_LAYER = 'linzi_hazard' // 全域风险分析结果
 const TIANDITU_KEY = '20d721cc10d01248502d5e90f817ca93' // TODO: 替换为实际的天地图 tk
 const BUILDING_WMS_LAYER = 'ygBuildings' // 图层名
 const POPULATION_WMS_LAYER = 'pop_LinZhi' // 图层名
@@ -6038,6 +6127,14 @@ const renderWeatherChart = async () => {
 // [新增] 弹窗完全打开后再自适应一次尺寸
 const onWeatherDialogOpened = () => {
   if (weatherChartInstance) weatherChartInstance.resize()
+  const dialogEl = document.querySelector('.el-dialog.weather-history-dialog')
+  if (dialogEl && window.ResizeObserver) {
+    weatherDialogResizeObserver?.disconnect()
+    weatherDialogResizeObserver = new ResizeObserver(() => {
+      if (weatherChartInstance) weatherChartInstance.resize()
+    })
+    weatherDialogResizeObserver.observe(dialogEl)
+  }
 }
 // 使用 utils/wkb.js 中的 parseWKB
 
@@ -6103,7 +6200,7 @@ const showPopupWithDetection = async (
   // 设置弹出窗口位置
   popup.style.left = `${viewer.value.canvas.clientWidth / 2 + 100}px`
   popup.style.top = `${viewer.value.canvas.clientHeight / 2}px`
-  popup.style.display = 'block'
+  popup.style.display = 'flex'
 
   // 更新弹出窗口内容，包含检测结果
   const status = detected ? '检测到泥石流风险！' : '未检测到泥石流'
@@ -6384,16 +6481,22 @@ const updateDzdPredictText = result => {
 // 打开地震动弹窗：波形 + 模型识别结果
 const openDzdPanel = async entity => {
   const device = entity?.dzdDevice || {}
-  popup.style.left = `${viewer.value.canvas.clientWidth / 2 + 100}px`
-  popup.style.top = `${viewer.value.canvas.clientHeight / 2 - 180}px`
-  popup.style.display = 'block'
+  if (!popupPositioned) {
+    popup.style.left = '24px'
+    popup.style.top = '120px'
+    popupPositioned = true
+  }
+  popup.style.display = 'flex'
   popup.innerHTML = `
+    <div data-drag-handle style="display:flex;align-items:center;justify-content:space-between;cursor:move;user-select:none;font-weight:600;margin:-4px 0 8px;color:#0b2c4d;">
+      <span>地震动监测设备</span>
+      <span id="dzdCloseBtn" style="cursor:pointer;padding:0 4px;font-size:18px;line-height:1;">×</span>
+    </div>
     <p><strong>设备：</strong>${device.name || device.deviceId || '-'}（ID ${
       device.deviceId || '-'
     }）</p>
     <p id="dzdPredictStatus">识别中…</p>
-    <div id="chart" style="width: 520px; height: 320px;"></div>
-    <button id="dzdCloseBtn">关闭</button>
+    <div id="chart" style="flex: 1; min-height: 220px; width: 100%;"></div>
   `
   const closeBtn = document.getElementById('dzdCloseBtn')
   if (closeBtn) closeBtn.addEventListener('click', hidePopup)
@@ -6519,14 +6622,76 @@ const removeLayer_DZDdevice = () => {
   removeLayerDZDdevice(viewer.value, layer17_guid)
 }
 
+let popupPositioned = false
+let dzdPopupResizeObserver = null
+
+function makeDraggable(el) {
+  let startX = 0
+  let startY = 0
+  let startLeft = 0
+  let startTop = 0
+  let dragging = false
+
+  el.addEventListener('mousedown', event => {
+    if (event.button !== 0) return
+    const handle = event.target?.closest?.('[data-drag-handle]')
+    if (!handle) return
+
+    const rect = el.getBoundingClientRect()
+    startX = event.clientX
+    startY = event.clientY
+    startLeft = rect.left
+    startTop = rect.top
+    dragging = true
+
+    const onMove = moveEvent => {
+      if (!dragging) return
+      const maxLeft = Math.max(0, window.innerWidth - el.offsetWidth)
+      const maxTop = Math.max(0, window.innerHeight - el.offsetHeight)
+      const left = Math.min(Math.max(0, startLeft + moveEvent.clientX - startX), maxLeft)
+      const top = Math.min(Math.max(0, startTop + moveEvent.clientY - startY), maxTop)
+      el.style.left = `${left}px`
+      el.style.top = `${top}px`
+      moveEvent.preventDefault()
+    }
+
+    const onUp = () => {
+      dragging = false
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+      document.body.style.userSelect = ''
+    }
+
+    document.body.style.userSelect = 'none'
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+    event.preventDefault()
+  })
+}
+
 const popup = document.createElement('div')
-popup.style.position = 'absolute'
+popup.style.position = 'fixed'
+popup.style.boxSizing = 'border-box'
+popup.style.display = 'none'
+popup.style.flexDirection = 'column'
+popup.style.width = '560px'
+popup.style.height = '460px'
+popup.style.minWidth = '420px'
+popup.style.minHeight = '340px'
+popup.style.resize = 'both'
+popup.style.overflow = 'hidden'
 popup.style.backgroundColor = 'white'
 popup.style.border = '1px solid #ccc'
 popup.style.padding = '10px'
 popup.style.zIndex = '1000'
-popup.style.display = 'none'
 document.body.appendChild(popup)
+makeDraggable(popup)
+if (window.ResizeObserver) {
+  dzdPopupResizeObserver = new ResizeObserver(() => {
+    if (dzdWaveChart) dzdWaveChart.resize()
+  })
+  dzdPopupResizeObserver.observe(popup)
+}
 
 const showPopup = async entity => {
   const position = entity.position.getValue(Cesium.JulianDate.now())
@@ -6537,7 +6702,7 @@ const showPopup = async entity => {
   // 设置弹出窗口位置
   popup.style.left = `${viewer.value.canvas.clientWidth / 2 + 100}px`
   popup.style.top = `${viewer.value.canvas.clientHeight / 2}px`
-  popup.style.display = 'block'
+  popup.style.display = 'flex'
 
   // 更新弹出窗口内容（预留图表容器）
   popup.innerHTML = `
@@ -8242,7 +8407,7 @@ const handler_seismic = ref('')
 var echarts_data = ''
 const seismicIsDL = ref(false)
 const seismicWaveMeta = ref('')
-// 冰川泥石流监测预警结果点位：与「基于位移检测滑坡预警」保持同一套样式
+// 冰川泥石流监测预警结果点位：与「冰岩崩坡体位移监测预警」保持同一套样式
 // （按等级着色的图钉 + 警戒圈 + 等级标签；点击弹平台风格卡片，卡片内可看地震仪原数据）
 const SEISMIC_POINT_ID = 'seismic_warning_point'
 
@@ -8436,12 +8601,12 @@ function handleSeismicResult(payload) {
   }
 }
 
-// 全域风险脆弱性分析结果处理
+// 全域风险分析结果处理
 let fullRiskResultLayer = null // 结果 WMS 图层引用
 let fullRiskLegendEl = null    // 图例 DOM 元素
 
 const handleFullRiskAnalysis = () => {
-  console.log('[全域风险脆弱性分析] 开始加载结果图层')
+  console.log('[全域风险分析] 开始加载结果图层')
   // 移除旧的结果图层
   if (fullRiskResultLayer && !fullRiskResultLayer.isDestroyed?.()) {
     viewer.value.scene.imageryLayers.remove(fullRiskResultLayer)
@@ -8466,7 +8631,7 @@ const handleFullRiskAnalysis = () => {
   fullRiskLegendEl = document.createElement('div')
   fullRiskLegendEl.style.cssText = 'position:fixed;bottom:30px;left:30px;z-index:999;background:rgba(0,0,0,0.8);border:1px solid #38e1ff;border-radius:6px;padding:10px 14px;color:#fff;font-size:12px;'
   fullRiskLegendEl.innerHTML = `
-    <div style="font-weight:600;margin-bottom:6px;color:#38e1ff">全域风险脆弱性</div>
+    <div style="font-weight:600;margin-bottom:6px;color:#38e1ff">全域风险分析</div>
     ${colors.map(c => `
       <div style="display:flex;align-items:center;gap:8px;margin:3px 0">
         <span style="width:20px;height:14px;background:${c.color};border-radius:2px;flex-shrink:0"></span>
@@ -8612,6 +8777,11 @@ onBeforeUnmount(() => {
     displacementChart.dispose()
     displacementChart = null
   }
+  weatherDialogResizeObserver?.disconnect()
+  weatherDialogResizeObserver = null
+  dzdPopupResizeObserver?.disconnect()
+  dzdPopupResizeObserver = null
+  clearTerrainFeatureFootprints()
 })
 </script>
 <style lang="scss" scoped>
@@ -8669,6 +8839,19 @@ onBeforeUnmount(() => {
 }
 .map-home-overlay > * {
   pointer-events: auto;
+}
+
+:global(.el-dialog.weather-history-dialog) {
+  margin-left: auto;
+  margin-right: 24px;
+  min-width: 620px;
+  min-height: 380px;
+  resize: both;
+  overflow: hidden;
+}
+
+:global(.el-dialog.weather-history-dialog .el-dialog__body) {
+  overflow: auto;
 }
 
 /* 地震仪原数据波形弹窗：平台深蓝风格 + 居中显示（不要贴边） */

@@ -45,6 +45,7 @@
   },
   "devDependencies": {
     "@types/sockjs-client": "^1.5.4",
+    "@vitejs/plugin-basic-ssl": "1.2.0",
     "@vitejs/plugin-vue": "^5.1.2",
     "axios": "^1.1.2",
     "element-plus": "^2.13.6",
