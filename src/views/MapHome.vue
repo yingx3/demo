@@ -3053,7 +3053,8 @@ const betaLayers = async (payload, label = '冰川泥石流动力学模型', opt
         })
 
         // 时间轴动画：rAF 驱动 + 帧间 alpha 交叉淡化，避免硬切造成的闪烁
-        const FRAME_INTERVAL_MS = 400
+        // 每帧停留时间（毫秒），数值越小播放越快；当前 250ms/帧
+        const FRAME_INTERVAL_MS = 250
         const CROSSFADE_MS = Math.min(180, Math.max(80, Math.round(FRAME_INTERVAL_MS * 0.4)))
         const setLayerAlpha = (layer, value) => {
           if (layer) layer.alpha = Math.max(0, Math.min(1, value))
