@@ -3054,8 +3054,9 @@ const betaLayers = async (payload, label = '冰川泥石流动力学模型', opt
 
         // 时间轴动画：rAF 驱动 + 两段式过渡，避免两个图层同时半透明造成亮度忽浅忽深
         const FRAME_INTERVAL_MS = 250 // 每帧停留时间（毫秒）
-        const FADE_IN_MS = Math.min(140, Math.max(60, Math.round(FRAME_INTERVAL_MS * 0.4)))
-        const FADE_OUT_MS = Math.min(100, Math.max(40, Math.round(FRAME_INTERVAL_MS * 0.25)))
+        const FADE_IN_MS = Math.min(120, Math.max(60, Math.round(FRAME_INTERVAL_MS * 0.36)))
+        // 把剩余的整段帧时间都留给旧帧淡出，避免旧帧多出的区域消失过快导致亮暗跳变
+        const FADE_OUT_MS = Math.max(80, FRAME_INTERVAL_MS - FADE_IN_MS)
         const setLayerAlpha = (layer, value) => {
           if (layer) layer.alpha = Math.max(0, Math.min(1, value))
         }
