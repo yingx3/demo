@@ -3052,24 +3052,30 @@ const betaLayers = async (payload, label = '冰川泥石流动力学模型', opt
           layer.alpha = i === 0 ? 1 : 0
         })
 
-        // 时间轴动画：rAF 驱动 + 帧间 alpha 交叉淡化，避免硬切造成的闪烁
-        // 每帧停留时间（毫秒），数值越小播放越快；当前 250ms/帧
-        const FRAME_INTERVAL_MS = 250
-        const CROSSFADE_MS = Math.min(180, Math.max(80, Math.round(FRAME_INTERVAL_MS * 0.4)))
+        // 时间轴动画：rAF 驱动 + 两段式过渡，避免两个图层同时半透明造成亮度忽浅忽深
+        const FRAME_INTERVAL_MS = 250 // 每帧停留时间（毫秒）
+        const FADE_IN_MS = Math.min(140, Math.max(60, Math.round(FRAME_INTERVAL_MS * 0.4)))
+        const FADE_OUT_MS = Math.min(100, Math.max(40, Math.round(FRAME_INTERVAL_MS * 0.25)))
         const setLayerAlpha = (layer, value) => {
           if (layer) layer.alpha = Math.max(0, Math.min(1, value))
         }
         let lastAdvance = performance.now()
         let fading = false
         let fadeStart = 0
+        let fadePhase = 'in'
         let fromIndex = 0
         let toIndex = 0
         const beginCrossfade = now => {
           fromIndex = betaDrapeIndex
           toIndex = (betaDrapeIndex + 1) % betaDrapeLayers.length
+          const outgoing = betaDrapeLayers[fromIndex]
           const incoming = betaDrapeLayers[toIndex]
           try { layerCollection.raiseToTop(incoming) } catch (e) {}
+          // 第一段：旧帧保持不透明，新帧淡入，避免中间整体变浅
+          setLayerAlpha(outgoing, 1)
+          setLayerAlpha(incoming, 0)
           fading = true
+          fadePhase = 'in'
           fadeStart = now
         }
         const step = now => {
@@ -3083,12 +3089,28 @@ const betaLayers = async (payload, label = '冰川泥石流动力学模型', opt
             if (now - lastAdvance >= FRAME_INTERVAL_MS) beginCrossfade(now)
             return
           }
-          const progress = Math.min(1, (now - fadeStart) / CROSSFADE_MS)
-          setLayerAlpha(betaDrapeLayers[fromIndex], 1 - progress)
-          setLayerAlpha(betaDrapeLayers[toIndex], progress)
+
+          const outgoing = betaDrapeLayers[fromIndex]
+          const incoming = betaDrapeLayers[toIndex]
+
+          if (fadePhase === 'in') {
+            const progress = Math.min(1, (now - fadeStart) / FADE_IN_MS)
+            setLayerAlpha(outgoing, 1)
+            setLayerAlpha(incoming, progress)
+            if (progress >= 1) {
+              fadePhase = 'out'
+              fadeStart = now
+            }
+            return
+          }
+
+          // 第二段：新帧保持不透明，旧帧淡出；亮度由新帧决定，不会再下陷
+          const progress = Math.min(1, (now - fadeStart) / FADE_OUT_MS)
+          setLayerAlpha(outgoing, 1 - progress)
+          setLayerAlpha(incoming, 1)
           if (progress >= 1) {
-            setLayerAlpha(betaDrapeLayers[fromIndex], 0)
-            setLayerAlpha(betaDrapeLayers[toIndex], 1)
+            setLayerAlpha(outgoing, 0)
+            setLayerAlpha(incoming, 1)
             betaDrapeIndex = toIndex
             fading = false
             lastAdvance = now
