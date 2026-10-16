@@ -149,7 +149,7 @@
                 </el-form>
               </div>
             </template>
-            <a href="#"> <img src="../assets/img/yellow.png" class="position-toolbar-icon" alt="" /></a>
+            <a href="#"> <img src="../assets/img/position.png" alt="" /></a>
           </a-popover>
         </a-popover>
 
@@ -9266,11 +9266,6 @@ onBeforeUnmount(() => {
   transform: scale(0.7);
 }
 
-.map-home-overlay .control .control_specific .position-toolbar-icon {
-  width: 32px;
-  height: 32px;
-  object-fit: contain;
-}
 
 .cesium-infoBox {
   right: 450px !important;
