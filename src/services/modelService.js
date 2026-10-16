@@ -119,6 +119,25 @@ const modelService = {
       })
       .then(r => r.data)
   },
+  getSdpHistory(params) {
+    return axios
+      .get('/testapi/admin/user/sdp_history', { params, timeout: 60000 })
+      .then(r => r.data)
+  },
+  getSdpResult(runId) {
+    return axios
+      .get('/testapi/admin/user/sdp_result', { params: { runId }, timeout: 60000 })
+      .then(r => r.data)
+  },
+  // 用 SDP 启动物源结果生成动力学模型输入（z.asc 由用户上传，SDP 结果重投影后生成 h.asc）
+  prepareAlphaFromSdp(formData) {
+    return axios
+      .post('/testapi/admin/user/prepare_alpha_from_sdp', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 600000,
+      })
+      .then(r => r.data)
+  },
 }
 
 export default modelService

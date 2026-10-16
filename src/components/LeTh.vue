@@ -544,10 +544,36 @@
                 <p>其余动力学参数由后端方案 A 统一配置；两份 ASC 必须使用相同网格、范围和像元尺寸。</p>
               </div>
             </el-dialog>
+            <p class="quanyu-section-label">输入来源</p>
+            <el-radio-group v-model="alphaSourceType" size="small">
+              <el-radio value="local">本地文件上传</el-radio>
+              <el-radio value="sdp">使用启动物源结果</el-radio>
+            </el-radio-group>
             <p class="quanyu-section-label">输入数据</p>
             <el-form label-position="top" class="quanyu-form">
               <el-form-item
-                v-for="item in alphaFileItems"
+                v-if="alphaSourceType === 'sdp'"
+                label="启动物源结果（SDP）"
+                label-position="top"
+                class="quanyu-file-field"
+              >
+                <el-input
+                  :model-value="alphaSdpLabel"
+                  placeholder="从启动物源历史结果中选择"
+                  readonly
+                >
+                  <template #append>
+                    <el-button
+                      class="quanyu-upload-trigger"
+                      @click="openSdpHistory('alpha')"
+                    >
+                      <i class="iconfont icon-daoru"></i>
+                    </el-button>
+                  </template>
+                </el-input>
+              </el-form-item>
+              <el-form-item
+                v-for="item in alphaVisibleFileItems"
                 :key="item.key"
                 :label="item.label"
                 class="quanyu-file-field"
@@ -573,6 +599,14 @@
               </el-form-item>
               <el-form-item label="时间范围 (s)" class="quanyu-file-field">
                 <el-input v-model="alphaDuration" placeholder="200" />
+              </el-form-item>
+              <el-form-item v-if="alphaSourceType === 'sdp'" label="物源厚度比例 (%)"
+                class="quanyu-file-field"
+              >
+                <el-input :model-value="100" disabled />
+              </el-form-item>
+              <el-form-item v-else label="物源厚度比例 (%)" class="quanyu-file-field">
+                <el-input v-model="alphaThicknessRatio" placeholder="100" />
               </el-form-item>
               <el-form-item label="模拟名称" class="quanyu-file-field">
                 <el-input v-model="alphaSimName" placeholder="例如：色东普-基准工况" maxlength="60" />
@@ -609,6 +643,7 @@
                       <th>帧数</th>
                       <th>最大流深 (m)</th>
                       <th>时间范围 (s)</th>
+                      <th>物源比例 (%)</th>
                       <th>操作</th>
                     </tr>
                   </thead>
@@ -620,6 +655,7 @@
                       <td>{{ item.frameCount }}</td>
                       <td>{{ Number(item.globalMax || 0).toFixed(2) }}</td>
                       <td>{{ item.duration || '—' }}</td>
+                      <td>{{ item.sourceThicknessRatio != null ? item.sourceThicknessRatio : '—' }}</td>
                       <td>
                         <el-button v-if="alphaHistoryPlayable(item)" link type="primary" @click="loadAlphaHistory(item)"
                           >加载</el-button
@@ -1460,6 +1496,13 @@
                   placeholder="0.2"
                 />
               </el-form-item>
+              <el-form-item label="模拟名称" class="quanyu-file-field">
+                <el-input
+                  v-model="sdpSimName"
+                  placeholder="例如：色东普-启动物源-基准"
+                  maxlength="60"
+                />
+              </el-form-item>
               <el-form-item class="quanyu-actions">
                 <el-button
                   class="quanyu-submit"
@@ -1469,6 +1512,9 @@
                 >
                   {{ sdpLoading ? '计算中...' : '运行' }}
                 </el-button>
+                <el-button class="quanyu-cancel" @click="openSdpHistory('preview')"
+                  >历史结果</el-button
+                >
                 <el-button class="quanyu-cancel" @click="dialogVisibleSDP = false"
                   >取消</el-button
                 >
@@ -2578,6 +2624,54 @@
         <img :src="previewSrc" alt="结果示例大图" />
       </div>
     </Teleport>
+    <el-dialog
+      v-model="sdpHistoryVisible"
+      class="model-help-dialog"
+      width="1000px"
+      :close-on-click-modal="false"
+      top="80px"
+    >
+      <template #title>
+        <div class="model-help-head">
+          <span class="model-help-title">泥石流启动物源计算模型 · 历史结果</span>
+          <span class="model-help-subtitle">
+            {{ sdpHistoryPurpose === 'alpha' ? '选择一次结果作为冰川泥石流动力学模型的启动物源' : '任意一次结果可直接在地图上查看' }}
+          </span>
+        </div>
+      </template>
+      <div class="help-body">
+        <p v-if="sdpHistoryLoading" style="margin: 6px 0">历史结果读取中...</p>
+        <p v-else-if="!sdpHistoryItems.length" style="margin: 6px 0">暂无历史结果。</p>
+        <table v-else class="pro-history-table">
+          <thead>
+            <tr>
+              <th>运行时间</th>
+              <th>名称</th>
+              <th>最大物源厚度 (m)</th>
+              <th>平均厚度 (m)</th>
+              <th>物源体积 (万 m³)</th>
+              <th>任务ID</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in sdpHistoryItems" :key="item.runId">
+              <td>{{ item.createdAtText || '—' }}</td>
+              <td>{{ item.name || '—' }}</td>
+              <td>{{ sdpStat(item, 'max').toFixed(2) }}</td>
+              <td>{{ sdpStat(item, 'mean').toFixed(2) }}</td>
+              <td>{{ (sdpVolume(item) / 10000).toFixed(2) }}</td>
+              <td class="history-jobid">{{ item.runId }}</td>
+              <td>
+                <el-button link type="primary" @click="useSdpHistoryItem(item)">
+                  {{ sdpHistoryPurpose === 'alpha' ? '选用' : '查看' }}
+                </el-button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </el-dialog>
   </div>
 </template>
 <script setup>
@@ -2701,6 +2795,17 @@ alphaFileItems.forEach(item => {
   alphaFileNames[item.key] = ''
   alphaFiles[item.key] = null
 })
+// 输入来源：本地文件上传 / 使用 SDP 启动物源结果
+const alphaSourceType = ref('local')
+const alphaThicknessRatio = ref('100')
+const alphaSdpRunId = ref('')
+const alphaSdpName = ref('')
+const alphaVisibleFileItems = computed(() =>
+  alphaSourceType.value === 'sdp' ? alphaFileItems.filter(item => item.key === 'z') : alphaFileItems,
+)
+const alphaSdpLabel = computed(() =>
+  alphaSdpRunId.value ? (alphaSdpName.value || '未命名') + ' · ' + alphaSdpRunId.value : '',
+)
 const handleAlphaFile = (key, uploadFile, uploadFiles) => {
   const f = (uploadFiles && uploadFiles[0]?.raw) || uploadFile.raw || uploadFile
   alphaFiles[key] = f
@@ -2714,6 +2819,10 @@ const resetAlphaInputs = () => {
   alphaTimeStep.value = '10'
   alphaDuration.value = '200'
   alphaSimName.value = ''
+  alphaSourceType.value = 'local'
+  alphaThicknessRatio.value = '100'
+  alphaSdpRunId.value = ''
+  alphaSdpName.value = ''
   new Set([...Object.keys(alphaFiles), ...Object.keys(alphaFileNames)]).forEach(key => {
     delete alphaFiles[key]
     delete alphaFileNames[key]
@@ -2775,6 +2884,56 @@ const fileOutputPath = ref('')
 const formSDP = reactive({
   ice_content: '0.2',
 })
+const sdpSimName = ref('')
+
+// SDP 历史结果：既可直接查看，也可作为冰川泥石流动力学模型的启动物源
+const sdpHistoryVisible = ref(false)
+const sdpHistoryLoading = ref(false)
+const sdpHistoryItems = ref([])
+const sdpHistoryPurpose = ref('preview')
+const openSdpHistory = async purpose => {
+  sdpHistoryPurpose.value = purpose === 'alpha' ? 'alpha' : 'preview'
+  sdpHistoryVisible.value = true
+  sdpHistoryLoading.value = true
+  try {
+    const resp = await modelService.getSdpHistory({ limit: 50 })
+    sdpHistoryItems.value = Array.isArray(resp?.items) ? resp.items : []
+  } catch (error) {
+    sdpHistoryItems.value = []
+    ElMessage({ message: 'SDP 历史结果读取失败: ' + (error?.message || error), type: 'error' })
+  } finally {
+    sdpHistoryLoading.value = false
+  }
+}
+const sdpStat = (item, key) => {
+  const value = Number(item && item.stats ? item.stats[key] : NaN)
+  return Number.isFinite(value) ? value : 0
+}
+const sdpVolume = item => {
+  const value = Number(item && item.stats ? item.stats.volume : NaN)
+  return Number.isFinite(value) ? value : 0
+}
+const useSdpHistoryItem = async item => {
+  if (!item || !item.runId) return
+  if (sdpHistoryPurpose.value === 'alpha') {
+    alphaSdpRunId.value = item.runId
+    alphaSdpName.value = item.name || ''
+    sdpHistoryVisible.value = false
+    ElMessage({ message: '已选用启动物源结果: ' + (item.name || item.runId), type: 'success' })
+    return
+  }
+  try {
+    const frame = await modelService.getSdpResult(item.runId)
+    if (!frame || !frame.imageBase64) {
+      ElMessage({ message: '该结果缺少预览数据', type: 'warning' })
+      return
+    }
+    sdpHistoryVisible.value = false
+    $emit('openLayers', { sdpResult: frame })
+  } catch (error) {
+    ElMessage({ message: 'SDP 结果加载失败: ' + (error?.message || error), type: 'error' })
+  }
+}
 const triggerUploadRain = () => { uploadRainRef.value?.$el.querySelector('input[type=file]').click() }
 const triggerUploadTemp = () => { uploadTempRef.value?.$el.querySelector('input[type=file]').click() }
 const triggerUploadOutput = () => { uploadOutputRef.value?.$el.querySelector('input[type=file]').click() }
@@ -2803,6 +2962,7 @@ const submitSDP = async () => {
     // if (fileRainPath.value) params.rain_path = fileRainPath.value
     // if (fileTempPath.value) params.temp_path = fileTempPath.value
     if (formSDP.ice_content) params.ice_content = parseFloat(formSDP.ice_content)
+    if (sdpSimName.value.trim()) params.name = sdpSimName.value.trim()
     const result = await modelService.postSDPStart(params)
     console.log('[SDP] 后端返回:', result)
     sdpLoading.value = false
@@ -3143,7 +3303,12 @@ async function submitAlpha() {
     '冰川泥石流动力学模型',
   )
   if (!timing) return
-  const missing = alphaFileItems.filter(item => !alphaFiles[item.key])
+  const useSdp = alphaSourceType.value === 'sdp'
+  if (useSdp && !alphaSdpRunId.value) {
+    ElMessage({ message: '请选择启动物源结果（SDP）', type: 'warning' })
+    return
+  }
+  const missing = alphaVisibleFileItems.value.filter(item => !alphaFiles[item.key])
   if (missing.length > 0) {
     ElMessage({
       message: '请选择: ' + missing.map(item => item.label).join('、'),
@@ -3151,39 +3316,30 @@ async function submitAlpha() {
     })
     return
   }
+  const thicknessRatio = useSdp ? 100 : Number(alphaThicknessRatio.value) || 100
 
-  ElMessage({ message: '上传 alpha 模型输入数据...', type: 'info', duration: 0 })
+  ElMessage({
+    message: useSdp ? '生成启动物源输入并启动模拟...' : '上传 alpha 模型输入数据...',
+    type: 'info',
+    duration: 0,
+  })
   try {
-    const formData = new FormData()
-    const map = { z: 'z.asc', h: 'h.asc' }
-    for (const key of ['z', 'h']) {
-      const file = alphaFiles[key]
-      if (file) {
-        formData.append(
-          'files',
-          new File([file], map[key], { type: file.type || 'application/octet-stream' }),
-        )
-      }
-    }
-    const upload = await modelService.uploadAvaflowAlphaFiles(formData)
-    if (!upload || upload.status !== 'ok' || !upload.jobId) {
-      ElMessage.closeAll()
-      ElMessage({ message: upload?.message || '文件上传失败', type: 'error' })
-      return
-    }
+    const jobId = useSdp ? await prepareAlphaJobFromSdp() : await uploadAlphaLocalInputs()
+    if (!jobId) return
 
     const accepted = await modelService.runAvaflowAlpha({
-      jobId: upload.jobId,
+      jobId,
       timeStep: timing.timeStep,
       duration: timing.duration,
       name: alphaSimName.value.trim(),
+      sourceThicknessRatio: thicknessRatio,
     })
     ElMessage.closeAll()
     if (!accepted || accepted.status !== 'accepted' || !accepted.jobId) {
       ElMessage({ message: accepted?.message || '启动模拟失败', type: 'error' })
       return
     }
-    return await waitAvaflowAlphaResult(upload.jobId, '冰川泥石流动力学模型')
+    return await waitAvaflowAlphaResult(jobId, '冰川泥石流动力学模型')
   } catch (error) {
     ElMessage.closeAll()
     const detail = error.response?.data || error.message || error
@@ -3198,6 +3354,50 @@ async function submitAlpha() {
     $emit('alphaLayers', { result: null })
   }
 }
+
+// 本地文件上传：z.asc + h.asc 一起上传，返回 jobId
+async function uploadAlphaLocalInputs() {
+  const formData = new FormData()
+  const map = { z: 'z.asc', h: 'h.asc' }
+  for (const key of ['z', 'h']) {
+    const file = alphaFiles[key]
+    if (file) {
+      formData.append(
+        'files',
+        new File([file], map[key], { type: file.type || 'application/octet-stream' }),
+      )
+    }
+  }
+  const upload = await modelService.uploadAvaflowAlphaFiles(formData)
+  if (!upload || upload.status !== 'ok' || !upload.jobId) {
+    ElMessage.closeAll()
+    ElMessage({ message: upload?.message || '文件上传失败', type: 'error' })
+    return ''
+  }
+  return upload.jobId
+}
+
+// 使用 SDP 启动物源结果：z.asc 由用户上传，h.asc 由 SDP 结果重投影生成
+async function prepareAlphaJobFromSdp() {
+  const zFile = alphaFiles.z
+  if (!zFile) {
+    ElMessage({ message: '请上传 z.asc（地形高程）', type: 'warning' })
+    return ''
+  }
+  const formData = new FormData()
+  formData.append('zFile', new File([zFile], 'z.asc', { type: zFile.type || 'application/octet-stream' }))
+  formData.append('sdpRunId', alphaSdpRunId.value)
+  const name = alphaSimName.value.trim()
+  if (name) formData.append('name', name)
+  const prep = await modelService.prepareAlphaFromSdp(formData)
+  if (!prep || prep.status !== 'ok' || !prep.jobId) {
+    ElMessage.closeAll()
+    ElMessage({ message: prep?.message || '启动物源结果转换失败', type: 'error' })
+    return ''
+  }
+  return prep.jobId
+}
+
 
 async function sumbit_avainit() {
   ElMessage({ message: '顺层计算运行中...', type: 'success', duration: 0 })
@@ -4778,6 +4978,7 @@ const resetAvainitInputs = () => {
 const resetSdpInputs = () => {
   if (sdpLoading.value) return
   formSDP.ice_content = '0.2'
+  sdpSimName.value = ''
   fileNameRain.value = ''
   fileNameTemp.value = ''
   fileNameOutput.value = ''
