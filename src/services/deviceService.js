@@ -45,7 +45,7 @@ export async function addLayerDZDdevice(viewer, layerGuidRef, targetIds = [41109
           device.gps_high || 0
         ),
         billboard: {
-          image: '/ng/position.png',
+          image: '/ng/yellow.png',
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
           width: 32,
