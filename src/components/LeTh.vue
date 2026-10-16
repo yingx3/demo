@@ -539,6 +539,8 @@
                     <tr><td>物源厚度 h.asc</td><td>.asc</td><td>必填</td><td>初始泥石流物源分布，上传后重命名为 h.asc</td></tr>
                     <tr><td>时间步长</td><td>秒</td><td>10</td><td>输出和计算时间间隔，必须大于 0</td></tr>
                     <tr><td>时间范围</td><td>秒</td><td>200</td><td>模拟总时长，不能小于时间步长</td></tr>
+                    <tr><td>输入来源</td><td>本地文件上传 / 使用启动物源结果</td><td>本地文件上传</td><td>选择「使用启动物源结果」时只需上传 z.asc，h.asc 由 SDP 启动物源结果自动生成</td></tr>
+                    <tr><td>物源厚度比例</td><td>%</td><td>100</td><td>初始物源厚度按该比例削薄，100 = 不削薄；使用 SDP 结果时默认 100，可按需调小</td></tr>
                   </tbody>
                 </table>
                 <p>其余动力学参数由后端方案 A 统一配置；两份 ASC 必须使用相同网格、范围和像元尺寸。</p>
@@ -600,13 +602,16 @@
               <el-form-item label="时间范围 (s)" class="quanyu-file-field">
                 <el-input v-model="alphaDuration" placeholder="200" />
               </el-form-item>
-              <el-form-item v-if="alphaSourceType === 'sdp'" label="物源厚度比例 (%)"
-                class="quanyu-file-field"
-              >
-                <el-input :model-value="100" disabled />
-              </el-form-item>
-              <el-form-item v-else label="物源厚度比例 (%)" class="quanyu-file-field">
+              <el-form-item label="物源厚度比例 (%)" class="quanyu-file-field">
                 <el-input v-model="alphaThicknessRatio" placeholder="100" />
+              </el-form-item>
+              <el-form-item
+                v-if="alphaSourceType === 'sdp'"
+                class="quanyu-note"
+              >
+                <span>
+                  100 = 完整使用启动物源厚度；数值越小初始物源越薄、下泄与堆积规模越小。
+                </span>
               </el-form-item>
               <el-form-item label="模拟名称" class="quanyu-file-field">
                 <el-input v-model="alphaSimName" placeholder="例如：色东普-基准工况" maxlength="60" />
@@ -3316,7 +3321,11 @@ async function submitAlpha() {
     })
     return
   }
-  const thicknessRatio = useSdp ? 100 : Number(alphaThicknessRatio.value) || 100
+  const thicknessRatio = Number(alphaThicknessRatio.value) || 100
+  if (!(thicknessRatio > 0) || thicknessRatio > 100) {
+    ElMessage({ message: '物源厚度比例需在 (0, 100] 之间', type: 'warning' })
+    return
+  }
 
   ElMessage({
     message: useSdp ? '生成启动物源输入并启动模拟...' : '上传 alpha 模型输入数据...',
