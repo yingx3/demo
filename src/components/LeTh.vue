@@ -3031,6 +3031,8 @@ const form_bedding_wedget = reactive({
 const form_avainit_location = reactive({ longitude: '95.0020', latitude: '30.2354' })
 const avainitPolygon = ref([])
 const avainitDrawing = ref(false)
+// 由 MapHome 采样 Cesium 地形得到的真实坡向/坡度
+const avainitTerrainInfo = ref(null)
 const avainitSourceRatio = ref('100')
 const avainitPolygonArea = computed(() => {
   const ring = avainitPolygon.value
@@ -3052,7 +3054,17 @@ const avainitPolygonArea = computed(() => {
 const avainitRegionSummary = computed(() => {
   if (!avainitPolygon.value.length) return '未绘制源区'
   const area = avainitPolygonArea.value
-  return avainitPolygon.value.length + ' 个顶点 · 约 ' + (area / 1e6).toFixed(3) + ' km²'
+  let text = avainitPolygon.value.length + ' 个顶点 · 约 ' + (area / 1e6).toFixed(3) + ' km²'
+  const terrain = avainitTerrainInfo.value
+  if (terrain && Number.isFinite(Number(terrain.azimuth))) {
+    text +=
+      ' · 坡向 ' +
+      Math.round(Number(terrain.azimuth)) +
+      '° / 坡度 ' +
+      Number(terrain.slope || 0).toFixed(0) +
+      '°'
+  }
+  return text
 })
 const startAvainitRegionDraw = () => {
   avainitDrawing.value = true
@@ -3065,9 +3077,11 @@ const clearAvainitPolygon = () => {
 // MapHome 完成绘制后回调
 // 弹窗重新打开会触发 @open -> resetAvainitInputs，这里标记本次要保留刚绘制的源区
 let avainitKeepPolygonOnOpen = false
-const onAvainitPolygonDrawn = points => {
+const onAvainitPolygonDrawn = (points, terrain) => {
   avainitKeepPolygonOnOpen = true
   avainitPolygon.value = Array.isArray(points) ? points : []
+  avainitTerrainInfo.value =
+    terrain && Number.isFinite(Number(terrain.azimuth)) ? terrain : null
   avainitDrawing.value = false
   dialog_avainit.value = true
   ElMessage({ message: '源区已选取：' + avainitPolygon.value.length + ' 个顶点', type: 'success' })
@@ -3459,13 +3473,22 @@ async function prepareAlphaJobFromSdp() {
 
 const AVAINIT_MODE_LABELS = { 1: '顺层滑移', 2: '反倾', 3: '楔形' }
 
-const avainitRequest = (mode, form) => ({
-  ...form,
-  mode,
-  polygon: avainitPolygon.value,
-  ice_thickness: form_avainit.ice_thickness,
-  source_ratio: avainitSourceRatio.value,
-})
+const avainitRequest = (mode, form) => {
+  const terrain = avainitTerrainInfo.value
+  const payload = {
+    ...form,
+    mode,
+    polygon: avainitPolygon.value,
+    ice_thickness: form_avainit.ice_thickness,
+    source_ratio: avainitSourceRatio.value,
+  }
+  // 采样到真实坡向时传给后端，动画沿真实下坡方向推进；否则后端按长轴回退
+  if (terrain && Number.isFinite(Number(terrain.azimuth))) {
+    payload.flow_azimuth = Number(terrain.azimuth)
+    payload.dem_slope = Number(terrain.slope || 0)
+  }
+  return payload
+}
 
 async function runAvainitRegion(mode, form, emitName) {
   const label = AVAINIT_MODE_LABELS[mode] || '冰岩崩启动'
@@ -4998,6 +5021,7 @@ const resetFloodTestInputs = () => {
 const resetAvainitInputs = () => {
   if (!avainitKeepPolygonOnOpen) {
     avainitPolygon.value = []
+    avainitTerrainInfo.value = null
   }
   avainitKeepPolygonOnOpen = false
   avainitDrawing.value = false

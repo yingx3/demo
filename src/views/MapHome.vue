@@ -3517,8 +3517,116 @@ const renderTerrainDraw = () => {
   }
 }
 
-const finishTerrainDraw = () => {
+// 在多边形内采样地形，最小二乘拟合坡面，得到真实下坡方位角与坡度
+const pointInPolygon = (x, y, ring) => {
+  let inside = false
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = Number(ring[i][0])
+    const yi = Number(ring[i][1])
+    const xj = Number(ring[j][0])
+    const yj = Number(ring[j][1])
+    const crosses = yi > y !== yj > y
+    const xCross = ((xj - xi) * (y - yi)) / (yj - yi || 1e-12) + xi
+    if (crosses && x < xCross) inside = !inside
+  }
+  return inside
+}
+
+const sampleDownslopeInfo = async points => {
+  const v = viewer.value
+  const ring = Array.isArray(points) ? points : []
+  if (!v || ring.length < 3) return null
+  let minLon = Infinity
+  let minLat = Infinity
+  let maxLon = -Infinity
+  let maxLat = -Infinity
+  ring.forEach(p => {
+    const lon = Number(p[0])
+    const lat = Number(p[1])
+    if (!Number.isFinite(lon) || !Number.isFinite(lat)) return
+    minLon = Math.min(minLon, lon)
+    maxLon = Math.max(maxLon, lon)
+    minLat = Math.min(minLat, lat)
+    maxLat = Math.max(maxLat, lat)
+  })
+  if (!Number.isFinite(minLon) || !(maxLon > minLon) || !(maxLat > minLat)) return null
+
+  const samples = ring.map(p => [Number(p[0]), Number(p[1])])
+  const steps = 5
+  for (let i = 1; i < steps; i++) {
+    for (let j = 1; j < steps; j++) {
+      const lon = minLon + ((maxLon - minLon) * i) / steps
+      const lat = minLat + ((maxLat - minLat) * j) / steps
+      if (pointInPolygon(lon, lat, ring)) samples.push([lon, lat])
+    }
+  }
+  if (samples.length < 4) return null
+
+  let heights = null
+  try {
+    const cartos = samples.map(p => Cesium.Cartographic.fromDegrees(p[0], p[1]))
+    const sampled = await Promise.race([
+      Cesium.sampleTerrainMostDetailed(v.terrainProvider, cartos),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('terrain sampling timeout')), 4000),
+      ),
+    ])
+    heights = sampled.map(c => c.height)
+  } catch (e) {
+    console.warn('[avainit] terrain sampling fallback:', e?.message || e)
+    heights = samples.map(p => getGroundHeightMeters(p[0], p[1], 3000))
+  }
+
+  const valid = []
+  let minH = Infinity
+  let maxH = -Infinity
+  samples.forEach((p, i) => {
+    const h = Number(heights?.[i])
+    if (!Number.isFinite(h)) return
+    valid.push([p[0], p[1], h])
+    minH = Math.min(minH, h)
+    maxH = Math.max(maxH, h)
+  })
+  // 地形未加载（全场等高）时不做坡向推断，交由后端按长轴回退
+  if (valid.length < 4 || maxH - minH < 1.0) return null
+
+  const lon0 = valid.reduce((sum, p) => sum + p[0], 0) / valid.length
+  const lat0 = valid.reduce((sum, p) => sum + p[1], 0) / valid.length
+  const hMean = valid.reduce((sum, p) => sum + p[2], 0) / valid.length
+  const mPerLat = 111320
+  const mPerLon = 111320 * Math.cos((lat0 * Math.PI) / 180)
+  let sx2 = 0
+  let sy2 = 0
+  let sxy = 0
+  let sxh = 0
+  let syh = 0
+  valid.forEach(p => {
+    const x = (p[0] - lon0) * mPerLon
+    const y = (p[1] - lat0) * mPerLat
+    const dh = p[2] - hMean
+    sx2 += x * x
+    sy2 += y * y
+    sxy += x * y
+    sxh += x * dh
+    syh += y * dh
+  })
+  const det = sx2 * sy2 - sxy * sxy
+  if (!(Math.abs(det) > 1e-9)) return null
+  const gradEast = (sxh * sy2 - syh * sxy) / det
+  const gradNorth = (syh * sx2 - sxh * sxy) / det
+  const azimuth = (Math.atan2(-gradEast, -gradNorth) * 180) / Math.PI
+  const slope = (Math.atan(Math.hypot(gradEast, gradNorth)) * 180) / Math.PI
+  return {
+    azimuth: (azimuth + 360) % 360,
+    slope,
+    sampleCount: valid.length,
+    heightRange: maxH - minH,
+  }
+}
+
+const finishTerrainDraw = async () => {
   if (terrainDrawLonLat.length < 3) {
+
     ElMessage({
       message: '至少需要 3 个顶点才能封闭范围，请继续绘制或按 Esc 取消',
       type: 'warning',
@@ -3532,10 +3640,12 @@ const finishTerrainDraw = () => {
   renderTerrainDraw()
   terrainDrawLonLat = []
   if (terrainDrawPurpose === 'avainit') {
+    const terrain = await sampleDownslopeInfo(points)
     if (leThRef.value && leThRef.value.onAvainitPolygonDrawn) {
-      leThRef.value.onAvainitPolygonDrawn(points)
+      leThRef.value.onAvainitPolygonDrawn(points, terrain)
     }
   } else if (leThRef.value && leThRef.value.onTerrainPolygonDrawn) {
+
     leThRef.value.onTerrainPolygonDrawn(points)
   }
   terrainDrawPurpose = 'terrain'
