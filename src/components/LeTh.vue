@@ -3063,7 +3063,10 @@ const clearAvainitPolygon = () => {
   avainitPolygon.value = []
 }
 // MapHome 完成绘制后回调
+// 弹窗重新打开会触发 @open -> resetAvainitInputs，这里标记本次要保留刚绘制的源区
+let avainitKeepPolygonOnOpen = false
 const onAvainitPolygonDrawn = points => {
+  avainitKeepPolygonOnOpen = true
   avainitPolygon.value = Array.isArray(points) ? points : []
   avainitDrawing.value = false
   dialog_avainit.value = true
@@ -4993,7 +4996,10 @@ const resetFloodTestInputs = () => {
 
 // 冰岩崩起动模型（默认 / 反演 / 楔形三种模式共用弹窗）
 const resetAvainitInputs = () => {
-  avainitPolygon.value = []
+  if (!avainitKeepPolygonOnOpen) {
+    avainitPolygon.value = []
+  }
+  avainitKeepPolygonOnOpen = false
   avainitDrawing.value = false
   avainitSourceRatio.value = '100'
   Object.assign(form_avainit, {
