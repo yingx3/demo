@@ -102,6 +102,12 @@ const modelService = {
       .post('/testapi/admin/user/avainit', form, { timeout: 40000 })
       .then(r => r.data)
   },
+  // 冰岩崩启动模型：手绘源区 + 冰层厚度 + 物源比例
+  postAvainitRegion(form) {
+    return axios
+      .post('/testapi/admin/user/avainit_region', form, { timeout: 300000 })
+      .then(r => r.data)
+  },
     postInverse(form) {
     return axios
       .post('/testapi/admin/user/bedding_inverse', form, { timeout: 40000 })

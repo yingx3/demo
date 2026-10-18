@@ -1116,23 +1116,43 @@
                 <el-radio :value="3">楔形</el-radio>
               </el-radio-group>
             </div>
+                        <div class="avainit-location">
+              <div class="avainit-location-head">
+                <span class="avainit-field-caption">源区范围</span>
+                <span class="avainit-location-hint">在地图上依次点击绘制封闭多边形，右键或 Esc 结束</span>
+              </div>
+              <div class="avainit-region-row">
+                <el-button
+                  size="small"
+                  type="primary"
+                  :plain="!avainitDrawing"
+                  @click="startAvainitRegionDraw"
+                >
+                  {{ avainitDrawing ? '正在绘制…' : avainitPolygon.length ? '重新绘制源区' : '在地图上绘制源区' }}
+                </el-button>
+                <el-button v-if="avainitPolygon.length" size="small" @click="clearAvainitPolygon">
+                  清除
+                </el-button>
+                <span class="avainit-region-summary">{{ avainitRegionSummary }}</span>
+              </div>
+            </div>
             <div class="avainit-location">
               <div class="avainit-location-head">
-                <span class="avainit-field-caption">源区定位</span>
-                <span class="avainit-location-hint">WGS84 · 十进制度</span>
+                <span class="avainit-field-caption">启动参数</span>
+                <span class="avainit-location-hint">冰层厚度与物源比例作用于全部破坏模式</span>
               </div>
               <div class="avainit-location-grid">
                 <div class="avainit-location-item">
-                  <span>经度</span>
-                  <el-input v-model="form_avainit_location.longitude" placeholder="例如 95.0020" />
+                  <span>冰层厚度 (m)</span>
+                  <el-input v-model="form_avainit.ice_thickness" placeholder="4" />
                 </div>
                 <div class="avainit-location-item">
-                  <span>纬度</span>
-                  <el-input v-model="form_avainit_location.latitude" placeholder="例如 30.2354" />
+                  <span>物源比例 (%)</span>
+                  <el-input v-model="avainitSourceRatio" placeholder="100" />
                 </div>
               </div>
             </div>
-            <el-form
+<el-form
               :model="form_avainit"
               label-position="top"
               class="form_flood form_avainit"
@@ -1150,13 +1170,7 @@
               <el-form-item label="滑面角" class="form1_flood">
                 <el-input v-model="form_avainit.slide_angle" placeholder="20" />
               </el-form-item>
-              <el-form-item label="冰层厚度" class="form1_flood">
-                <el-input
-                  v-model="form_avainit.ice_thickness"
-                  placeholder="20"
-                />
-              </el-form-item>
-              <el-form-item label="裂隙高度" class="form1_flood">
+                            <el-form-item label="裂隙高度" class="form1_flood">
                 <el-input
                   v-model="form_avainit.fissure_height"
                   placeholder="20"
@@ -1224,13 +1238,7 @@
                   placeholder="20"
                 />
               </el-form-item>
-              <el-form-item label="冰层厚度" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_inverted.ice_thickness"
-                  placeholder="20"
-                />
-              </el-form-item>
-              <el-form-item label="边坡高度" class="form1_flood">
+                            <el-form-item label="边坡高度" class="form1_flood">
                 <el-input
                   v-model="form_bedding_inverted.slope_height"
                   placeholder="20"
@@ -1301,13 +1309,7 @@
                   placeholder="20"
                 />
               </el-form-item>
-              <el-form-item label="冰层厚度" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_wedget.ice_thickness"
-                  placeholder="20"
-                />
-              </el-form-item>
-              <el-form-item label="面积" class="form1_flood">
+                            <el-form-item label="面积" class="form1_flood">
                 <el-input
                   v-model="form_bedding_wedget.square"
                   placeholder="20"
@@ -3027,6 +3029,50 @@ const form_bedding_wedget = reactive({
   melt_duration: '240',
 })
 const form_avainit_location = reactive({ longitude: '95.0020', latitude: '30.2354' })
+const avainitPolygon = ref([])
+const avainitDrawing = ref(false)
+const avainitSourceRatio = ref('100')
+const avainitPolygonArea = computed(() => {
+  const ring = avainitPolygon.value
+  if (ring.length < 3) return 0
+  const lat0 = ring.reduce((sum, p) => sum + Number(p[1]), 0) / ring.length
+  const mPerLat = 111320
+  const mPerLon = 111320 * Math.cos((lat0 * Math.PI) / 180)
+  let acc = 0
+  for (let i = 0; i < ring.length; i++) {
+    const j = (i + 1) % ring.length
+    const x1 = Number(ring[i][0]) * mPerLon
+    const y1 = Number(ring[i][1]) * mPerLat
+    const x2 = Number(ring[j][0]) * mPerLon
+    const y2 = Number(ring[j][1]) * mPerLat
+    acc += x1 * y2 - x2 * y1
+  }
+  return Math.abs(acc) / 2
+})
+const avainitRegionSummary = computed(() => {
+  if (!avainitPolygon.value.length) return '未绘制源区'
+  const area = avainitPolygonArea.value
+  return avainitPolygon.value.length + ' 个顶点 · 约 ' + (area / 1e6).toFixed(3) + ' km²'
+})
+const startAvainitRegionDraw = () => {
+  avainitDrawing.value = true
+  dialog_avainit.value = false
+  $emit('terrainDrawStart', { purpose: 'avainit' })
+}
+const clearAvainitPolygon = () => {
+  avainitPolygon.value = []
+}
+// MapHome 完成绘制后回调
+const onAvainitPolygonDrawn = points => {
+  avainitPolygon.value = Array.isArray(points) ? points : []
+  avainitDrawing.value = false
+  dialog_avainit.value = true
+  ElMessage({ message: '源区已选取：' + avainitPolygon.value.length + ' 个顶点', type: 'success' })
+}
+const onAvainitDrawCancelled = () => {
+  avainitDrawing.value = false
+  dialog_avainit.value = true
+}
 const radio_avainit = ref(1)
 const seismicModelType = ref('ml') // ml | dl
 const dialogVisibleSeismic = ref(false)
@@ -3408,51 +3454,57 @@ async function prepareAlphaJobFromSdp() {
 }
 
 
-async function sumbit_avainit() {
-  ElMessage({ message: '顺层计算运行中...', type: 'success', duration: 0 })
+const AVAINIT_MODE_LABELS = { 1: '顺层滑移', 2: '反倾', 3: '楔形' }
+
+const avainitRequest = (mode, form) => ({
+  ...form,
+  mode,
+  polygon: avainitPolygon.value,
+  ice_thickness: form_avainit.ice_thickness,
+  source_ratio: avainitSourceRatio.value,
+})
+
+async function runAvainitRegion(mode, form, emitName) {
+  const label = AVAINIT_MODE_LABELS[mode] || '冰岩崩启动'
+  if (avainitPolygon.value.length < 3) {
+    ElMessage({ message: '请先在地图上绘制源区（至少 3 个顶点）', type: 'warning' })
+    return
+  }
+  ElMessage({ message: label + ' 稳定性计算中...', type: 'info', duration: 0 })
   try {
-    const res = await modelService.postAvainit(form_avainit)
+    const res = await modelService.postAvainitRegion(avainitRequest(mode, form))
     ElMessage.closeAll()
-    ElMessage({ message: '顺层计算完成', type: 'success' })
+    const minFos = Number(res?.minFos)
+    const stable = res?.stable !== false && !(minFos < 1)
+    ElMessage({
+      message:
+        label +
+        '：' +
+        (stable ? '源区稳定' : '源区失稳，正在播放启动动画') +
+        '（minFoS=' + (Number.isFinite(minFos) ? minFos.toFixed(2) : '—') + '）',
+      type: stable ? 'success' : 'warning',
+      duration: 6000,
+    })
     dialog_avainit.value = false
-    $emit('bedding_parallel', { mode: '顺层', form: { ...form_avainit }, result: res, location: { ...form_avainit_location } })
+    $emit(emitName, { mode: label, form: { ...form }, result: res })
   } catch (e) {
     ElMessage.closeAll()
     const emsg = e.response?.data || e.message || e
-        ElMessage({ message: '顺层计算失败: ' + (typeof emsg === 'string' ? emsg : JSON.stringify(emsg)), type: 'error' })
-    console.error('sumbit_avainit error:', e)
+    ElMessage({
+      message: label + ' 计算失败: ' + (typeof emsg === 'string' ? emsg : JSON.stringify(emsg)),
+      type: 'error',
+      duration: 8000,
+    })
+    console.error('runAvainitRegion error:', e)
   }
 }
-async function sumbit_inverse() {
-  ElMessage({ message: '反倾计算运行中...', type: 'success', duration: 0 })
-  try {
-    const res = await modelService.postInverse(form_bedding_inverted)
-    ElMessage.closeAll()
-    ElMessage({ message: '反倾计算完成', type: 'success' })
-    dialog_avainit.value = false
-    $emit('bedding_inverted', { mode: '反倾', form: { ...form_bedding_inverted }, result: res, location: { ...form_avainit_location } })
-  } catch (e) {
-    ElMessage.closeAll()
-    const emsg = e.response?.data || e.message || e
-        ElMessage({ message: '反倾计算失败: ' + (typeof emsg === 'string' ? emsg : JSON.stringify(emsg)), type: 'error' })
-    console.error('sumbit_inverse error:', e)
-  }
-}
-async function sumbit_wedget() {
-  ElMessage({ message: '楔形计算运行中...', type: 'success', duration: 0 })
-  try {
-    const res = await modelService.postWedge(form_bedding_wedget)
-    ElMessage.closeAll()
-    ElMessage({ message: '楔形计算完成', type: 'success' })
-    dialog_avainit.value = false
-    $emit('bedding_wedget', { mode: '楔形', form: { ...form_bedding_wedget }, result: res, location: { ...form_avainit_location } })
-  } catch (e) {
-    ElMessage.closeAll()
-    const emsg = e.response?.data || e.message || e
-        ElMessage({ message: '楔形计算失败: ' + (typeof emsg === 'string' ? emsg : JSON.stringify(emsg)), type: 'error' })
-    console.error('sumbit_wedget error:', e)
-  }
-}
+
+const sumbit_avainit = () => runAvainitRegion(1, form_avainit, 'bedding_parallel')
+const sumbit_inverse = () => runAvainitRegion(2, form_bedding_inverted, 'bedding_inverted')
+const sumbit_wedget = () => runAvainitRegion(3, form_bedding_wedget, 'bedding_wedget')
+
+
+
 // 风险源模型计算进度：与「冰岩崩动力学模型」一致的做法——常驻消息里显示「计算中 XX%」。
 // 后端是单次长请求、拿不到真实进度，这里按已用时间估算（先快后慢，上限 95%），
 // 每 2 秒刷新一次，避免消息闪烁。
@@ -4108,7 +4160,7 @@ const submitTerrainRegulation = async kind => {
   }
 }
 
-defineExpose({ onTerrainPolygonDrawn, onTerrainDrawCancelled })
+defineExpose({ onTerrainPolygonDrawn, onTerrainDrawCancelled, onAvainitPolygonDrawn, onAvainitDrawCancelled })
 
 // 参数传回后端 -> 后端调用数值内核 -> 输出 ASC 帧 -> 前端渲染
 // 传参化改造：冰岩崩动力学模型与灾害链断链调控各自使用本面板的输入状态，互不共享
@@ -4941,6 +4993,9 @@ const resetFloodTestInputs = () => {
 
 // 冰岩崩起动模型（默认 / 反演 / 楔形三种模式共用弹窗）
 const resetAvainitInputs = () => {
+  avainitPolygon.value = []
+  avainitDrawing.value = false
+  avainitSourceRatio.value = '100'
   Object.assign(form_avainit, {
     slope_angle: '60',
     slide_angle: '15',
@@ -5750,6 +5805,18 @@ const resetSeismicInputs = () => {
   color: rgba(160, 196, 226, 0.65);
   font-size: 11px;
   letter-spacing: 0.5px;
+}
+
+.avainit-region-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.avainit-region-summary {
+  color: rgba(160, 196, 226, 0.78);
+  font-size: 12px;
 }
 
 .avainit-location-grid {

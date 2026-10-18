@@ -2343,78 +2343,117 @@ function showSdpResultLayer(sdpResult) {
   img.src = `data:image/png;base64,${imageBase64}`
 }
 
-let fosChartDom = null
-let fosChartExpr = null
-function showBeddingFos(payload) {
-  const mode = payload?.mode || '冰岩崩启动'
-  const result = payload?.result || {}
-  const t = Array.isArray(result.t) ? result.t : []
-  const fos = Array.isArray(result.fos) ? result.fos : []
-  if (!t.length || !fos.length) { ElMessage({ message: '冰岩崩结果无效', type: 'warning' }); return }
+let avainitRegionEntities = []
 
-  if (fosChartDom) { fosChartDom.remove(); fosChartDom = null }
-  if (fosChartExpr) { fosChartExpr.dispose(); fosChartExpr = null }
-
-  const isSeconds = t.length > 0 && Math.max(...t) > 100000
-  const x = t.map(s => (isSeconds ? +(Number(s) / 86400).toFixed(2) : Number(s)))
-
-  const el = document.createElement('div')
-  el.style.cssText = 'position:fixed;bottom:30px;right:30px;z-index:999;width:560px;height:380px;background:rgba(0,0,0,0.85);border:1px solid #38e1ff;border-radius:6px;padding:8px 10px;color:#fff;'
-  el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;font-weight:600;margin-bottom:4px;color:#38e1ff">
-      <span>${mode} · 安全系数 FoS 随时间变化</span>
-      <span id="bedding-fos-close" style="cursor:pointer;color:#999">&times;</span>
-    </div>
-    <div id="bedding-fos-chart" style="width:100%;height:330px"></div>
-  `
-  document.body.appendChild(el)
-  fosChartDom = el
-  const chart = echarts.init(el.querySelector('#bedding-fos-chart'))
-  fosChartExpr = chart
-  chart.setOption({
-    tooltip: { trigger: 'axis' },
-    grid: { left: 55, right: 20, top: 24, bottom: 40 },
-    xAxis: { type: 'category', name: isSeconds ? '时间 (天)' : '时间', data: x.map(v => String(v)) },
-    yAxis: { type: 'value', name: 'FoS', scale: true },
-    series: [{
-      name: 'FoS', type: 'line', data: fos, symbol: 'none', smooth: true, lineStyle: { width: 2 },
-      markLine: {
-        symbol: 'none', silent: true,
-        data: [{ yAxis: 1, name: '临界 FoS=1', lineStyle: { color: 'red', type: 'dashed' } }],
-        label: { formatter: '临界 FoS=1', color: '#ff8080', position: 'insideEndTop' },
-      },
-    }],
-  })
-  el.querySelector('#bedding-fos-close').onclick = () => {
-    el.remove(); fosChartDom = null
-    if (fosChartExpr) { fosChartExpr.dispose(); fosChartExpr = null }
+const clearAvainitRegionEntities = () => {
+  const v = viewer.value
+  if (v) {
+    avainitRegionEntities.forEach(entity => {
+      try {
+        v.entities.remove(entity)
+      } catch (e) {
+        /* ignore */
+      }
+    })
+    const legacy = v.entities.getById('bedding_avainit')
+    if (legacy) {
+      try {
+        v.entities.remove(legacy)
+      } catch (e) {
+        /* ignore */
+      }
+    }
   }
-  // 在地图上放置冰岩崩边坡标记（按最小 FoS 红/绿 + 标注）
-  const loc = payload?.location || {}
-  const lon = Number(loc.longitude) || 95.0020
-  const lat = Number(loc.latitude) || 30.2354
-  const minFos = fos.length ? Math.min(...fos) : 1
-  const unstable = minFos < 1
-  const col = unstable ? Cesium.Color.RED : Cesium.Color.LIME
-  const oldE = viewer.value.entities.getById('bedding_avainit')
-  if (oldE) viewer.value.entities.remove(oldE)
-  viewer.value.entities.add({
-    id: 'bedding_avainit',
-    position: Cesium.Cartesian3.fromDegrees(lon, lat),
-    point: { pixelSize: 16, color: col, outlineColor: Cesium.Color.WHITE, outlineWidth: 2 },
-    label: {
-      text: mode + (unstable ? ' · 不稳定' : ' · 稳定') + ' (minFoS=' + minFos.toFixed(2) + ')',
-      font: '13px sans-serif',
-      fillColor: col,
-      showBackground: true,
-      backgroundColor: new Cesium.Color(0, 0, 0, 0.6),
-      pixelOffset: new Cesium.Cartesian2(0, -28),
-    },
-  })
-  viewer.value.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(lon, lat, 12000) })
-
-  ElMessage({ message: mode + ' 冰岩崩安全系数已生成', type: 'success' })
+  avainitRegionEntities = []
 }
+
+// 冰岩崩启动模型：不再绘制 FoS 曲线，改为"源区轮廓 + 稳定性标记 + 启动动画"
+function showBeddingFos(payload) {
+  const label = payload?.mode || '冰岩崩启动模型'
+  const result = payload?.result || {}
+  if (!result || result.status !== 'ok') {
+    ElMessage({ message: '冰岩崩启动计算结果无效', type: 'warning' })
+    return
+  }
+  const region = result.region || {}
+  const minFos = Number(result.minFos)
+  const stable = result.stable !== false && !(minFos < 1)
+  const polygon = Array.isArray(region.polygon) ? region.polygon : []
+  const lon = Number(region.centroidLon)
+  const lat = Number(region.centroidLat)
+  const color = stable ? Cesium.Color.LIME : Cesium.Color.RED
+
+  clearAvainitRegionEntities()
+  const v = viewer.value
+
+  // 贴地绘制源区范围
+  if (v && polygon.length >= 3) {
+    const cartesians = polygon.map(p =>
+      Cesium.Cartesian3.fromDegrees(Number(p[0]), Number(p[1])),
+    )
+    avainitRegionEntities.push(
+      v.entities.add({
+        id: 'avainit_region',
+        polygon: {
+          hierarchy: new Cesium.PolygonHierarchy(cartesians),
+          material: color.withAlpha(0.22),
+          outline: true,
+          outlineColor: color,
+          outlineWidth: 2,
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        },
+      }),
+    )
+  }
+
+  // 源区中心：稳定性标记
+  if (v && Number.isFinite(lon) && Number.isFinite(lat)) {
+    const ground = getGroundHeightMeters(lon, lat, 3000)
+    avainitRegionEntities.push(
+      v.entities.add({
+        id: 'bedding_avainit',
+        position: Cesium.Cartesian3.fromDegrees(lon, lat, ground + 60),
+        point: {
+          pixelSize: 14,
+          color,
+          outlineColor: Cesium.Color.WHITE,
+          outlineWidth: 2,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        },
+        label: {
+          text:
+            label +
+            (stable ? ' · 稳定' : ' · 失稳') +
+            ' (minFoS=' + (Number.isFinite(minFos) ? minFos.toFixed(2) : '—') + ')',
+          font: '13px sans-serif',
+          fillColor: color,
+          showBackground: true,
+          backgroundColor: new Cesium.Color(0, 0, 0, 0.6),
+          pixelOffset: new Cesium.Cartesian2(0, -28),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        },
+      }),
+    )
+  }
+
+  // 失稳：播放源区启动动画（与冰川泥石流动力学模型共用 ASC 帧渲染链路）
+  if (result.animation) {
+    betaLayers({ result: result.animation }, label + ' · 源区启动')
+  } else if (v) {
+    // 稳定：直接定位到源区
+    const bbox = Array.isArray(region.bbox) ? region.bbox.map(Number) : null
+    if (bbox && bbox.length === 4 && bbox.every(Number.isFinite)) {
+      flyToResultRect(
+        Cesium.Rectangle.fromDegrees(bbox[0], bbox[1], bbox[2], bbox[3]),
+        RESULT_CAMERA_LIFT_M,
+        1.5,
+      )
+    } else if (Number.isFinite(lon) && Number.isFinite(lat)) {
+      v.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(lon, lat, 12000) })
+    }
+  }
+}
+
 // ---- 按案例(易贡/色东普)的冰川灾害链串联：每个案例都跑 冰岩崩→泥石流物源 并传参 ----
 let chainPanelEl = null
 const CHAIN_CASES = {
@@ -3300,6 +3339,7 @@ const proLayers = payload => betaLayers(payload, '冰岩崩动力学模型')
 const leThRef = ref(null)
 let terrainDrawHandler = null
 let terrainDrawLonLat = []
+let terrainDrawPurpose = 'terrain'
 let terrainDrawEntities = []
 let terrainFeatureEntities = []
 
@@ -3491,9 +3531,14 @@ const finishTerrainDraw = () => {
   destroyTerrainDrawHandler()
   renderTerrainDraw()
   terrainDrawLonLat = []
-  if (leThRef.value && leThRef.value.onTerrainPolygonDrawn) {
+  if (terrainDrawPurpose === 'avainit') {
+    if (leThRef.value && leThRef.value.onAvainitPolygonDrawn) {
+      leThRef.value.onAvainitPolygonDrawn(points)
+    }
+  } else if (leThRef.value && leThRef.value.onTerrainPolygonDrawn) {
     leThRef.value.onTerrainPolygonDrawn(points)
   }
+  terrainDrawPurpose = 'terrain'
   removeTerrainDrawEntities()
   ElMessage({ message: '已绘制封闭范围（' + points.length + ' 个顶点）', type: 'success', duration: 3000 })
 }
@@ -3504,13 +3549,19 @@ const terrainDrawKeyHandler = event => {
 
 const cancelTerrainDraw = () => {
   clearTerrainDraw()
-  if (leThRef.value && leThRef.value.onTerrainDrawCancelled) {
+  if (terrainDrawPurpose === 'avainit') {
+    if (leThRef.value && leThRef.value.onAvainitDrawCancelled) {
+      leThRef.value.onAvainitDrawCancelled()
+    }
+  } else if (leThRef.value && leThRef.value.onTerrainDrawCancelled) {
     leThRef.value.onTerrainDrawCancelled()
   }
+  terrainDrawPurpose = 'terrain'
   ElMessage({ message: '已取消绘制', type: 'info', duration: 2000 })
 }
 
-const startTerrainDraw = () => {
+const startTerrainDraw = (payload = {}) => {
+  terrainDrawPurpose = payload && payload.purpose === 'avainit' ? 'avainit' : 'terrain'
   clearTerrainDraw()
   const v = viewer.value
   if (!v) return
@@ -8514,8 +8565,7 @@ const cleanentity = () => {
     handler_seismic.value.destroy()
   }
   handler_seismic.value = ''
-  if (fosChartDom) { fosChartDom.remove(); fosChartDom = null }
-  if (fosChartExpr) { fosChartExpr.dispose(); fosChartExpr = null }
+  clearAvainitRegionEntities()
   const bedE = viewer.value.entities.getById('bedding_avainit')
   if (bedE) viewer.value.entities.remove(bedE)
   // 11. 停止测量工具并清除测量图形
