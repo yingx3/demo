@@ -108,6 +108,15 @@ const modelService = {
       .post('/testapi/admin/user/avainit_region', form, { timeout: 300000 })
       .then(r => r.data)
   },
+  // 用源区 ASC + DEM 生成冰岩崩动力学模型输入（zb/zl/hw）
+  prepareAvainitPro(formData) {
+    return axios
+      .post('/testapi/admin/user/avainit_prepare_pro', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 300000,
+      })
+      .then(r => r.data)
+  },
     postInverse(form) {
     return axios
       .post('/testapi/admin/user/bedding_inverse', form, { timeout: 40000 })

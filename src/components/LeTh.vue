@@ -1150,6 +1150,36 @@
                   <span>物源比例 (%)</span>
                   <el-input v-model="avainitSourceRatio" placeholder="100" />
                 </div>
+                <div class="avainit-location-item">
+                  <span>模拟时长 (s)</span>
+                  <el-input v-model="avainitTmax" placeholder="200" />
+                </div>
+                <div class="avainit-location-item">
+                  <span>输出间隔 (s)</span>
+                  <el-input v-model="avainitInterval" placeholder="10" />
+                </div>
+              </div>
+              <div class="avainit-dem-row">
+                <el-input
+                  v-model="avainitDemName"
+                  placeholder="可选：上传地形 DEM（.tif/.asc/.txt）"
+                  readonly
+                >
+                  <template #append>
+                    <el-upload
+                      ref="avainitDemUploadRef"
+                      :auto-upload="false"
+                      :show-file-list="false"
+                      accept=".tif,.tiff,.asc,.txt"
+                      @change="handleAvainitDem"
+                    >
+                      <el-button class="quanyu-upload-trigger" @click.stop="triggerAvainitDem">
+                        <i class="iconfont icon-daoru"></i>
+                      </el-button>
+                    </el-upload>
+                  </template>
+                </el-input>
+                <span class="avainit-region-summary">{{ avainitDemHint }}</span>
               </div>
             </div>
 <el-form
@@ -3031,6 +3061,13 @@ const form_bedding_wedget = reactive({
 const form_avainit_location = reactive({ longitude: '95.0020', latitude: '30.2354' })
 const avainitPolygon = ref([])
 const avainitDrawing = ref(false)
+// 真实地形：上传 DEM，或复用冰岩崩动力学模型任务里的 zL
+const avainitDemFile = ref(null)
+const avainitDemName = ref('')
+const avainitDemUploadRef = ref(null)
+const lastProInputJobId = ref('')
+const avainitTmax = ref('200')
+const avainitInterval = ref('10')
 // 由 MapHome 采样 Cesium 地形得到的真实坡向/坡度
 const avainitTerrainInfo = ref(null)
 const avainitSourceRatio = ref('100')
@@ -3066,6 +3103,13 @@ const avainitRegionSummary = computed(() => {
   }
   return text
 })
+const avainitDemHint = computed(() => {
+  if (avainitDemFile.value) return '将使用上传的地形 DEM 计算真实流动动画'
+  if (lastProInputJobId.value) {
+    return '未上传 DEM，将复用动力学模型任务的灾后地形 zL（' + lastProInputJobId.value + '）'
+  }
+  return '未提供地形：启动动画将回退为近似椭圆，建议上传 DEM'
+})
 const startAvainitRegionDraw = () => {
   avainitDrawing.value = true
   dialog_avainit.value = false
@@ -3073,6 +3117,15 @@ const startAvainitRegionDraw = () => {
 }
 const clearAvainitPolygon = () => {
   avainitPolygon.value = []
+}
+const handleAvainitDem = (uploadFile, uploadFiles) => {
+  const f = (uploadFiles && uploadFiles[0]?.raw) || uploadFile?.raw || uploadFile
+  avainitDemFile.value = f || null
+  avainitDemName.value = f?.name || ''
+}
+const triggerAvainitDem = () => {
+  const el = avainitDemUploadRef.value?.$el?.querySelector?.('input[type=file]')
+  if (el) el.click()
 }
 // MapHome 完成绘制后回调
 // 弹窗重新打开会触发 @open -> resetAvainitInputs，这里标记本次要保留刚绘制的源区
@@ -3496,6 +3549,7 @@ async function runAvainitRegion(mode, form, emitName) {
     ElMessage({ message: '请先在地图上绘制源区（至少 3 个顶点）', type: 'warning' })
     return
   }
+  const hasTerrain = !!avainitDemFile.value || !!String(lastProInputJobId.value || '').trim()
   ElMessage({ message: label + ' 稳定性计算中...', type: 'info', duration: 0 })
   try {
     const res = await modelService.postAvainitRegion(avainitRequest(mode, form))
@@ -3506,13 +3560,82 @@ async function runAvainitRegion(mode, form, emitName) {
       message:
         label +
         '：' +
-        (stable ? '源区稳定' : '源区失稳，正在播放启动动画') +
+        (stable
+          ? '源区稳定'
+          : hasTerrain
+            ? '源区失稳，正在用真实地形计算启动动画'
+            : '源区失稳，正在生成近似启动动画') +
         '（minFoS=' + (Number.isFinite(minFos) ? minFos.toFixed(2) : '—') + '）',
       type: stable ? 'success' : 'warning',
       duration: 6000,
     })
     dialog_avainit.value = false
-    $emit(emitName, { mode: label, form: { ...form }, result: res })
+
+    // 失稳且具备地形：生成动力学模型输入，交给 /pro_start 跑真实地形流动
+    let proJobId = ''
+    if (!stable) {
+      const hasDem = !!avainitDemFile.value
+      const reuseId = !hasDem ? String(lastProInputJobId.value || '').trim() : ''
+      if (hasDem || reuseId) {
+        try {
+          const fd = new FormData()
+          fd.append('avainitJobId', String(res?.jobId || ''))
+          fd.append('sourceCrs', String(res?.sourceField?.crs || 'EPSG:32646'))
+          if (hasDem) {
+            const f = avainitDemFile.value
+            fd.append('dem', f, f.name || 'dem.tif')
+          } else {
+            fd.append('reuseProJobId', reuseId)
+          }
+          const prep = await modelService.prepareAvainitPro(fd)
+          if (prep && prep.status === 'ok' && prep.proJobId) {
+            proJobId = prep.proJobId
+          }
+        } catch (err) {
+          const detail = err?.response?.data || err?.message || err
+          ElMessage({
+            message:
+              '动力学模型输入生成失败，已回退近似动画: ' +
+              (typeof detail === 'string' ? detail : JSON.stringify(detail)),
+            type: 'warning',
+            duration: 8000,
+          })
+        }
+      }
+    }
+
+    // skipAnimation=true：只画源区轮廓/稳定性标记，动画由 proLayers 播放
+    $emit(emitName, {
+      mode: label,
+      form: { ...form },
+      result: res,
+      skipAnimation: !!proJobId,
+    })
+
+    if (proJobId) {
+      await runProJob({
+        jobId: proJobId,
+        files: {},
+        fileItems: [],
+        sourceCrs: String(res?.sourceField?.crs || 'EPSG:32646'),
+        anchorLon: '',
+        anchorLat: '',
+        params: {
+          bed: 0.05,
+          nn: 0.0125,
+          dx: 0,
+          dy: 0,
+          rous: 2700,
+          rouf: 1000,
+          interval: Number(avainitInterval.value) || 10,
+          Tmax: Number(avainitTmax.value) || 200,
+          depthScale: 100,
+        },
+        label: label + ' 启动动画',
+        partialHint: '',
+        name: '',
+      })
+    }
   } catch (e) {
     ElMessage.closeAll()
     const emsg = e.response?.data || e.message || e
@@ -3524,6 +3647,7 @@ async function runAvainitRegion(mode, form, emitName) {
     console.error('runAvainitRegion error:', e)
   }
 }
+
 
 const sumbit_avainit = () => runAvainitRegion(1, form_avainit, 'bedding_parallel')
 const sumbit_inverse = () => runAvainitRegion(2, form_bedding_inverted, 'bedding_inverted')
@@ -4217,8 +4341,9 @@ const runProJob = async (config, extra = {}) => {
       ElMessage({ message: partialHint, type: 'warning', duration: 4000 })
       return false
     }
-    let jobId = ''
-    if (chosen.length === fileItems.length) {
+    let jobId = String(config.jobId || '').trim()
+    // 已有后端预置好的输入（冰岩崩启动模型）时跳过上传
+    if (!jobId && chosen.length === fileItems.length) {
       ElMessage.closeAll()
       ElMessage({ message: '输入数据上传中...', type: 'info', duration: 0 })
       const formData = new FormData()
@@ -4250,6 +4375,7 @@ const runProJob = async (config, extra = {}) => {
         return false
       }
       jobId = up.jobId
+      lastProInputJobId.value = up.jobId
 
       // 输入探测提示：模型里泥石流层厚度 = zB - zL，若两者相同则该层为空
       const probe = up.probe || null
@@ -5026,6 +5152,8 @@ const resetAvainitInputs = () => {
   avainitKeepPolygonOnOpen = false
   avainitDrawing.value = false
   avainitSourceRatio.value = '100'
+  avainitTmax.value = '200'
+  avainitInterval.value = '10'
   Object.assign(form_avainit, {
     slope_angle: '60',
     slide_angle: '15',
@@ -5847,6 +5975,13 @@ const resetSeismicInputs = () => {
 .avainit-region-summary {
   color: rgba(160, 196, 226, 0.78);
   font-size: 12px;
+}
+
+.avainit-dem-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
 }
 
 .avainit-location-grid {

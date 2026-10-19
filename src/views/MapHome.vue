@@ -2437,6 +2437,9 @@ function showBeddingFos(payload) {
     )
   }
 
+  // 已用真实地形跑动力学内核时，这里只负责源区轮廓与稳定性标记
+  if (payload?.skipAnimation) return
+
   // 失稳：用后端返回的源区 ASC，在前端合成 10 帧启动动画
   const field = result.sourceField
   if (!stable && field && field.ascText) {
