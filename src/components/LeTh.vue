@@ -586,7 +586,7 @@
                       :ref="el => { if (el) alphaUploadRefs[item.key] = el }"
                       :auto-upload="false"
                       :show-file-list="false"
-                      accept=".asc"
+                      accept=".asc,.txt"
                       @change="(f, fs) => handleAlphaFile(item.key, f, fs)"
                     >
                       <el-button class="quanyu-upload-trigger" @click.stop="triggerAlphaUpload(item.key)">
@@ -862,7 +862,7 @@
                         ref="proAvainitDemUploadRef"
                         :auto-upload="false"
                         :show-file-list="false"
-                        accept=".tif,.tiff,.asc,.txt"
+                        accept=".asc,.txt"
                         @change="handleProAvainitDem"
                       >
                         <el-button class="quanyu-upload-trigger" @click.stop="triggerProAvainitDem">
@@ -894,7 +894,7 @@
                       :ref="el => { if (el) proUploadRefs[item.key] = el }"
                       :auto-upload="false"
                       :show-file-list="false"
-                      accept=".tif,.tiff,.asc,.txt"
+                      accept=".asc,.txt"
                       @change="(f, fs) => handleProFile(item.key, f, fs)"
                     >
                       <el-button
@@ -1208,7 +1208,7 @@
                       ref="avainitDemUploadRef"
                       :auto-upload="false"
                       :show-file-list="false"
-                      accept=".tif,.tiff,.asc,.txt"
+                      accept=".asc,.txt"
                       @change="handleAvainitDem"
                     >
                       <el-button class="quanyu-upload-trigger" @click.stop="triggerAvainitDem">
@@ -2422,7 +2422,7 @@
                         :ref="el => { if (el) chainUploadRefs[item.key] = el }"
                         :auto-upload="false"
                         :show-file-list="false"
-                        accept=".tif,.tiff,.asc,.txt"
+                        accept=".asc,.txt"
                         @change="(f, fs) => handleChainFile(item.key, f, fs)"
                       >
                         <el-button
@@ -2498,7 +2498,7 @@
                         :ref="el => { if (el) barrierAlphaUploadRefs[item.key] = el }"
                         :auto-upload="false"
                         :show-file-list="false"
-                        accept=".asc"
+                        accept=".asc,.txt"
                         @change="(f, fs) => handleBarrierAlphaFile(item.key, f, fs)"
                       >
                         <el-button
