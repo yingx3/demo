@@ -108,6 +108,13 @@ const modelService = {
       .post('/testapi/admin/user/avainit_region', form, { timeout: 300000 })
       .then(r => r.data)
   },
+  // 统一启动物源：冰岩崩启动 + 泥石流启动物源
+  getInitSources(params) {
+    return axios
+      .get('/testapi/admin/user/init_sources', { params, timeout: 120000 })
+      .then(r => r.data)
+  },
+
   // 冰岩崩启动模型的历史源区（供动力学模型选择调用）
   getAvainitSources(params) {
     return axios

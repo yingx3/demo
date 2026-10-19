@@ -555,7 +555,7 @@
             <el-form label-position="top" class="quanyu-form">
               <el-form-item
                 v-if="alphaSourceType === 'sdp'"
-                label="启动物源结果（SDP）"
+                label="启动物源结果"
                 label-position="top"
                 class="quanyu-file-field"
               >
@@ -828,7 +828,7 @@
             <p class="quanyu-section-label">输入来源</p>
             <el-radio-group v-model="proInputSource" size="small">
               <el-radio value="files">上传 zB / zL / hW</el-radio>
-              <el-radio value="avainit">使用手绘源区（ASC）</el-radio>
+              <el-radio value="avainit">使用启动物源结果</el-radio>
             </el-radio-group>
 
             <p class="quanyu-section-label">输入数据</p>
@@ -846,7 +846,7 @@
                 </div>
               </el-form-item>
               <template v-if="proInputSource === 'avainit'">
-                <el-form-item label="手绘源区历史" label-position="top" class="quanyu-file-field">
+                <el-form-item label="启动物源历史" label-position="top" class="quanyu-file-field">
                   <el-input :model-value="proAvainitLabel" placeholder="从冰岩崩启动模型结果中选择" readonly>
                     <template #append>
                       <el-button class="quanyu-upload-trigger" @click="openAvainitSourcePicker">
@@ -2708,7 +2708,7 @@
     >
       <template #title>
         <div class="model-help-head">
-          <span class="model-help-title">泥石流启动物源计算模型 · 历史结果</span>
+          <span class="model-help-title">启动物源历史</span>
           <span class="model-help-subtitle">
             {{ sdpHistoryPurpose === 'alpha' ? '选择一次结果作为冰川泥石流动力学模型的启动物源' : '任意一次结果可直接在地图上查看' }}
           </span>
@@ -2721,6 +2721,7 @@
           <thead>
             <tr>
               <th>运行时间</th>
+              <th>来源</th>
               <th>名称</th>
               <th>最大物源厚度 (m)</th>
               <th>平均厚度 (m)</th>
@@ -2730,13 +2731,14 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in sdpHistoryItems" :key="item.runId">
+            <tr v-for="item in sdpHistoryItems" :key="item.id || item.runId">
               <td>{{ item.createdAtText || '—' }}</td>
+              <td>{{ item.modelLabel || '泥石流启动物源计算模型' }}</td>
               <td>{{ item.name || '—' }}</td>
               <td>{{ sdpStat(item, 'max').toFixed(2) }}</td>
               <td>{{ sdpStat(item, 'mean').toFixed(2) }}</td>
               <td>{{ (sdpVolume(item) / 10000).toFixed(2) }}</td>
-              <td class="history-jobid">{{ item.runId }}</td>
+              <td class="history-jobid">{{ item.id || item.runId }}</td>
               <td>
                 <el-button link type="primary" @click="useSdpHistoryItem(item)">
                   {{ sdpHistoryPurpose === 'alpha' ? '选用' : '查看' }}
@@ -2756,7 +2758,7 @@
     >
       <template #title>
         <div class="model-help-head">
-          <span class="model-help-title">冰岩崩启动模型 · 手绘源区历史</span>
+          <span class="model-help-title">启动物源历史</span>
           <span class="model-help-subtitle">选择一次绘制的源区作为动力学模型的物源</span>
         </div>
       </template>
@@ -2767,6 +2769,7 @@
           <thead>
             <tr>
               <th>运行时间</th>
+              <th>来源</th>
               <th>任务ID</th>
               <th>最大厚度 (m)</th>
               <th>物源体积 (万 m³)</th>
@@ -2774,9 +2777,10 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in proAvainitItems" :key="item.jobId">
+            <tr v-for="item in proAvainitItems" :key="item.id || item.jobId">
               <td>{{ item.createdAtText || '—' }}</td>
-              <td class="history-jobid">{{ item.jobId }}</td>
+              <td>{{ item.modelLabel || '冰岩崩启动模型' }}</td>
+              <td class="history-jobid">{{ item.id || item.jobId }}</td>
               <td>{{ Number(item.maxValue || 0).toFixed(2) }}</td>
               <td>{{ (Number(item.volume || 0) / 10000).toFixed(2) }}</td>
               <td>
@@ -3013,7 +3017,7 @@ const openSdpHistory = async purpose => {
   sdpHistoryVisible.value = true
   sdpHistoryLoading.value = true
   try {
-    const resp = await modelService.getSdpHistory({ limit: 50 })
+    const resp = await modelService.getInitSources({ limit: 50 })
     sdpHistoryItems.value = Array.isArray(resp?.items) ? resp.items : []
   } catch (error) {
     sdpHistoryItems.value = []
@@ -3023,24 +3027,35 @@ const openSdpHistory = async purpose => {
   }
 }
 const sdpStat = (item, key) => {
+  const map = { max: 'maxValue', mean: 'meanValue' }
+  const direct = Number(item ? item[map[key] || key] : NaN)
+  if (Number.isFinite(direct)) return direct
   const value = Number(item && item.stats ? item.stats[key] : NaN)
   return Number.isFinite(value) ? value : 0
 }
 const sdpVolume = item => {
+  const direct = Number(item ? item.volume : NaN)
+  if (Number.isFinite(direct)) return direct
   const value = Number(item && item.stats ? item.stats.volume : NaN)
   return Number.isFinite(value) ? value : 0
 }
 const useSdpHistoryItem = async item => {
-  if (!item || !item.runId) return
+  const id = item ? item.id || item.runId : ''
+  if (!id) return
+  const model = String(item.model || 'sdp')
   if (sdpHistoryPurpose.value === 'alpha') {
-    alphaSdpRunId.value = item.runId
+    alphaSdpRunId.value = id
     alphaSdpName.value = item.name || ''
     sdpHistoryVisible.value = false
-    ElMessage({ message: '已选用启动物源结果: ' + (item.name || item.runId), type: 'success' })
+    ElMessage({ message: '已选用启动物源: ' + (item.name || id), type: 'success' })
+    return
+  }
+  if (model !== 'sdp') {
+    ElMessage({ message: '该源区来自冰岩崩启动模型，请在冰岩崩动力学模型中使用', type: 'warning' })
     return
   }
   try {
-    const frame = await modelService.getSdpResult(item.runId)
+    const frame = await modelService.getSdpResult(id)
     if (!frame || !frame.imageBase64) {
       ElMessage({ message: '该结果缺少预览数据', type: 'warning' })
       return
@@ -3048,9 +3063,10 @@ const useSdpHistoryItem = async item => {
     sdpHistoryVisible.value = false
     $emit('openLayers', { sdpResult: frame })
   } catch (error) {
-    ElMessage({ message: 'SDP 结果加载失败: ' + (error?.message || error), type: 'error' })
+    ElMessage({ message: '结果加载失败: ' + (error?.message || error), type: 'error' })
   }
 }
+
 const triggerUploadRain = () => { uploadRainRef.value?.$el.querySelector('input[type=file]').click() }
 const triggerUploadTemp = () => { uploadTempRef.value?.$el.querySelector('input[type=file]').click() }
 const triggerUploadOutput = () => { uploadOutputRef.value?.$el.querySelector('input[type=file]').click() }
@@ -3481,7 +3497,7 @@ const openAvainitSourcePicker = async () => {
   proAvainitPickerVisible.value = true
   proAvainitLoading.value = true
   try {
-    const resp = await modelService.getAvainitSources({ limit: 50 })
+    const resp = await modelService.getInitSources({ limit: 50 })
     proAvainitItems.value = Array.isArray(resp?.items) ? resp.items : []
   } catch (error) {
     proAvainitItems.value = []
@@ -3491,13 +3507,14 @@ const openAvainitSourcePicker = async () => {
   }
 }
 const chooseAvainitSource = item => {
-  if (!item || !item.jobId) return
-  proAvainitJobId.value = item.jobId
+  const id = item ? item.id || item.jobId : ''
+  if (!id) return
+  proAvainitJobId.value = id
   const when = item.createdAtText ? item.createdAtText + " · " : ""
   const peak = Number(item.maxValue || 0).toFixed(2)
-  proAvainitLabel.value = when + item.jobId + " · max " + peak + " m"
+  proAvainitLabel.value = when + id + " · max " + peak + " m"
   proAvainitPickerVisible.value = false
-  ElMessage({ message: '已选用启动模型源区: ' + item.jobId, type: 'success' })
+  ElMessage({ message: '已选用启动物源: ' + id, type: 'success' })
 }
 proFileItems.forEach(item => {
   proFileNames[item.key] = ''
