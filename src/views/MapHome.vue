@@ -638,6 +638,7 @@ import {
 import { reactive } from 'vue'
 import { getGeojson } from '../common/api/api.js'
 import { isForecastEntity } from './mapPickGuards.js'
+import { buildAvainitFrames } from '../utils/avainitFrames.js'
 import Dialog from '../js/dialog.js'
 import ZhJc from '../components/ZhJc.vue'
 import LeTh from '../components/LeTh.vue'
@@ -2436,7 +2437,38 @@ function showBeddingFos(payload) {
     )
   }
 
-  // 失稳：播放源区启动动画（与冰川泥石流动力学模型共用 ASC 帧渲染链路）
+  // 失稳：用后端返回的源区 ASC，在前端合成 10 帧启动动画
+  const field = result.sourceField
+  if (!stable && field && field.ascText) {
+    const built = buildAvainitFrames({
+      ascText: field.ascText,
+      azimuth: Number(region.flowAzimuth),
+      frameCount: Number(result.frameCount) || 10,
+      padCells: Number(field.padCells) || 0,
+    })
+    if (built && built.frames.length) {
+      const renderBbox = Array.isArray(field.renderBbox) ? field.renderBbox : field.bbox
+      const meta = {
+        ncols: built.meta.ncols,
+        nrows: built.meta.nrows,
+        cellsize: Number(field.cellsize) || built.meta.cellsize,
+        centerLon: Number(field.centerLon),
+        centerLat: Number(field.centerLat),
+        bbox: Array.isArray(renderBbox) ? renderBbox : null,
+        field: 'solid',
+        globalMax: Number(field.maxValue) || 1e-6,
+      }
+      betaLayers(
+        { result: { status: 'ok', meta, bbox: meta.bbox, frameCount: built.frames.length } },
+        label + ' · 源区启动',
+        { frameValues: built.frames },
+      )
+      return
+    }
+    console.warn('[avainit] source field frames unavailable')
+  }
+
+  // 兼容旧后端：直接返回 animation 的情况
   if (result.animation) {
     betaLayers({ result: result.animation }, label + ' · 源区启动')
   } else if (v) {
@@ -2812,7 +2844,36 @@ async function buildAvaflowDataSet(frameFiles, ascBase, maxDepth, outW, outH, on
   return { frames, wetBbox: wet.row1 >= 0 ? wet : null }
 }
 
+// 与 buildAvaflowDataSet 相同，但直接使用内存里的栅格帧（冰岩崩启动前端合成）
+async function buildAvaflowDataSetFromValues(frameValues, maxDepth, outW, outH, onProgress, mode = 'visual', paintOptions = null) {
+  const { resampleASCToSize, packNormalizedDepthToImageData, paintDepthToImageData } = await import('../utils/ascConverter.js')
+  const painter = mode === 'visual' ? paintDepthToImageData : packNormalizedDepthToImageData
+  const frames = []
+  const wet = { row0: Infinity, row1: -1, col0: Infinity, col1: -1 }
+  const total = frameValues.length
+  for (let i = 0; i < total; i++) {
+    const { values, ncols, nrows } = frameValues[i]
+    const resampled = resampleASCToSize(values, ncols, nrows, outW, outH, false)
+    for (let y = 0; y < outH; y++) {
+      for (let x = 0; x < outW; x++) {
+        if (resampled[y * outW + x] > 0.01) {
+          if (y < wet.row0) wet.row0 = y
+          if (y > wet.row1) wet.row1 = y
+          if (x < wet.col0) wet.col0 = x
+          if (x > wet.col1) wet.col1 = x
+        }
+      }
+    }
+    const { canvas, ctx, imgData } = painter(resampled, outW, outH, maxDepth, paintOptions || undefined)
+    ctx.putImageData(imgData, 0, 0)
+    frames.push(canvas.toDataURL('image/png'))
+    if (onProgress) onProgress(i + 1, total)
+  }
+  return { frames, wetBbox: wet.row1 >= 0 ? wet : null }
+}
+
 async function loadFrameImage(url) {
+
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => resolve(img)
@@ -3013,6 +3074,9 @@ const proFieldMeta = field => PRO_FIELD_META[String(field || 'solid').toLowerCas
 
 const betaLayers = async (payload, label = '冰川泥石流动力学模型', options = {}) => {
   const useDrape = options.drape !== false
+  // 内存帧（冰岩崩启动动画）：跳过 ASC 拉取，直接走同一套贴地渲染
+  const providedFrames =
+    Array.isArray(options.frameValues) && options.frameValues.length ? options.frameValues : null
   const result = payload?.result
   if (!result || result.status !== 'ok') {
     cleanupBetaRenderer()
@@ -3032,8 +3096,7 @@ const betaLayers = async (payload, label = '冰川泥石流动力学模型', opt
   // 兼容旧任务：没有 ASC 元数据时仍使用原来的 GeoJSON heatmap 链路
   if (
     !viewer.value ||
-    !result.ascBase ||
-    frameFiles.length === 0 ||
+    !(providedFrames || (result.ascBase && frameFiles.length > 0)) ||
     !(ncols > 0) ||
     !(nrows > 0) ||
     !(cellsize > 0) ||
@@ -3101,21 +3164,33 @@ const betaLayers = async (payload, label = '冰川泥石流动力学模型', opt
         const width = Math.max(2, Math.round(ncols / scale))
         const height = Math.max(2, Math.round(nrows / scale))
 
-        const total = frameFiles.length
-        const { frames: rawFrames, wetBbox } = await buildAvaflowDataSet(
-          frameFiles,
-          result.ascBase,
-          globalMax,
-          width,
-          height,
-          done => {
-            if (done % 5 === 0 || done === total) {
-              ElMessage({ message: '帧转换中 ' + done + '/' + total, type: 'info', duration: 800 })
-            }
-          },
-          'visual',
-          meta.field === 'speed' ? { ramp: 'speed' } : null,
-        )
+        const total = providedFrames ? providedFrames.length : frameFiles.length
+        const onProgress = done => {
+          if (done % 5 === 0 || done === total) {
+            ElMessage({ message: '帧转换中 ' + done + '/' + total, type: 'info', duration: 800 })
+          }
+        }
+        const paintOptions = meta.field === 'speed' ? { ramp: 'speed' } : null
+        const { frames: rawFrames, wetBbox } = providedFrames
+          ? await buildAvaflowDataSetFromValues(
+              providedFrames,
+              globalMax,
+              width,
+              height,
+              onProgress,
+              'visual',
+              paintOptions,
+            )
+          : await buildAvaflowDataSet(
+              frameFiles,
+              result.ascBase,
+              globalMax,
+              width,
+              height,
+              onProgress,
+              'visual',
+              paintOptions,
+            )
         if (runId !== betaRunId) return
 
         // 预合成过渡帧：在相邻原始帧之间补齐过渡帧，播放时只切换单层，不再做双层 alpha 渐变
