@@ -846,7 +846,24 @@
                 </div>
               </el-form-item>
               <template v-if="proInputSource === 'avainit'">
-                <el-form-item label="启动模型源区" label-position="top" class="quanyu-file-field">
+                <el-form-item label="手绘源区 .asc（可直接上传）" label-position="top" class="quanyu-file-field">
+                  <el-input v-model="proAvainitAscName" placeholder="上传启动模型生成的 source.asc" readonly>
+                    <template #append>
+                      <el-upload
+                        ref="proAvainitAscUploadRef"
+                        :auto-upload="false"
+                        :show-file-list="false"
+                        accept=".asc,.txt"
+                        @change="handleProAvainitAsc"
+                      >
+                        <el-button class="quanyu-upload-trigger" @click.stop="triggerProAvainitAsc">
+                          <i class="iconfont icon-daoru"></i>
+                        </el-button>
+                      </el-upload>
+                    </template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="或从启动模型历史中选择" label-position="top" class="quanyu-file-field">
                   <el-input :model-value="proAvainitLabel" placeholder="从冰岩崩启动模型结果中选择" readonly>
                     <template #append>
                       <el-button class="quanyu-upload-trigger" @click="openAvainitSourcePicker">
@@ -3453,6 +3470,9 @@ const proSourceCrs = ref('EPSG:32646')
 const proInputSource = ref('files')
 const proAvainitJobId = ref('')
 const proAvainitLabel = ref('')
+const proAvainitAscFile = ref(null)
+const proAvainitAscName = ref('')
+const proAvainitAscUploadRef = ref(null)
 const proAvainitDemFile = ref(null)
 const proAvainitDemName = ref('')
 const proAvainitDemUploadRef = ref(null)
@@ -3460,7 +3480,10 @@ const proAvainitPickerVisible = ref(false)
 const proAvainitLoading = ref(false)
 const proAvainitItems = ref([])
 const proAvainitHint = computed(() => {
-  if (proAvainitDemFile.value) return '将使用上传的 DEM 与启动模型源区生成动力学输入'
+  if (!proAvainitAscFile.value && !proAvainitJobId.value) {
+    return '请上传手绘源区 .asc，或从启动模型历史中选择一次源区'
+  }
+  if (proAvainitDemFile.value) return '只读取源区 .asc 与 DEM 生成动力学输入，不涉及启动模型动画'
   if (lastProInputJobId.value) {
     return '未上传 DEM，将复用动力学模型任务 ' + lastProInputJobId.value + ' 的灾后地形 zL'
   }
@@ -3473,6 +3496,17 @@ const handleProAvainitDem = (uploadFile, uploadFiles) => {
 }
 const triggerProAvainitDem = () => {
   const el = proAvainitDemUploadRef.value?.$el?.querySelector?.('input[type=file]')
+  if (el) el.click()
+}
+const handleProAvainitAsc = (uploadFile, uploadFiles) => {
+  const f = (uploadFiles && uploadFiles[0]?.raw) || uploadFile?.raw || uploadFile
+  proAvainitAscFile.value = f || null
+  proAvainitAscName.value = f?.name || ''
+  proAvainitJobId.value = ''
+  proAvainitLabel.value = ''
+}
+const triggerProAvainitAsc = () => {
+  const el = proAvainitAscUploadRef.value?.$el?.querySelector?.('input[type=file]')
   if (el) el.click()
 }
 const openAvainitSourcePicker = async () => {
@@ -3490,6 +3524,8 @@ const openAvainitSourcePicker = async () => {
 }
 const chooseAvainitSource = item => {
   if (!item || !item.jobId) return
+  proAvainitAscFile.value = null
+  proAvainitAscName.value = ''
   proAvainitJobId.value = item.jobId
   const when = item.createdAtText ? item.createdAtText + " · " : ""
   const peak = Number(item.maxValue || 0).toFixed(2)
@@ -4698,8 +4734,8 @@ const submitForm2 = async (extra = {}) => {
 
 // 使用冰岩崩启动模型的绘制源区：先与 DEM 合成 zb/zl/hw，再交给 /pro_start
 const runProFromAvainit = async (extra = {}) => {
-  if (!proAvainitJobId.value) {
-    ElMessage({ message: '请先选择冰岩崩启动模型的源区', type: 'warning' })
+  if (!proAvainitAscFile.value && !proAvainitJobId.value) {
+    ElMessage({ message: '请上传手绘源区 .asc，或从启动模型历史中选择一次源区', type: 'warning' })
     return false
   }
   if (floodRunning.value) {
@@ -4716,7 +4752,12 @@ const runProFromAvainit = async (extra = {}) => {
   ElMessage({ message: '正在生成动力学模型输入...', type: 'info', duration: 0 })
   try {
     const fd = new FormData()
-    fd.append('avainitJobId', proAvainitJobId.value)
+    if (proAvainitAscFile.value) {
+      const f = proAvainitAscFile.value
+      fd.append('sourceAsc', f, f.name || 'source.asc')
+    } else {
+      fd.append('avainitJobId', proAvainitJobId.value)
+    }
     fd.append('sourceCrs', proSourceCrs.value || 'EPSG:32646')
     fd.append('record', '1')
     if (proAvainitDemFile.value) {
@@ -5304,6 +5345,8 @@ const resetFloodProInputs = () => {
   proInputSource.value = 'files'
   proAvainitJobId.value = ''
   proAvainitLabel.value = ''
+  proAvainitAscFile.value = null
+  proAvainitAscName.value = ''
   proAvainitDemFile.value = null
   proAvainitDemName.value = ''
   Object.assign(form2, {
