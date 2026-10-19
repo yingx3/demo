@@ -825,6 +825,12 @@
                 </el-dialog>
               </div>
             </template>
+            <p class="quanyu-section-label">输入来源</p>
+            <el-radio-group v-model="proInputSource" size="small">
+              <el-radio value="files">上传 zB / zL / hW</el-radio>
+              <el-radio value="avainit">使用冰岩崩启动模型源区</el-radio>
+            </el-radio-group>
+
             <p class="quanyu-section-label">输入数据</p>
             <el-form label-position="top" class="quanyu-form">
               <el-form-item label="数据坐标系" label-position="top">
@@ -839,8 +845,41 @@
                   <el-input v-model="proAnchorLat" placeholder="纬度 30.2354" />
                 </div>
               </el-form-item>
+              <template v-if="proInputSource === 'avainit'">
+                <el-form-item label="启动模型源区" label-position="top" class="quanyu-file-field">
+                  <el-input :model-value="proAvainitLabel" placeholder="从冰岩崩启动模型结果中选择" readonly>
+                    <template #append>
+                      <el-button class="quanyu-upload-trigger" @click="openAvainitSourcePicker">
+                        <i class="iconfont icon-daoru"></i>
+                      </el-button>
+                    </template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="地形 DEM（可选，留空则复用动力学模型地形）" label-position="top" class="quanyu-file-field">
+                  <el-input v-model="proAvainitDemName" placeholder="上传 .tif / .asc / .txt" readonly>
+                    <template #append>
+                      <el-upload
+                        ref="proAvainitDemUploadRef"
+                        :auto-upload="false"
+                        :show-file-list="false"
+                        accept=".tif,.tiff,.asc,.txt"
+                        @change="handleProAvainitDem"
+                      >
+                        <el-button class="quanyu-upload-trigger" @click.stop="triggerProAvainitDem">
+                          <i class="iconfont icon-daoru"></i>
+                        </el-button>
+                      </el-upload>
+                    </template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item class="quanyu-note">
+                  <span>{{ proAvainitHint }}</span>
+                </el-form-item>
+              </template>
               <el-form-item
+                v-if="proInputSource === 'files'"
                 v-for="item in proFileItems"
+
                 :key="item.key"
                 :label="item.label"
                 label-position="top"
@@ -2709,8 +2748,50 @@
         </table>
       </div>
     </el-dialog>
+    <el-dialog
+      v-model="proAvainitPickerVisible"
+      class="model-help-dialog"
+      width="860px"
+      :close-on-click-modal="false"
+      top="80px"
+    >
+      <template #title>
+        <div class="model-help-head">
+          <span class="model-help-title">冰岩崩启动模型 · 历史源区</span>
+          <span class="model-help-subtitle">选择一次绘制的源区作为动力学模型的物源</span>
+        </div>
+      </template>
+      <div class="help-body">
+        <p v-if="proAvainitLoading" style="margin: 6px 0">读取中...</p>
+        <p v-else-if="!proAvainitItems.length" style="margin: 6px 0">暂无启动模型结果。</p>
+        <table v-else class="pro-history-table">
+          <thead>
+            <tr>
+              <th>运行时间</th>
+              <th>任务ID</th>
+              <th>最大厚度 (m)</th>
+              <th>物源体积 (万 m³)</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in proAvainitItems" :key="item.jobId">
+              <td>{{ item.createdAtText || '—' }}</td>
+              <td class="history-jobid">{{ item.jobId }}</td>
+              <td>{{ Number(item.maxValue || 0).toFixed(2) }}</td>
+              <td>{{ (Number(item.volume || 0) / 10000).toFixed(2) }}</td>
+              <td>
+                <el-button link type="primary" @click="chooseAvainitSource(item)">选用</el-button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </el-dialog>
+
   </div>
 </template>
+
 <script setup>
 import { QuestionFilled } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
@@ -3368,6 +3449,54 @@ const proFileItems = [
 const proAnchorLon = ref('95.0020')
 const proAnchorLat = ref('30.2354')
 const proSourceCrs = ref('EPSG:32646')
+// 动力学模型输入来源：files = 上传 zB/zL/hW；avainit = 复用启动模型的绘制源区
+const proInputSource = ref('files')
+const proAvainitJobId = ref('')
+const proAvainitLabel = ref('')
+const proAvainitDemFile = ref(null)
+const proAvainitDemName = ref('')
+const proAvainitDemUploadRef = ref(null)
+const proAvainitPickerVisible = ref(false)
+const proAvainitLoading = ref(false)
+const proAvainitItems = ref([])
+const proAvainitHint = computed(() => {
+  if (proAvainitDemFile.value) return '将使用上传的 DEM 与启动模型源区生成动力学输入'
+  if (lastProInputJobId.value) {
+    return '未上传 DEM，将复用动力学模型任务 ' + lastProInputJobId.value + ' 的灾后地形 zL'
+  }
+  return '请上传地形 DEM，或先运行一次冰岩崩动力学模型以复用其灾后地形'
+})
+const handleProAvainitDem = (uploadFile, uploadFiles) => {
+  const f = (uploadFiles && uploadFiles[0]?.raw) || uploadFile?.raw || uploadFile
+  proAvainitDemFile.value = f || null
+  proAvainitDemName.value = f?.name || ''
+}
+const triggerProAvainitDem = () => {
+  const el = proAvainitDemUploadRef.value?.$el?.querySelector?.('input[type=file]')
+  if (el) el.click()
+}
+const openAvainitSourcePicker = async () => {
+  proAvainitPickerVisible.value = true
+  proAvainitLoading.value = true
+  try {
+    const resp = await modelService.getAvainitSources({ limit: 50 })
+    proAvainitItems.value = Array.isArray(resp?.items) ? resp.items : []
+  } catch (error) {
+    proAvainitItems.value = []
+    ElMessage({ message: '启动模型源区读取失败: ' + (error?.message || error), type: 'error' })
+  } finally {
+    proAvainitLoading.value = false
+  }
+}
+const chooseAvainitSource = item => {
+  if (!item || !item.jobId) return
+  proAvainitJobId.value = item.jobId
+  const when = item.createdAtText ? item.createdAtText + " · " : ""
+  const peak = Number(item.maxValue || 0).toFixed(2)
+  proAvainitLabel.value = when + item.jobId + " · max " + peak + " m"
+  proAvainitPickerVisible.value = false
+  ElMessage({ message: '已选用启动模型源区: ' + item.jobId, type: 'success' })
+}
 proFileItems.forEach(item => {
   proFileNames[item.key] = ''
   proFiles[item.key] = null
@@ -4547,8 +4676,11 @@ const runProJob = async (config, extra = {}) => {
 }
 
 // 冰岩崩动力学模型：使用模型弹窗自己的输入状态
-const submitForm2 = async (extra = {}) =>
-  runProJob(
+const submitForm2 = async (extra = {}) => {
+  if (proInputSource.value === 'avainit') {
+    return runProFromAvainit(extra)
+  }
+  return runProJob(
     {
       files: proFiles,
       fileItems: proFileItems,
@@ -4558,12 +4690,75 @@ const submitForm2 = async (extra = {}) =>
       params: form2,
       label: '冰岩崩动力学模型',
       name: proSimName.value.trim(),
-      partialHint: 'zb / zl / hw 三份数据要么都选，要么都不选（不选用内置示例数据）',
+      partialHint: 'zb / zl / hw 需同时上传，或全部不选使用内置示例数据',
     },
     extra,
   )
+}
 
-// 灾害链断链调控：使用断链调控面板自己的输入状态（与冰岩崩动力学模型互不影响）
+// 使用冰岩崩启动模型的绘制源区：先与 DEM 合成 zb/zl/hw，再交给 /pro_start
+const runProFromAvainit = async (extra = {}) => {
+  if (!proAvainitJobId.value) {
+    ElMessage({ message: '请先选择冰岩崩启动模型的源区', type: 'warning' })
+    return false
+  }
+  if (floodRunning.value) {
+    ElMessage({ message: '已有动力学任务在运行，请稍候', type: 'info' })
+    return false
+  }
+  if (!proAvainitDemFile.value && !String(lastProInputJobId.value || '').trim()) {
+    ElMessage({
+      message: '请上传地形 DEM，或先运行一次冰岩崩动力学模型以复用其灾后地形',
+      type: 'warning',
+    })
+    return false
+  }
+  ElMessage({ message: '正在生成动力学模型输入...', type: 'info', duration: 0 })
+  try {
+    const fd = new FormData()
+    fd.append('avainitJobId', proAvainitJobId.value)
+    fd.append('sourceCrs', proSourceCrs.value || 'EPSG:32646')
+    fd.append('record', '1')
+    if (proAvainitDemFile.value) {
+      const f = proAvainitDemFile.value
+      fd.append('dem', f, f.name || 'dem.tif')
+    } else {
+      fd.append('reuseProJobId', String(lastProInputJobId.value).trim())
+    }
+    const prep = await modelService.prepareAvainitPro(fd)
+    ElMessage.closeAll()
+    if (!prep || prep.status !== 'ok' || !prep.proJobId) {
+      ElMessage({ message: prep?.message || '动力学模型输入生成失败', type: 'error' })
+      return false
+    }
+    return await runProJob(
+      {
+        jobId: prep.proJobId,
+        files: {},
+        fileItems: [],
+        sourceCrs: proSourceCrs.value || 'EPSG:32646',
+        anchorLon: '',
+        anchorLat: '',
+        params: { ...form2, dx: 0, dy: 0 },
+        label: '冰岩崩动力学模型',
+        partialHint: '',
+        name: proSimName.value.trim(),
+      },
+      extra,
+    )
+  } catch (e) {
+    ElMessage.closeAll()
+    const detail = e?.response?.data || e?.message || e
+    ElMessage({
+      message: '动力学模型输入生成失败: ' + (typeof detail === 'string' ? detail : JSON.stringify(detail)),
+      type: 'error',
+      duration: 8000,
+    })
+    return false
+  }
+}
+
+
 const submitChainRegulation = async terrainEdits =>
   runProJob(
     {
@@ -5106,6 +5301,11 @@ const loadProHistory = item => {
 const resetFloodProInputs = () => {
   if (floodRunning.value) return
   proSimName.value = ''
+  proInputSource.value = 'files'
+  proAvainitJobId.value = ''
+  proAvainitLabel.value = ''
+  proAvainitDemFile.value = null
+  proAvainitDemName.value = ''
   Object.assign(form2, {
     bed: '0.05',
     nn: '0.0125',
