@@ -2355,8 +2355,8 @@
                   <template v-if="regulationMode === 'chain'">
                     <tr><td>数据坐标系</td><td>EPSG 编码</td><td>txt / asc 等不自带坐标系的输入按此解释；tif 或带 xllcorner / yllcorner 头部时以文件为准（默认 EPSG:32646）</td></tr>
                     <tr><td>源区中心（经度 / 纬度）</td><td>WGS84 十进制度</td><td>无投影头部输入的空间定位基准（易贡示例 95.0020 / 30.2354）</td></tr>
-                    <tr><td>灾前地形 / 灾后地形 / 初始水深</td><td>.tif / .tiff / .txt / .asc</td><td>在断链调控面板内独立选择，不读取「冰岩崩动力学模型」弹窗中的数据；三份都不选时使用内置示例数据</td></tr>
-                    <tr><td>动力学参数</td><td>数值</td><td>基底摩擦角、曼宁摩擦系数、网格长宽、滑坡与河水密度、输出间距、计算时间、物源厚度比例，全部在本面板单独填写</td></tr>
+                    <tr><td>灾前地形 / 灾后地形 / 初始水深</td><td>.asc / .txt</td><td>在断链调控面板内独立选择，不读取「冰岩崩动力学模型」弹窗中的数据；三份都不选时使用内置示例数据</td></tr>
+                    <tr><td>拦挡 / 开槽物理参数</td><td>数字 / 下拉</td><td>仅用于展示、不参与计算；拦挡长度按手绘多边形自动计算</td></tr>
                   </template>
                   <template v-else>
                     <tr><td>输入栅格</td><td>.tif / .tiff（三份）</td><td>在沿程调控面板内独立选择平均高程 / 物源启动区 / 影响范围，不读取「冰川泥石流动力学模型」弹窗中的数据，三份都就绪才能启动</td></tr>
@@ -2440,32 +2440,11 @@
               <p class="quanyu-section-label">模型参数</p>
               <el-form :model="chainForm" label-position="top" class="quanyu-form">
                 <div class="quanyu-param-grid">
-                  <el-form-item label="基底摩擦角 (rad)">
-                    <el-input v-model="chainForm.bed" placeholder="0.05" />
-                  </el-form-item>
-                  <el-form-item label="曼宁摩擦系数">
-                    <el-input v-model="chainForm.nn" placeholder="0.0125" />
-                  </el-form-item>
-                  <el-form-item label="网格长度 (m)">
-                    <el-input v-model="chainForm.dx" placeholder="20" />
-                  </el-form-item>
-                  <el-form-item label="网格宽度 (m)">
-                    <el-input v-model="chainForm.dy" placeholder="20" />
-                  </el-form-item>
-                  <el-form-item label="滑坡密度 (kg/m³)">
-                    <el-input v-model="chainForm.rous" placeholder="2700" />
-                  </el-form-item>
-                  <el-form-item label="河水密度 (kg/m³)">
-                    <el-input v-model="chainForm.rouf" placeholder="1000" />
-                  </el-form-item>
-                  <el-form-item label="输出间距 (s)">
+                  <el-form-item label="时间步长 (s)">
                     <el-input v-model="chainForm.interval" placeholder="10" />
                   </el-form-item>
-                  <el-form-item label="计算时间 (s)">
+                  <el-form-item label="时间范围 (s)">
                     <el-input v-model="chainForm.Tmax" placeholder="200" />
-                  </el-form-item>
-                  <el-form-item label="物源厚度比例 (%)">
-                    <el-input v-model="chainForm.depthScale" placeholder="30" />
                   </el-form-item>
                 </div>
                 <el-form-item class="quanyu-note">
@@ -2563,6 +2542,71 @@
                     />
                     <span class="terrain-unit">米</span>
                   </el-form-item>
+
+                  <!-- 拦挡物理参数（仅展示，不参与计算） -->
+                  <template v-if="barrier.type !== 'notch'">
+                    <el-form-item label="拦挡长度 (m)">
+                      <el-input :model-value="barrierLength(barrier)" readonly style="width: 140px" />
+                      <span class="terrain-unit">m</span>
+                    </el-form-item>
+                    <el-form-item label="拦挡顶宽 (m)">
+                      <el-input v-model="barrier.props.topWidth" style="width: 140px" />
+                      <span class="terrain-unit">m</span>
+                    </el-form-item>
+                    <el-form-item label="拦挡类型">
+                      <el-select v-model="barrier.props.barrierType" style="width: 180px">
+                        <el-option label="刚性拦挡" value="刚性拦挡" />
+                        <el-option label="柔性拦挡" value="柔性拦挡" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item label="结构形式">
+                      <el-select v-model="barrier.props.structure" style="width: 180px">
+                        <el-option label="混凝土重力坝" value="混凝土重力坝" />
+                        <el-option label="格栅坝" value="格栅坝" />
+                        <el-option label="石笼坝" value="石笼坝" />
+                        <el-option label="土石坝" value="土石坝" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item label="透水率 (%)">
+                      <el-input v-model="barrier.props.permeability" style="width: 140px" />
+                    </el-form-item>
+                    <el-form-item label="材料强度 (MPa)">
+                      <el-input v-model="barrier.props.strength" style="width: 140px" />
+                    </el-form-item>
+                    <el-form-item label="基础埋深 (m)">
+                      <el-input v-model="barrier.props.embedDepth" style="width: 140px" />
+                      <span class="terrain-unit">m</span>
+                    </el-form-item>
+                  </template>
+
+                  <!-- 开槽物理参数（仅展示，不参与计算） -->
+                  <template v-else>
+                    <el-form-item label="槽底宽度 (m)">
+                      <el-input v-model="barrier.props.bottomWidth" style="width: 140px" />
+                      <span class="terrain-unit">m</span>
+                    </el-form-item>
+                    <el-form-item label="边坡系数">
+                      <el-input v-model="barrier.props.sideSlope" style="width: 140px" />
+                    </el-form-item>
+                    <el-form-item label="断面形式">
+                      <el-select v-model="barrier.props.section" style="width: 180px">
+                        <el-option label="矩形" value="矩形" />
+                        <el-option label="梯形" value="梯形" />
+                        <el-option label="复式断面" value="复式断面" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item label="纵坡 (%)">
+                      <el-input v-model="barrier.props.longitudinalSlope" style="width: 140px" />
+                    </el-form-item>
+                    <el-form-item label="护砌类型">
+                      <el-select v-model="barrier.props.lining" style="width: 180px">
+                        <el-option label="无护砌" value="无护砌" />
+                        <el-option label="混凝土" value="混凝土" />
+                        <el-option label="块石" value="块石" />
+                        <el-option label="石笼" value="石笼" />
+                      </el-select>
+                    </el-form-item>
+                  </template>
                 </el-form>
               </div>
               <p v-if="!terrainBarriers.length" class="terrain-hint">
@@ -4106,12 +4150,52 @@ const activeTerrainConfig = computed(
 
 const defaultTerrainValue = (type, kind) =>
   type === 'notch' ? '5' : kind === 'alpha_barrier' ? '15' : '20'
+// 拦挡/开槽展示参数（不参与计算）
+const defaultTerrainProps = type =>
+  type === 'notch'
+    ? { bottomWidth: '5', sideSlope: '1.0', section: '梯形', longitudinalSlope: '2', lining: '混凝土' }
+    : { topWidth: '3', barrierType: '刚性拦挡', structure: '混凝土重力坝', permeability: '0', strength: '25', embedDepth: '2' }
+
 const createTerrainFeature = (kind, type = 'barrier') => ({
   id: `${type}_${Date.now()}_${++terrainBarrierSeq}`,
   type,
   polygon: [],
   value: defaultTerrainValue(type, kind),
+  props: defaultTerrainProps(type),
 })
+
+// 按手绘多边形主轴估算拦挡长度（m，仅展示）
+const polygonPrincipalLength = ring => {
+  if (!Array.isArray(ring) || ring.length < 2) return 0
+  const lat0 = ring.reduce((sum, p) => sum + Number(p[1]), 0) / ring.length
+  const mPerLat = 111320
+  const mPerLon = 111320 * Math.cos((lat0 * Math.PI) / 180)
+  const pts = ring.map(p => [Number(p[0]) * mPerLon, Number(p[1]) * mPerLat])
+  const cx = pts.reduce((sum, p) => sum + p[0], 0) / pts.length
+  const cy = pts.reduce((sum, p) => sum + p[1], 0) / pts.length
+  let sxx = 0
+  let sxy = 0
+  let syy = 0
+  pts.forEach(([x, y]) => {
+    const dx = x - cx
+    const dy = y - cy
+    sxx += dx * dx
+    sxy += dx * dy
+    syy += dy * dy
+  })
+  const theta = 0.5 * Math.atan2(2 * sxy, sxx - syy)
+  const ax = Math.cos(theta)
+  const ay = Math.sin(theta)
+  let minA = Infinity
+  let maxA = -Infinity
+  pts.forEach(([x, y]) => {
+    const a = (x - cx) * ax + (y - cy) * ay
+    if (a < minA) minA = a
+    if (a > maxA) maxA = a
+  })
+  return Math.max(0, maxA - minA)
+}
+const barrierLength = barrier => polygonPrincipalLength(barrier?.polygon).toFixed(1)
 const emitTerrainFeatures = () => {
   const features = terrainBarriers.value
     .filter(item => Array.isArray(item.polygon) && item.polygon.length >= 3)
