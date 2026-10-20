@@ -1188,14 +1188,6 @@
                   <span>物源比例 (%)</span>
                   <el-input v-model="avainitSourceRatio" placeholder="100" />
                 </div>
-                <div class="avainit-location-item">
-                  <span>模拟时长 (s)</span>
-                  <el-input v-model="avainitTmax" placeholder="200" />
-                </div>
-                <div class="avainit-location-item">
-                  <span>输出间隔 (s)</span>
-                  <el-input v-model="avainitInterval" placeholder="10" />
-                </div>
               </div>
               <div class="avainit-dem-row">
                 <el-input
