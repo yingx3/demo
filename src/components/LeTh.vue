@@ -2438,6 +2438,9 @@
                   <el-form-item label="时间范围 (s)">
                     <el-input v-model="chainForm.Tmax" placeholder="200" />
                   </el-form-item>
+                  <el-form-item label="模拟名称" style="grid-column: 1 / -1">
+                    <el-input v-model="chainSimName" placeholder="例如：色东普-拦挡+开槽" maxlength="60" />
+                  </el-form-item>
                 </div>
                 <el-form-item class="quanyu-note">
                   <span>
@@ -4049,6 +4052,7 @@ const chainFormDefaults = {
   depthScale: '30',
   field: 'solid',
 }
+const chainSimName = ref('')
 const chainForm = reactive({ ...chainFormDefaults })
 chainFileItems.forEach(item => {
   chainFiles[item.key] = null
@@ -4065,6 +4069,7 @@ const triggerChainUpload = key => {
 }
 const resetChainInputs = () => {
   if (floodRunning.value) return
+  chainSimName.value = ''
   Object.assign(chainForm, chainFormDefaults)
   chainFileItems.forEach(item => {
     chainFiles[item.key] = null
@@ -4861,6 +4866,7 @@ const submitChainRegulation = async terrainEdits =>
       anchorLon: chainAnchorLon.value,
       anchorLat: chainAnchorLat.value,
       params: chainForm,
+      name: chainSimName.value.trim(),
       label: '灾害链断链调控',
       partialHint: 'zb / zl / hw 三份数据要么都选，要么都不选（不选用内置示例数据）',
       regulation: true,
