@@ -2533,81 +2533,79 @@
                   </span>
                 </div>
                 <el-form label-width="auto" class="terrain-barrier-form">
-                  <el-form-item :label="barrier.type === 'notch' ? '下切深度' : activeTerrainConfig.raiseLabel">
-                    <el-input
-                      v-model="barrier.value"
-                      style="width: 140px"
-                      :placeholder="barrier.type === 'notch' ? '例如 5' : activeTerrainConfig.raisePlaceholder"
-                      @change="emitTerrainFeatures"
-                    />
-                    <span class="terrain-unit">米</span>
-                  </el-form-item>
+                  <p class="terrain-param-caption">
+                    {{ barrier.type === 'notch' ? '开槽物理参数' : '拦挡物理参数' }}
+                  </p>
+                  <div class="terrain-param-grid">
+                    <el-form-item :label="barrier.type === 'notch' ? '开槽深度 (m)' : activeTerrainConfig.raiseLabel + ' (m)'">
+                      <el-input
+                        v-model="barrier.value"
+                        :placeholder="barrier.type === 'notch' ? '例如 5' : activeTerrainConfig.raisePlaceholder"
+                        @change="emitTerrainFeatures"
+                      />
+                    </el-form-item>
 
-                  <!-- 拦挡物理参数（仅展示，不参与计算） -->
-                  <template v-if="barrier.type !== 'notch'">
-                    <el-form-item label="拦挡长度 (m)">
-                      <el-input :model-value="barrierLength(barrier)" readonly style="width: 140px" />
-                      <span class="terrain-unit">m</span>
-                    </el-form-item>
-                    <el-form-item label="拦挡顶宽 (m)">
-                      <el-input v-model="barrier.props.topWidth" style="width: 140px" />
-                      <span class="terrain-unit">m</span>
-                    </el-form-item>
-                    <el-form-item label="拦挡类型">
-                      <el-select v-model="barrier.props.barrierType" style="width: 180px">
-                        <el-option label="刚性拦挡" value="刚性拦挡" />
-                        <el-option label="柔性拦挡" value="柔性拦挡" />
-                      </el-select>
-                    </el-form-item>
-                    <el-form-item label="结构形式">
-                      <el-select v-model="barrier.props.structure" style="width: 180px">
-                        <el-option label="混凝土重力坝" value="混凝土重力坝" />
-                        <el-option label="格栅坝" value="格栅坝" />
-                        <el-option label="石笼坝" value="石笼坝" />
-                        <el-option label="土石坝" value="土石坝" />
-                      </el-select>
-                    </el-form-item>
-                    <el-form-item label="透水率 (%)">
-                      <el-input v-model="barrier.props.permeability" style="width: 140px" />
-                    </el-form-item>
-                    <el-form-item label="材料强度 (MPa)">
-                      <el-input v-model="barrier.props.strength" style="width: 140px" />
-                    </el-form-item>
-                    <el-form-item label="基础埋深 (m)">
-                      <el-input v-model="barrier.props.embedDepth" style="width: 140px" />
-                      <span class="terrain-unit">m</span>
-                    </el-form-item>
-                  </template>
+                    <template v-if="barrier.type !== 'notch'">
+                      <el-form-item label="拦挡长度 (m)">
+                        <el-input :model-value="barrierLength(barrier)" readonly />
+                      </el-form-item>
+                      <el-form-item label="拦挡顶宽 (m)">
+                        <el-input v-model="barrier.props.topWidth" />
+                      </el-form-item>
+                      <el-form-item label="拦挡类型">
+                        <el-select v-model="barrier.props.barrierType">
+                          <el-option label="刚性拦挡" value="刚性拦挡" />
+                          <el-option label="柔性拦挡" value="柔性拦挡" />
+                        </el-select>
+                      </el-form-item>
+                      <el-form-item label="结构形式">
+                        <el-select v-model="barrier.props.structure">
+                          <el-option label="混凝土重力坝" value="混凝土重力坝" />
+                          <el-option label="格栅坝" value="格栅坝" />
+                          <el-option label="石笼坝" value="石笼坝" />
+                          <el-option label="土石坝" value="土石坝" />
+                        </el-select>
+                      </el-form-item>
+                      <el-form-item label="透水率 (%)">
+                        <el-input v-model="barrier.props.permeability" />
+                      </el-form-item>
+                      <el-form-item label="材料强度 (MPa)">
+                        <el-input v-model="barrier.props.strength" />
+                      </el-form-item>
+                      <el-form-item label="基础埋深 (m)">
+                        <el-input v-model="barrier.props.embedDepth" />
+                      </el-form-item>
+                    </template>
 
-                  <!-- 开槽物理参数（仅展示，不参与计算） -->
-                  <template v-else>
-                    <el-form-item label="槽底宽度 (m)">
-                      <el-input v-model="barrier.props.bottomWidth" style="width: 140px" />
-                      <span class="terrain-unit">m</span>
-                    </el-form-item>
-                    <el-form-item label="边坡系数">
-                      <el-input v-model="barrier.props.sideSlope" style="width: 140px" />
-                    </el-form-item>
-                    <el-form-item label="断面形式">
-                      <el-select v-model="barrier.props.section" style="width: 180px">
-                        <el-option label="矩形" value="矩形" />
-                        <el-option label="梯形" value="梯形" />
-                        <el-option label="复式断面" value="复式断面" />
-                      </el-select>
-                    </el-form-item>
-                    <el-form-item label="纵坡 (%)">
-                      <el-input v-model="barrier.props.longitudinalSlope" style="width: 140px" />
-                    </el-form-item>
-                    <el-form-item label="护砌类型">
-                      <el-select v-model="barrier.props.lining" style="width: 180px">
-                        <el-option label="无护砌" value="无护砌" />
-                        <el-option label="混凝土" value="混凝土" />
-                        <el-option label="块石" value="块石" />
-                        <el-option label="石笼" value="石笼" />
-                      </el-select>
-                    </el-form-item>
-                  </template>
+                    <template v-else>
+                      <el-form-item label="槽底宽度 (m)">
+                        <el-input v-model="barrier.props.bottomWidth" />
+                      </el-form-item>
+                      <el-form-item label="边坡系数">
+                        <el-input v-model="barrier.props.sideSlope" />
+                      </el-form-item>
+                      <el-form-item label="断面形式">
+                        <el-select v-model="barrier.props.section">
+                          <el-option label="矩形" value="矩形" />
+                          <el-option label="梯形" value="梯形" />
+                          <el-option label="复式断面" value="复式断面" />
+                        </el-select>
+                      </el-form-item>
+                      <el-form-item label="纵坡 (%)">
+                        <el-input v-model="barrier.props.longitudinalSlope" />
+                      </el-form-item>
+                      <el-form-item label="护砌类型">
+                        <el-select v-model="barrier.props.lining">
+                          <el-option label="无护砌" value="无护砌" />
+                          <el-option label="混凝土" value="混凝土" />
+                          <el-option label="块石" value="块石" />
+                          <el-option label="石笼" value="石笼" />
+                        </el-select>
+                      </el-form-item>
+                    </template>
+                  </div>
                 </el-form>
+
               </div>
               <p v-if="!terrainBarriers.length" class="terrain-hint">
                 还没有调控段，点击「添加拦挡」或「添加开槽」后在地图上绘制范围。
@@ -5862,6 +5860,96 @@ const resetSeismicInputs = () => {
 }
 .terrain-barrier-form {
   margin-top: 8px;
+}
+
+.terrain-param-caption {
+  position: relative;
+  margin: 10px 0 8px;
+  padding-left: 10px;
+  color: #d9ecff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+}
+
+.terrain-param-caption::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 2px;
+  width: 3px;
+  border-radius: 2px;
+  background: rgba(90, 176, 255, 0.85);
+}
+
+.terrain-param-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.terrain-barrier-form :deep(.el-form-item) {
+  margin-bottom: 0;
+}
+
+.terrain-barrier-form :deep(.el-form-item__label) {
+  display: block;
+  float: none;
+  width: auto !important;
+  height: auto;
+  margin-bottom: 5px;
+  padding: 0;
+  color: #b9d6f1;
+  font-size: 12px;
+  line-height: 1.2;
+  text-align: left !important;
+}
+
+.terrain-barrier-form :deep(.el-form-item__content) {
+  width: 100%;
+  margin-left: 0 !important;
+}
+
+.terrain-barrier-form :deep(.el-input),
+.terrain-barrier-form :deep(.el-select) {
+  width: 100% !important;
+}
+
+.terrain-barrier-form :deep(.el-input__wrapper),
+.terrain-barrier-form :deep(.el-select__wrapper) {
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: rgba(5, 20, 36, 0.58);
+  box-shadow: inset 0 0 0 1px rgba(104, 181, 255, 0.24);
+  font-size: 14px;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.terrain-barrier-form :deep(.el-input__wrapper:hover),
+.terrain-barrier-form :deep(.el-select__wrapper:hover) {
+  box-shadow: inset 0 0 0 1px rgba(104, 181, 255, 0.42);
+}
+
+.terrain-barrier-form :deep(.el-input__wrapper.is-focus),
+.terrain-barrier-form :deep(.el-select__wrapper.is-focused) {
+  background: rgba(7, 28, 49, 0.82);
+  box-shadow: inset 0 0 0 1px rgba(91, 200, 255, 0.85), 0 0 0 3px rgba(55, 150, 255, 0.1);
+}
+
+.terrain-barrier-form :deep(.el-input__inner) {
+  color: #eaf4ff;
+  font-size: 14px;
+}
+
+.terrain-barrier-form :deep(.el-input__inner::placeholder) {
+  color: rgba(150, 181, 210, 0.52);
+}
+
+.terrain-barrier-form :deep(.el-input__wrapper.is-disabled),
+.terrain-barrier-form :deep(.el-input__inner[readonly]) {
+  color: #9fc0dd;
 }
 .terrain-barrier-form :deep(.el-form-item) {
   margin-bottom: 0;
