@@ -5274,11 +5274,11 @@ const addLayer_622 = () => {
         position: Cesium.Cartesian3.fromDegrees(lon, lat),
         name: props.名称 || props.新编号 || '',
         billboard: {
-          image: '/ng/yellow.png',
+          image: '/ng/yellow_pin.png',
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          width: 32,
+          width: 24,
           height: 32,
         },
       })
@@ -5709,11 +5709,11 @@ const addLayer_623 = () => {
         position: Cesium.Cartesian3.fromDegrees(lon, lat),
         name: props.名称 || props.新编号 || '',
         billboard: {
-          image: '/ng/yellow.png',
+          image: '/ng/yellow_pin.png',
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          width: 32,
+          width: 24,
           height: 32,
         },
       })
@@ -6722,10 +6722,10 @@ const addlayer_DZDdevice_legacy = async () => {
           device.gps_high || 0,
         ),
         billboard: {
-          image: '/ng/yellow.png',
+          image: '/ng/yellow_pin.png',
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-          width: 32,
+          width: 24,
           height: 32,
         },
         properties: {
@@ -7387,10 +7387,10 @@ const addLayer4 = () => {
       const entities = dataSource.entities.values
       entities.forEach(entity => {
         entity.billboard = {
-          image: '/ng/yellow.png',
+          image: '/ng/yellow_pin.png',
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-          width: 32,
+          width: 24,
           height: 32,
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
         }
@@ -7510,8 +7510,8 @@ const addLayer5 = () => {
         // 贴地图钉 + 就近缩放时显示解译编号 / 地点，远看只留图钉
         entity.billboard.heightReference =
           Cesium.HeightReference.CLAMP_TO_GROUND
-        entity.billboard.image = '/ng/yellow.png'
-        entity.billboard.width = 32
+        entity.billboard.image = '/ng/yellow_pin.png'
+        entity.billboard.width = 24
         entity.billboard.height = 32
         entity.billboard.verticalOrigin = Cesium.VerticalOrigin.BOTTOM
         entity.billboard.disableDepthTestDistance = Number.POSITIVE_INFINITY
@@ -8075,10 +8075,10 @@ const position = () => {
         pixelOffset: new Cesium.Cartesian2(0, -0.5),
       },
       billboard: {
-        image: '/ng/yellow.png',
+        image: '/ng/yellow_pin.png',
         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
         disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
-        width: 48,
+        width: 36,
         height: 48,
       },
     })
@@ -8167,10 +8167,10 @@ const submit_disaster = () => {
         const pointEnt = viewer.value.entities.add({
           position: position_point.value,
           billboard: {
-            image: '/ng/yellow.png',
+            image: '/ng/yellow_pin.png',
             heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
             disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
-            width: 48,
+            width: 36,
             height: 48,
           },
           // [新增] 点击该点可查看属性
@@ -8226,10 +8226,10 @@ const addSearchMarker = (lng, lat, info) => {
     pointId: info?.id,
     position: Cesium.Cartesian3.fromDegrees(lng, lat),
     billboard: {
-      image: '/ng/yellow.png',
+      image: '/ng/yellow_pin.png',
       heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
       disableDepthTestDistance: Number.POSITIVE_INFINITY, // 确保始终可见
-      width: 48,
+      width: 36,
       height: 48,
     },
     // [新增] 挂上属性数据，供点击标记点时弹出信息卡片
