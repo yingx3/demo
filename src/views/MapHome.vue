@@ -5274,7 +5274,7 @@ const addLayer_622 = () => {
         position: Cesium.Cartesian3.fromDegrees(lon, lat),
         name: props.名称 || props.新编号 || '',
         billboard: {
-          image: '/CS/img/positionBlue.png',
+          image: '/ng/yellow.png',
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
@@ -5709,7 +5709,7 @@ const addLayer_623 = () => {
         position: Cesium.Cartesian3.fromDegrees(lon, lat),
         name: props.名称 || props.新编号 || '',
         billboard: {
-          image: '/CS/img/positionBlue.png',
+          image: '/ng/yellow.png',
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
