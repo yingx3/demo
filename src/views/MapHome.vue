@@ -8762,6 +8762,8 @@ const cleanentity = () => {
       imLayers.remove(layer)
     }
   }
+  // 7.0 人口图层已由上面的 WMS 清理循环移除，图例状态需同步关闭
+  removePopulationLegend()
   // 7.1 移除「灾害危险区划」静态图层
   removeLayer_dangerLevel()
   // 8. 移除 SDP 结果图层
