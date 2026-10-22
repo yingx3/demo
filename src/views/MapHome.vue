@@ -61,6 +61,22 @@
       @checkedLayers="checkedLayers"
       :checked-ids="selectedIds"
     ></zy-ml>
+    <!-- 人口密度图层图例：放在左侧模型面板之外，跟随地图覆盖层缩放 -->
+    <div v-if="populationLegendVisible" class="population-density-legend">
+      <div class="population-density-title">林芝市人口密度等级</div>
+      <div class="population-density-unit">（单位：人/平方公里）</div>
+      <div
+        v-for="item in POPULATION_LEGEND_ITEMS"
+        :key="item.label"
+        class="population-density-row"
+      >
+        <span
+          class="population-density-swatch"
+          :style="{ background: item.color }"
+        ></span>
+        <span class="population-density-label">{{ item.label }}</span>
+      </div>
+    </div>
     <div class="control">
       <div class="control_specific">
         <!-- <a href="#" @click="magnify"
@@ -5127,33 +5143,14 @@ const POPULATION_LEGEND_ITEMS = [
   { color: '#f03b20', label: '1 - 2' },
   { color: '#bd0026', label: '> 2' },
 ]
-let populationLegendEl = null
+const populationLegendVisible = ref(false)
 
 const removePopulationLegend = () => {
-  if (populationLegendEl) {
-    populationLegendEl.remove()
-    populationLegendEl = null
-  }
+  populationLegendVisible.value = false
 }
 
 const showPopulationLegend = () => {
-  removePopulationLegend()
-  const el = document.createElement('div')
-  el.id = 'population-legend'
-  el.style.cssText =
-    'position:fixed;bottom:30px;left:30px;z-index:999;min-width:210px;background:rgba(255,255,255,.94);border:1px solid rgba(90,90,90,.45);border-radius:2px;padding:12px 14px 14px;color:#111;box-shadow:0 4px 14px rgba(0,0,0,.28);font-family:"Microsoft YaHei","PingFang SC",sans-serif;'
-  el.innerHTML = `
-    <div style="font-size:18px;font-weight:700;line-height:1.25;white-space:nowrap">林芝市人口密度等级</div>
-    <div style="font-size:12px;color:#333;margin:4px 0 10px">（单位：人/平方公里）</div>
-    ${POPULATION_LEGEND_ITEMS.map(item => `
-      <div style="display:flex;align-items:center;gap:11px;margin:7px 0">
-        <span style="box-sizing:border-box;width:38px;height:31px;background:${item.color};border:1px solid #b5b5b5;flex-shrink:0"></span>
-        <span style="font-size:16px;line-height:1;white-space:nowrap">${item.label}</span>
-      </div>
-    `).join('')}
-  `
-  document.body.appendChild(el)
-  populationLegendEl = el
+  populationLegendVisible.value = true
 }
 //添加人口数据（GeoServer WMS）
 const addLayer_population = () => {
@@ -9195,6 +9192,56 @@ onBeforeUnmount(() => {
 })
 </script>
 <style lang="scss" scoped>
+.population-density-legend {
+  position: absolute;
+  left: 440px;
+  bottom: 26px;
+  z-index: 60;
+  min-width: 210px;
+  box-sizing: border-box;
+  padding: 12px 14px 14px;
+  color: #111;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(90, 90, 90, 0.45);
+  border-radius: 2px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  pointer-events: auto;
+}
+
+.population-density-title {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.population-density-unit {
+  margin: 4px 0 10px;
+  color: #333;
+  font-size: 12px;
+}
+
+.population-density-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 7px 0;
+}
+
+.population-density-swatch {
+  box-sizing: border-box;
+  width: 38px;
+  height: 31px;
+  flex-shrink: 0;
+  border: 1px solid #b5b5b5;
+}
+
+.population-density-label {
+  font-size: 16px;
+  line-height: 1;
+  white-space: nowrap;
+}
 .map-legend {
   position: absolute;
   right: 372px;
