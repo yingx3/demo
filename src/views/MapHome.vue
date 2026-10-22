@@ -5119,14 +5119,13 @@ const removeLayer_building = () => {
   ElMessage.success('建筑数据已移除')
 }
 
-// 人口分布色带：与 GeoServer 的 ZHLXT:LinzhiPop 样式保持一致
+// 林芝市人口密度等级：与 GeoServer 的 ZHLXT:LinzhiPop 样式保持一致
 const POPULATION_LEGEND_ITEMS = [
-  { color: 'transparent', border: '1px solid #6f8aa5', label: '无人口', range: '< 0.0001' },
-  { color: '#eee400', label: '低', range: '0.0001 – 0.001' },
-  { color: '#f3c700', label: '中低', range: '0.001 – 0.005' },
-  { color: '#eea200', label: '中', range: '0.005 – 0.02' },
-  { color: '#f08200', label: '中高', range: '0.02 – 0.08' },
-  { color: '#f34a00', label: '高', range: '≥ 0.08' },
+  { color: '#ffffff', label: '0 - 0.02' },
+  { color: '#fecc5c', label: '0.02 - 0.2' },
+  { color: '#fd8d3c', label: '0.2 - 1' },
+  { color: '#f03b20', label: '1 - 2' },
+  { color: '#bd0026', label: '> 2' },
 ]
 let populationLegendEl = null
 
@@ -5142,14 +5141,14 @@ const showPopulationLegend = () => {
   const el = document.createElement('div')
   el.id = 'population-legend'
   el.style.cssText =
-    'position:fixed;bottom:30px;left:30px;z-index:999;background:rgba(8,24,46,.92);border:1px solid rgba(56,225,255,.7);border-radius:6px;padding:10px 14px;color:#fff;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.35);'
+    'position:fixed;bottom:30px;left:30px;z-index:999;min-width:210px;background:rgba(255,255,255,.94);border:1px solid rgba(90,90,90,.45);border-radius:2px;padding:12px 14px 14px;color:#111;box-shadow:0 4px 14px rgba(0,0,0,.28);font-family:"Microsoft YaHei","PingFang SC",sans-serif;'
   el.innerHTML = `
-    <div style="font-weight:600;margin-bottom:7px;color:#38e1ff">人口分布</div>
+    <div style="font-size:18px;font-weight:700;line-height:1.25;white-space:nowrap">林芝市人口密度等级</div>
+    <div style="font-size:12px;color:#333;margin:4px 0 10px">（单位：人/平方公里）</div>
     ${POPULATION_LEGEND_ITEMS.map(item => `
-      <div style="display:flex;align-items:center;gap:8px;margin:4px 0;white-space:nowrap">
-        <span style="box-sizing:border-box;width:20px;height:14px;background:${item.color};${item.border ? `border:${item.border};` : ''}border-radius:2px;flex-shrink:0"></span>
-        <span style="min-width:42px">${item.label}</span>
-        <span style="color:#9fb8d4;font-size:11px">${item.range}</span>
+      <div style="display:flex;align-items:center;gap:11px;margin:7px 0">
+        <span style="box-sizing:border-box;width:38px;height:31px;background:${item.color};border:1px solid #b5b5b5;flex-shrink:0"></span>
+        <span style="font-size:16px;line-height:1;white-space:nowrap">${item.label}</span>
       </div>
     `).join('')}
   `
