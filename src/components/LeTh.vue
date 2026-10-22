@@ -1631,8 +1631,8 @@
             <template #reference>
               <el-button :plain="true"
                 ><span>脆弱性结果</span>
-                <span v-if="dataLayerCount([711, 712, 713])" class="data-layer-count"
-                  >{{ dataLayerCount([711, 712, 713]) }}/3</span
+                <span v-if="dataLayerCount(vulnerabilityLayerIds)" class="data-layer-count"
+                  >{{ dataLayerCount(vulnerabilityLayerIds) }}/{{ vulnerabilityLayerIds.length }}</span
                 ></el-button
               >
             </template>
@@ -1640,8 +1640,8 @@
               <div class="data-layer-panel-head">
                 <span>脆弱性结果</span>
                 <span class="data-layer-panel-actions">
-                  <a href="#" @click.prevent="selectAllDataLayers([711, 712, 713], true)">全选</a>
-                  <a href="#" @click.prevent="selectAllDataLayers([711, 712, 713], false)">清空</a>
+                  <a href="#" @click.prevent="selectAllDataLayers(vulnerabilityLayerIds, true)">全选</a>
+                  <a href="#" @click.prevent="selectAllDataLayers(vulnerabilityLayerIds, false)">清空</a>
                 </span>
               </div>
               <p class="data-layer-panel-hint">
@@ -1697,8 +1697,8 @@
             <template #reference>
               <el-button :plain="true"
                 ><span>风险评估结果</span>
-                <span v-if="dataLayerCount([741, 742, 743, 744, 745, 751, 752, 753, 754, 761, 762, 763, 77])" class="data-layer-count"
-                  >{{ dataLayerCount([741, 742, 743, 744, 745, 751, 752, 753, 754, 761, 762, 763, 77]) }}/13</span
+                <span v-if="dataLayerCount(riskLayerIds)" class="data-layer-count"
+                  >{{ dataLayerCount(riskLayerIds) }}/{{ riskLayerIds.length }}</span
                 ></el-button
               >
             </template>
@@ -1706,8 +1706,8 @@
               <div class="data-layer-panel-head">
                 <span>风险评估结果</span>
                 <span class="data-layer-panel-actions">
-                  <a href="#" @click.prevent="selectAllDataLayers([741, 742, 743, 744, 745, 751, 752, 753, 754, 761, 762, 763, 77], true)">全选</a>
-                  <a href="#" @click.prevent="selectAllDataLayers([741, 742, 743, 744, 745, 751, 752, 753, 754, 761, 762, 763, 77], false)">清空</a>
+                  <a href="#" @click.prevent="selectAllDataLayers(riskLayerIds, true)">全选</a>
+                  <a href="#" @click.prevent="selectAllDataLayers(riskLayerIds, false)">清空</a>
                 </span>
               </div>
               <p class="data-layer-panel-hint">
@@ -3411,9 +3411,14 @@ const dataLayerGroups = {
   ],
   population: [{ id: 732, label: '人口提取' }],
   vulnerability: [
-    { id: 711, label: '滑坡人口脆弱性' },
-    { id: 712, label: '泥石流人口脆弱性' },
-    { id: 713, label: '山洪人口脆弱性' },
+    { id: 741, label: '1 层建筑物脆弱性' },
+    { id: 742, label: '2 层建筑物脆弱性' },
+    { id: 743, label: '3 层建筑物脆弱性' },
+    { id: 744, label: '砌体建筑物脆弱性' },
+    { id: 745, label: '总体建筑物脆弱性' },
+    { id: 761, label: '双柱式桥梁脆弱性' },
+    { id: 762, label: '单柱式桥梁脆弱性' },
+    { id: 763, label: '总体桥梁脆弱性' },
   ],
   danger: [
     { id: 721, label: '滑坡危险性' },
@@ -3423,21 +3428,15 @@ const dataLayerGroups = {
     { id: 782, label: '点危险性评估' },
   ],
   risk: [
-    { id: 741, label: '1 层建筑物脆弱性' },
-    { id: 742, label: '2 层建筑物脆弱性' },
-    { id: 743, label: '3 层建筑物脆弱性' },
-    { id: 744, label: '砌体建筑物脆弱性' },
-    { id: 745, label: '总体建筑物脆弱性' },
     { id: 751, label: '高等级道路' },
     { id: 752, label: '次等级道路' },
     { id: 753, label: '简单道路' },
     { id: 754, label: '总体道路' },
-    { id: 761, label: '双柱式桥梁脆弱性' },
-    { id: 762, label: '单柱式桥梁脆弱性' },
-    { id: 763, label: '总体桥梁脆弱性' },
     { id: 77, label: '人口风险评估' },
   ],
 }
+const vulnerabilityLayerIds = dataLayerGroups.vulnerability.map(item => item.id)
+const riskLayerIds = dataLayerGroups.risk.map(item => item.id)
 const isDataLayerChecked = id => (props.dataLayerChecked || []).includes(id)
 const dataLayerCount = ids => (ids || []).filter(id => isDataLayerChecked(id)).length
 const toggleDataLayerItem = (id, checked) => $emit('dataLayerToggle', { id, checked })

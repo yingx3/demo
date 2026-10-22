@@ -204,19 +204,39 @@ const treeData = ref([
     children: [
       {
         id: 71,
-        name: '脆弱性数据',
+        name: '脆弱性结果',
         children: [
           {
-            id: 711,
-            name: '滑坡人口脆弱性',
+            id: 741,
+            name: '1层建筑物脆弱性',//build_one
           },
           {
-            id: 712,
-            name: '泥石流人口脆弱性',
+            id: 742,
+            name: '2层建筑物脆弱性',//build_two
           },
           {
-            id: 713,
-            name: '山洪人口脆弱性',
+            id: 743,
+            name: '3层建筑物脆弱性',//build_three
+          },
+          {
+            id: 744,
+            name: '砌体建筑物脆弱性',//build_masonry
+          },
+          {
+            id: 745,
+            name: '总体建筑物脆弱性',//building_risk
+          },
+          {
+            id: 761,
+            name: '双柱式桥梁脆弱性',//bridge_d
+          },
+          {
+            id: 762,
+            name: '单柱式桥梁脆弱性',//bridge_s
+          },
+          {
+            id: 763,
+            name: '总体桥梁脆弱性',//bridge
           },
         ],
       },
@@ -257,32 +277,6 @@ const treeData = ref([
         ],
       },
       {
-        id: 74,
-        name: '建筑物风险评估',
-        children: [
-          {
-            id: 741,
-            name: '1层建筑物脆弱性',//build_one
-          },
-          {
-            id: 742,
-            name: '2层建筑物脆弱性',//build_two
-          },
-          {
-            id: 743,
-            name: '3层建筑物脆弱性',//build_three
-          },
-          {
-            id: 744,
-            name: '砌体建筑物脆弱性',//build_masonry
-          },
-          {
-            id: 745,
-            name: '总体建筑物脆弱性',//building_risk
-          },
-        ],
-      },
-      {
         id: 75,
         name: '道路风险评估',
         children: [
@@ -301,24 +295,6 @@ const treeData = ref([
           {
             id: 754,
             name: '总体道路',//road_risk
-          },
-        ],
-      },
-      {
-        id: 76,
-        name: '桥梁风险评估',
-        children: [
-          {
-            id: 761,
-            name: '双柱式桥梁脆弱性',//bridge_d
-          },
-          {
-            id: 762,
-            name: '单柱式桥梁脆弱性',//bridge_s
-          },
-          {
-            id: 763,
-            name: '总体桥梁脆弱性',//bridge
           },
         ],
       },
