@@ -5983,6 +5983,7 @@ const addLayer_linzhi_pop = () => {
     const provider = createWmsProvider(linzhi_pop, false)
     const addedLayer = viewer.value.scene.imageryLayers.addImageryProvider(provider)
     addedLayer.linzhi_popTag = true
+    showPopulationLegend()
     flyToWmsLayer(linzhi_pop, 3000, 1.5)
     ElMessage.success('人口提取加载完成')
   } catch (error) { console.error('人口提取失败:', error); ElMessage.error(`人口提取失败: ${error.message || error}`) }
@@ -5990,6 +5991,7 @@ const addLayer_linzhi_pop = () => {
 const removeLayer_linzhi_pop = () => {
   const layers = viewer.value.scene.imageryLayers
   for (let i = layers.length - 1; i >= 0; i--) { if (layers.get(i).linzhi_popTag) { layers.remove(layers.get(i)); break } }
+  removePopulationLegend()
   ElMessage.success('人口提取已移除')
 }
 
