@@ -4686,6 +4686,7 @@ const removeLayer_relief = () => {
 
 //添加河流line
 const addLayer_river = () => {
+  ensureHydroFeatureClickHandler()
   axios.get('/node/river').then(res => {
     const data = res.data
     // console.log(data)
@@ -4786,6 +4787,7 @@ function addRiverToCesium(riverData) {
       })
 
       entity.riverTag = true
+      entity.hydroInfo = buildRiverHydroInfo(riverData, line)
     })
   } catch (e) {
     console.error('解析失败:', {
@@ -4824,6 +4826,7 @@ function addRiverToCesium(riverData) {
 //       })
 //       // 标记为河流图层
 //       entity.riverTag = true
+//       entity.hydroInfo = buildRiverHydroInfo(riverData, line)
 //     })
 //   } catch (e) {
 //     console.error('解析失败:', {
@@ -4851,9 +4854,11 @@ const removeLayer_river = () => {
       viewer.value.entities.remove(e)
     }
   }
+  closeDujiangImagePopup()
 }
 //添加冰川面
 const addLayer_glacier = () => {
+  ensureHydroFeatureClickHandler()
   // console.log(data)
   axios.get('/node/glacier').then(res => {
     const data = res.data
@@ -4898,6 +4903,7 @@ const addLayer_glacier = () => {
 
           // 添加 glacierTag 方便后续删除
           entity.glacierTag = true
+          entity.hydroInfo = buildGlacierHydroInfo(glacier, polygon)
           polygon.forEach(ring => ring.forEach(pt => extend(pt[0], pt[1])))
         })
       } catch (e) {
@@ -4935,6 +4941,7 @@ const removeLayer_glacier = () => {
       viewer.value.entities.remove(e)
     }
   }
+  closeDujiangImagePopup()
 }
 
 // ============================================================
@@ -5493,6 +5500,124 @@ const showPointInfoPopup = ({ title, badge = '', badgeColor = '', rows = [], ima
   dujiangImagePopup.value = el
 }
 
+const HYDRO_EARTH_RADIUS_KM = 6371.0088
+const formatHydroValue = value =>
+  value === null || value === undefined || value === '' ? '—' : String(value)
+const formatHydroCoord = point => {
+  const lon = Number(point?.[0])
+  const lat = Number(point?.[1])
+  return Number.isFinite(lon) && Number.isFinite(lat)
+    ? `${lon.toFixed(5)}, ${lat.toFixed(5)}`
+    : '—'
+}
+const haversineKm = (a, b) => {
+  const toRad = value => (Number(value) * Math.PI) / 180
+  const dLat = toRad(b[1] - a[1])
+  const dLon = toRad(b[0] - a[0])
+  const lat1 = toRad(a[1])
+  const lat2 = toRad(b[1])
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2
+  return 2 * HYDRO_EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(h)))
+}
+const riverLengthKm = line =>
+  (line || []).slice(1).reduce((sum, point, index) => sum + haversineKm(line[index], point), 0)
+const glacierAreaKm2 = ring => {
+  const points = (ring || [])
+    .map(point => [Number(point?.[0]), Number(point?.[1])])
+    .filter(point => Number.isFinite(point[0]) && Number.isFinite(point[1]))
+  if (points.length < 3) return 0
+  const lat0 = (points.reduce((sum, point) => sum + point[1], 0) / points.length) * Math.PI / 180
+  const projected = points.map(([lon, lat]) => [
+    HYDRO_EARTH_RADIUS_KM * (lon * Math.PI / 180) * Math.cos(lat0),
+    HYDRO_EARTH_RADIUS_KM * (lat * Math.PI / 180),
+  ])
+  let twiceArea = 0
+  for (let i = 0; i < projected.length; i++) {
+    const [x1, y1] = projected[i]
+    const [x2, y2] = projected[(i + 1) % projected.length]
+    twiceArea += x1 * y2 - x2 * y1
+  }
+  return Math.abs(twiceArea) / 2
+}
+const getGlacierTypeLabel = fclass => {
+  const labels = { glacier: '冰川', ice_cap: '冰帽', icefield: '冰原' }
+  return labels[fclass] || formatHydroValue(fclass)
+}
+const getRiverTypeLabel = fclass => {
+  const labels = { river: '河流', canal: '渠道', stream: '溪流' }
+  return labels[fclass] || formatHydroValue(fclass)
+}
+const glacierCenter = polygon => {
+  const ring = polygon?.[0] || []
+  if (!ring.length) return null
+  const sum = ring.reduce(
+    (acc, point) => [acc[0] + Number(point[0] || 0), acc[1] + Number(point[1] || 0)],
+    [0, 0],
+  )
+  return [sum[0] / ring.length, sum[1] / ring.length]
+}
+const buildGlacierHydroInfo = (glacier, polygon) => {
+  const name = formatHydroValue(glacier.Name)
+  const center = glacierCenter(polygon)
+  const area = glacierAreaKm2(polygon?.[0])
+  return {
+    title: name === '—' ? '冰川分布' : name,
+    badge: '冰川',
+    badgeColor: '#7dd3fc',
+    rows: [
+      ['要素名称', name],
+      ['要素类型', getGlacierTypeLabel(glacier.fclass)],
+      ['要素编号', formatHydroValue(glacier.id)],
+      ['分类代码', formatHydroValue(glacier.fclass)],
+      ['近似面积', `${area.toFixed(area >= 10 ? 1 : 2)} km²`],
+      ['中心坐标', formatHydroCoord(center)],
+      ['边界节点', `${polygon?.[0]?.length || 0} 个`],
+    ],
+    hint: '冰川面积按外环边界近似估算；点击其他冰川面可切换查看。',
+  }
+}
+const buildRiverHydroInfo = (riverData, line) => {
+  const name = formatHydroValue(riverData.Name)
+  return {
+    title: name === '—' ? '水系数据' : name,
+    badge: '水系',
+    badgeColor: '#38e1ff',
+    rows: [
+      ['要素名称', name],
+      ['要素类型', getRiverTypeLabel(riverData.fclass)],
+      ['要素编号', formatHydroValue(riverData.id)],
+      ['分类代码', formatHydroValue(riverData.fclass)],
+      ['近似长度', `${riverLengthKm(line).toFixed(2)} km`],
+      ['起点坐标', formatHydroCoord(line?.[0])],
+      ['终点坐标', formatHydroCoord(line?.[line.length - 1])],
+      ['折点数量', `${line?.length || 0} 个`],
+    ],
+    hint: '长度按折线节点的球面距离累计；点击其他水系要素可切换查看。',
+  }
+}
+
+let hydroFeatureClickHandler = null
+const ensureHydroFeatureClickHandler = () => {
+  if (hydroFeatureClickHandler || !viewer.value?.scene) return
+  hydroFeatureClickHandler = new Cesium.ScreenSpaceEventHandler(viewer.value.scene.canvas)
+  hydroFeatureClickHandler.setInputAction(movement => {
+    const picked = viewer.value.scene.pick(movement.position)
+    const entity = Cesium.defined(picked) ? picked.id : null
+    if (!entity || (!entity.riverTag && !entity.glacierTag)) return
+    viewer.value.selectedEntity = undefined
+    const info = entity.hydroInfo || {}
+    showPointInfoPopup({
+      title: info.title || entity.name || '空间要素',
+      badge: info.badge || '空间要素',
+      badgeColor: info.badgeColor || '#38e1ff',
+      rows: info.rows || [],
+      hint: info.hint || '',
+    })
+  }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+}
+
 const closeDujiangImagePopup = () => {
   closeDujiangPhotoViewer()
   if (dujiangImagePopup.value) {
@@ -5626,7 +5751,9 @@ const ensureWmsFeatureClickHandler = () => {
         pid.noDujiangTag ||
         pid.isDzdDevice ||
         pid.isWeatherStation ||
-        pid.forecastInfo)
+        pid.forecastInfo ||
+        pid.riverTag ||
+        pid.glacierTag)
     ) {
       return
     }
@@ -5673,6 +5800,8 @@ const ensureWmsFeatureClickHandler = () => {
 const handleDujiangClick = movement => {
   const picked = viewer.value.scene.pick(movement.position)
   const entity = Cesium.defined(picked) && picked.id ? picked.id : null
+  // 冰川 / 水系使用自己的详情卡片，不能被历史点位处理器关闭
+  if (entity?.riverTag || entity?.glacierTag) return
   // 点到地图空白处（或其它非堵江点要素）时，关闭历史堵江点信息弹窗
   if (!entity || (!entity.dujiangTag && !entity.noDujiangTag)) {
     closeDujiangImagePopup()
@@ -9154,6 +9283,10 @@ function drawSeismicChart() {
 // [已移除] 原「地震仪原数据 / 比率 / 结果」切换函数：现在只展示原数据
 onBeforeUnmount(() => {
   removePopulationLegend()
+  if (hydroFeatureClickHandler) {
+    hydroFeatureClickHandler.destroy()
+    hydroFeatureClickHandler = null
+  }
   if (weatherChartInstance) {
     weatherChartInstance.dispose()
     weatherChartInstance = null

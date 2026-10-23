@@ -224,7 +224,8 @@ onMounted(async () => {
     fullscreenButton: false,
     animation: false,
     timeline: false,
-    infoBox: true,
+    infoBox: false,
+    selectionIndicator: false,
   })
 
   viewer.value.cesiumWidget.creditContainer.style.display = 'none'
