@@ -3182,14 +3182,20 @@ const startAvainitRegionDraw = () => {
 const clearAvainitPolygon = () => {
   avainitPolygon.value = []
 }
-const handleAvainitDem = (uploadFile, uploadFiles) => {
-  const f = (uploadFiles && uploadFiles[0]?.raw) || uploadFile?.raw || uploadFile
+const handleAvainitDem = uploadFile => {
+  // change 事件的第一项才是本次新选文件；uploadFiles 会累积旧文件，不能取 [0]。
+  const f = uploadFile?.raw || uploadFile
   avainitDemFile.value = f || null
   avainitDemName.value = f?.name || ''
+  // 立即清空内部文件列表，下一次选择时不会再命中旧文件。
+  queueMicrotask(() => avainitDemUploadRef.value?.clearFiles?.())
 }
 const triggerAvainitDem = () => {
   const el = avainitDemUploadRef.value?.$el?.querySelector?.('input[type=file]')
-  if (el) el.click()
+  if (!el) return
+  // 允许用户重新选择同名文件。
+  el.value = ''
+  el.click()
 }
 // MapHome 完成绘制后回调
 // 弹窗重新打开会触发 @open -> resetAvainitInputs，这里标记本次要保留刚绘制的源区
@@ -5380,6 +5386,9 @@ const resetAvainitInputs = () => {
   }
   avainitKeepPolygonOnOpen = false
   avainitDrawing.value = false
+  avainitDemFile.value = null
+  avainitDemName.value = ''
+  avainitDemUploadRef.value?.clearFiles?.()
   avainitSourceRatio.value = '100'
   avainitTmax.value = '200'
   avainitInterval.value = '10'
