@@ -1077,75 +1077,66 @@
                 </template>
                 <div id="avainit-model-info" class="help-body">
                   <h2>一、功能目的</h2>
-                  <p>针对冰川区冰—岩组合边坡，按顺层滑移、反倾、楔形三类破坏模式分别计算冰岩崩的起动条件与启动规模，定量给出源区稳定性判断与崩落量级，为下游泥石流物源与灾害链演进提供启动条件。</p>
+                  <p>针对冰川区冰—岩组合边坡，按顺层滑移、反倾倾倒、楔形滑移三类破坏模式计算冰岩崩启动条件、源区稳定系数和崩落规模。</p>
                   <h2>二、通用参数</h2>
                   <table>
                     <tbody>
-                      <tr><td>参数</td><td>单位 / 取值</td><td>默认值</td><td>说明</td></tr>
-                      <tr><td>破坏模式</td><td>顺层 / 反倾 / 楔形</td><td>顺层</td><td>选择后下方参数表单随之切换，各模式的参数组合不同</td></tr>
-                      <tr><td>源区定位 · 经度</td><td>十进制度（WGS84）</td><td>95.0020</td><td>冰岩崩源区在地图上的经度，默认取易贡扎木弄沟案例</td></tr>
-                      <tr><td>源区定位 · 纬度</td><td>十进制度（WGS84）</td><td>30.2354</td><td>冰岩崩源区在地图上的纬度</td></tr>
+                      <tr><td>参数</td><td>单位 / 取值</td><td>说明</td></tr>
+                      <tr><td>破坏模式</td><td>顺层 / 反倾 / 楔形</td><td>切换后使用对应模式的参数组合</td></tr>
+                      <tr><td>源区范围</td><td>地图手绘多边形</td><td>面积、形心和动力学模型输入范围均由手绘边界确定</td></tr>
+                      <tr><td>冰层厚度</td><td>m</td><td>三种破坏模式共用的初始冰体厚度</td></tr>
+                      <tr><td>物源比例</td><td>%</td><td>启动后进入动力学模型的物源比例</td></tr>
                     </tbody>
                   </table>
                   <h2>三、分模式参数</h2>
                   <h3>（一）顺层滑移</h3>
                   <table>
                     <tbody>
-                      <tr><td>参数</td><td>单位</td><td>默认值</td><td>说明</td></tr>
-                      <tr><td>融冰时长</td><td>h</td><td>240</td><td>融冰期持续时间，决定入渗量与下滑力的累积</td></tr>
-                      <tr><td>边坡角度</td><td>°</td><td>60</td><td>坡面倾角，控制自重沿滑面的分量</td></tr>
-                      <tr><td>滑面角</td><td>°</td><td>15</td><td>潜在滑面与水平面的夹角</td></tr>
-                      <tr><td>冰层厚度</td><td>m</td><td>4</td><td>冰体平均厚度，参与自重计算</td></tr>
-                      <tr><td>裂隙高度</td><td>m</td><td>10</td><td>后缘张拉裂隙的充水高度，决定静水压力</td></tr>
-                      <tr><td>滑面长度</td><td>m</td><td>20</td><td>滑面沿程长度，影响阻滑力</td></tr>
-                      <tr><td>内聚力</td><td>kPa</td><td>15</td><td>滑面黏聚力，控制抗滑能力</td></tr>
-                      <tr><td>内摩擦角</td><td>°</td><td>20</td><td>滑面摩擦角</td></tr>
-                      <tr><td>岩体重度</td><td>kN/m³</td><td>20</td><td>冰—岩体平均重度</td></tr>
-                      <tr><td>渗透系数</td><td>m/s</td><td>0.0001</td><td>控制融水入渗与孔隙水压增长</td></tr>
+                      <tr><td>参数</td><td>单位</td><td>说明</td></tr>
+                      <tr><td>融冰时长</td><td>h</td><td>融冰过程持续时间</td></tr>
+                      <tr><td>边坡角度</td><td>°</td><td>坡面倾角</td></tr>
+                      <tr><td>滑面角</td><td>°</td><td>滑面与水平面的夹角</td></tr>
+                      <tr><td>裂隙高度</td><td>m</td><td>后缘裂隙充水高度</td></tr>
+                      <tr><td>滑面长度 L0</td><td>m</td><td>滑面段长度</td></tr>
+                      <tr><td>岩桥长度 L2</td><td>m</td><td>滑面后部岩桥长度，总长度 L=L0+L2</td></tr>
+                      <tr><td>滑面/岩桥内聚力</td><td>MPa</td><td>分别用于滑面段和岩桥段的抗滑力</td></tr>
+                      <tr><td>滑面/岩桥内摩擦角</td><td>°</td><td>分别用于滑面段和岩桥段的摩擦强度</td></tr>
+                      <tr><td>岩体重度</td><td>kN/m³</td><td>冰—岩体自重计算参数</td></tr>
+                      <tr><td>渗透系数</td><td>m/s</td><td>裂隙水渗流衰减参数</td></tr>
                     </tbody>
                   </table>
-                  <h3>（二）反倾</h3>
+                  <h3>（二）反倾倾倒</h3>
                   <table>
                     <tbody>
-                      <tr><td>参数</td><td>单位</td><td>默认值</td><td>说明</td></tr>
-                      <tr><td>融冰时长</td><td>h</td><td>240</td><td>融水补给时长</td></tr>
-                      <tr><td>边坡角度</td><td>°</td><td>30</td><td>坡面倾角</td></tr>
-                      <tr><td>反倾角</td><td>°</td><td>70</td><td>岩层倾向与坡向相反时的层面倾角，反倾倾倒的主控量</td></tr>
-                      <tr><td>冰层厚度</td><td>m</td><td>5</td><td>冰体平均厚度</td></tr>
-                      <tr><td>边坡高度</td><td>m</td><td>10</td><td>坡体临空高度</td></tr>
-                      <tr><td>层面间隔</td><td>m</td><td>20</td><td>结构面间距，反映岩体完整性</td></tr>
-                      <tr><td>内聚力</td><td>kPa</td><td>15</td><td>结构面黏聚力</td></tr>
-                      <tr><td>内摩擦角</td><td>°</td><td>20</td><td>结构面摩擦角</td></tr>
-                      <tr><td>岩体重度</td><td>kN/m³</td><td>20</td><td>冰—岩体平均重度</td></tr>
-                      <tr><td>渗透系数</td><td>m/s</td><td>0.0001</td><td>融水入渗参数</td></tr>
+                      <tr><td>参数</td><td>单位</td><td>说明</td></tr>
+                      <tr><td>融冰时长</td><td>h</td><td>融冰过程持续时间</td></tr>
+                      <tr><td>边坡角度 / 反倾角</td><td>°</td><td>控制反倾坡面几何和倾倒方向</td></tr>
+                      <tr><td>边坡高度 / 层面间隔</td><td>m</td><td>用于沿坡面划分倾倒计算条带</td></tr>
+                      <tr><td>岩桥长度</td><td>m</td><td>区分岩桥段和裂隙段的抗拉强度</td></tr>
+                      <tr><td>裂隙抗拉强度</td><td>MPa</td><td>裂隙段条带抗拉强度</td></tr>
+                      <tr><td>岩石抗拉强度</td><td>MPa</td><td>岩桥段条带抗拉强度</td></tr>
+                      <tr><td>岩体重度 / 渗透系数</td><td>kN/m³ / m/s</td><td>自重和渗流参数</td></tr>
                     </tbody>
                   </table>
-                  <h3>（三）楔形</h3>
+                  <h3>（三）楔形滑移</h3>
                   <table>
                     <tbody>
-                      <tr><td>参数</td><td>单位</td><td>默认值</td><td>说明</td></tr>
-                      <tr><td>融冰时长</td><td>h</td><td>240</td><td>融水补给时长</td></tr>
-                      <tr><td>边坡角度</td><td>°</td><td>55</td><td>坡面倾角</td></tr>
-                      <tr><td>法向量</td><td>—</td><td>1,1,1</td><td>两组结构面交棱方向的法向量，决定楔体几何（逗号分隔）</td></tr>
-                      <tr><td>冰层厚度</td><td>m</td><td>5</td><td>冰体平均厚度</td></tr>
-                      <tr><td>面积</td><td>m²</td><td>200</td><td>楔体潜在滑面面积</td></tr>
-                      <tr><td>边坡高度</td><td>m</td><td>10</td><td>坡体临空高度</td></tr>
-                      <tr><td>裂隙 / 中线</td><td>m</td><td>0.5</td><td>后缘裂隙张开度或中线长度</td></tr>
-                      <tr><td>内聚力</td><td>kPa</td><td>15</td><td>结构面黏聚力</td></tr>
-                      <tr><td>内摩擦角</td><td>°</td><td>20</td><td>结构面摩擦角</td></tr>
-                      <tr><td>岩体重度</td><td>kN/m³</td><td>20</td><td>冰—岩体平均重度</td></tr>
-                      <tr><td>渗透系数</td><td>m/s</td><td>0.0001</td><td>融水入渗参数</td></tr>
+                      <tr><td>参数</td><td>单位</td><td>说明</td></tr>
+                      <tr><td>融冰时长 / 边坡角度</td><td>h / °</td><td>融冰过程与坡面几何参数</td></tr>
+                      <tr><td>法向量 / 面积</td><td>— / m²</td><td>定义两组结构面及楔体滑面面积</td></tr>
+                      <tr><td>边坡高度 / 裂隙长度</td><td>m</td><td>楔体几何与后缘参数</td></tr>
+                      <tr><td>岩桥长度</td><td>m</td><td>决定岩桥段面积和强度分担比例</td></tr>
+                      <tr><td>滑面/岩桥内聚力、内摩擦角</td><td>MPa / °</td><td>分别用于岩桥段和滑面段</td></tr>
+                      <tr><td>岩体重度 / 渗透系数</td><td>kN/m³ / m/s</td><td>自重和渗流参数</td></tr>
                     </tbody>
                   </table>
                   <h2>四、运行与结果</h2>
                   <ul>
-                    <li>本模型无需上传文件，选择破坏模式、填写参数后点击「运行」即可；</li>
-                    <li>后端按所选破坏模式执行对应的稳定性判别与启动规模计算；</li>
-                    <li>返回源区位置与启动规模，前端自动定位到源区并叠加显示；</li>
-                    <li>上表默认值取自易贡扎木弄沟案例，可直接用于联调，也可按实际冰岩体条件调整。</li>
+                    <li>手绘源区后选择破坏模式并填写参数，点击“运行”计算最小稳定系数。</li>
+                    <li>最小稳定系数小于 1 时判定为失稳，并生成源区厚度 ASC 与启动动画。</li>
+                    <li>注：内聚力/抗拉强度输入单位为 MPa，程序内部按参考软件换算为 Pa。</li>
                   </ul>
-                </div>
-              </el-dialog>
+                </div>              </el-dialog>
             <div class="avainit-mode-row">
               <span class="avainit-field-caption">破坏模式</span>
               <el-radio-group v-model="radio_avainit" size="large">
@@ -1218,60 +1209,45 @@
               class="form_flood form_avainit"
               v-if="radio_avainit == 1"
             >
-              <el-form-item label="融冰时长" class="form1_flood">
-                <el-input
-                  v-model="form_avainit.melt_duration"
-                  placeholder="20"
-                />
+              <el-form-item label="融冰时长 (h)" class="form1_flood">
+                <el-input v-model="form_avainit.melt_duration" placeholder="240" />
               </el-form-item>
-              <el-form-item label="边坡角度" class="form1_flood">
-                <el-input v-model="form_avainit.slope_angle" placeholder="20" />
+              <el-form-item label="边坡角度 (°)" class="form1_flood">
+                <el-input v-model="form_avainit.slope_angle" placeholder="60" />
               </el-form-item>
-              <el-form-item label="滑面角" class="form1_flood">
-                <el-input v-model="form_avainit.slide_angle" placeholder="20" />
+              <el-form-item label="滑面角 (°)" class="form1_flood">
+                <el-input v-model="form_avainit.slide_angle" placeholder="15" />
               </el-form-item>
-                            <el-form-item label="裂隙高度" class="form1_flood">
-                <el-input
-                  v-model="form_avainit.fissure_height"
-                  placeholder="20"
-                />
+              <el-form-item label="裂隙高度 (m)" class="form1_flood">
+                <el-input v-model="form_avainit.fissure_height" placeholder="10" />
               </el-form-item>
-              <el-form-item label="滑面长度" class="form1_flood">
-                <el-input
-                  v-model="form_avainit.slide_length"
-                  placeholder="20"
-                />
+              <el-form-item label="滑面长度 (m)" class="form1_flood">
+                <el-input v-model="form_avainit.slide_length" placeholder="20" />
               </el-form-item>
-              <el-form-item label="内聚力" class="form1_flood">
-                <el-input v-model="form_avainit.cohesion" placeholder="20" />
+              <el-form-item label="岩桥长度 (m)" class="form1_flood">
+                <el-input v-model="form_avainit.rock_bridge_length" placeholder="5" />
               </el-form-item>
-              <el-form-item label="内摩擦角" class="form1_flood">
-                <el-input
-                  v-model="form_avainit.friction_angle"
-                  placeholder="20"
-                />
+              <el-form-item label="滑面内聚力 (MPa)" class="form1_flood">
+                <el-input v-model="form_avainit.cohesion" placeholder="15" />
               </el-form-item>
-              <el-form-item label="岩体重度" class="form1_flood">
-                <el-input
-                  v-model="form_avainit.rock_density"
-                  placeholder="20"
-                />
+              <el-form-item label="滑面内摩擦角 (°)" class="form1_flood">
+                <el-input v-model="form_avainit.friction_angle" placeholder="20" />
               </el-form-item>
-              <el-form-item label="渗透系数" class="form1_flood">
-                <el-input
-                  v-model="form_avainit.permeability"
-                  placeholder="20"
-                />
+              <el-form-item label="岩桥内聚力 (MPa)" class="form1_flood">
+                <el-input v-model="form_avainit.bridge_cohesion" placeholder="15" />
               </el-form-item>
-
+              <el-form-item label="岩桥内摩擦角 (°)" class="form1_flood">
+                <el-input v-model="form_avainit.bridge_friction_angle" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="岩体重度 (kN/m³)" class="form1_flood">
+                <el-input v-model="form_avainit.rock_density" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="渗透系数 (m/s)" class="form1_flood">
+                <el-input v-model="form_avainit.permeability" placeholder="0.0001" />
+              </el-form-item>
               <div class="avainit-actions">
                 <el-button class="avainit-cancel" @click="dialog_avainit = false">取消</el-button>
-                <el-button
-                  type="primary"
-                  class="avainit-submit"
-                  @click="sumbit_avainit"
-                  >运行</el-button
-                >
+                <el-button type="primary" class="avainit-submit" @click="sumbit_avainit">运行</el-button>
               </div>
             </el-form>
             <el-form
@@ -1280,69 +1256,39 @@
               class="form_flood form_avainit"
               v-if="radio_avainit == 2"
             >
-              <el-form-item label="融冰时长" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_inverted.melt_duration"
-                  placeholder="20"
-                />
+              <el-form-item label="融冰时长 (h)" class="form1_flood">
+                <el-input v-model="form_bedding_inverted.melt_duration" placeholder="240" />
               </el-form-item>
-              <el-form-item label="边坡角度" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_inverted.slope_angle"
-                  placeholder="20"
-                />
+              <el-form-item label="边坡角度 (°)" class="form1_flood">
+                <el-input v-model="form_bedding_inverted.slope_angle" placeholder="30" />
               </el-form-item>
-              <el-form-item label="反倾角" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_inverted.inverse_angle"
-                  placeholder="20"
-                />
+              <el-form-item label="反倾角 (°)" class="form1_flood">
+                <el-input v-model="form_bedding_inverted.inverse_angle" placeholder="70" />
               </el-form-item>
-                            <el-form-item label="边坡高度" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_inverted.slope_height"
-                  placeholder="20"
-                />
+              <el-form-item label="边坡高度 (m)" class="form1_flood">
+                <el-input v-model="form_bedding_inverted.slope_height" placeholder="10" />
               </el-form-item>
-              <el-form-item label="层面间隔" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_inverted.bedding_space"
-                  placeholder="20"
-                />
+              <el-form-item label="层面间隔 (m)" class="form1_flood">
+                <el-input v-model="form_bedding_inverted.bedding_space" placeholder="20" />
               </el-form-item>
-              <el-form-item label="内聚力" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_inverted.cohesion"
-                  placeholder="20"
-                />
+              <el-form-item label="岩桥长度 (m)" class="form1_flood">
+                <el-input v-model="form_bedding_inverted.rock_bridge_length" placeholder="5" />
               </el-form-item>
-              <el-form-item label="内摩擦角" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_inverted.friction_angle"
-                  placeholder="20"
-                />
+              <el-form-item label="裂隙抗拉强度 (MPa)" class="form1_flood">
+                <el-input v-model="form_bedding_inverted.fracture_tensile_strength" placeholder="20" />
               </el-form-item>
-              <el-form-item label="岩体重度" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_inverted.rock_density"
-                  placeholder="20"
-                />
+              <el-form-item label="岩石抗拉强度 (MPa)" class="form1_flood">
+                <el-input v-model="form_bedding_inverted.rock_tensile_strength" placeholder="15" />
               </el-form-item>
-              <el-form-item label="渗透系数" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_inverted.permeability"
-                  placeholder="20"
-                />
+              <el-form-item label="岩体重度 (kN/m³)" class="form1_flood">
+                <el-input v-model="form_bedding_inverted.rock_density" placeholder="20" />
               </el-form-item>
-
+              <el-form-item label="渗透系数 (m/s)" class="form1_flood">
+                <el-input v-model="form_bedding_inverted.permeability" placeholder="0.0001" />
+              </el-form-item>
               <div class="avainit-actions">
                 <el-button class="avainit-cancel" @click="dialog_avainit = false">取消</el-button>
-                <el-button
-                  type="primary"
-                  class="avainit-submit"
-                  @click="sumbit_inverse"
-                  >运行</el-button
-                >
+                <el-button type="primary" class="avainit-submit" @click="sumbit_inverse">运行</el-button>
               </div>
             </el-form>
             <el-form
@@ -1351,75 +1297,50 @@
               class="form_flood form_avainit"
               v-if="radio_avainit == 3"
             >
-              <el-form-item label="融冰时长" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_wedget.melt_duration"
-                  placeholder="20"
-                />
+              <el-form-item label="融冰时长 (h)" class="form1_flood">
+                <el-input v-model="form_bedding_wedget.melt_duration" placeholder="240" />
               </el-form-item>
-              <el-form-item label="边坡角度" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_wedget.slope_angle"
-                  placeholder="20"
-                />
+              <el-form-item label="边坡角度 (°)" class="form1_flood">
+                <el-input v-model="form_bedding_wedget.slope_angle" placeholder="55" />
               </el-form-item>
-              <el-form-item label="法向量" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_wedget.normal_vector"
-                  placeholder="20"
-                />
+              <el-form-item label="法向量 (x,y,z)" class="form1_flood">
+                <el-input v-model="form_bedding_wedget.normal_vector" placeholder="1,1,1" />
               </el-form-item>
-                            <el-form-item label="面积" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_wedget.square"
-                  placeholder="20"
-                />
+              <el-form-item label="面积 (m²)" class="form1_flood">
+                <el-input v-model="form_bedding_wedget.square" placeholder="200" />
               </el-form-item>
-              <el-form-item label="边坡高度" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_wedget.slope_height"
-                  placeholder="20"
-                />
+              <el-form-item label="边坡高度 (m)" class="form1_flood">
+                <el-input v-model="form_bedding_wedget.slope_height" placeholder="10" />
               </el-form-item>
-              <el-form-item label="裂隙/中线" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_wedget.fracture"
-                  placeholder="20"
-                />
+              <el-form-item label="裂隙 / 中线长度 (m)" class="form1_flood">
+                <el-input v-model="form_bedding_wedget.fracture" placeholder="0.5" />
               </el-form-item>
-              <el-form-item label="内聚力" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_wedget.cohesion"
-                  placeholder="20"
-                />
+              <el-form-item label="岩桥长度 (m)" class="form1_flood">
+                <el-input v-model="form_bedding_wedget.rock_bridge_length" placeholder="5" />
               </el-form-item>
-              <el-form-item label="内摩擦角" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_wedget.friction_angle"
-                  placeholder="20"
-                />
+              <el-form-item label="滑面内聚力 (MPa)" class="form1_flood">
+                <el-input v-model="form_bedding_wedget.cohesion" placeholder="15" />
               </el-form-item>
-              <el-form-item label="岩体重度" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_wedget.rock_density"
-                  placeholder="20"
-                />
+              <el-form-item label="滑面内摩擦角 (°)" class="form1_flood">
+                <el-input v-model="form_bedding_wedget.friction_angle" placeholder="20" />
               </el-form-item>
-              <el-form-item label="渗透系数" class="form1_flood">
-                <el-input
-                  v-model="form_bedding_wedget.permeability"
-                  placeholder="20"
-                />
+              <el-form-item label="岩桥内聚力 (MPa)" class="form1_flood">
+                <el-input v-model="form_bedding_wedget.bridge_cohesion" placeholder="15" />
               </el-form-item>
-
+              <el-form-item label="岩桥内摩擦角 (°)" class="form1_flood">
+                <el-input v-model="form_bedding_wedget.bridge_friction_angle" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="岩体重度 (kN/m³)" class="form1_flood">
+                <el-input v-model="form_bedding_wedget.rock_density" placeholder="20" />
+              </el-form-item>
+              <el-form-item label="渗透系数 (m/s)" class="form1_flood">
+                <el-input v-model="form_bedding_wedget.permeability" placeholder="0.0001" />
+              </el-form-item>
               <div class="avainit-actions">
                 <el-button class="avainit-cancel" @click="dialog_avainit = false">取消</el-button>
-                <el-button type="primary" class="avainit-submit" @click="sumbit_wedget"
-                  >运行</el-button
-                >
+                <el-button type="primary" class="avainit-submit" @click="sumbit_wedget">运行</el-button>
               </div>
-            </el-form>
-          </el-dialog>
+            </el-form>          </el-dialog>
         </div>
         <div class="box box-used p_bottom">
           <img src="../assets/img/云反射率.png" alt="" />
@@ -3159,22 +3080,26 @@ const form_avainit = reactive({
   slide_angle: '15',
   cohesion: '15',
   friction_angle: '20',
+  bridge_cohesion: '15',
+  bridge_friction_angle: '20',
   rock_density: '20',
   permeability: '0.0001',
   ice_thickness: '4',
   fissure_height: '10',
   melt_duration: '240',
   slide_length: '20',
+  rock_bridge_length: '5',
 })
 const form_bedding_inverted = reactive({
-melt_duration: '240',
+  melt_duration: '240',
   slope_angle: '30',
   inverse_angle: '70',
   ice_thickness: '5',
   slope_height: '10',
   bedding_space: '20',
-  cohesion: '15',
-  friction_angle: '20',
+  rock_bridge_length: '5',
+  fracture_tensile_strength: '20',
+  rock_tensile_strength: '15',
   rock_density: '20',
   permeability: '0.0001',
 })
@@ -3183,12 +3108,15 @@ const form_bedding_wedget = reactive({
   normal_vector: '1,1,1',
   cohesion: '15',
   friction_angle: '20',
+  bridge_cohesion: '15',
+  bridge_friction_angle: '20',
   rock_density: '20',
   permeability: '0.0001',
   ice_thickness: '5',
   slope_height: '10',
   square: '200',
   fracture: '0.5',
+  rock_bridge_length: '5',
   melt_duration: '240',
 })
 const form_avainit_location = reactive({ longitude: '95.0020', latitude: '30.2354' })
@@ -5457,12 +5385,15 @@ const resetAvainitInputs = () => {
     slide_angle: '15',
     cohesion: '15',
     friction_angle: '20',
+    bridge_cohesion: '15',
+    bridge_friction_angle: '20',
     rock_density: '20',
     permeability: '0.0001',
     ice_thickness: '4',
     fissure_height: '10',
     melt_duration: '240',
     slide_length: '20',
+    rock_bridge_length: '5',
   })
   Object.assign(form_bedding_inverted, {
     melt_duration: '240',
@@ -5471,8 +5402,9 @@ const resetAvainitInputs = () => {
     ice_thickness: '5',
     slope_height: '10',
     bedding_space: '20',
-    cohesion: '15',
-    friction_angle: '20',
+    rock_bridge_length: '5',
+    fracture_tensile_strength: '20',
+    rock_tensile_strength: '15',
     rock_density: '20',
     permeability: '0.0001',
   })
@@ -5481,12 +5413,15 @@ const resetAvainitInputs = () => {
     normal_vector: '1,1,1',
     cohesion: '15',
     friction_angle: '20',
+    bridge_cohesion: '15',
+    bridge_friction_angle: '20',
     rock_density: '20',
     permeability: '0.0001',
     ice_thickness: '5',
     slope_height: '10',
     square: '200',
     fracture: '0.5',
+    rock_bridge_length: '5',
     melt_duration: '240',
   })
   form_avainit_location.longitude = '95.0020'
