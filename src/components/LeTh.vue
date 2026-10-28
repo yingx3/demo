@@ -1099,10 +1099,10 @@
                       <tr><td>裂隙高度</td><td>m</td><td>后缘裂隙充水高度</td></tr>
                       <tr><td>滑面长度 L0</td><td>m</td><td>滑面段长度</td></tr>
                       <tr><td>岩桥长度 L2</td><td>m</td><td>滑面后部岩桥长度，总长度 L=L0+L2</td></tr>
-                      <tr><td>滑面/岩桥内聚力</td><td>MPa</td><td>分别用于滑面段和岩桥段的抗滑力</td></tr>
-                      <tr><td>滑面/岩桥内摩擦角</td><td>°</td><td>分别用于滑面段和岩桥段的摩擦强度</td></tr>
+                      <tr><td>岩体粘聚力</td><td>MPa</td><td>程序内部按 0.2 倍自动派生滑面内聚力</td></tr>
+                      <tr><td>岩体内摩擦角</td><td>°</td><td>程序内部按 0.5×tan(φ) 自动派生滑面摩擦参数</td></tr>
                       <tr><td>岩体重度</td><td>kN/m³</td><td>冰—岩体自重计算参数</td></tr>
-                      <tr><td>渗透系数</td><td>m/s</td><td>裂隙水渗流衰减参数</td></tr>
+                      <tr><td>裂隙渗透系数</td><td>m/s</td><td>裂隙水渗流衰减参数</td></tr>
                     </tbody>
                   </table>
                   <h3>（二）反倾倾倒</h3>
@@ -1126,7 +1126,7 @@
                       <tr><td>法向量 / 面积</td><td>— / m²</td><td>定义两组结构面及楔体滑面面积</td></tr>
                       <tr><td>边坡高度 / 裂隙长度</td><td>m</td><td>楔体几何与后缘参数</td></tr>
                       <tr><td>岩桥长度</td><td>m</td><td>决定岩桥段面积和强度分担比例</td></tr>
-                      <tr><td>滑面/岩桥内聚力、内摩擦角</td><td>MPa / °</td><td>分别用于岩桥段和滑面段</td></tr>
+                      <tr><td>岩石内聚力、内摩擦角</td><td>MPa / °</td><td>仅输入岩石强度，程序内部自动派生滑面强度</td></tr>
                       <tr><td>岩体重度 / 渗透系数</td><td>kN/m³ / m/s</td><td>自重和渗流参数</td></tr>
                     </tbody>
                   </table>
@@ -1226,19 +1226,13 @@
               <el-form-item label="岩桥长度 (L2 m)" class="form1_flood">
                 <el-input v-model="form_avainit.rock_bridge_length" placeholder="5" />
               </el-form-item>
-              <el-form-item label="滑面内摩擦角 (φ °)" class="form1_flood">
+              <el-form-item label="岩体内摩擦角 (φ °)" class="form1_flood">
                 <el-input v-model="form_avainit.friction_angle" placeholder="20" />
               </el-form-item>
-              <el-form-item label="滑面内聚力 (c MPa)" class="form1_flood">
+              <el-form-item label="岩体粘聚力 (c MPa)" class="form1_flood">
                 <el-input v-model="form_avainit.cohesion" placeholder="15" />
               </el-form-item>
-              <el-form-item label="岩桥内摩擦角 (φ °)" class="form1_flood">
-                <el-input v-model="form_avainit.bridge_friction_angle" placeholder="20" />
-              </el-form-item>
-              <el-form-item label="岩桥内聚力 (c MPa)" class="form1_flood">
-                <el-input v-model="form_avainit.bridge_cohesion" placeholder="15" />
-              </el-form-item>
-              <el-form-item label="饱和渗透系数 (Ks)" class="form1_flood">
+              <el-form-item label="裂隙渗透系数 (Ks)" class="form1_flood">
                 <el-input v-model="form_avainit.permeability" placeholder="0.0001" />
               </el-form-item>
               <el-form-item label="岩体重度 (γ kN/m^3)" class="form1_flood">
@@ -1320,17 +1314,11 @@
               <el-form-item label="岩桥长度 (m)" class="form1_flood">
                 <el-input v-model="form_bedding_wedget.rock_bridge_length" placeholder="5" />
               </el-form-item>
-              <el-form-item label="滑面内摩擦角 (φ °)" class="form1_flood">
+              <el-form-item label="岩石内摩擦角 (φ °)" class="form1_flood">
                 <el-input v-model="form_bedding_wedget.friction_angle" placeholder="20" />
               </el-form-item>
-              <el-form-item label="滑面内聚力 (c MPa)" class="form1_flood">
+              <el-form-item label="岩石内聚力 (c MPa)" class="form1_flood">
                 <el-input v-model="form_bedding_wedget.cohesion" placeholder="15" />
-              </el-form-item>
-              <el-form-item label="岩桥内摩擦角 (φ °)" class="form1_flood">
-                <el-input v-model="form_bedding_wedget.bridge_friction_angle" placeholder="20" />
-              </el-form-item>
-              <el-form-item label="岩桥内聚力 (c MPa)" class="form1_flood">
-                <el-input v-model="form_bedding_wedget.bridge_cohesion" placeholder="15" />
               </el-form-item>
               <el-form-item label="饱和渗透系数 (Ks)" class="form1_flood">
                 <el-input v-model="form_bedding_wedget.permeability" placeholder="0.0001" />
@@ -3083,8 +3071,6 @@ const form_avainit = reactive({
   slide_angle: '15',
   cohesion: '15',
   friction_angle: '20',
-  bridge_cohesion: '15',
-  bridge_friction_angle: '20',
   rock_density: '20',
   permeability: '0.0001',
   ice_thickness: '4',
@@ -3111,8 +3097,6 @@ const form_bedding_wedget = reactive({
   normal_vector: '1,1,1',
   cohesion: '15',
   friction_angle: '20',
-  bridge_cohesion: '15',
-  bridge_friction_angle: '20',
   rock_density: '20',
   permeability: '0.0001',
   ice_thickness: '5',
@@ -5397,8 +5381,6 @@ const resetAvainitInputs = () => {
     slide_angle: '15',
     cohesion: '15',
     friction_angle: '20',
-    bridge_cohesion: '15',
-    bridge_friction_angle: '20',
     rock_density: '20',
     permeability: '0.0001',
     ice_thickness: '4',
@@ -5425,8 +5407,6 @@ const resetAvainitInputs = () => {
     normal_vector: '1,1,1',
     cohesion: '15',
     friction_angle: '20',
-    bridge_cohesion: '15',
-    bridge_friction_angle: '20',
     rock_density: '20',
     permeability: '0.0001',
     ice_thickness: '5',
